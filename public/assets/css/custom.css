@@ -1,0 +1,41 @@
+/* Floating animation for logo in welcome blade*/
+@keyframes floatAnimation {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-30px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.floating-logo {
+    animation: floatAnimation 3s ease-in-out infinite;
+}
+
+/* Header H3 spacing */
+h3 {
+    padding: 20px;
+}
+
+/* Hero section highlight color */
+.hero span.orange {
+    color: #ff4a17;
+}
+
+.tagline {
+    text-align: center;
+}
+
+
+/* Sitename color */
+.sitename {
+    color: #ff4a17;
+}
+
+/* Key Features font size */
+.key-features {
+    font-size: 30px;
+}
