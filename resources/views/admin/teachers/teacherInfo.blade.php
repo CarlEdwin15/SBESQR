@@ -78,11 +78,6 @@
                             </li>
                             <li class="menu-item">
                                 <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">ID Generation</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
