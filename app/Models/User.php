@@ -56,6 +56,12 @@ class User extends Authenticatable
         return $this->belongsTo(Classes::class, 'class_id');
     }
 
+    public function schoolYears()
+    {
+        return $this->hasMany(SchoolYear::class, 'teacher_id');
+    }
+
+
     // for formatting grade level column in the table of teacher's list
     // public function getFormattedGradeLevelAttribute()
     // {

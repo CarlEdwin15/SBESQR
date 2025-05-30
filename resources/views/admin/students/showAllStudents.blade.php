@@ -78,37 +78,12 @@
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
-                            <div class="text-light">Grade & Section</div>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
                                 </a>
                             </li>
                         </ul>
@@ -116,7 +91,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -286,8 +261,8 @@
                                         <th>Full Name</th>
                                         <th>Photo</th>
                                         <th>LRN</th>
-                                        <th>Grade & Section</th>
-                                        <th>Parent's Contact No.</th>
+                                        <th>Classes</th>
+                                        <th>Emergency Contact No.</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -309,7 +284,7 @@
                                             </td>
                                             <td>{{ $student->student_lrn }}</td>
                                             <td>{{ ($student->class->formatted_grade_level) }} - {{ ucfirst($student->class->section) }}</td>
-                                            <td>{{ $student->parentInfo->guardian_phone ?? 'N/A' }}</td>
+                                            <td>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</td>
                                             <td>
                                                 <div class="dropdown">
                                                     <button type="button" class="btn p-0 dropdown-toggle hide-arrow"

@@ -17,10 +17,10 @@ class ParentInfo extends Model
         'mother_mName',
         'mother_lName',
         'mother_phone',
-        'guardian_fName',
-        'guardian_mName',
-        'guardian_lName',
-        'guardian_phone',
+        'emergCont_fName',
+        'emergCont_mName',
+        'emergCont_lName',
+        'emergCont_phone',
     ];
 
     public function student()

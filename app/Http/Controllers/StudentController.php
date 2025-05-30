@@ -7,14 +7,34 @@ use App\Models\Student;
 use App\Models\StudentAddress;
 use App\Models\ParentInfo;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf; // Make sure you have barryvdh/laravel-dompdf installed
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index() {}
+
+    public function generateID($id)
+    {
+        $student = Student::findOrFail($id);
+        return view('admin.students.generate_id', compact('student'));
+    }
+
+    public function downloadID($id)
+    {
+        $student = Student::findOrFail($id);
+
+        // Create QR Code as base64 PNG to avoid Imagick and render it in PDF
+        $qrCode = base64_encode(
+            QrCode::format('svg')
+                ->size(150)
+                ->generate(route('student.info', ['id' => $student->id]))
+        );
+
+        $pdf = Pdf::loadView('pdf.student_id', compact('student', 'qrCode'));
+        return $pdf->download($student->last_name . '_ID.pdf');
+    }
+
 
     /**
      * Display the specified resource.
@@ -77,10 +97,10 @@ class StudentController extends Controller
             'student_motherMName' => 'nullable|string|max:255',
             'student_motherLName' => 'nullable|string|max:255',
             'student_motherPhone' => 'nullable|string|max:255',
-            'student_guardianFName' => 'nullable|string|max:255',
-            'student_guardianMName' => 'nullable|string|max:255',
-            'student_guardianLName' => 'nullable|string|max:255',
-            'student_guardianPhone' => 'nullable|string|max:255',
+            'student_emergContFName' => 'nullable|string|max:255',
+            'student_emergContMName' => 'nullable|string|max:255',
+            'student_emergContLName' => 'nullable|string|max:255',
+            'student_emergContPhone' => 'nullable|string|max:255',
 
             // Profile photo validation
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
@@ -117,16 +137,24 @@ class StudentController extends Controller
             'mother_mName' => $request->student_motherMName,
             'mother_lName' => $request->student_motherLName,
             'mother_phone' => $request->student_motherPhone,
-            'guardian_fName' => $request->student_guardianFName,
-            'guardian_mName' => $request->student_guardianMName,
-            'guardian_lName' => $request->student_guardianLName,
-            'guardian_phone' => $request->student_guardianPhone,
+            'emergCont_fName' => $request->student_emergContFName,
+            'emergCont_mName' => $request->student_emergContMName,
+            'emergCont_lName' => $request->student_emergContLName,
+            'emergCont_phone' => $request->student_emergContPhone,
         ]);
 
-        // Retrieve class based on grade level and section
-        $class = \App\Models\Classes::where('grade_level', $request->student_grade_level)
-            ->where('section', $request->student_section)
-            ->firstOrFail();
+        // Auto-generate school year based on current date
+        $today = now(); // Carbon not needed, already available via Laravel helper
+        $schoolYear = $today->month >= 6
+            ? $today->year . '-' . ($today->year + 1)
+            : ($today->year - 1) . '-' . $today->year;
+
+        // Retrieve or create the class for the given year
+        $class = Classes::firstOrCreate([
+            'grade_level' => $validatedData['student_grade_level'],
+            'section' => $validatedData['student_section'],
+            'school_year' => $schoolYear,
+        ]);
 
         // Save student information, associating with class, address, and parent info
         Student::create([
@@ -136,7 +164,7 @@ class StudentController extends Controller
             'student_lName' => $validatedData['student_lName'],
             'student_extName' => $validatedData['student_extName'] ?? null,
             'student_dob' => $validatedData['student_dob'] ?? null,
-            'student_sex' => ucfirst($validatedData['student_sex']), // Capitalize first letter
+            'student_sex' => $validatedData['student_sex'],
             'student_photo' => $profilePhotoPath,
             'qr_code' => $qrCode,
             'class_id' => $class->id,
@@ -204,10 +232,10 @@ class StudentController extends Controller
             'student_motherMName' => 'nullable|string|max:255',
             'student_motherLName' => 'nullable|string|max:255',
             'student_motherPhone' => 'nullable|string|max:255',
-            'student_guardianFName' => 'nullable|string|max:255',
-            'student_guardianMName' => 'nullable|string|max:255',
-            'student_guardianLName' => 'nullable|string|max:255',
-            'student_guardianPhone' => 'nullable|string|max:255',
+            'student_emergContFName' => 'nullable|string|max:255',
+            'student_emergContMName' => 'nullable|string|max:255',
+            'student_emergContLName' => 'nullable|string|max:255',
+            'student_emergContPhone' => 'nullable|string|max:255',
 
             // Profile photo
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
@@ -245,16 +273,23 @@ class StudentController extends Controller
             'mother_mName' => $request->student_motherMName,
             'mother_lName' => $request->student_motherLName,
             'mother_phone' => $request->student_motherPhone,
-            'guardian_fName' => $request->student_guardianFName,
-            'guardian_mName' => $request->student_guardianMName,
-            'guardian_lName' => $request->student_guardianLName,
-            'guardian_phone' => $request->student_guardianPhone,
+            'emergCont_fName' => $request->student_emergContFName,
+            'emergCont_mName' => $request->student_emergContMName,
+            'emergCont_lName' => $request->student_emergContLName,
+            'emergCont_phone' => $request->student_emergContPhone,
         ]);
 
-        // Find and assign class
-        $class = Classes::where('grade_level', $validatedData['student_grade_level'])
-            ->where('section', $validatedData['student_section'])
-            ->firstOrFail();
+        $today = now();
+        $schoolYear = $today->month >= 6
+            ? $today->year . '-' . ($today->year + 1)
+            : ($today->year - 1) . '-' . $today->year;
+
+        $class = Classes::firstOrCreate([
+            'grade_level' => $validatedData['student_grade_level'],
+            'section' => $validatedData['student_section'],
+            'school_year' => $schoolYear,
+        ]);
+
 
         // Update main student fields
         $student->update([

@@ -78,37 +78,12 @@
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
-                            <div class="text-light">Grade & Section</div>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
                                 </a>
                             </li>
                         </ul>
@@ -116,7 +91,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -597,41 +572,41 @@
 
                                 </div>
 
-                                <!-- Guardian's Information-->
-                                <h5 class="fw-bold mb-3 mt-3 text-primary">Guardian's Information</h5>
+                                <!-- Emergency Contact's Information-->
+                                <h5 class="fw-bold mb-3 mt-3 text-primary">Emergency Contact's Information</h5>
 
                                 <div class="row">
-                                    <!-- Guardian's First Name Field -->
+                                    <!-- Emergency Contact's First Name Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_guardianFName" class="form-label fw-bold">First
+                                        <label for="student_emergContFName" class="form-label fw-bold">First
                                             Name</label>
-                                        <input type="text" name="student_guardianFName" id="student_guardianFName"
-                                            class="form-control" value="{{ $student->parentInfo->guardian_fName }}" />
+                                        <input type="text" name="student_emergContFName" id="student_emergContFName"
+                                            class="form-control" value="{{ $student->parentInfo->emergCont_fName }}" />
                                     </div>
 
-                                    <!-- Guardian's Middle Name Field -->
+                                    <!-- Emergency Contact's Middle Name Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_guardianMName" class="form-label fw-bold">Midlle
+                                        <label for="student_emergContMName" class="form-label fw-bold">Midlle
                                             Name</label>
-                                        <input type="text" name="student_guardianMName" id="student_guardianMName"
-                                            class="form-control" value="{{ $student->parentInfo->guardian_mName }}" />
+                                        <input type="text" name="student_emergContMName" id="student_emergContMName"
+                                            class="form-control" value="{{ $student->parentInfo->emergCont_mName }}" />
                                     </div>
                                 </div>
 
                                 <div class="row">
-                                    <!-- Guardian's Last Name Field -->
+                                    <!-- Emergency Contact's Last Name Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_guardianLName" class="form-label fw-bold">Last
+                                        <label for="student_emergContLName" class="form-label fw-bold">Last
                                             Name</label>
-                                        <input type="text" name="student_guardianLName" id="student_guardianLName"
-                                            class="form-control" value="{{ $student->parentInfo->guardian_lName }}" />
+                                        <input type="text" name="student_emergContLName" id="student_emergContLName"
+                                            class="form-control" value="{{ $student->parentInfo->emergCont_lName }}" />
                                     </div>
 
-                                    <!-- Guardian's Phone No. Field -->
+                                    <!-- Emergency Contact's Phone No. Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_guardianPhone" class="form-label fw-bold">Phone No.</label>
-                                        <input type="text" name="student_guardianPhone" id="student_guardianPhone"
-                                            class="form-control" value="{{ $student->parentInfo->guardian_phone }}" />
+                                        <label for="student_emergContPhone" class="form-label fw-bold">Phone No.</label>
+                                        <input type="text" name="student_emergContPhone" id="student_emergContPhone"
+                                            class="form-control" value="{{ $student->parentInfo->emergCont_phone }}" />
                                     </div>
                                 </div>
 

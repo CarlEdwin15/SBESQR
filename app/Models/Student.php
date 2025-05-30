@@ -38,4 +38,14 @@ class Student extends Model
     {
         return $this->belongsTo(Classes::class, 'class_id');
     }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function schoolYears()
+    {
+        return $this->belongsToMany(SchoolYear::class, 'school_year_student');
+    }
 }

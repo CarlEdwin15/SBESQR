@@ -74,41 +74,16 @@
                         </ul>
                     </li>
 
-                    {{-- Grade & Section sidebar --}}
+                    {{-- Classes sidebar --}}
                     <li class="menu-item active open">
                         <a href="javascript:void(0);" class="menu-link menu-toggle">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left"></i>
-                            <div class="text-danger">Grade & Section</div>
+                            <div class="text-danger">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item active">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-danger">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
                                 </a>
                             </li>
                         </ul>
@@ -116,7 +91,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -251,21 +226,19 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('all.grade.levels') }}">Grade & Section / </a>
+                            <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes / </a>
                         </span> Kindergarten
                     </h4>
 
                     {{-- Card --}}
                     <div class="card mb-3">
                         <div class="card-header">
-                            <h5 class="fw-bold mb-4 text-primary">Teacher(s):</h5>
+                            <h5 class="fw-bold mb-4 text-primary">Adviser:</h5>
                             <table class="table table-hover table-bordered text-center" id="studentTable">
                                 <thead>
                                     <tr>
                                         <th>Email</th>
-                                        <th>Last Name</th>
-                                        <th>First Name</th>
-                                        <th>Middle Name</th>
+                                        <th>Full Name</th>
                                         <th>Photo</th>
                                         <th>Section</th>
                                         <th>Contact No.</th>
@@ -277,9 +250,8 @@
                                     @foreach ($teachers as $teacher)
                                         <tr>
                                             <td>{{ $teacher->email }}</td>
-                                            <td>{{ $teacher->lastName }}</td>
-                                            <td>{{ $teacher->firstName }}</td>
-                                            <td>{{ $teacher->middleName }}</td>
+                                            <td>{{ $teacher->lastName }}, {{ $teacher->firstName }},
+                                                {{ $teacher->extName }} {{ $teacher->middleName }}</td>
                                             <td>
                                                 @if ($teacher->profile_photo)
                                                     <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
@@ -291,9 +263,14 @@
                                                         style="object-fit: cover">
                                                 @endif
                                             </td>
-                                            <td>{{ $teacher->section_assigned }}</td>
+                                            <td>{{ $teacher->class->section }}</td>
                                             <td>{{ $teacher->phone }}</td>
-                                            <td>{{ $teacher->address }}</td>
+                                            <td>{{ $teacher->house_no }},
+                                                {{ $teacher->street_name }},
+                                                {{ $teacher->barangay }},
+                                                {{ $teacher->municipality_city }},
+                                                {{ $teacher->province }},
+                                                {{ $teacher->zip_code }}</td>
                                             <td>
                                                 <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
                                                     data-bs-toggle="dropdown">
@@ -324,9 +301,7 @@
                                     <thead>
                                         <tr>
                                             <th>LRN</th>
-                                            <th>Last Name</th>
-                                            <th>First Name</th>
-                                            <th>Middle Name</th>
+                                            <th>Full Name</th>
                                             <th>Photo</th>
                                             <th>Section</th>
                                             <th>Parent's Contact No.</th>
@@ -337,9 +312,8 @@
                                         @foreach ($students as $student)
                                             <tr>
                                                 <td> {{ $student->student_lrn }} </td>
-                                                <td> {{ $student->student_lName }} </td>
-                                                <td> {{ $student->student_fName }} </td>
-                                                <td> {{ $student->student_mName }} </td>
+                                                <td> {{ $student->student_lName }}, {{ $student->student_fName }},
+                                                    {{ $student->student_extName }} {{ $student->student_mName }} </td>
                                                 <td>
                                                     @if ($student->student_photo)
                                                         <img src="{{ asset('storage/' . $student->student_photo) }}"
@@ -348,8 +322,8 @@
                                                         N/A
                                                     @endif
                                                 </td>
-                                                <td> {{ $student->student_section }} </td>
-                                                <td> {{ $student->student_parentPhone }} </td>
+                                                <td> {{ $student->class->section }} </td>
+                                                <td> {{ $student->parentInfo->guardian_phone ?? 'N/A'}} </td>
                                                 <td>
                                                     <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
                                                         data-bs-toggle="dropdown">
@@ -357,7 +331,7 @@
                                                     </button>
                                                     <div class="dropdown-menu">
                                                         <a class="dropdown-item text-info"
-                                                            href="{{ route('student.info', ['student_id' => $student->student_id]) }}">
+                                                            href="{{ route('student.info', ['id' => $student->id]) }}">
                                                             <i class="fa-solid fa-id-badge me-1"></i> View Profile
                                                         </a>
                                                     </div>
@@ -408,7 +382,7 @@
 
     <script>
         // delete button alert
-        function confirmDelete(student_id, student_fName, student_lName) {
+        function confirmDelete(id, student_fName, student_lName) {
             Swal.fire({
                 title: `Delete ${student_fName} ${student_lName}'s record?`,
                 text: "This action cannot be undone.",
@@ -434,7 +408,7 @@
                         },
                         didOpen: () => {
                             setTimeout(() => {
-                                document.getElementById('delete-form-' + student_id).submit();
+                                document.getElementById('delete-form-' + id).submit();
                             }, 1000);
                         }
                     });

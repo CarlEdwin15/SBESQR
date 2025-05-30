@@ -82,10 +82,10 @@ return new class extends Migration
             $table->string('mother_lName')->nullable();
             $table->string('mother_phone')->nullable();
 
-            $table->string('guardian_fName')->nullable();
-            $table->string('guardian_mName')->nullable();
-            $table->string('guardian_lName')->nullable();
-            $table->string('guardian_phone')->nullable();
+            $table->string('emergCont_fName')->nullable();
+            $table->string('emergCont_mName')->nullable();
+            $table->string('emergCont_lName')->nullable();
+            $table->string('emergCont_phone')->nullable();
             $table->timestamps();
         });
 

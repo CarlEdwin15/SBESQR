@@ -4,7 +4,9 @@
     use Carbon\Carbon;
 @endphp
 
-@section('title', 'Admin | Teacher Information')
+
+@section('title', 'Admin | Generated Student ID')
+
 
 @section('content')
 
@@ -37,38 +39,31 @@
                     </li>
 
                     <!-- Teachers sidebar -->
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bx-user-pin"></i>
-                            <div>Teachers</div>
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
+                            <div class="text-light">Teachers</div>
                         </a>
 
                         <ul class="menu-sub">
-                            <li class="menu-item active">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">All Teacherss</div>
-                                </a>
-                            </li>
-                        </ul>
-                        <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Class Schedules</div>
+                                    <div class="text-light">All Teacherss</div>
                                 </a>
                             </li>
                         </ul>
                     </li>
 
                     {{-- Students sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
-                            <div class="text-light">Students</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bxs-graduation"></i>
+                            <div>Students</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item">
+                            <li class="menu-item active">
                                 <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Students</div>
+                                    <div class="text-danger">All Students</div>
                                 </a>
                             </li>
                             <li class="menu-item">
@@ -236,81 +231,131 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('show.teachers') }}">Teachers / </a>
-                        </span> Teacher's Information
+                            <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
+                            <a class="text-muted fw-light" href="{{ route('student.info', $student->id) }}">Student
+                                Information / </a>
+                        </span> Generated Student ID
                     </h4>
 
-                    <!-- Teacher's Details -->
+                    <a href="{{ route('show.students') }}" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
+                        class="btn btn-danger mt-3">Back</a>
+
+                    <!-- Generate ID Form -->
+                    <form action="{{ route('students.downloadID', $student->id) }}" method="GET">
+                        @csrf
+                        <button type="submit" class="btn btn-success"
+                            style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
+                    </form>
+
+                    <!-- Student's Details -->
                     <div class="card shadow">
                         <div class="card-body">
                             <div class="row">
-                                <h4 class="mt-2 text-primary text-center" style="font-weight: 600;">Teacher Profile:
-                                    <br>{{ $teacher->firstName }} {{ $teacher->lastName }}
-                                </h4>
-                                {{-- Teacher Photo --}}
-                                <div class="col-md-4 mt-3 mb-3 text-center d-flex flex-column align-items-center">
-                                    @if ($teacher->profile_photo)
-                                        <img src="{{ asset('storage/' . $teacher->profile_photo) }}" alt="Teacher Photo"
-                                            class="img-thumbnail mb-3"
-                                            style="object-fit: cover; height: 450px; width: 450px;">
-                                    @else
-                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                            alt="Default Photo" class="img-thumbnail mb-3"
-                                            style="object-fit: cover; height: 450px; width: 450px;">
-                                    @endif
+
+                                <div class="d-flex flex-wrap justify-content-center gap-5 mt-4">
+
+                                    {{-- FRONT SIDE --}}
+                                    <div class="card p-3 shadow"
+                                        style="width: 320px; height: 510px; background-image: url('{{ asset('assetsDashboard/img/id_layout/front_bg_id.png') }}'); background-size: cover; background-repeat: no-repeat; background-position: center;">
+                                        <div>
+                                            <div class="mb-1 text-center">
+                                                <img src="{{ asset('assets/img/logo.png') }}" alt="School Logo"
+                                                    style="width: 75px;">
+                                            </div>
+
+                                            <div class="text-center mb-2">
+                                                <h5 class="mb-0 fw-bold text-uppercase" style="font-size: 16px;">
+                                                    Sta. Barbara Elementary School</h5>
+                                                <p class="mb-0" style="font-size: 12px;">Sta. Barbara, Nabua, Camarines
+                                                    Sur
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-center mb-2">
+                                            @if ($student->student_photo)
+                                                <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                    alt="Student Photo" class="border"
+                                                    style="width: 2in; height: 2in; object-fit: cover; border: 6px solid #000; border-radius: 8px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);">
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                    alt="Default Photo" class="border"
+                                                    style="width: 2in; height: 2in; object-fit: cover; border: 6px solid #000; border-radius: 8px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);">
+                                            @endif
+                                        </div>
+
+
+                                        <div class="text-center mb-2">
+                                            <h6 class="mb-0 fw-bold text-uppercase" style="font-size: 14px;">
+                                                {{ $student->student_fName }} {{ $student->student_mName }}
+                                                {{ $student->student_lName }}
+                                            </h6>
+                                        </div>
+
+                                        <div class="text-center" style="font-size: 12px;">
+                                            <p class="mb-1"><strong>Date of Birth:</strong>
+                                                {{ \Carbon\Carbon::parse($student->student_dob)->format('F j, Y') }}</p>
+                                            <p class="mb-1"><strong>Address:</strong> Zone
+                                                {{ $student->address->barangay }}, Sta. Barbara, Nabua, Camarines Sur</p>
+                                        </div>
+                                    </div>
+
+                                    {{-- BACK SIDE --}}
+                                    <div class="card p-3 shadow"
+                                        style="width: 320px; height: 510px; background-image: url('{{ asset('assetsDashboard/img/id_layout/back_bg_id.png') }}'); background-size: cover; background-repeat: no-repeat; background-position: center;">
+
+                                        <h6 class="fw-bold text-center mb-2" style="font-size: 10px;">IN CASE OF EMERGENCY
+                                            PLEASE NOTIFY</h6>
+
+                                        <div style="font-size: 11px;">
+                                            <p class="mb-1">Name:
+                                                <strong>{{ $student->parentInfo->emergCont_fName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergCont_lName ?? '' }}</strong>
+                                            </p>
+                                            <p class="mb-1">Address:
+                                                <strong>{{ $student->address->barangay ?? 'N/A' }},
+                                                    {{ $student->address->municipality_city ?? 'N/A' }},
+                                                    {{ $student->address->province ?? 'N/A' }}</strong>
+                                            </p>
+                                            <p class="mb-1">Contact No.:
+                                                <strong>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</strong>
+                                            </p>
+                                        </div>
+
+                                        {{-- Validation Table --}}
+                                        <table class="table table-bordered text-center table-sm mt-1 mb-1"
+                                            style="border: 1px solid black;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="border: 1px solid black;">School Year</th>
+                                                    <th style="border: 1px solid black;">Signature</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @for ($i = 0; $i < 7; $i++)
+                                                    <tr style="height: 20px;">
+                                                        <td style="border: 1px solid black;"></td>
+                                                        <td style="border: 1px solid black;"></td>
+                                                    </tr>
+                                                @endfor
+                                            </tbody>
+                                        </table>
+
+
+
+                                        {{-- QR Code --}}
+                                        <div class="text-center mt-1 mb-1">
+                                            <div style="display: inline-block; border: 2px solid #000; padding: 5px;">
+                                                {!! QrCode::size(190)->generate(route('student.info', ['id' => $student->id])) !!}
+                                            </div>
+                                        </div>
+
+                                        <p class="text-center" style="font-size: 13px;"><strong>LRN:</strong>
+                                            {{ $student->student_lrn }}</p>
+                                    </div>
                                 </div>
 
-                                {{-- Student Details --}}
-                                <div class="col-md-8 mt-3 mb-3">
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <th class="text-primary">Full Name</th>
-                                                <td>{{ ucfirst($teacher->firstName) }} {{ ucfirst($teacher->middleName) }}
-                                                    {{ ucfirst($teacher->lastName) }} {{ ucfirst($teacher->extName) }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Grade Level & Section</th>
-                                                <td>{{ $teacher->class->formatted_grade_level }} -
-                                                    {{ $teacher->class->section }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Age</th>
-                                                <td>
-                                                    {{ Carbon::parse($teacher->dob)->age }} years old
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Date of Birth</th>
-                                                <td>{{ \Carbon\Carbon::parse($teacher->dob)->format('F j, Y') }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Gender</th>
-                                                <td>{{ ucfirst($teacher->gender) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Contact No.</th>
-                                                <td>{{ $teacher->phone }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Address</th>
-                                                <td>
-                                                    {{ $teacher->house_no }},
-                                                    {{ $teacher->street_name }},
-                                                    {{ $teacher->barangay }},
-                                                    {{ $teacher->municipality_city }},
-                                                    {{ $teacher->province }},
-                                                    {{ $teacher->zip_code }}
-                                                </td>
 
-                                            </tr>
-                                        </tbody>
-                                    </table>
-
-                                    <a href="{{ route('show.teachers') }}" class="btn btn-secondary mt-3">Back</a>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -410,32 +455,6 @@
                 });
             }
 
-            // Logout confirmation
-            window.confirmLogout = function() {
-                Swal.fire({
-                    title: "Are you sure?",
-                    text: "You want to log out?",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "Yes, log out!",
-                    customClass: {
-                        container: 'my-swal-container'
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: "Logged out Successfully!",
-                            icon: "success",
-                            timer: 800,
-                            showConfirmButton: false
-                        }).then(() => {
-                            document.getElementById('logout-form').submit();
-                        });
-                    }
-                });
-            };
 
             // Profile image upload preview and reset
             const fileInput = document.getElementById('upload');
@@ -462,5 +481,33 @@
                 });
             }
         });
+    </script>
+
+    <script>
+        function confirmLogout() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You want to log out?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, log out!",
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: "Logged out Successfully!",
+                        icon: "success",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    document.getElementById('logout-form').submit();
+                }
+            });
+        }
     </script>
 @endpush

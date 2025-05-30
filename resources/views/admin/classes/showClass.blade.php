@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | Grade 6')
+@section('title', 'Admin | All Grade Levels')
 
 
 @section('content')
@@ -83,7 +83,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">Grade Levels</div>
+                                    <div class="text-danger">All Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -226,126 +226,40 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes / </a>
-                        </span> Grade 6
+                            <a class="text-muted fw-light" href="{{ route('all.classes') }}"> Classes / </a>
+                        </span>{{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
                     </h4>
 
-                    {{-- Card --}}
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h5 class="fw-bold mb-4 text-primary">Teacher(s):</h5>
-                            <table class="table table-hover table-bordered text-center" id="studentTable">
-                                <thead>
-                                    <tr>
-                                        <th>Email</th>
-                                        <th>Last Name</th>
-                                        <th>First Name</th>
-                                        <th>Middle Name</th>
-                                        <th>Photo</th>
-                                        <th>Section</th>
-                                        <th>Contact No.</th>
-                                        <th>Address</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="table-border-bottom-0">
-                                    @foreach ($teachers as $teacher)
-                                        <tr>
-                                            <td>{{ $teacher->email }}</td>
-                                            <td>{{ $teacher->lastName }}</td>
-                                            <td>{{ $teacher->firstName }}</td>
-                                            <td>{{ $teacher->middleName }}</td>
-                                            <td>
-                                                @if ($teacher->profile_photo)
-                                                    <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
-                                                        alt="Profile Photo" width="50" height="50"
-                                                        style="object-fit: cover">
-                                                @else
-                                                    <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                        alt="no profile" width="50" height="50"
-                                                        style="object-fit: cover">
-                                                @endif
-                                            </td>
-                                            <td>{{ $teacher->section_assigned }}</td>
-                                            <td>{{ $teacher->phone }}</td>
-                                            <td>{{ $teacher->address }}</td>
-                                            <td>
-                                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-                                                    data-bs-toggle="dropdown">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <div class="dropdown-menu">
-                                                    <a class="dropdown-item text-info"
-                                                        href="{{ route('teacher.info', ['id' => $teacher->id]) }}">
-                                                        <i class="fa-solid fa-id-badge me-1"></i> View Profile
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
+                    <div class="container">
+                        <a href="{{ route('all.classes', ['section' => $class->section]) }}"
+                            class="btn btn-danger mb-3">Back</a>
 
-                            </table>
-                        </div>
-                    </div>
-
-                    {{-- Card --}}
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="fw-bold mb-4 text-primary">All Students:</h5>
-
-                            <div class="table-responsive text-nowrap">
-                                <table class="table table-hover table-bordered text-center" id="studentTable">
-                                    <thead>
-                                        <tr>
-                                            <th>LRN</th>
-                                            <th>Last Name</th>
-                                            <th>First Name</th>
-                                            <th>Middle Name</th>
-                                            <th>Photo</th>
-                                            <th>Section</th>
-                                            <th>Parent's Contact No.</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="table-border-bottom-0">
-                                        @foreach ($students as $student)
-                                            <tr>
-                                                <td> {{ $student->student_lrn }} </td>
-                                                <td> {{ $student->student_lName }} </td>
-                                                <td> {{ $student->student_fName }} </td>
-                                                <td> {{ $student->student_mName }} </td>
-                                                <td>
-                                                    @if ($student->student_photo)
-                                                        <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                            alt="Photo" width="50">
-                                                    @else
-                                                        N/A
-                                                    @endif
-                                                </td>
-                                                <td> {{ $student->student_section }} </td>
-                                                <td> {{ $student->student_parentPhone }} </td>
-                                                <td>
-                                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-                                                        data-bs-toggle="dropdown">
-                                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu">
-                                                        <a class="dropdown-item text-info"
-                                                            href="{{ route('student.info', ['student_id' => $student->student_id]) }}">
-                                                            <i class="fa-solid fa-id-badge me-1"></i> View Profile
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-
-                                </table>
+                        <div class="card p-4">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div class="bg-primary text-white p-3 rounded text-center">
+                                    <div>Students</div>
+                                    <div class="h4">{{ $studentCount }}</div>
+                                </div>
+                                <div class="bg-info text-white p-3 rounded text-center">
+                                    <div>Attendance Today</div>
+                                    {{-- <div class="h4 text-warning">{{ $presentToday }}/{{ $studentCount }}</div> --}}
+                                </div>
                             </div>
 
+                            <div class="list-group">
+                                <a href="#"
+                                    class="list-group-item list-group-item-action bg-primary text-white">Schedules</a>
+                                <a href="#"
+                                    class="list-group-item list-group-item-action bg-primary text-white">Attendances</a>
+                                <a href="#"
+                                    class="list-group-item list-group-item-action bg-primary text-white">Student's List</a>
+                                <a href="#"
+                                    class="list-group-item list-group-item-action bg-danger text-white">Delete</a>
+                            </div>
                         </div>
                     </div>
+
+
 
                     <hr class="my-5" />
 

@@ -13,11 +13,6 @@ return new class extends Migration
     {
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
-
-            // Allow multiple students/teachers in different classes
-            // $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
-            // $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-
             $table->enum(
                 'grade_level',
                 [
@@ -35,7 +30,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Prevent multiple classes with the same grade_level + section
+            // Prevent multiple classes with the same grade_level + section + school_year
             $table->unique(['grade_level', 'section'], 'unique_class_section');
         });
     }

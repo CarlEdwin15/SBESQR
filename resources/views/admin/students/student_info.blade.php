@@ -83,37 +83,12 @@
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
-                            <div class="text-light">Grade & Section</div>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
                                 </a>
                             </li>
                         </ul>
@@ -121,7 +96,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -262,15 +237,26 @@
 
                     <a href="{{ route('show.students') }}" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
                         class="btn btn-danger mt-3">Back</a>
-                    <a href="" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
-                        class="btn btn-success mt-3">Generate ID</a>
+
+                    <!-- Generate ID Form -->
+                    <form action="{{ route('students.generateID', $student->id) }}" method="GET">
+                        @csrf
+                        <button type="submit" class="btn btn-success"
+                            style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
+                    </form>
                     <!-- Student's Details -->
                     <div class="card shadow">
                         <div class="card-body">
                             <div class="row">
+                                <div class="d-flex justify-content-end">
+                                    <a href="{{ route('edit.student', ['id' => $student->id]) }}"
+                                        class="btn btn-warning mt-2 mb-2 me-2">Edit</a>
+                                </div>
+
                                 <h4 class="mt-2 text-primary text-center" style="font-weight: 600;">Student Profile:
                                     <br>{{ $student->student_fName }} {{ $student->student_lName }}
                                 </h4>
+
                                 {{-- Student Photo --}}
                                 <div class="col-md-4 mt-3 mb-3 text-center d-flex flex-column align-items-center">
                                     @if ($student->student_photo)
@@ -326,12 +312,12 @@
                                             <tr>
                                                 <th class="text-primary">Address</th>
                                                 <td>
-                                                    {{ $student->address->house_no }},
-                                                    {{ $student->address->street_name }},
-                                                    {{ $student->address->barangay }},
-                                                    {{ $student->address->municipality_city }},
-                                                    {{ $student->address->province }},
-                                                    {{ $student->address->zip_code }}
+                                                    {{ $student->address->house_no ?? 'N/A' }},
+                                                    {{ $student->address->street_name ?? 'N/A' }},
+                                                    {{ $student->address->barangay ?? 'N/A' }},
+                                                    {{ $student->address->municipality_city ?? 'N/A' }},
+                                                    {{ $student->address->province ?? 'N/A' }},
+                                                    {{ $student->address->zip_code ?? 'N/A' }}
                                                 </td>
 
                                             </tr>
@@ -363,22 +349,25 @@
                                             </tr>
 
                                             <tr>
-                                                <th class="text-primary">Guardian's Name</th>
+                                                <th class="text-primary">Emergency Contact's Info</th>
                                                 <td>
-                                                    {{ $student->parentInfo->guardian_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->guardian_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->guardian_lName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergCont_fName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergCont_mName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergCont_lName ?? 'N/A' }}
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <th class="text-primary">Guardian's Contact No.</th>
-                                                <td>{{ $student->parentInfo->guardian_phone ?? 'N/A' }}</td>
+                                                <th class="text-primary">Emergency Contact No.</th>
+                                                <td>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</td>
                                             </tr>
 
                                             <tr>
                                                 <th class="text-primary">QR Code</th>
-                                                <td>{{ $student->qr_code }}</td>
+                                                <td>
+                                                    {!! QrCode::size(150)->generate(route('student.info', ['id' => $student->id])) !!}
+                                                </td>
                                             </tr>
+
                                         </tbody>
                                     </table>
                                 </div>

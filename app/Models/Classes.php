@@ -15,6 +15,7 @@ class Classes extends Model
     protected $fillable = [
         'grade_level',
         'section',
+        'school_year',
     ];
 
     public function getFormattedGradeLevelAttribute()

@@ -51,7 +51,7 @@
 
                     {{-- Students sidebar --}}
                     <li class="menu-item">
-                        <a class="menu-link menu-toggle bg-dark text-light">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                             <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
                             <div class="text-light">Students</div>
                         </a>
@@ -82,28 +82,8 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item active">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">Grade Levels</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
+                                    <div class="text-danger">All Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -111,7 +91,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -246,159 +226,69 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('all.grade.levels') }}">Grade & Section / </a>
-                        </span> All Grade Levels
+                            <a class="text-muted fw-light" href="{{ route('all.classes') }}"> Classes / </a>
+                        </span> All Classes
                     </h4>
 
-                    <!-- Services Section -->
+                    <!-- Filter Section -->
+
+                    <h5 class="alert alert-info">Showing Grade Levels for <strong> Section {{ $section }}</strong>
+                    </h5>
+
+                    <form method="GET" action="{{ route('all.classes') }}" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="section" class="form-label">Select Section</label>
+                                <select name="section" id="section" class="form-select" onchange="this.form.submit()">
+                                    @foreach ($sections as $s)
+                                        <option value="{{ $s }}" {{ $section == $s ? 'selected' : '' }}>
+                                            Section {{ $s }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                            </div>
+                        </div>
+                    </form>
+
+
+                    <!-- Card for All Grade Levels by Section -->
                     <section id="services" class="services section">
 
                         <div class="container" data-aos="fade-up" data-aos-delay="100">
                             <div class="row gy-5">
+                                @php $iconIndex = 1; @endphp
 
-                                <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="200">
-
-                                    <div class="service-item">
-
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-
-                                        <div class="details position-relative">
-
-                                            <div class="icon">
-                                                <i class="fa-solid fa-child"></i>
+                                @foreach ($gradeLevels as $level)
+                                    <div class="col-xl-4 col-md-6" data-aos="zoom-in">
+                                        <div class="service-item">
+                                            <div class="img">
+                                                <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
+                                                    class="img-fluid" alt="" />
                                             </div>
-
-                                            <a href="{{ route('kindergarten') }}" class="stretched-link">
-                                                <h3>Kindergarten</h3>
-                                            </a>
+                                            <div class="details position-relative">
+                                                <div class="icon">
+                                                    @if ($level === 'kindergarten')
+                                                        <i class="fa-solid fa-child"></i>
+                                                    @else
+                                                        <i class="fa-solid fa-{{ $iconIndex }}"></i>
+                                                        @php $iconIndex++; @endphp
+                                                    @endif
+                                                </div>
+                                                <a href="{{ route('classes.showClass', ['grade_level' => $level, 'section' => $section]) }}" class="stretched-link">
+                                                    <h3>{{ ucfirst(str_replace('_', ' ', $level)) }} - {{ $section }}
+                                                    </h3>
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <!-- End Service Item -->
+                                @endforeach
 
-                                <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="300">
-                                    <div class="service-item">
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-                                        <div class="details position-relative">
-                                            <div class="icon">
-                                                <i class="fa-solid fa-1"></i>
-                                            </div>
-                                            <a href="{{ route('grade1') }}" class="stretched-link">
-                                                <h3>Grade 1</h3>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- End Service Item -->
-
-                                <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="400">
-                                    <div class="service-item">
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-                                        <div class="details position-relative">
-                                            <div class="icon">
-                                                <i class="fa-solid fa-2"></i>
-                                            </div>
-                                            <a href="{{ route('grade2') }}" class="stretched-link">
-                                                <h3>Grade 2</h3>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- End Service Item -->
-                            </div>
-                        </div>
-
-                        <hr class="my-5" />
-
-                        <div class="container" data-aos="fade-up" data-aos-delay="100">
-                            <div class="row gy-5">
-                                <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="200">
-                                    <div class="service-item">
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-                                        <div class="details position-relative">
-                                            <div class="icon">
-                                                <i class="fa-solid fa-3"></i>
-                                            </div>
-                                            <a href="{{ route('grade3') }}" class="stretched-link">
-                                                <h3>Grade 3</h3>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- End Service Item -->
-
-                                <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="300">
-                                    <div class="service-item">
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-                                        <div class="details position-relative">
-                                            <div class="icon">
-                                                <i class="fa-solid fa-4"></i>
-                                            </div>
-                                            <a href="{{ route('grade4') }}" class="stretched-link">
-                                                <h3>Grade 4</h3>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- End Service Item -->
-
-                                <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="400">
-                                    <div class="service-item">
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-                                        <div class="details position-relative">
-                                            <div class="icon">
-                                                <i class="fa-solid fa-5"></i>
-                                            </div>
-                                            <a href="{{ route('grade5') }}" class="stretched-link">
-                                                <h3>Grade 5</h3>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- End Service Item -->
-
-                                <hr class="my-5" />
-
-                                <div class="col-xl-4 col-md-6 object-center" data-aos="zoom-in" data-aos-delay="400">
-                                    <div class="service-item">
-                                        <div class="img">
-                                            <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
-                                                class="img-fluid" alt="" />
-                                        </div>
-                                        <div class="details position-relative">
-                                            <div class="icon">
-                                                <i class="fa-solid fa-6"></i>
-                                            </div>
-                                            <a href="{{ route('grade6') }}" class="stretched-link">
-                                                <h3>Grade 6</h3>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- End Service Item -->
                             </div>
                         </div>
 
                     </section>
-                    <!-- /Services Section -->
+                    <!-- /Card for All Grade Levels by Section -->
 
                     <hr class="my-5" />
 

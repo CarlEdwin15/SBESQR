@@ -74,21 +74,16 @@
                         </ul>
                     </li>
 
-                    {{-- Grade & Section sidebar --}}
+                    {{-- Classes sidebar --}}
                     <li class="menu-item active open">
                         <a href="javascript:void(0);" class="menu-link menu-toggle">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left"></i>
-                            <div class="text-danger">Grade & Section</div>
+                            <div class="text-danger">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item active">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-danger">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
                                 </a>
                             </li>
                         </ul>
@@ -116,7 +111,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -251,7 +246,7 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('all.grade.levels') }}">Grade & Section / </a>
+                            <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes / </a>
                         </span> Grade 1
                     </h4>
 

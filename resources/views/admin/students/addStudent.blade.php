@@ -78,37 +78,12 @@
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
-                            <div class="text-light">Grade & Section</div>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
                                 </a>
                             </li>
                         </ul>
@@ -116,7 +91,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -255,16 +230,32 @@
                         </span> Student Enrollement
                     </h4>
 
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form class="modal-content" action="{{ route('store.student') }}" id="studentRegistrationForm"
                         method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <div class="modal-body">
-                            <h4 class="fw-bold text-primary">Student's Personal Information</h4>
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h4 class="fw-bold text-primary mb-0">Student's Personal Information</h4>
+                                </div>
+                            </div>
 
                             <div class="row">
-                                <!-- Profile Photo Upload with Preview and Default -->
-                                <div class="col mt-4 mb-3 d-flex align-items-start align-items-sm-center gap-4">
+                                <!-- Profile Photo and School Year Row -->
+                                <div class="col d-flex align-items-start align-items-sm-center gap-4 mt-4 mb-3">
+
+                                    <!-- Profile Photo -->
                                     <div class="mb-3">
                                         <img id="photo-preview"
                                             src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
@@ -272,11 +263,11 @@
                                             style="object-fit: cover; border-radius: 5%">
                                     </div>
 
+                                    <!-- Upload/Reset Buttons -->
                                     <div class="button-wrapper">
                                         <label for="upload" class="btn btn-warning me-2 mb-2" tabindex="0">
                                             <span class="d-none d-sm-block">Upload new photo</span>
                                             <i class="bx bx-upload d-block d-sm-none"></i>
-
                                             <input type="file" id="upload" name="student_profile_photo"
                                                 class="account-file-input" hidden accept="image/png, image/jpeg" />
                                         </label>
@@ -292,7 +283,8 @@
                                 </div>
                             </div>
 
-                            <div class="row mb-2 mt-2">
+
+                            <div class="row">
                                 <!-- LRN Field -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_lrn" class="form-label fw-bold">LRN (Learner's Reference
@@ -524,40 +516,40 @@
                                 </div>
                             </div>
 
-                            <!-- Guardian's Info -->
-                            <h5 class="fw-bold mb-3 mt-4 text-primary">Legal Guardian's Information</h5>
+                            <!-- Emergency Contact's Info -->
+                            <h5 class="fw-bold mb-3 mt-4 text-primary">Emergency Contact's Information</h5>
 
                             <div class="row">
-                                <!-- Guardian's Firt Name -->
+                                <!-- Emergency Contact's Firt Name -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_guardianFName" class="form-label fw-bold">First
+                                    <label for="student_emergContFName" class="form-label fw-bold">First
                                         Name</label>
-                                    <input type="text" name="student_guardianFName" id="student_guardianFName"
-                                        class="form-control" placeholder="Enter Guardian's First Name" />
+                                    <input type="text" name="student_emergContFName" id="student_emergContFName"
+                                        class="form-control" placeholder="Enter Emergency Contact's First Name" />
                                 </div>
 
-                                <!-- Guardian's Middle Name -->
+                                <!-- Emergency Contact's Middle Name -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_guardianMName" class="form-label fw-bold">Middle
+                                    <label for="student_emergContMName" class="form-label fw-bold">Middle
                                         Name</label>
-                                    <input type="text" name="student_guardianMName" id="student_guardianMName"
-                                        class="form-control" placeholder="Enter Guardian's Middle Name" />
+                                    <input type="text" name="student_emergContMName" id="student_emergContMName"
+                                        class="form-control" placeholder="Enter Emergency Contact's Middle Name" />
                                 </div>
                             </div>
 
                             <div class="row">
-                                <!-- Guardian's Last Name -->
+                                <!-- Emergency Contact's Last Name -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_guardianLName" class="form-label fw-bold">Last Name</label>
-                                    <input type="text" name="student_guardianLName" id="student_guardianLName"
-                                        class="form-control" placeholder="Enter Guardian's Last Name" />
+                                    <label for="student_emergContLName" class="form-label fw-bold">Last Name</label>
+                                    <input type="text" name="student_emergContLName" id="student_emergContLName"
+                                        class="form-control" placeholder="Enter Emergency Contact's Last Name" />
                                 </div>
 
-                                <!-- Guardian's Phone No. -->
+                                <!-- Emergency Contact's Phone No. -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_guardianPhone" class="form-label fw-bold">Phone No.</label>
-                                    <input type="phone" name="student_guardianPhone" id="student_guardianPhone"
-                                        class="form-control" placeholder="Enter Guardian's Phone Number" />
+                                    <label for="student_emergContPhone" class="form-label fw-bold">Phone No.</label>
+                                    <input type="phone" name="student_emergContPhone" id="student_emergContPhone"
+                                        class="form-control" placeholder="Enter Emergency Contact's Phone Number" />
                                 </div>
                             </div>
 

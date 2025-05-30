@@ -78,37 +78,12 @@
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                             <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
-                            <div class="text-light">Grade & Section</div>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="{{ route('all.grade.levels') }}" class="menu-link bg-dark text-light">
+                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Grade Levels</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Sections</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Reports sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="pages-misc-error.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="pages-misc-under-maintenance.html" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Reports</div>
                                 </a>
                             </li>
                         </ul>
@@ -116,7 +91,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="cards-basic.html" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -260,7 +235,7 @@
 
                         <div class="mt-3">
                             <!-- Button trigger modal -->
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#backDropModal"
                                 style="margin: auto; margin-bottom: 30px; margin-left: 10px">
                                 Register New Teacher
@@ -274,7 +249,7 @@
                                         enctype="multipart/form-data">
                                         @csrf
                                         <div class="modal-header">
-                                            <h4 class="modal-title fw-bold text-primary" id="backDropModalTitle">
+                                            <h4 class="modal-title fw-bold text-info" id="backDropModalTitle">
                                                 REGISTER NEW TEACHER
                                             </h4>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
@@ -530,7 +505,7 @@
                                                 data-bs-dismiss="modal">
                                                 Close
                                             </button>
-                                            <button type="submit" class="btn btn-danger"
+                                            <button type="submit" class="btn btn-primary"
                                                 id="registerTeacherBtn">Register</button>
                                         </div>
                                     </form>
@@ -572,7 +547,7 @@
                                         <th>Full Name</th>
                                         <th>Email</th>
                                         <th>Photo</th>
-                                        <th>Assigned Grade & Section</th>
+                                        <th>Assigned Classes</th>
                                         <th>Contact No.</th>
                                         <th>Actions</th>
                                     </tr>
@@ -709,7 +684,7 @@
                     text: "Are you sure all the details are correct?",
                     icon: "question",
                     showCancelButton: true,
-                    confirmButtonColor: "#dc3545",
+                    confirmButtonColor: "#06D001",
                     cancelButtonColor: "#6c757d",
                     confirmButtonText: "Yes, register",
                     cancelButtonText: "Cancel",
