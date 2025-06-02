@@ -229,16 +229,16 @@
 
                             <!-- Student Card -->
                             <div class="col-6 col-md-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
+                                <div class="card h-100 card-hover">
+                                    <a href="{{ route('show.students') }}" class="card-body">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
-                                                <a href="{{ route('show.students') }}">
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                </a>
+
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
+                                                    alt="Students" class="rounded" />
+
                                             </div>
-                                            <div class="dropdown">
+                                            {{-- <div class="dropdown">
                                                 <button class="btn p-0" type="button" data-bs-toggle="dropdown">
                                                     <i class="bx bx-dots-vertical-rounded"></i>
                                                 </button>
@@ -246,91 +246,62 @@
                                                     <a class="dropdown-item" href="{{ route('show.students') }}">View
                                                         More</a>
                                                 </div>
-                                            </div>
+                                            </div> --}}
                                         </div>
-                                        <span class="fw-semibold d-block mb-1">Students</span>
+                                        <span class="fw-semibold d-block mb-1 text-primary">Students</span>
                                         <h3 class="card-title mb-2">{{ $totalStudents }}</h3>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
 
                             <!-- Teachers Card -->
                             <div class="col-6 col-md-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
+                                <div class="card h-100 card-hover">
+                                    <a href="{{ route('show.teachers') }}" class="card-body">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
-                                                <a href="{{ route('show.teachers') }}">
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
-                                                        alt="Teachers" class="rounded" />
-                                                </a>
-                                            </div>
-                                            <div class="dropdown">
-                                                <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <div class="dropdown-menu dropdown-menu-end">
-                                                    <a class="dropdown-item" href="{{ route('show.teachers') }}">View
-                                                        More</a>
-                                                </div>
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                                    alt="Teachers" class="rounded" />
+
                                             </div>
                                         </div>
-                                        <span class="fw-semibold d-block mb-1">Teachers</span>
+                                        <span class="fw-semibold d-block mb-1 text-primary">Teachers</span>
                                         <h3 class="card-title mb-2">{{ $totalTeachers }}</h3>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
 
                             <!-- Classes Card -->
                             <div class="col-6 col-md-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
+                                <div class="card h-100 card-hover">
+                                    <a href="{{ route('all.classes') }}" class="card-body">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
-                                                <a href="{{ route('all.classes') }}">
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
-                                                        alt="Classes" class="rounded" />
-                                                </a>
-                                            </div>
-                                            <div class="dropdown">
-                                                <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <div class="dropdown-menu">
-                                                    <a class="dropdown-item" href="{{ route('all.classes') }}">View
-                                                        More</a>
-                                                </div>
+
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
+                                                    alt="Classes" class="rounded" />
+
                                             </div>
                                         </div>
-                                        <span class="d-block mb-1">Classes</span>
+                                        <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
                                         <h3 class="card-title text-nowrap mb-2">{{ $totalClasses }}</h3>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
 
                             <!-- Newly Enrolled Card -->
                             <div class="col-6 col-md-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
+                                <div class="card h-100 card-hover">
+                                    <a href="{{ route('show.students') }}" class="card-body">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
-                                                <a href="{{ route('show.students') }}">
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                </a>
-                                            </div>
-                                            <div class="dropdown">
-                                                <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <div class="dropdown-menu dropdown-menu-end">
-                                                    <a class="dropdown-item" href="javascript:void(0);">View More</a>
-                                                </div>
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
+                                                    alt="Newly Enrolled" class="rounded" />
                                             </div>
                                         </div>
-                                        <span class="fw-semibold d-block mb-1">Newly Enrolled</span>
+                                        <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
                                         <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
 
@@ -340,7 +311,7 @@
                         <div class="row">
                             <!-- Total Enrollees Chart -->
                             <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100">
+                                <div class="card h-100 card-hover">
                                     <div class="card-body p-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <h6 class="card-title m-0">Total enrollees as of 2025</h6>
@@ -363,7 +334,7 @@
 
                             <!-- Gender Distribution Card -->
                             <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100">
+                                <div class="card h-100 card-hover">
                                     <div class="card-header d-flex align-items-center justify-content-between pb-0">
                                         <div class="card-title mb-0">
                                             <h5 class="m-0 me-2">Student Gender Ratio</h5>
@@ -579,4 +550,18 @@
             });
         }
     </script>
+@endpush
+
+@push('styles')
+    <style>
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+    </style>
 @endpush

@@ -60,6 +60,9 @@ Route::get('/classes', [ClassController::class, 'allClasses'])->name('all.classe
 
 Route::get('/classes/{grade_level}/{section}', [ClassController::class, 'showClass'])->name('classes.showClass');
 
+Route::get('/classes/{grade_level}/{section}/masterList', [ClassController::class, 'masterList'])->name('classes.masterList');
+
+
 
 
 //List of Teacher's Students (on teacher Dashboard)

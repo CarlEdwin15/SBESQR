@@ -47,4 +47,18 @@ class ClassController extends Controller
 
         return view('admin.classes.showClass', compact('class', 'studentCount'));
     }
+
+    public function masterList($grade_level, $section)
+    {
+        $class = Classes::where('grade_level', $grade_level)
+            ->where('section', $section)
+            ->firstOrFail();
+
+        // Fetch students in the class
+        $students = Student::where('class_id', $class->id)->get();
+        // Fetch teachers in the class
+        $teachers = User::where('class_id', $class->id)->get();
+
+        return view('admin.classes.masterList', compact('class', 'students', 'teachers'));
+    }
 }

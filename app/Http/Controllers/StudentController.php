@@ -272,15 +272,15 @@ class StudentController extends Controller
             'emergCont_phone' => $request->student_emergContPhone,
         ]);
 
-        $today = now();
-        $schoolYear = $today->month >= 6
-            ? $today->year . '-' . ($today->year + 1)
-            : ($today->year - 1) . '-' . $today->year;
+        // $today = now();
+        // $schoolYear = $today->month >= 6
+        //     ? $today->year . '-' . ($today->year + 1)
+        //     : ($today->year - 1) . '-' . $today->year;
 
         $class = Classes::firstOrCreate([
             'grade_level' => $validatedData['student_grade_level'],
             'section' => $validatedData['student_section'],
-            'school_year' => $schoolYear,
+            // 'school_year' => $schoolYear,
         ]);
 
 

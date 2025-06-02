@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | ' . ucfirst(str_replace('_', ' ', $class->grade_level)) . ' - ' . $class->section)
+@section('title', 'Admin | Masters List')
 
 
 
@@ -231,95 +231,108 @@
                                 <span class="text-muted fw-light">
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
                                 </span>
-                                {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
+                                Master’s List
                             </h4>
-                            <small class="text-muted">Class Details &amp; Management</small>
-                        </div>
-                        <a href="{{ route('all.classes', ['section' => $class->section]) }}"
-                            class="btn btn-outline-danger rounded-pill">
-                            <i class="bi bi-arrow-left"></i> Back
-                        </a>
-                    </div>
-
-                    <div class="row g-4 mb-4">
-                        <!-- Students -->
-                        <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-gradient-primary text-white">
-                                <div class="card-body text-center">
-                                    <div class="mb-2">
-                                        <i class="bi bi-people-fill fs-1"></i>
-                                    </div>
-                                    <h6 class="fw-semibold mb-1">Students</h6>
-                                    <div class="display-6 fw-bold">{{ $studentCount }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Attendance Today -->
-                        <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-gradient-danger text-white">
-                                <div class="card-body text-center">
-                                    <div class="mb-2">
-                                        <i class="bi bi-calendar3 fs-1"></i>
-                                    </div>
-                                    <h6 class="fw-semibold mb-1">Attendance Today</h6>
-                                    <div class="display-6 fw-bold">
-                                        {{ $attendanceToday ?? '0' }}%
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Teacher -->
-                        <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-gradient-secondary text-white">
-                                <div class="card-body text-center">
-                                    <div class="mb-2">
-                                        <i class="bi bi-person-badge fs-1"></i>
-                                    </div>
-                                    <h6 class="fw-semibold mb-1">Adviser</h6>
-                                    <div class="fw-bold">
-                                        {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Navigation Links -->
-                    <div class="row g-3 mb-5">
-                        <div class="col-md-3">
-                            <a href="#"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
-                                <i class="bi bi-clock-history fs-2 mb-2"></i>
-                                <div class="fw-semibold">Schedules</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="#"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
-                                <i class="bi bi-clipboard-check fs-2 mb-2"></i>
-                                <div class="fw-semibold">Attendances</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('classes.masterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
-                                <i class="bi bi-list-ul fs-2 mb-2"></i>
-                                <div class="fw-semibold">Master's List</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="#"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-danger text-white h-100">
-                                <i class="bi bi-trash fs-2 mb-2"></i>
-                                <div class="fw-semibold">Delete Class</div>
-                            </a>
+                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+                    <div class="card p-4 shadow-sm">
+                        <h5 class="fw-bold mb-2">{{ $class->formatted_grade_level }} - {{ $class->section }}</h5>
+
+                        <!-- Export List Form -->
+                        <form action="" method="GET">
+                            @csrf
+                            <button type="submit" class="btn btn-success ms-md-auto">Export List</button>
+                        </form>
+
+                        <h4 class="mb-4 text-center fw-bold">List of Students</h4><br>
+                        <h5 class="text-center">Teacher{{ $teachers->count() > 1 ? 's' : '' }}:</h5>
+
+                        @forelse($teachers as $teacher)
+                            <h5 class="text-warning text-center mb-4">{{ $teacher->firstName }} {{ $teacher->lastName }}
+                            </h5>
+                        @empty
+                            <h6 class="text-danger text-center mb-4">No teacher assigned</h6>
+                        @endforelse
+
+                        <div class="row">
+                            <!-- Male Table -->
+                            <div class="col-md-6">
+                                <table class="table table-bordered text-center" id="studentTable">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>NO.</th>
+                                            <th>MALE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $maleCount = 1; @endphp
+                                        @foreach ($students->where('student_sex', 'male')->sortBy(function ($student) {
+            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
+        }) as $student)
+                                            <tr class="student-row">
+                                                <td>{{ $maleCount++ }}</td>
+                                                <td>
+                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_extName }}
+                                                    @if (!empty($student->student_mName))
+                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        @if ($maleCount === 1)
+                                            <tr>
+                                                <td colspan="2">No male students enrolled.</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Female Table -->
+                            <div class="col-md-6">
+                                <table class="table table-bordered text-center" id="studentTable">
+                                    <thead class="table-danger">
+                                        <tr>
+                                            <th>NO.</th>
+                                            <th>FEMALE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $femaleCount = 1; @endphp
+                                        @foreach ($students->where('student_sex', 'female')->sortBy(function ($student) {
+            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
+        }) as $student)
+                                            <tr class="student-row">
+                                                <td>{{ $femaleCount++ }}</td>
+                                                <td>
+                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_extName }}
+                                                    @if (!empty($student->student_mName))
+                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        @if ($femaleCount === 1)
+                                            <tr>
+                                                <td colspan="2">No female students enrolled.</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-
-                    <hr class="my-5" />
                 </div>
-                <!-- Content wrapper -->
+                <!-- End Content wrapper -->
+
 
 
             </div>
