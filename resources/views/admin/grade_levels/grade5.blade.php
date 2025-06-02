@@ -83,7 +83,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">Grade Levels</div>
+                                    <div class="text-danger">Classes</div>
                                 </a>
                             </li>
                         </ul>

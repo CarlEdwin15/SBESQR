@@ -14,16 +14,23 @@ class ClassController extends Controller
         $section = $request->input('section');
 
         if (empty($section)) {
-            $section = 'A'; // only the letter
+            $section = 'A'; // default
             return redirect()->route('all.classes', ['section' => $section]);
         }
 
         $sections = Classes::distinct()->pluck('section');
         $gradeLevels = Classes::where('section', $section)->distinct()->pluck('grade_level');
 
-        return view('admin.classes.allClasses', compact('sections', 'gradeLevels', 'section'));
-    }
+        // Get all classes for the section
+        $classes = Classes::where('section', $section)->get();
 
+        // For each class, fetch teachers using class_id
+        foreach ($classes as $class) {
+            $class->teachers = User::where('class_id', $class->id)->get();
+        }
+
+        return view('admin.classes.allClasses', compact('sections', 'gradeLevels', 'section', 'classes'));
+    }
 
 
     public function showClass($grade_level, $section)

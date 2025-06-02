@@ -369,17 +369,6 @@
                                             <h5 class="m-0 me-2">Student Gender Ratio</h5>
                                             <small class="text-muted">Total: 2,000 Students</small>
                                         </div>
-                                        <div class="dropdown">
-                                            <button class="btn p-0" type="button" id="genderChartDropdown"
-                                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-end"
-                                                aria-labelledby="genderChartDropdown">
-                                                <a class="dropdown-item" href="javascript:void(0);">Download</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-center mb-3">

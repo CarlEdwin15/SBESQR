@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | All Grade Levels')
+@section('title', 'Admin | All Classes')
 
 
 @section('content')
@@ -254,12 +254,11 @@
 
                     <!-- Card for All Grade Levels by Section -->
                     <section id="services" class="services section">
-
                         <div class="container" data-aos="fade-up" data-aos-delay="100">
                             <div class="row gy-5">
                                 @php $iconIndex = 1; @endphp
 
-                                @foreach ($gradeLevels as $level)
+                                @foreach ($classes as $class)
                                     <div class="col-xl-4 col-md-6" data-aos="zoom-in">
                                         <div class="service-item">
                                             <div class="img">
@@ -268,16 +267,24 @@
                                             </div>
                                             <div class="details position-relative">
                                                 <div class="icon">
-                                                    @if ($level === 'kindergarten')
+                                                    @if ($class->grade_level === 'kindergarten')
                                                         <i class="fa-solid fa-child"></i>
                                                     @else
                                                         <i class="fa-solid fa-{{ $iconIndex }}"></i>
                                                         @php $iconIndex++; @endphp
                                                     @endif
                                                 </div>
-                                                <a href="{{ route('classes.showClass', ['grade_level' => $level, 'section' => $section]) }}" class="stretched-link">
-                                                    <h3>{{ ucfirst(str_replace('_', ' ', $level)) }} - {{ $section }}
-                                                    </h3>
+                                                <a href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                                    class="stretched-link">
+                                                    <h3>{{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} -
+                                                        {{ $class->section }}</h3>
+                                                    <h5>Teacher{{ $class->teachers->count() > 1 ? 's' : '' }}:</h5>
+
+                                                    @forelse($class->teachers as $teacher)
+                                                        <h5 class="text-info">{{ $teacher->firstName }} {{ $teacher->lastName }}</h5>
+                                                    @empty
+                                                        <h6 class="text-warning">No teacher assigned</h6>
+                                                    @endforelse
                                                 </a>
                                             </div>
                                         </div>
@@ -286,8 +293,8 @@
 
                             </div>
                         </div>
-
                     </section>
+
                     <!-- /Card for All Grade Levels by Section -->
 
                     <hr class="my-5" />

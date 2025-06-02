@@ -1,6 +1,7 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | All Grade Levels')
+@section('title', 'Admin | ' . ucfirst(str_replace('_', ' ', $class->grade_level)) . ' - ' . $class->section)
+
 
 
 @section('content')
@@ -224,45 +225,95 @@
 
                 <!-- Content wrapper -->
                 <div class="container-xxl flex-grow-1 container-p-y">
-                    <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
-                            <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('all.classes') }}"> Classes / </a>
-                        </span>{{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
-                    </h4>
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h4 class="fw-bold text-warning mb-0">
+                                <span class="text-muted fw-light">
+                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                                    <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
+                                </span>
+                                {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
+                            </h4>
+                            <small class="text-muted">Class Details &amp; Management</small>
+                        </div>
+                        <a href="{{ route('all.classes', ['section' => $class->section]) }}" class="btn btn-outline-danger rounded-pill">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                    </div>
 
-                    <div class="container">
-                        <a href="{{ route('all.classes', ['section' => $class->section]) }}"
-                            class="btn btn-danger mb-3">Back</a>
-
-                        <div class="card p-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <div class="bg-primary text-white p-3 rounded text-center">
-                                    <div>Students</div>
-                                    <div class="h4">{{ $studentCount }}</div>
-                                </div>
-                                <div class="bg-info text-white p-3 rounded text-center">
-                                    <div>Attendance Today</div>
-                                    {{-- <div class="h4 text-warning">{{ $presentToday }}/{{ $studentCount }}</div> --}}
+                    <div class="row g-4 mb-4">
+                        <!-- Students -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 bg-gradient-primary text-white">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-people-fill fs-1"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-1">Students</h6>
+                                    <div class="display-6 fw-bold">{{ $studentCount }}</div>
                                 </div>
                             </div>
-
-                            <div class="list-group">
-                                <a href="#"
-                                    class="list-group-item list-group-item-action bg-primary text-white">Schedules</a>
-                                <a href="#"
-                                    class="list-group-item list-group-item-action bg-primary text-white">Attendances</a>
-                                <a href="#"
-                                    class="list-group-item list-group-item-action bg-primary text-white">Student's List</a>
-                                <a href="#"
-                                    class="list-group-item list-group-item-action bg-danger text-white">Delete</a>
+                        </div>
+                        <!-- Attendance Today -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 bg-gradient-danger text-white">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-calendar3 fs-1"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-1">Attendance Today</h6>
+                                    <div class="display-6 fw-bold">
+                                        {{-- Replace 0 with dynamic attendance percentage if available --}}
+                                        {{ $attendanceToday ?? '0' }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Teacher (if available) -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 bg-gradient-secondary text-white">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-person-badge fs-1"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-1">Adviser</h6>
+                                    <div class="fw-bold">
+                                        {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-
+                    <!-- Navigation Links -->
+                    <div class="row g-3 mb-5">
+                        <div class="col-md-3">
+                            <a href="#" class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
+                                <i class="bi bi-clock-history fs-2 mb-2"></i>
+                                <div class="fw-semibold">Schedules</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
+                                <i class="bi bi-clipboard-check fs-2 mb-2"></i>
+                                <div class="fw-semibold">Attendances</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
+                                <i class="bi bi-list-ul fs-2 mb-2"></i>
+                                <div class="fw-semibold">Student's List</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="card card-hover border-0 shadow-sm text-center py-4 bg-danger text-white h-100">
+                                <i class="bi bi-trash fs-2 mb-2"></i>
+                                <div class="fw-semibold">Delete Class</div>
+                            </a>
+                        </div>
+                    </div>
 
                     <hr class="my-5" />
-
                 </div>
                 <!-- Content wrapper -->
 
@@ -331,10 +382,6 @@
             });
         }
     </script>
-
-
-
-
 
     <script>
         // alert after a success edit or delete of teacher's info
@@ -405,9 +452,6 @@
             previewImg.src = defaultImage;
         });
     </script>
-
-    <!-- Font Awesome -->
-    <script src="https://kit.fontawesome.com/ab677fe211.js" crossorigin="anonymous"></script>
 @endpush
 
 @push('styles')

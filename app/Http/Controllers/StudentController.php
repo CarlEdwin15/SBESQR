@@ -143,17 +143,10 @@ class StudentController extends Controller
             'emergCont_phone' => $request->student_emergContPhone,
         ]);
 
-        // Auto-generate school year based on current date
-        $today = now(); // Carbon not needed, already available via Laravel helper
-        $schoolYear = $today->month >= 6
-            ? $today->year . '-' . ($today->year + 1)
-            : ($today->year - 1) . '-' . $today->year;
-
         // Retrieve or create the class for the given year
         $class = Classes::firstOrCreate([
             'grade_level' => $validatedData['student_grade_level'],
             'section' => $validatedData['student_section'],
-            'school_year' => $schoolYear,
         ]);
 
         // Save student information, associating with class, address, and parent info
