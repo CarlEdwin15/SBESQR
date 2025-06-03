@@ -311,7 +311,7 @@
                         <div class="row">
                             <!-- Total Enrollees Chart -->
                             <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100 card-hover">
+                                <div class="card h-100">
                                     <div class="card-body p-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <h6 class="card-title m-0">Total enrollees as of 2025</h6>
@@ -334,7 +334,7 @@
 
                             <!-- Gender Distribution Card -->
                             <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100 card-hover">
+                                <div class="card h-100">
                                     <div class="card-header d-flex align-items-center justify-content-between pb-0">
                                         <div class="card-title mb-0">
                                             <h5 class="m-0 me-2">Student Gender Ratio</h5>

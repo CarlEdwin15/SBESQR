@@ -312,7 +312,7 @@ button.list-group-item-primary.active {
 
 .input-group:focus-within .form-control,
 .input-group:focus-within .input-group-text {
-  border-color: #ff4a17;
+  border-color: #1778ff;
 }
 
 .form-check-input:focus {

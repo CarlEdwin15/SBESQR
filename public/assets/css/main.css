@@ -272,7 +272,7 @@ h6 {
 .header .cta-btn-login,
 .header .cta-btnlogin:focus {
   color: white;
-  background: var(--accent-color);
+  background: #1778ff;
   font-size: 13px;
   font-weight: bold;
   font-family: var(--nav-font);
@@ -281,14 +281,14 @@ h6 {
   border-radius: 4px;
   transition: 0.3s;
   text-transform: uppercase;
-  border: 2px solid var(--accent-color);
+  border: 2px solid #1275ff;
 }
 
 .header .cta-btn-login:hover,
 .header .cta-btn-login:focus:hover {
-  color: var(--accent-color);
+  color: #1778ff;
   background: white;
-  border-color: var(--accent-color);
+  border-color: #1778ff;
 }
 
 
@@ -385,7 +385,7 @@ h6 {
     height: 2px;
     bottom: -6px;
     left: 0;
-    background-color: var(--nav-hover-color);
+    background-color: #006aff;
     visibility: hidden;
     width: 0px;
     transition: all 0.3s ease-in-out 0s;
@@ -794,7 +794,7 @@ h6 {
   right: 15px;
   bottom: 15px;
   z-index: 99999;
-  background-color: var(--accent-color);
+  background-color: #1778ff;
   width: 40px;
   height: 40px;
   border-radius: 4px;
@@ -808,7 +808,7 @@ h6 {
 }
 
 .scroll-top:hover {
-  background-color: color-mix(in srgb, var(--accent-color), transparent 20%);
+  background-color: color-mix(in srgb, #0043a1, transparent 20%);
   color: var(--contrast-color);
 }
 
@@ -994,7 +994,7 @@ section,
 }
 
 .hero .btn-get-started {
-  background: var(--accent-color);
+  background: #1778ff;
   color: var(--contrast-color);
   font-weight: 800;
   font-size: 18px; /* Increased from 14px */
@@ -1007,7 +1007,7 @@ section,
 }
 
 .hero .btn-get-started:hover {
-  background: color-mix(in srgb, var(--accent-color), transparent 20%);
+  background: color-mix(in srgb, rgb(0, 65, 156), transparent 20%);
 }
 
 
@@ -1073,7 +1073,7 @@ section,
   font-size: 20px;
   left: 0;
   top: -3px;
-  color: var(--accent-color);
+  color: #00d5ff;
 }
 
 .about .content p:last-child {

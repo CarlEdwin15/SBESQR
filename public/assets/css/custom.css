@@ -1,4 +1,3 @@
-/* Floating animation for logo in welcome blade*/
 @keyframes floatAnimation {
     0% {
         transform: translateY(0px);
@@ -20,20 +19,15 @@ h3 {
     padding: 20px;
 }
 
+.schoolname {
+    color: rgb(0, 115, 255);
+}
+
 /* Hero section highlight color */
-.hero span.orange {
-    color: #ff4a17;
+.hero span.highlight {
+    color: rgb(0, 162, 255);
 }
 
-.tagline {
-    text-align: center;
-}
-
-
-/* Sitename color */
-.sitename {
-    color: #ff4a17;
-}
 
 /* Key Features font size */
 .key-features {

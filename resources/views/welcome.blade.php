@@ -39,16 +39,16 @@
     <header id="header" class="header d-flex align-items-center fixed-top">
         <div class="container-fluid container-xl position-relative d-flex align-items-center">
 
-            <a href="#" class="logo d-flex align-items-center me-auto">
+            <a href="#" class="logo d-flex align-items-center me-auto" data-aos="fade-up" data-aos-delay="200">
                 <!-- Uncomment the line below if you also wish to use an image logo -->
-                <img src="{{ asset('assets/img/logo.png') }}" style="">
-                <h1 class="sitename">SBESqr</h1>
+                <img src="{{ asset('assets/img/logo.png') }}" style="height: 60px; width: 45px" alt="">
+                <h1 style="color:#0088ff">SBESqr</h1>
             </a>
 
             <nav id="navmenu" class="navmenu">
                 <ul>
-                    <li><a href="#hero" class="active">Home</a></li>
-                    <li><a href="#about">About</a></li>
+                    <li><a href="#hero" data-aos="fade-up" data-aos-delay="100" class="active">Home</a></li>
+                    <li><a href="#about" data-aos="fade-up" data-aos-delay="100">About</a></li>
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
@@ -59,7 +59,7 @@
                         Dashboard
                     </a>
                 @else
-                    <a class="cta-btn-login" href="{{ route('login') }}">Login</a>
+                    <a class="cta-btn-login" data-aos="fade-up" data-aos-delay="100" href="{{ route('login') }}">Login</a>
 
                     {{-- @if (Route::has('register'))
                         <a class="cta-btn" href="{{ route('register') }}">Register</a>
@@ -79,8 +79,8 @@
 
             <div class="container d-flex flex-column align-items-center">
                 <h2 style="text-align: center" data-aos="fade-up" data-aos-delay="100">WELCOME TO <span
-                        class="orange">SBESqr</span></h2>
-                <p class="tagline" data-aos="fade-up" data-aos-delay="200">Bringing Efficiency with QR Technology to
+                        class="highlight">SBESqr</span></h2>
+                <p class="tagline" style="color: rgb(255, 200, 0)" data-aos="fade-up" data-aos-delay="200">Bringing Efficiency with QR Technology to
                     Sta. Barbara
                     Elementary School</p>
                 <div class="d-flex mt-4" data-aos="fade-up" data-aos-delay="300">
