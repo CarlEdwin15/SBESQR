@@ -53,12 +53,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Morning Session</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Afternoon Session</div>
+                                    <div class="text-light">My Class</div>
                                 </a>
                             </li>
                         </ul>
@@ -230,7 +225,9 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('teacher.my.students') }}">Students / </a>
+                            <a class="text-muted fw-light" href="{{ route('teacher.my.students') }}">
+                                Students /
+                            </a>
                         </span> My Students
                     </h4>
 
@@ -241,8 +238,8 @@
                         <div class="card-header">
 
                             <h5 class="fw-bold mb-4 text-primary">
-                                My Students - {{ $teacher->formatted_grade_level }}
-                                ({{ $teacher->section_assigned }})
+                                My Students - {{ $teacher->class->formatted_grade_level }} -
+                                {{ $teacher->class->section }}
                             </h5>
 
                             <div class="table-responsive text-nowrap">
@@ -254,8 +251,7 @@
                                             <th>First Name</th>
                                             <th>Middle Name</th>
                                             <th>Photo</th>
-                                            <th>Grade Level</th>
-                                            <th>Section</th>
+                                            <th>Grade Level & Section</th>
                                             <th>Parent's Contact No.</th>
                                             <th>Actions</th>
                                         </tr>
@@ -263,10 +259,10 @@
                                     <tbody class="table-border-bottom-0">
                                         @foreach ($students as $student)
                                             <tr>
-                                                <td> {{ $student->student_lrn }} </td>
-                                                <td> {{ $student->student_lName }} </td>
-                                                <td> {{ $student->student_fName }} </td>
-                                                <td> {{ $student->student_mName }} </td>
+                                                <td>{{ $student->student_lrn }}</td>
+                                                <td>{{ $student->student_lName }}</td>
+                                                <td>{{ $student->student_fName }}</td>
+                                                <td>{{ $student->student_mName }}</td>
                                                 <td>
                                                     @if ($student->student_photo)
                                                         <img src="{{ asset('storage/' . $student->student_photo) }}"
@@ -278,9 +274,9 @@
                                                             style="object-fit: cover; border-radius: 50%;">
                                                     @endif
                                                 </td>
-                                                <td> {{ $student->student_formatted_grade_level }} </td>
-                                                <td> {{ $student->student_section }} </td>
-                                                <td> {{ $student->student_parentPhone }} </td>
+                                                <td>{{ ucfirst($student->class->grade_level) }} -
+                                                    {{ strtoupper($student->class->section) }}</td>
+                                                <td>{{ $student->parentInfo->emergCont_phone }}</td>
                                                 <td>
                                                     <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
                                                         data-bs-toggle="dropdown">
@@ -296,17 +292,17 @@
                                             </tr>
                                         @endforeach
                                     </tbody>
-
                                 </table>
                             </div>
 
                         </div>
                     </div>
 
+
                     <hr class="my-5" />
 
                     {{-- Card for Newly Enrolled Students (This Week) --}}
-                    <div class="card mt-4">
+                    {{-- <div class="card mt-4">
                         <div class="card-header">
 
                             <h5 class="fw-bold mb-4 text-success">
@@ -383,7 +379,7 @@
                             </div>
 
                         </div>
-                    </div>
+                    </div> --}}
 
 
                 </div>

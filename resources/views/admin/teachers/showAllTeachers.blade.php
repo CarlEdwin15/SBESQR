@@ -555,7 +555,8 @@
                                 <tbody class="table-border-bottom-0">
                                     @foreach ($teachers as $teacher)
                                         <tr class="teacher-row">
-                                            <td>{{ $teacher->lastName }}, {{ $teacher->firstName }}, {{ $teacher->extName }} {{ $teacher->middleName }}</td>
+                                            <td>{{ $teacher->lastName }}, {{ $teacher->firstName }},
+                                                {{ $teacher->extName }} {{ $teacher->middleName }}</td>
                                             <td>{{ $teacher->email }}</td>
                                             <td>
                                                 @if ($teacher->profile_photo)

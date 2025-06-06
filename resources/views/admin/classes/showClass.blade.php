@@ -245,7 +245,7 @@
                     <div class="row g-4 mb-4">
                         <!-- Students -->
                         <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-gradient-primary text-white">
+                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
                                 <div class="card-body text-center">
                                     <div class="mb-2">
                                         <i class="bi bi-people-fill fs-1"></i>
@@ -257,7 +257,7 @@
                         </div>
                         <!-- Attendance Today -->
                         <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-gradient-danger text-white">
+                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
                                 <div class="card-body text-center">
                                     <div class="mb-2">
                                         <i class="bi bi-calendar3 fs-1"></i>
@@ -271,7 +271,7 @@
                         </div>
                         <!-- Teacher -->
                         <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-gradient-secondary text-white">
+                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
                                 <div class="card-body text-center">
                                     <div class="mb-2">
                                         <i class="bi bi-person-badge fs-1"></i>
@@ -288,7 +288,7 @@
                     <!-- Navigation Links -->
                     <div class="row g-3 mb-5">
                         <div class="col-md-3">
-                            <a href="#"
+                            <a href="{{ route('classes.schedule.index', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
                                 class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
                                 <i class="bi bi-clock-history fs-2 mb-2"></i>
                                 <div class="fw-semibold">Schedules</div>

@@ -51,12 +51,6 @@ class AdminController extends Controller
             ->where('section', $request->section_assigned)
             ->firstOrFail();
 
-        // // Find or create class based on grade and section
-        // $class = \App\Models\Classes::firstOrCreate([
-        //     'grade_level' => $request->grade_level_assigned,
-        //     'section' => $request->section_assigned,
-        // ]);
-
         User::create([
             'firstName' => $request->firstName,
             'lastName' => $request->lastName,

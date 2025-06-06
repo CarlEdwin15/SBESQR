@@ -26,7 +26,7 @@
     --bs-light: #fcfdfd;
     --bs-dark: #233446;
     --bs-gray: rgba(67, 89, 113, 0.1);
-    /* --bs-primary-rgb: 105, 108, 255; */
+    --bs-primary-rgb: 105, 108, 255;
     --bs-primary-rgb: #1778ff;
     --bs-secondary-rgb: 133, 146, 163;
     --bs-success-rgb: 113, 221, 55;
@@ -11241,10 +11241,10 @@ button.list-group-item-gray.active {
     color: inherit !important;
 }
 
-.bg-primary {
+/* .bg-primary {
     --bs-bg-opacity: 1;
     background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
-}
+} */
 
 .bg-secondary {
     --bs-bg-opacity: 1;

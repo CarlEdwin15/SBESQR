@@ -55,7 +55,7 @@
 
             @if (Route::has('login'))
                 @auth
-                    <a href="{{ url('/home') }}" class="cta-btn-login">
+                    <a href="{{ url('/home') }}" class="cta-btn-login" data-aos="fade-up" data-aos-delay="100">
                         Dashboard
                     </a>
                 @else

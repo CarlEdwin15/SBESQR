@@ -59,6 +59,19 @@ class ClassController extends Controller
         // Fetch teachers in the class
         $teachers = User::where('class_id', $class->id)->get();
 
-        return view('admin.classes.masterList', compact('class', 'students', 'teachers'));
+        return view('admin.classes.master_list.masterList', compact('class', 'students', 'teachers'));
+    }
+
+    public function schedule(Request $request, $grade_level, $section)
+    {
+        $class = Classes::where('grade_level', $grade_level)
+            ->where('section', $section)
+            ->firstOrFail();
+
+        // Fetch the schedule for the class
+        // Assuming you have a Schedule model and a relationship set up
+        $schedule = $class->schedule; // Adjust according to your model structure
+
+        return view('admin.classes.schedules.show_schedule', compact('class', 'schedule'));
     }
 }

@@ -230,7 +230,7 @@
                         </span> All Students
                     </h4>
 
-                    {{-- Card for Kindergarten --}}
+                    {{-- Card --}}
                     <div class="card d-flex flex-column" style="min-height: 485px;">
                         <div class="card-header">
                             <h5 class="fw-bold mb-4 text-primary">All Students</h5>
@@ -261,7 +261,7 @@
                                         <th>Full Name</th>
                                         <th>Photo</th>
                                         <th>LRN</th>
-                                        <th>Classes</th>
+                                        <th>Grade & Section</th>
                                         <th>Emergency Contact No.</th>
                                         <th>Actions</th>
                                     </tr>

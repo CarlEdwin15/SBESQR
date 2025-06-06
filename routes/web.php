@@ -2,18 +2,21 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\IdController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 use App\Exports\TeachersExport;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\AttendanceController;
 use Maatwebsite\Excel\Facades\Excel;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Teachers management (on admin dashboard)
+// Teachers management (on ADMIN dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 Route::get('/showAllTeachers', [AdminController::class, 'showAllTeachers'])->name('show.teachers');
@@ -33,7 +36,7 @@ Route::get('/export-teachers', function () {
 })->name('export.teachers');
 
 
-//Students Management (on admin dashboard)
+//Students Management (on ADMIN dashboard)
 Route::get('/addStudent', [StudentController::class, 'create'])->name('add.student');
 
 Route::post('/addStudent', [StudentController::class, 'store'])->name('store.student');
@@ -48,25 +51,43 @@ Route::delete('/deleteStudent/{id}', [StudentController::class, 'destroy'])->nam
 
 Route::get('/students/{id}', [StudentController::class, 'showStudentInfo'])->name('student.info');
 
-Route::get('/students/{id}/generate-id', [StudentController::class, 'generateID'])->name('students.generateID');
 
-Route::get('/students/{id}/download-id', [StudentController::class, 'downloadID'])->name('students.downloadID');
+// ID Management (on ADMIN dashboard)
+Route::get('/students/{id}/generate-id', [IdController::class, 'generateID'])->name('students.generateID');
+
+Route::get('/students/{id}/download-id', [IdController::class, 'downloadID'])->name('students.downloadID');
 
 
-
-
-//Class Management (on admin dashboard)
+//Class Management (on ADMIN dashboard)
 Route::get('/classes', [ClassController::class, 'allClasses'])->name('all.classes');
 
 Route::get('/classes/{grade_level}/{section}', [ClassController::class, 'showClass'])->name('classes.showClass');
 
 Route::get('/classes/{grade_level}/{section}/masterList', [ClassController::class, 'masterList'])->name('classes.masterList');
 
+Route::get('/classes/{grade_level}/{section}/export-master-list', [ClassController::class, 'exportMasterList'])->name('classes.exportMasterList');
+
+
+//Schedule Management (on ADMIN dashboard)
+Route::get('/classes/{grade_level}/{section}/schedule', [ScheduleController::class, 'displaySchedule'])->name('classes.schedule.index');
+
+Route::post('/classes/{grade_level}/{section}/addSchedule', [ScheduleController::class, 'addSchedule'])->name('classes.addSchedule');
+
+
+//Attendance Management (on ADMIN dashboard)
+Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController::class, 'attendance'])->name('classes.attendance');
+
+
+
+
+
+
+
 
 
 
 //List of Teacher's Students (on teacher Dashboard)
-Route::get('/myStudents', [TeacherController::class, 'myStudents'])->name('teacher.my.students');
+Route::get('/myStudents/{grade_level}/{section}', [TeacherController::class, 'myStudents'])->name('teacher.my.students');
 
 //List of Student's Info (on teacher Dashboard)
 Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');

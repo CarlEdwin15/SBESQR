@@ -2,22 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classes;
+use App\Models\User;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class TeacherController extends Controller
 {
-    public function myStudents()
+    public function myStudents($grade_level, $section)
     {
-        $teacher = Auth::user(); // Assuming the teacher is the currently logged-in user
+        $teacher = Auth::user();
 
-        $students = Student::where('student_grade_level', $teacher->grade_level_assigned)
-            ->where('student_section', $teacher->section_assigned)
-            ->get();
+        $class = Classes::where('grade_level', $grade_level)
+            ->where('section', $section)
+            ->firstOrFail();
 
-        return view('teacher.students.myStudents', compact('students', 'teacher'));
+        // Fetch students in the class
+        $students = Student::where('class_id', $class->id)->get();
+        // Fetch teachers in the class
+        $teachers = User::where('class_id', $class->id)->get();
+
+        return view('teacher.students.myStudents', compact('class', 'students'));
     }
+
+
 
     public function studentInfo($student_id)
     {
@@ -25,18 +34,12 @@ class TeacherController extends Controller
         return view('teacher.students.studentInfo', compact('student'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function editStudentInfo(Request $request, $student_id)
+    public function editStudentInfo($student_id)
     {
         $student = Student::findOrFail($student_id);
         return view('teacher.students.editStudent', compact('student'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function updateStudentInfo(Request $request, $student_id)
     {
         $student = Student::findOrFail($student_id);
@@ -50,7 +53,7 @@ class TeacherController extends Controller
                 'required',
                 'string',
                 'max:12',
-                'regex:/^112828[0-9]{6}$/', // starts with 112828 + 6 digits
+                'regex:/^112828[0-9]{6}$/',
                 'unique:students,student_lrn,' . $student->student_id . ',student_id',
             ],
             'student_grade_level' => 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6',
@@ -74,9 +77,8 @@ class TeacherController extends Controller
             'student_motherLName' => 'nullable|string|max:255',
 
             'student_parentPhone' => 'nullable|string|max:255',
-
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
-        ]);
+        ], $messages);
 
         // Handle photo upload
         if ($request->hasFile('student_profile_photo')) {
@@ -85,7 +87,7 @@ class TeacherController extends Controller
         }
 
         // Update fields
-        $student->updateStudentInfo([
+        $student->update([
             'student_lrn' => $validatedData['student_lrn'],
             'student_grade_level' => $validatedData['student_grade_level'],
             'student_section' => $validatedData['student_section'],
@@ -107,6 +109,8 @@ class TeacherController extends Controller
             'student_parentPhone' => $validatedData['student_parentPhone'] ?? null,
         ]);
 
-        return redirect(route('teacher.my.students'))->with('success', 'Student updated successfully!');
+        $student->save();
+
+        return redirect()->route('teacher.my.students')->with('success', 'Student updated successfully!');
     }
 }

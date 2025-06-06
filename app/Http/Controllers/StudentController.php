@@ -14,28 +14,6 @@ use Illuminate\Support\Facades\Storage;
 class StudentController extends Controller
 {
 
-    public function generateID($id)
-    {
-        $student = Student::findOrFail($id);
-        return view('admin.students.generate_id', compact('student'));
-    }
-
-    public function downloadID($id)
-    {
-        $student = Student::findOrFail($id);
-
-        // Create QR Code as base64 PNG to avoid Imagick and render it in PDF
-        $qrCode = base64_encode(
-            QrCode::format('svg')
-                ->size(150)
-                ->generate(route('student.info', ['id' => $student->id]))
-        );
-
-        $pdf = Pdf::loadView('pdf.student_id', compact('student', 'qrCode'));
-        return $pdf->download($student->last_name . '_ID.pdf');
-    }
-
-
     /**
      * Display the specified resource.
      */

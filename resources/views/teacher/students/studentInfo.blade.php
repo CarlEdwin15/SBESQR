@@ -53,12 +53,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Morning Session</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Afternoon Session</div>
+                                    <div class="text-light">My Class</div>
                                 </a>
                             </li>
                         </ul>

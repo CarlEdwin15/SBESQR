@@ -60,7 +60,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(SchoolYear::class, 'teacher_id');
     }
-
+}
 
     // for formatting grade level column in the table of teacher's list
     // public function getFormattedGradeLevelAttribute()
@@ -76,7 +76,7 @@ class User extends Authenticatable
     //         default => ucfirst($this->grade_level_assigned)
     //     };
     // }
-}
+
     // /**
     //  * The attributes that should be hidden for serialization.
     //  *
