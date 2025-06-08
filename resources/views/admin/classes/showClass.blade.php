@@ -277,7 +277,7 @@
                                         <i class="bi bi-person-badge fs-1"></i>
                                     </div>
                                     <h6 class="fw-semibold mb-1">Adviser</h6>
-                                    <div class="fw-bold">
+                                    <div class="fw-bold text-primary">
                                         {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
                                     </div>
                                 </div>

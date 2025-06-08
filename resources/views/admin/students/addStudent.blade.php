@@ -291,7 +291,7 @@
                                         No.)</label>
                                     <input type="text" name="student_lrn" id="student_lrn" class="form-control"
                                         list="datalistOptions" placeholder="Enter Student's LRN" required autofocus
-                                        autocomplete="student_lrn" />
+                                        autocomplete="student_lrn" value="{{ old('student_lrn') }}" />
 
                                     <datalist id="datalistOptions">
                                         <option value="112828"></option>
@@ -303,13 +303,21 @@
                                     <select name="student_grade_level" id="student_grade_level" class="form-select"
                                         required>
                                         <option value="" selected disabled>Select Grade Level</option>
-                                        <option value="kindergarten">Kindergarten</option>
-                                        <option value="grade1">Grade 1</option>
-                                        <option value="grade2">Grade 2</option>
-                                        <option value="grade3">Grade 3</option>
-                                        <option value="grade4">Grade 4</option>
-                                        <option value="grade5">Grade 5</option>
-                                        <option value="grade6">Grade 6</option>
+                                        <option value="kindergarten"
+                                            {{ old('student_grade_level') == 'kindergarten' ? 'selected' : '' }}>
+                                            Kindergarten</option>
+                                        <option value="grade1"
+                                            {{ old('student_grade_level') == 'grade1' ? 'selected' : '' }}>Grade 1</option>
+                                        <option value="grade2"
+                                            {{ old('student_grade_level') == 'grade2' ? 'selected' : '' }}>Grade 2</option>
+                                        <option value="grade3"
+                                            {{ old('student_grade_level') == 'grade3' ? 'selected' : '' }}>Grade 3</option>
+                                        <option value="grade4"
+                                            {{ old('student_grade_level') == 'grade4' ? 'selected' : '' }}>Grade 4</option>
+                                        <option value="grade5"
+                                            {{ old('student_grade_level') == 'grade5' ? 'selected' : '' }}>Grade 5</option>
+                                        <option value="grade6"
+                                            {{ old('student_grade_level') == 'grade6' ? 'selected' : '' }}>Grade 6</option>
                                     </select>
                                 </div>
                             </div>
@@ -321,12 +329,18 @@
                                     <label for="student_section" class="form-label fw-bold">Section</label>
                                     <select name="student_section" id="student_section" class="form-select" required>
                                         <option value="" selected disabled>Select Section</option>
-                                        <option value="A">Section A</option>
-                                        <option value="B">Section B</option>
-                                        <option value="C">Section C</option>
-                                        <option value="D">Section D</option>
-                                        <option value="E">Section E</option>
-                                        <option value="F">Section F</option>
+                                        <option value="A" {{ old('student_section') == 'A' ? 'selected' : '' }}>
+                                            Section A</option>
+                                        <option value="B" {{ old('student_section') == 'B' ? 'selected' : '' }}>
+                                            Section B</option>
+                                        <option value="C" {{ old('student_section') == 'C' ? 'selected' : '' }}>
+                                            Section C</option>
+                                        <option value="D" {{ old('student_section') == 'D' ? 'selected' : '' }}>
+                                            Section D</option>
+                                        <option value="E" {{ old('student_section') == 'E' ? 'selected' : '' }}>
+                                            Section E</option>
+                                        <option value="F" {{ old('student_section') == 'F' ? 'selected' : '' }}>
+                                            Section F</option>
                                     </select>
                                 </div>
 
@@ -335,8 +349,10 @@
                                     <label for="student_sex" class="form-label fw-bold">Gender</label>
                                     <select name="student_sex" id="student_sex" class="form-select" required>
                                         <option value="" selected disabled>Select Gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
+                                        <option value="male" {{ old('student_sex') == 'male' ? 'selected' : '' }}>Male
+                                        </option>
+                                        <option value="female" {{ old('student_sex') == 'female' ? 'selected' : '' }}>
+                                            Female</option>
                                     </select>
                                 </div>
                             </div>
@@ -347,14 +363,16 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_fName" class="form-label fw-bold">First Name</label>
                                     <input type="text" name="student_fName" id="student_fName" class="form-control"
-                                        placeholder="Enter First Name" required autocomplete="student_fName" />
+                                        placeholder="Enter First Name" required autocomplete="student_fName"
+                                        value="{{ old('student_fName') }}" />
                                 </div>
 
                                 <!-- Middle Name Field -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_mName" class="form-label fw-bold">Middle Name</label>
                                     <input type="text" name="student_mName" id="student_mName" class="form-control"
-                                        placeholder="Enter Middle Name" autocomplete="student_mName" />
+                                        placeholder="Enter Middle Name" autocomplete="student_mName"
+                                        value="{{ old('student_mName') }}" />
                                 </div>
                             </div>
 
@@ -363,14 +381,16 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_lName" class="form-label fw-bold">Last Name</label>
                                     <input type="text" name="student_lName" id="student_lName" class="form-control"
-                                        placeholder="Enter Last Name" required autocomplete="student_lName" />
+                                        placeholder="Enter Last Name" required autocomplete="student_lName"
+                                        value="{{ old('student_lName') }}" />
                                 </div>
 
                                 <!-- Extension Name Field -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_extName" class="form-label fw-bold">Extension Name</label>
                                     <input type="text" name="student_extName" id="student_extName"
-                                        class="form-control" placeholder="e.g Jr., III (if applicable)" />
+                                        class="form-control" placeholder="e.g Jr., III (if applicable)"
+                                        value="{{ old('student_extName') }}" />
                                 </div>
                             </div>
 
@@ -381,13 +401,14 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_pob" class="form-label fw-bold">Place of Birth</label>
                                     <input type="text" name="student_pob" id="student_pob" class="form-control"
-                                        placeholder="Municipality/City" required />
+                                        placeholder="Municipality/City" required value="{{ old('student_pob') }}" />
                                 </div>
 
                                 <!-- Date Of Birth Field -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_dob" class="form-label fw-bold">Date of Birth</label>
-                                    <input class="form-control" name="student_dob" type="date" id="student_dob" />
+                                    <input class="form-control" name="student_dob" type="date" id="student_dob"
+                                        value="{{ old('student_dob') }}" />
                                 </div>
                             </div>
 
@@ -400,13 +421,13 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="house_no" class="form-label fw-bold">House No.</label>
                                     <input type="text" name="house_no" id="house_no" class="form-control"
-                                        placeholder="Enter House No." />
+                                        placeholder="Enter House No." value="{{ old('house_no') }}" />
                                 </div>
 
                                 <div class="col mb-2 mt-2">
                                     <label for="street_name" class="form-label fw-bold">Street Name</label>
                                     <input type="text" name="street_name" id="street_name" class="form-control"
-                                        placeholder="Enter Street Name" />
+                                        placeholder="Enter Street Name" value="{{ old('street_name') }}" />
                                 </div>
                             </div>
 
@@ -414,13 +435,14 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="barangay" class="form-label fw-bold">Barangay</label>
                                     <input type="text" name="barangay" id="barangay" class="form-control"
-                                        placeholder="Enter Barangay" />
+                                        placeholder="Enter Barangay" value="{{ old('barangay') }}" />
                                 </div>
 
                                 <div class="col mb-2 mt-2">
                                     <label for="municipality_city" class="form-label fw-bold">Municipality/City</label>
                                     <input type="text" name="municipality_city" id="municipality_city"
-                                        class="form-control" placeholder="Enter Municipality or City" />
+                                        class="form-control" placeholder="Enter Municipality or City"
+                                        value="{{ old('municipality_city') }}" />
                                 </div>
                             </div>
 
@@ -428,13 +450,13 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="province" class="form-label fw-bold">Province</label>
                                     <input type="text" name="province" id="province" class="form-control"
-                                        placeholder="Enter Province" />
+                                        placeholder="Enter Province" value="{{ old('province') }}" />
                                 </div>
 
                                 <div class="col mb-2 mt-2">
                                     <label for="zip_code" class="form-label fw-bold">Zip Code</label>
                                     <input type="text" name="zip_code" id="zip_code" class="form-control"
-                                        placeholder="Enter Zip Code" />
+                                        placeholder="Enter Zip Code" value="{{ old('zip_code') }}" />
                                 </div>
                             </div>
 
@@ -453,7 +475,8 @@
                                     <label for="student_fatherFName" class="form-label fw-bold">First
                                         Name</label>
                                     <input type="text" name="student_fatherFName" id="student_fatherFName"
-                                        class="form-control" placeholder="Enter Father's First Name" />
+                                        class="form-control" placeholder="Enter Father's First Name"
+                                        value="{{ old('student_fatherFName') }}" />
                                 </div>
 
                                 <!-- Father's Middle Name -->
@@ -461,7 +484,8 @@
                                     <label for="student_fatherMName" class="form-label fw-bold">Middle
                                         Name</label>
                                     <input type="text" name="student_fatherMName" id="student_fatherMName"
-                                        class="form-control" placeholder="Enter Father's Middle Name" />
+                                        class="form-control" placeholder="Enter Father's Middle Name"
+                                        value="{{ old('student_fatherMName') }}" />
                                 </div>
                             </div>
 
@@ -470,14 +494,16 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_fatherLName" class="form-label fw-bold">Last Name</label>
                                     <input type="text" name="student_fatherLName" id="student_fatherLName"
-                                        class="form-control" placeholder="Enter Father's Last Name" />
+                                        class="form-control" placeholder="Enter Father's Last Name"
+                                        value="{{ old('student_fatherLName') }}" />
                                 </div>
 
                                 <!-- Father's Phone No. -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_fatherPhone" class="form-label fw-bold">Phone No.</label>
                                     <input type="text" name="student_fatherPhone" id="student_fatherPhone"
-                                        class="form-control" placeholder="Enter Father's Phone Number" />
+                                        class="form-control" placeholder="Enter Father's Phone Number"
+                                        value="{{ old('student_fatherPhone') }}" />
                                 </div>
                             </div>
 
@@ -489,14 +515,16 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_motherFName" class="form-label fw-bold">First Name</label>
                                     <input type="text" name="student_motherFName" id="student_motherFName"
-                                        class="form-control" placeholder="Enter Mother's First Name" />
+                                        class="form-control" placeholder="Enter Mother's First Name"
+                                        value="{{ old('student_motherFName') }}" />
                                 </div>
 
                                 <!-- Mother's Middle Name -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_motherMName" class="form-label fw-bold">Middle Name</label>
                                     <input type="text" name="student_motherMName" id="student_motherMName"
-                                        class="form-control" placeholder="Enter Mother's Middle Name" />
+                                        class="form-control" placeholder="Enter Mother's Middle Name"
+                                        value="{{ old('student_motherMName') }}" />
                                 </div>
                             </div>
 
@@ -505,14 +533,16 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_motherLName" class="form-label fw-bold">Last Name</label>
                                     <input type="text" name="student_motherLName" id="student_motherLName"
-                                        class="form-control" placeholder="Enter Mother's Last Name" />
+                                        class="form-control" placeholder="Enter Mother's Last Name"
+                                        value="{{ old('student_motherLName') }}" />
                                 </div>
 
                                 <!-- Mother's Phone No. -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_motherPhone" class="form-label fw-bold">Phone No.</label>
                                     <input type="text" name="student_motherPhone" id="student_motherPhone"
-                                        class="form-control" placeholder="Enter Mother's Phone Number" />
+                                        class="form-control" placeholder="Enter Mother's Phone Number"
+                                        value="{{ old('student_motherPhone') }}" />
                                 </div>
                             </div>
 
@@ -525,7 +555,8 @@
                                     <label for="student_emergContFName" class="form-label fw-bold">First
                                         Name</label>
                                     <input type="text" name="student_emergContFName" id="student_emergContFName"
-                                        class="form-control" placeholder="Enter Emergency Contact's First Name" />
+                                        class="form-control" placeholder="Enter Emergency Contact's First Name"
+                                        value="{{ old('student_emergContFName') }}" />
                                 </div>
 
                                 <!-- Emergency Contact's Middle Name -->
@@ -533,7 +564,8 @@
                                     <label for="student_emergContMName" class="form-label fw-bold">Middle
                                         Name</label>
                                     <input type="text" name="student_emergContMName" id="student_emergContMName"
-                                        class="form-control" placeholder="Enter Emergency Contact's Middle Name" />
+                                        class="form-control" placeholder="Enter Emergency Contact's Middle Name"
+                                        value="{{ old('student_emergContMName') }}" />
                                 </div>
                             </div>
 
@@ -542,14 +574,16 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_emergContLName" class="form-label fw-bold">Last Name</label>
                                     <input type="text" name="student_emergContLName" id="student_emergContLName"
-                                        class="form-control" placeholder="Enter Emergency Contact's Last Name" />
+                                        class="form-control" placeholder="Enter Emergency Contact's Last Name"
+                                        value="{{ old('student_emergContLName') }}" />
                                 </div>
 
                                 <!-- Emergency Contact's Phone No. -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_emergContPhone" class="form-label fw-bold">Phone No.</label>
                                     <input type="phone" name="student_emergContPhone" id="student_emergContPhone"
-                                        class="form-control" placeholder="Enter Emergency Contact's Phone Number" />
+                                        class="form-control" placeholder="Enter Emergency Contact's Phone Number"
+                                        value="{{ old('student_emergContPhone') }}" />
                                 </div>
                             </div>
 

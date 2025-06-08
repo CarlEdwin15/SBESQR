@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Classes extends Model
 {
     protected $table = 'classes';
-    protected $primaryKey = 'id'; // Changed from class_id to default 'id'
+    protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
     public $timestamps = true;
@@ -15,7 +15,6 @@ class Classes extends Model
     protected $fillable = [
         'grade_level',
         'section',
-        'school_year',
     ];
 
     public function getFormattedGradeLevelAttribute()
@@ -39,6 +38,8 @@ class Classes extends Model
 
     public function teachers()
     {
-        return $this->belongsTo(User::class, 'class_id');
+        return $this->belongsToMany(User::class, 'class_user', 'class_id', 'user_id')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 }

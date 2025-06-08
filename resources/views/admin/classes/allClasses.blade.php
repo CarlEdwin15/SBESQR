@@ -278,13 +278,14 @@
                                                     class="stretched-link">
                                                     <h3>{{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} -
                                                         {{ $class->section }}</h3>
-                                                    <h5>Teacher{{ $class->teachers->count() > 1 ? 's' : '' }}:</h5>
+                                                    <h5>Adviser:</h5>
 
-                                                    @forelse($class->teachers as $teacher)
-                                                        <h5 class="text-info">{{ $teacher->firstName }} {{ $teacher->lastName }}</h5>
-                                                    @empty
-                                                        <h6 class="text-warning">No teacher assigned</h6>
-                                                    @endforelse
+                                                    @if ($class->adviser)
+                                                        <h5 class="text-info">{{ $class->adviser->firstName }}
+                                                            {{ $class->adviser->lastName }}</h5>
+                                                    @else
+                                                        <h6 class="text-warning">No adviser assigned</h6>
+                                                    @endif
                                                 </a>
                                             </div>
                                         </div>

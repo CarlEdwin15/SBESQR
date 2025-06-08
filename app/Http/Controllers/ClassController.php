@@ -19,15 +19,17 @@ class ClassController extends Controller
         }
 
         $sections = Classes::distinct()->pluck('section');
+
         $gradeLevels = Classes::where('section', $section)->distinct()->pluck('grade_level');
 
         // Get all classes for the section
         $classes = Classes::where('section', $section)->get();
 
-        // For each class, fetch teachers using class_id
+        // For each class, fetch teachers with pivot role 'adviser' or 'both'
         foreach ($classes as $class) {
-            $class->teachers = User::where('class_id', $class->id)->get();
+            $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
         }
+
 
         return view('admin.classes.allClasses', compact('sections', 'gradeLevels', 'section', 'classes'));
     }
@@ -35,43 +37,37 @@ class ClassController extends Controller
 
     public function showClass($grade_level, $section)
     {
-        $class = Classes::where('grade_level', $grade_level)
-            ->where('section', $section)
-            ->firstOrFail();
+        $class = $this->getClass($grade_level, $section);
 
-        // Example stats
-        $studentCount = $class->students()->count(); // assumes a `students()` relation
+        $studentCount = $class->students()->count();
         // $presentToday = $class->students()->whereHas('attendances', function ($query) {
         //     $query->whereDate('date', now())->where('status', 'present');
         // })->count();
+
+        // For each class, fetch teachers with pivot role 'adviser' or 'both'
+        $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
 
         return view('admin.classes.showClass', compact('class', 'studentCount'));
     }
 
     public function masterList($grade_level, $section)
     {
-        $class = Classes::where('grade_level', $grade_level)
-            ->where('section', $section)
-            ->firstOrFail();
+        $class = $this->getClass($grade_level, $section);
 
         // Fetch students in the class
         $students = Student::where('class_id', $class->id)->get();
-        // Fetch teachers in the class
-        $teachers = User::where('class_id', $class->id)->get();
+        // For each class, fetch teachers with pivot role 'adviser' or 'both'
+        $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
 
-        return view('admin.classes.master_list.masterList', compact('class', 'students', 'teachers'));
+        return view('admin.classes.masterList.index', compact('class', 'students'));
     }
 
-    public function schedule(Request $request, $grade_level, $section)
+    // Helper function to get class by grade level and section
+    private function getClass($grade_level, $section)
     {
-        $class = Classes::where('grade_level', $grade_level)
+        return Classes::where('grade_level', $grade_level)
             ->where('section', $section)
             ->firstOrFail();
-
-        // Fetch the schedule for the class
-        // Assuming you have a Schedule model and a relationship set up
-        $schedule = $class->schedule; // Adjust according to your model structure
-
-        return view('admin.classes.schedules.show_schedule', compact('class', 'schedule'));
     }
+
 }

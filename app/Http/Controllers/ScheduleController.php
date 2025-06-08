@@ -15,8 +15,10 @@ class ScheduleController extends Controller
 
         $schedules = \App\Models\Schedule::where('class_id', $class->id)->get();
 
-        // Fetch teachers from the users table or teachers model (depending on your schema)
-        $teachers = \App\Models\User::where('role', 'teacher')->get(); // Adjust this query as needed
+        // Fetch teachers with pivot role
+        $teachers = $class->teachers()
+            ->wherePivotIn('role', ['adviser', 'subject_teacher', 'both'])
+            ->get();
 
         return view('admin.classes.schedules.index', compact('class', 'schedules', 'teachers'));
     }

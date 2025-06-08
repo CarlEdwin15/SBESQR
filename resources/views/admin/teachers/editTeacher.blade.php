@@ -46,13 +46,6 @@
                                 </a>
                             </li>
                         </ul>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Class Schedules</div>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
 
                     {{-- Students sidebar --}}
@@ -255,6 +248,17 @@
                         id="editTeacherForm" method="POST" enctype="multipart/form-data">
                         @csrf
 
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <strong>There were some problems with your input.</strong>
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <div class="modal-body">
                             <h4 class="fw-bold text-primary">{{ $teacher->firstName }} {{ $teacher->lastName }}'s
                                 Details</h4>
@@ -300,54 +304,53 @@
                             <hr class="my-0" />
 
                             <div class="row">
-                                <!-- Grade Level Field -->
-                                <div class="col mb-2 mt-2">
-                                    <label for="grade_level" class="form-label fw-bold">Grade
-                                        Level</label>
-                                    <select name="grade_level" id="grade_level" class="form-select">
-                                        <option
-                                            value="kindergarten"{{ $teacher->class->grade_level == 'kindergarten' ? 'selected' : '' }}>
-                                            Kindergarten</option>
-                                        <option
-                                            value="grade1"{{ $teacher->class->grade_level == 'grade1' ? 'selected' : '' }}>
-                                            Grade 1</option>
-                                        <option
-                                            value="grade2"{{ $teacher->class->grade_level == 'grade2' ? 'selected' : '' }}>
-                                            Grade 2</option>
-                                        <option
-                                            value="grade3"{{ $teacher->class->grade_level == 'grade3' ? 'selected' : '' }}>
-                                            Grade 3</option>
-                                        <option
-                                            value="grade4"{{ $teacher->class->grade_level == 'grade4' ? 'selected' : '' }}>
-                                            Grade 4</option>
-                                        <option
-                                            value="grade5"{{ $teacher->class->grade_level == 'grade5' ? 'selected' : '' }}>
-                                            Grade 5</option>
-                                        <option
-                                            value="grade6"{{ $teacher->class->grade_level == 'grade6' ? 'selected' : '' }}>
-                                            Grade 6</option>
+                                <!-- Assigned Classes (Multi-select) -->
+                                <div class="col mb-3">
+                                    <label for="assigned_classes" class="form-label fw-bold">
+                                        Assigned Classes <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="assigned_classes[]" id="assigned_classes" class="form-select mb-2"
+                                        multiple required>
+                                        @foreach ($allClasses as $class)
+                                            @php
+                                                $adviser = $class->teachers->where('pivot.role', 'adviser')->first();
+                                                $hasAdviser = !is_null($adviser);
+                                            @endphp
+                                            <option value="{{ $class->id }}"
+                                                {{ in_array($class->id, $assignedClasses) ? 'selected' : '' }}>
+                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }} -
+                                                {{ $class->section }}
+                                                @if ($hasAdviser)
+                                                    ({{ $adviser->firstName }} {{ $adviser->lastName }})
+                                                @endif
+                                            </option>
+                                        @endforeach
                                     </select>
+                                    <small class="text-muted">Hold Ctrl (Cmd on Mac) to select multiple</small>
                                 </div>
 
-                                <!-- Section Field -->
-                                <div class="col mb-2 mt-2">
-                                    <label for="section" class="form-label fw-bold">Section</label>
-                                    <select name="section" id="section" class="form-select">
-                                        <option value="A"{{ $teacher->class->section == 'A' ? 'selected' : '' }}>
-                                            A</option>
-                                        <option value="B"{{ $teacher->class->section == 'B' ? 'selected' : '' }}>
-                                            B</option>
-                                        <option value="C"{{ $teacher->class->section == 'C' ? 'selected' : '' }}>
-                                            C</option>
-                                        <option value="D"{{ $teacher->class->section == 'D' ? 'selected' : '' }}>
-                                            D</option>
-                                        <option value="E"{{ $teacher->class->section == 'E' ? 'selected' : '' }}>
-                                            E</option>
-                                        <option value="F"{{ $teacher->class->section == 'F' ? 'selected' : '' }}>
-                                            F</option>
+                                <!-- Advisory Class -->
+                                <div class="col mb-3">
+                                    <label for="advisory_class" class="form-label fw-bold">Advisory Class</label>
+                                    <select name="advisory_class" id="advisory_class" class="form-select">
+                                        <option value=""> No advisory class </option>
+                                        @foreach ($assignedClasses as $assignedClassId)
+                                            @php
+                                                $class = $allClasses->firstWhere('id', $assignedClassId);
+                                            @endphp
+                                            @if ($class)
+                                                <option value="{{ $class->id }}"
+                                                    {{ $class->id == $advisoryClass ? 'selected' : '' }}>
+                                                    {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                                                </option>
+                                            @endif
+                                        @endforeach
                                     </select>
+                                    <small class="text-muted">Must be one of the assigned classes</small>
                                 </div>
+
                             </div>
+
 
                             <div class="row">
 
@@ -390,7 +393,7 @@
                                 <div class="col mb-3">
                                     <label for="email" class="form-label fw-bold">Email</label>
                                     <input type="email" name="email" id="email" class="form-control"
-                                        value="{{ $teacher->email }}" readonly/>
+                                        value="{{ $teacher->email }}" readonly />
                                 </div>
 
                                 <!-- Phone Field -->
@@ -480,12 +483,15 @@
 
                         </div>
                     </form>
-                    <hr class="my-5" />
-                </div>
-                <!-- /Account -->
-            </div>
+                    <!-- /Teacher's Details -->
 
+                </div>
+                <hr class="my-5" />
+            </div>
+            <!-- /Account -->
         </div>
+
+    </div>
     </div>
     </div>
     <!-- / Content -->
@@ -610,7 +616,6 @@
         }
     </script>
 
-
     <script>
         // image profile upload/preview
         document.addEventListener('DOMContentLoaded', function() {
@@ -640,6 +645,42 @@
                 fileInput.value = ''; // Clear the file input
                 imagePreview.src = originalImageSrc; // Reset image
             });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignedSelect = document.getElementById('assigned_classes');
+            const advisorySelect = document.getElementById('advisory_class');
+            const allOptions = Array.from(assignedSelect.options);
+
+            function updateAdvisoryOptions() {
+                const selectedAssigned = Array.from(assignedSelect.selectedOptions).map(opt => opt.value);
+                const selectedAdvisory = advisorySelect.value;
+
+                // Clear current advisory options
+                advisorySelect.innerHTML = '<option value=""> No advisory class </option>';
+
+                allOptions.forEach(option => {
+                    if (selectedAssigned.includes(option.value)) {
+                        const newOption = document.createElement('option');
+                        newOption.value = option.value;
+                        newOption.textContent = option.textContent;
+
+                        if (option.value === selectedAdvisory) {
+                            newOption.selected = true;
+                        }
+
+                        advisorySelect.appendChild(newOption);
+                    }
+                });
+            }
+
+            // Initialize on page load
+            updateAdvisoryOptions();
+
+            // Update on change
+            assignedSelect.addEventListener('change', updateAdvisoryOptions);
         });
     </script>
 @endpush

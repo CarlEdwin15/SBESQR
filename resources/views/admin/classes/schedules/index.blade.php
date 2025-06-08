@@ -292,12 +292,23 @@
                                                 <select class="form-select" id="teacher_id" name="teacher_id" required>
                                                     <option value="" selected disabled>Select Teacher</option>
                                                     @foreach ($teachers as $teacher)
+                                                        @php
+                                                            $role = $teacher->pivot->role;
+                                                            $roleLabel = match ($role) {
+                                                                'adviser' => ' (Adviser)',
+                                                                'subject_teacher' => ' (Subject Teacher)',
+                                                                'both' => ' (Adviser & Subject Teacher)',
+                                                                default => '',
+                                                            };
+                                                        @endphp
                                                         <option value="{{ $teacher->id }}">
-                                                            {{ $teacher->firstName }} {{ $teacher->lastName }}
+                                                            {{ $teacher->firstName }}
+                                                            {{ $teacher->lastName }}{{ $roleLabel }}
                                                         </option>
                                                     @endforeach
                                                 </select>
                                             </div>
+
 
                                             <!-- Day Selection -->
                                             <div class="mb-3">
@@ -396,10 +407,15 @@
                                                 }
                                             }
                                         }
+
+                                        $dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
                                         // Remove duplicate days and sort
                                         foreach ($grouped as &$item) {
                                             $item['days'] = array_unique($item['days']);
-                                            sort($item['days']);
+
+                                            // Custom sort using array_intersect to preserve the correct order
+                                            $item['days'] = array_values(array_intersect($dayOrder, $item['days']));
                                         }
                                         unset($item);
                                     @endphp

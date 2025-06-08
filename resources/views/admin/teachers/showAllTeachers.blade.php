@@ -299,7 +299,8 @@
                                                         Name</label>
                                                     <input type="text" name="firstName" id="firstName"
                                                         class="form-control" placeholder="Enter First Name" required
-                                                        autofocus autocomplete="firstName" />
+                                                        value="{{ old('firstName') }}" autofocus
+                                                        autocomplete="firstName" />
                                                 </div>
 
                                                 <!-- Middle Name Field -->
@@ -308,7 +309,8 @@
                                                         Name</label>
                                                     <input type="text" name="middleName" id="middleName"
                                                         class="form-control" placeholder="Enter Middle Name" required
-                                                        autofocus autocomplete="middleName" />
+                                                        value="{{ old('middleName') }}" autofocus
+                                                        autocomplete="middleName" />
                                                 </div>
 
                                             </div>
@@ -320,7 +322,8 @@
                                                     <label for="lastName" class="form-label fw-bold">Last Name</label>
                                                     <input type="text" name="lastName" id="lastName"
                                                         class="form-control" placeholder="Enter Last Name" required
-                                                        autofocus autocomplete="lastName" />
+                                                        value="{{ old('lastName') }}" autofocus
+                                                        autocomplete="lastName" />
                                                 </div>
 
                                                 <!-- Extension Name Field -->
@@ -328,8 +331,8 @@
                                                     <label for="extName" class="form-label fw-bold">Extension
                                                         Name</label>
                                                     <input type="text" name="extName" id="extName"
-                                                        class="form-control"
-                                                        placeholder="Enter Ext. Name(if applicable)" />
+                                                        class="form-control" placeholder="Enter Ext. Name(if applicable)"
+                                                        value="{{ old('extName') }}" />
                                                 </div>
                                             </div>
 
@@ -338,66 +341,39 @@
                                                 <div class="col mb-3">
                                                     <label for="email" class="form-label fw-bold">Email</label>
                                                     <input type="email" name="email" id="email"
-                                                        class="form-control" placeholder="xxxx@xxx.xx" required autofocus
-                                                        autocomplete="email" />
+                                                        class="form-control @error('email') is-invalid @enderror"
+                                                        placeholder="xxxx@xxx.xx" required autocomplete="email"
+                                                        value="{{ old('email') }}" />
+
+                                                    @error('email')
+                                                        <div class="invalid-feedback">
+                                                            {{ $message }}
+                                                        </div>
+                                                    @enderror
                                                 </div>
+
 
                                                 <!-- Phone Field -->
                                                 <div class="col mb-3">
                                                     <label for="phone" class="form-label fw-bold">Phone</label>
                                                     <input type="phone" name="phone" id="phone"
-                                                        class="form-control" placeholder="Enter Phone Number" required
-                                                        autofocus autocomplete="phone" />
+                                                        class="form-control" placeholder="Enter Phone Number"
+                                                        value="{{ old('phone') }}" autofocus autocomplete="phone" />
                                                 </div>
                                             </div>
-
-                                            <div class="row">
-
-                                                <!-- Grade Level Assigned Field -->
-                                                <div class="col mb-3">
-                                                    <label for="grade_level_assigned" class="form-label fw-bold">Grade
-                                                        Level Assigned</label>
-                                                    <select name="grade_level_assigned" id="grade_level_assigned"
-                                                        class="form-select" required>
-                                                        <option value="" selected disabled>Select Grade Level
-                                                        </option>
-                                                        <option value="kindergarten">Kindergarten</option>
-                                                        <option value="grade1">Grade 1</option>
-                                                        <option value="grade2">Grade 2</option>
-                                                        <option value="grade3">Grade 3</option>
-                                                        <option value="grade4">Grade 4</option>
-                                                        <option value="grade5">Grade 5</option>
-                                                        <option value="grade6">Grade 6</option>
-                                                    </select>
-                                                </div>
-
-                                                <!-- Section Assigned Field -->
-                                                <div class="col mb-3">
-                                                    <label for="section_assigned" class="form-label fw-bold">Section
-                                                        Assigned</label>
-                                                    <select name="section_assigned" id="section_assigned"
-                                                        class="form-select" required>
-                                                        <option value="" selected disabled>Select Section
-                                                        </option>
-                                                        <option value="A">A</option>
-                                                        <option value="B">B</option>
-                                                        <option value="C">C</option>
-                                                        <option value="D">D</option>
-                                                        <option value="E">E</option>
-                                                        <option value="F">F</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
 
                                             <div class="row">
                                                 <!-- Gender Field -->
                                                 <div class="col mb-3">
                                                     <label for="gender" class="form-label fw-bold">Gender</label>
                                                     <select name="gender" id="gender" class="form-select" required>
-                                                        <option value="" selected disabled>Select Gender</option>
-                                                        <option value="male">Male</option>
-                                                        <option value="female">Female</option>
+                                                        <option value="" disabled
+                                                            {{ old('gender') ? '' : 'selected' }}>Select Gender</option>
+                                                        <option value="male"
+                                                            {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
+                                                        <option value="female"
+                                                            {{ old('gender') == 'female' ? 'selected' : '' }}>Female
+                                                        </option>
                                                     </select>
                                                 </div>
 
@@ -406,7 +382,60 @@
                                                     <label for="dob" class="form-label fw-bold">Date of
                                                         Birth</label>
                                                     <input class="form-control" name="dob" type="date"
-                                                        id="dob" />
+                                                        id="dob" value="{{ old('dob') }}" />
+                                                </div>
+                                            </div>
+
+                                            <hr class="my-4" />
+
+
+                                            <h5 class="fw-bold text-primary">Classes</h5>
+
+                                            <div class="row">
+                                                <!-- Assigned Classes as Multi-select Dropdown -->
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label fw-bold">Assign Classes</label>
+                                                    <select name="assigned_classes[]" id="assigned_classes"
+                                                        class="form-select mb-2" multiple required>
+                                                        @foreach ($allClasses as $class)
+                                                            @php
+                                                                $adviser = $class->teachers
+                                                                    ->where('pivot.role', 'adviser')
+                                                                    ->first();
+                                                                $hasAdviser = !is_null($adviser);
+                                                                $isSelected = collect(
+                                                                    old('assigned_classes'),
+                                                                )->contains($class->id);
+                                                            @endphp
+                                                            <option value="{{ $class->id }}"
+                                                                {{ $isSelected ? 'selected' : '' }}>
+                                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                                - {{ $class->section }}
+                                                                @if ($hasAdviser)
+                                                                    ({{ $adviser->firstName }}
+                                                                    {{ $adviser->lastName }})
+                                                                @endif
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+
+                                                    <small class="form-text text-muted text-center">Hold Ctrl (Windows) or
+                                                        Cmd (Mac) to
+                                                        select multiple classes.</small>
+                                                </div>
+
+                                                <!-- Advisory Class Dropdown -->
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="advisory_class" class="form-label fw-bold">Select Advisory
+                                                        Class</label>
+                                                    <select name="advisory_class" id="advisory_class" class="form-select"
+                                                        data-old="{{ old('advisory_class') }}">
+                                                        <option value="">-- Select advisory class from assigned --
+                                                        </option>
+                                                        {{-- Options will be dynamically injected --}}
+                                                    </select>
+                                                    <small class="form-text text-muted text-center">Select an advisory
+                                                        class from the assigned classes, or leave empty if none.</small>
                                                 </div>
                                             </div>
 
@@ -419,7 +448,8 @@
                                                 <div class="col mb-3">
                                                     <label for="house_no" class="form-label fw-bold">House No.</label>
                                                     <input type="text" name="house_no" id="house_no"
-                                                        class="form-control" placeholder="Enter House No." />
+                                                        class="form-control" placeholder="Enter House No."
+                                                        value="{{ old('house_no') }}" />
                                                 </div>
 
                                                 <!-- Street Name field -->
@@ -427,7 +457,8 @@
                                                     <label for="street_name" class="form-label fw-bold">Street
                                                         Name</label>
                                                     <input type="text" name="street_name" id="street_name"
-                                                        class="form-control" placeholder="Enter Street Name" />
+                                                        class="form-control" placeholder="Enter Street Name"
+                                                        value="{{ old('street_name') }}" />
                                                 </div>
                                             </div>
 
@@ -436,7 +467,8 @@
                                                 <div class="col mb-3">
                                                     <label for="barangay" class="form-label fw-bold">Barangay</label>
                                                     <input type="text" name="barangay" id="barangay"
-                                                        class="form-control" placeholder="Enter Barangay" />
+                                                        class="form-control" placeholder="Enter Barangay"
+                                                        value="{{ old('barangay') }}" />
                                                 </div>
 
                                                 <!-- Municipality/City field -->
@@ -444,7 +476,8 @@
                                                     <label for="municipality_city"
                                                         class="form-label fw-bold">Municipality/City</label>
                                                     <input type="text" name="municipality_city" id="municipality_city"
-                                                        class="form-control" placeholder="Enter Municipality/City" />
+                                                        class="form-control" placeholder="Enter Municipality/City"
+                                                        value="{{ old('municipality_city') }}" />
                                                 </div>
                                             </div>
 
@@ -453,14 +486,16 @@
                                                 <div class="col mb-3">
                                                     <label for="province" class="form-label fw-bold">Province</label>
                                                     <input type="text" name="province" id="province"
-                                                        class="form-control" placeholder="Enter Province" />
+                                                        class="form-control" placeholder="Enter Province"
+                                                        value="{{ old('province') }}" />
                                                 </div>
 
                                                 <!-- Zip Code field -->
                                                 <div class="col mb-3">
                                                     <label for="zip_code" class="form-label fw-bold">Zip Code</label>
                                                     <input type="text" name="zip_code" id="zip_code"
-                                                        class="form-control" placeholder="Enter Zip Code" />
+                                                        class="form-control" placeholder="Enter Zip Code"
+                                                        value="{{ old('zip_code') }}" />
                                                 </div>
                                             </div>
 
@@ -470,14 +505,18 @@
 
                                             <!-- Password Input -->
                                             <div class="mb-3 form-password-toggle">
-                                                <div class="d-flex justify-content-between">
-                                                    <label class="form-label fw-bold" for="password">Password</label>
-                                                </div>
+                                                <label class="form-label fw-bold" for="password">Password</label>
 
                                                 <div class="input-group input-group-merge">
                                                     <input type="password" id="password" class="form-control"
                                                         name="password" required autocomplete="new-password"
                                                         placeholder="Enter your Password" />
+
+                                                    @error('password')
+                                                        <div class="text-danger mt-1">{{ $message }}</div>
+                                                    @enderror
+
+
                                                     <span class="input-group-text cursor-pointer"><i
                                                             class="bx bx-hide"></i></span>
                                                 </div>
@@ -485,21 +524,21 @@
 
                                             <!-- Confirm Password Input -->
                                             <div class="mb-3 form-password-toggle">
-                                                <div class="d-flex justify-content-between">
-                                                    <label class="form-label fw-bold" for="password_confirmation">Confirm
-                                                        Password</label>
-                                                </div>
-
+                                                <label class="form-label fw-bold" for="password_confirmation">Confirm
+                                                    Password</label>
                                                 <div class="input-group input-group-merge">
                                                     <input type="password" id="password_confirmation"
                                                         class="form-control" name="password_confirmation" required
                                                         autocomplete="new-password" placeholder="Confirm your Password" />
+                                                    @error('password')
+                                                        <div class="text-danger mt-1">{{ $message }}</div>
+                                                    @enderror
                                                     <span class="input-group-text cursor-pointer"><i
                                                             class="bx bx-hide"></i></span>
                                                 </div>
                                             </div>
-
                                         </div>
+
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-outline-secondary"
                                                 data-bs-dismiss="modal">
@@ -512,6 +551,20 @@
                                 </div>
                             </div>
                             <!-- /Register Modal -->
+
+                            @if ($errors->has('email'))
+                                <script>
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Registration Error',
+                                        text: '{{ $errors->first('email') }}',
+                                        confirmButtonColor: '#dc3545',
+                                        customClass: {
+                                            container: 'my-swal-container'
+                                        }
+                                    });
+                                </script>
+                            @endif
 
                         </div>
                     </div>
@@ -545,9 +598,16 @@
                                 <thead>
                                     <tr>
                                         <th>Full Name</th>
-                                        <th>Email</th>
                                         <th>Photo</th>
-                                        <th>Assigned Classes</th>
+                                        <th><span class="badge bg-warning mb-1"
+                                                style="font-size: 0.95em; vertical-align: middle;">Advisory Class
+                                                <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
+                                                    style="font-size: 0.95em; vertical-align: middle;"></i></span><br>
+                                            <span class="badge bg-secondary"
+                                                style="font-size: 0.95em; vertical-align: middle;">Subject-based
+                                                Classes</span>
+                                        </th>
+                                        <th>Email</th>
                                         <th>Contact No.</th>
                                         <th>Actions</th>
                                     </tr>
@@ -555,22 +615,47 @@
                                 <tbody class="table-border-bottom-0">
                                     @foreach ($teachers as $teacher)
                                         <tr class="teacher-row">
-                                            <td>{{ $teacher->lastName }}, {{ $teacher->firstName }},
-                                                {{ $teacher->extName }} {{ $teacher->middleName }}</td>
-                                            <td>{{ $teacher->email }}</td>
+                                            <td>{{ $teacher->firstName }} {{ $teacher->middleName }}
+                                                {{ $teacher->lastName }} {{ $teacher->extName }}</td>
                                             <td>
                                                 @if ($teacher->profile_photo)
                                                     <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
-                                                        alt="Profile Photo" width="30" height="30"
+                                                        alt="Profile Photo" width="55" height="55"
                                                         style="object-fit: cover; border-radius: 50%;">
                                                 @else
                                                     <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                        alt="no profile" width="30" height="30"
+                                                        alt="no profile" width="55" height="55"
                                                         style="object-fit: cover; border-radius: 50%">
                                                 @endif
                                             </td>
-                                            <td>{{ $teacher->class->formatted_grade_level }} -
-                                                {{ ucfirst($teacher->class->section) }}</td>
+                                            <td>
+                                                @if ($teacher->classes && count($teacher->classes))
+                                                    @foreach ($teacher->classes as $class)
+                                                        @php
+                                                            $role = $class->pivot->role ?? null;
+                                                            $isAdvisory = $role === 'adviser';
+                                                            $badgeClass = $isAdvisory ? 'bg-warning' : 'bg-secondary';
+                                                        @endphp
+
+                                                        <span class="badge {{ $badgeClass }} text-auto mb-1">
+                                                            {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                            - Section {{ $class->section }}
+                                                            @if ($isAdvisory)
+                                                                <i class="bx bxs-star text-auto ms-1"
+                                                                    title="Advisory Class"
+                                                                    style="font-size: 0.85em; vertical-align: middle;"></i>
+                                                            @endif
+                                                        </span>
+
+                                                        @if (!$loop->last)
+                                                            <br>
+                                                        @endif
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted">No class assigned</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $teacher->email }}</td>
                                             <td>{{ $teacher->phone }}</td>
                                             <td>
                                                 <div class="dropdown">
@@ -591,7 +676,6 @@
                                                             onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}')">
                                                             <i class="bx bx-trash me-1"></i> Delete
                                                         </button>
-
                                                         <!-- Hidden form to submit delete -->
                                                         <form id="delete-form-{{ $teacher->id }}"
                                                             action="{{ route('delete.teacher', $teacher->id) }}"
@@ -632,90 +716,15 @@
 
 @push('scripts')
     <script>
-        // search bar
+        // Search bar filter
         document.getElementById('teacherSearch').addEventListener('keyup', function() {
             const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#teachersTable tbody .teacher-row');
-
-            rows.forEach(row => {
-                const rowText = row.innerText.toLowerCase();
-                row.style.display = rowText.includes(searchValue) ? '' : 'none';
+            document.querySelectorAll('#teachersTable tbody .teacher-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(searchValue) ? '' : 'none';
             });
         });
-    </script>
 
-    <script>
-        // register alert
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('#backDropModal form');
-            const registerBtn = document.getElementById('registerTeacherBtn');
-
-            registerBtn.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default form submission
-
-                // Manually check all required fields
-                const requiredFields = form.querySelectorAll('[required]');
-                let allFilled = true;
-
-                requiredFields.forEach(field => {
-                    if (!field.value.trim()) {
-                        allFilled = false;
-                        field.classList.add('is-invalid'); // optional: Bootstrap red border
-                    } else {
-                        field.classList.remove('is-invalid');
-                    }
-                });
-
-                if (!allFilled) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Incomplete Form',
-                        text: 'Please fill in all required fields before submitting.',
-                        confirmButtonColor: '#dc3545',
-                        customClass: {
-                            container: 'my-swal-container'
-                        }
-                    });
-                    return;
-                }
-
-                // If all fields are filled, show confirmation alert
-                Swal.fire({
-                    title: "Register Teacher?",
-                    text: "Are you sure all the details are correct?",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonColor: "#06D001",
-                    cancelButtonColor: "#6c757d",
-                    confirmButtonText: "Yes, register",
-                    cancelButtonText: "Cancel",
-                    customClass: {
-                        container: 'my-swal-container'
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: "Registering...",
-                            text: "Please wait while we process the registration.",
-                            icon: "info",
-                            allowOutsideClick: false,
-                            showConfirmButton: false,
-                            timer: 1200,
-                            customClass: {
-                                container: 'my-swal-container'
-                            },
-                            willClose: () => {
-                                form.submit();
-                            }
-                        });
-                    }
-                });
-            });
-        });
-    </script>
-
-    <script>
-        // delete button alert
+        // Delete confirmation
         function confirmDelete(teacherId, firstName, lastName) {
             Swal.fire({
                 title: `Delete ${firstName} ${lastName}'s record?`,
@@ -731,32 +740,155 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Deleting...",
-                        text: "Please wait while we remove the record.",
-                        icon: "info",
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        customClass: {
-                            container: 'my-swal-container'
-                        },
-                        didOpen: () => {
-                            setTimeout(() => {
-                                document.getElementById('delete-form-' + teacherId).submit();
-                            }, 1000);
-                        }
-                    });
+                    document.getElementById('delete-form-' + teacherId).submit();
                 }
             });
         }
-    </script>
 
+        // Logout confirmation
+        function confirmLogout() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You want to log out?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, log out!",
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('logout-form').submit();
+                }
+            });
+        }
 
+        // Profile photo preview and reset
+        const uploadInput = document.getElementById('upload');
+        const previewImg = document.getElementById('photo-preview');
+        const resetBtn = document.getElementById('reset-photo');
+        const defaultImage = "{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}";
 
+        uploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => previewImg.src = e.target.result;
+                reader.readAsDataURL(file);
+            }
+        });
 
+        resetBtn.addEventListener('click', function() {
+            uploadInput.value = '';
+            previewImg.src = defaultImage;
+        });
 
-    <script>
-        // alert after a success edit or delete of teacher's info
+        // Register Teacher Modal Form Validation and Submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('#backDropModal form');
+            const registerBtn = document.getElementById('registerTeacherBtn');
+
+            registerBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                let allFilled = true;
+                let passwordErrors = [];
+                form.querySelectorAll('[required]').forEach(field => {
+                    if (!field.value.trim()) {
+                        allFilled = false;
+                        field.classList.add('is-invalid');
+                    } else {
+                        field.classList.remove('is-invalid');
+                    }
+                });
+
+                const password = form.password.value;
+                const passwordConfirm = form.password_confirmation.value;
+
+                if (password.length < 8) passwordErrors.push("Password must be at least 8 characters.");
+                if (!/[a-z]/.test(password)) passwordErrors.push(
+                    "Password must include at least one lowercase letter.");
+                if (!/[A-Z]/.test(password)) passwordErrors.push(
+                    "Password must include at least one uppercase letter.");
+                if (!/[0-9]/.test(password)) passwordErrors.push(
+                    "Password must include at least one number.");
+                if (!/[@$!%*#?&]/.test(password)) passwordErrors.push(
+                    "Password must include at least one special character (@$!%*#?&).");
+                if (password !== passwordConfirm) passwordErrors.push(
+                    "Password confirmation does not match.");
+
+                if (!allFilled) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Form',
+                        text: 'Please fill in all required fields before submitting.',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                if (passwordErrors.length) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Password',
+                        html: passwordErrors.join('<br>'),
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Register Teacher?",
+                    text: "Are you sure all the details are correct?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#06D001",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, register",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            // Advisory class options update
+            const classesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
+            const assignedSelect = document.getElementById('assigned_classes');
+            const advisorySelect = document.getElementById('advisory_class');
+            const oldAdvisory = advisorySelect.dataset.old;
+
+            function updateAdvisoryOptions() {
+                const selectedAssigned = Array.from(assignedSelect.selectedOptions).map(opt => parseInt(opt.value));
+                advisorySelect.innerHTML = '<option value="">-- Select advisory class from assigned --</option>';
+                Array.from(assignedSelect.options).forEach(option => {
+                    const classId = parseInt(option.value);
+                    if (selectedAssigned.includes(classId) && !classesWithAdvisers.includes(classId)) {
+                        const newOption = document.createElement('option');
+                        newOption.value = option.value;
+                        newOption.textContent = option.textContent;
+                        if (oldAdvisory && option.value === oldAdvisory) newOption.selected = true;
+                        advisorySelect.appendChild(newOption);
+                    }
+                });
+            }
+            updateAdvisoryOptions();
+            assignedSelect.addEventListener('change', updateAdvisoryOptions);
+        });
+
+        // Success alert
         @if (session('success'))
             Swal.fire({
                 icon: 'success',
@@ -768,57 +900,18 @@
                 }
             });
         @endif
-    </script>
 
-    <script>
-        // alert for logout
-        function confirmLogout() {
+        // Registration error alert (email)
+        @if ($errors->has('email'))
             Swal.fire({
-                title: "Are you sure?",
-                text: "You want to log out?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, log out!",
-
+                icon: 'error',
+                title: 'Registration Error',
+                text: '{{ $errors->first('email') }}',
+                confirmButtonColor: '#dc3545',
                 customClass: {
                     container: 'my-swal-container'
                 }
-
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Logged out Successfully!",
-                        icon: "success"
-                    });
-                    document.getElementById('logout-form').submit();
-                }
             });
-        }
-    </script>
-
-    <script>
-        // alert for upload and preview profile in registration
-        const uploadInput = document.getElementById('upload');
-        const previewImg = document.getElementById('photo-preview');
-        const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}";
-
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        resetBtn.addEventListener('click', function() {
-            uploadInput.value = '';
-            previewImg.src = defaultImage;
-        });
+        @endif
     </script>
 @endpush

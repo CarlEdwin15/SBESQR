@@ -251,14 +251,15 @@
                         </form>
 
                         <h4 class="mb-4 text-center fw-bold">List of Students</h4><br>
-                        <h5 class="text-center">Teacher{{ $teachers->count() > 1 ? 's' : '' }}:</h5>
+                        <h5 class="text-center">Adviser:</h5>
 
-                        @forelse($teachers as $teacher)
-                            <h5 class="text-warning text-center mb-4">{{ $teacher->firstName }} {{ $teacher->lastName }}
+                        @if ($class->adviser)
+                            <h5 class="text-info text-center mb-4">
+                                {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
                             </h5>
-                        @empty
+                        @else
                             <h6 class="text-danger text-center mb-4">No teacher assigned</h6>
-                        @endforelse
+                        @endif
 
                         <div class="row">
                             <!-- Male Table -->

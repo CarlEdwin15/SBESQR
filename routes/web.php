@@ -16,6 +16,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
+// ADMIN DASHBOARD ROUTES
+
 // Teachers management (on ADMIN dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
@@ -36,7 +39,7 @@ Route::get('/export-teachers', function () {
 })->name('export.teachers');
 
 
-//Students Management (on ADMIN dashboard)
+// Students Management (on ADMIN dashboard)
 Route::get('/addStudent', [StudentController::class, 'create'])->name('add.student');
 
 Route::post('/addStudent', [StudentController::class, 'store'])->name('store.student');
@@ -58,7 +61,7 @@ Route::get('/students/{id}/generate-id', [IdController::class, 'generateID'])->n
 Route::get('/students/{id}/download-id', [IdController::class, 'downloadID'])->name('students.downloadID');
 
 
-//Class Management (on ADMIN dashboard)
+// Class Management (on ADMIN dashboard)
 Route::get('/classes', [ClassController::class, 'allClasses'])->name('all.classes');
 
 Route::get('/classes/{grade_level}/{section}', [ClassController::class, 'showClass'])->name('classes.showClass');
@@ -68,13 +71,13 @@ Route::get('/classes/{grade_level}/{section}/masterList', [ClassController::clas
 Route::get('/classes/{grade_level}/{section}/export-master-list', [ClassController::class, 'exportMasterList'])->name('classes.exportMasterList');
 
 
-//Schedule Management (on ADMIN dashboard)
+// Schedule Management (on ADMIN dashboard)
 Route::get('/classes/{grade_level}/{section}/schedule', [ScheduleController::class, 'displaySchedule'])->name('classes.schedule.index');
 
 Route::post('/classes/{grade_level}/{section}/addSchedule', [ScheduleController::class, 'addSchedule'])->name('classes.addSchedule');
 
 
-//Attendance Management (on ADMIN dashboard)
+// Attendance Management (on ADMIN dashboard)
 Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController::class, 'attendance'])->name('classes.attendance');
 
 
@@ -84,7 +87,7 @@ Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController:
 
 
 
-
+// TEACHER DASHBOARD ROUTES
 
 //List of Teacher's Students (on teacher Dashboard)
 Route::get('/myStudents/{grade_level}/{section}', [TeacherController::class, 'myStudents'])->name('teacher.my.students');

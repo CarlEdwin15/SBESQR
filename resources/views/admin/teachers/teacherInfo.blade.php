@@ -50,13 +50,6 @@
                                 </a>
                             </li>
                         </ul>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Class Schedules</div>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
 
                     {{-- Students sidebar --}}
@@ -260,7 +253,7 @@
                                     @endif
                                 </div>
 
-                                {{-- Student Details --}}
+                                {{-- Teacher Details --}}
                                 <div class="col-md-8 mt-3 mb-3">
                                     <table class="table table-bordered">
                                         <tbody>
@@ -271,9 +264,62 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <th class="text-primary">Grade Level & Section</th>
-                                                <td>{{ $teacher->class->formatted_grade_level }} -
-                                                    {{ $teacher->class->section }}</td>
+                                                <th class="text-primary">Advisory Class</th>
+                                                <td>
+                                                    @php
+                                                        $advisoryClass = null;
+                                                        if ($teacher->classes && count($teacher->classes)) {
+                                                            foreach ($teacher->classes as $class) {
+                                                                if (($class->pivot->role ?? null) === 'adviser') {
+                                                                    $advisoryClass = $class;
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    @if ($advisoryClass)
+                                                        <span class="badge bg-warning text-auto mb-1">
+                                                            {{ strtoupper($advisoryClass->formattedGradeLevel ?? $advisoryClass->grade_level) }}
+                                                            - Section {{ $advisoryClass->section }}
+                                                            <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
+                                                                style="font-size: 0.85em; vertical-align: middle;"></i>
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted">No Advisory Class</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="text-primary">Subject-Based Classes</th>
+                                                <td>
+                                                    @php
+                                                        $assignedClasses = [];
+                                                        if ($teacher->classes && count($teacher->classes)) {
+                                                            foreach ($teacher->classes as $class) {
+                                                                if (($class->pivot->role ?? null) !== 'adviser') {
+                                                                    $assignedClasses[] = $class;
+                                                                }
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    @if (count($assignedClasses))
+                                                        @foreach ($assignedClasses as $class)
+                                                            <span class="badge bg-secondary text-auto mb-1">
+                                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                                - Section {{ $class->section }}
+                                                            </span>
+                                                            @if (!$loop->last)
+                                                                <br>
+                                                            @endif
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted">No Subject-Based Class</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="text-primary">Email</th>
+                                                <td>{{ $teacher->email }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Age</th>

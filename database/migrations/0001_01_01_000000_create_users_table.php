@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
+            // $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
             $table->string('firstName')->nullable();
             $table->string('lastName')->nullable();
             $table->string('middleName')->nullable();
@@ -40,6 +40,16 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('class_user', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
+            $table->enum('role', ['adviser', 'subject_teacher', 'both'])->default('subject_teacher');
+            $table->timestamps();
+
+            $table->unique(['user_id', 'class_id'], 'user_class_unique');
+        });
+
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
@@ -61,8 +71,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('class_user');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
