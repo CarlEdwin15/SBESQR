@@ -87,9 +87,39 @@
                         </ul>
                     </li>
 
+                    {{-- Announcement sidebar --}}
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
+                            <div class="text-light">Announcements</div>
+                        </a>
+                        <ul class="menu-sub">
+                            <li class="menu-item">
+                                <a href="" class="menu-link bg-dark text-light">
+                                    <div class="text-light">All Announcements</div>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    {{-- Payments sidebar --}}
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                            <div class="text-light">Payments</div>
+                        </a>
+                        <ul class="menu-sub">
+                            <li class="menu-item">
+                                <a href="" class="menu-link bg-dark text-light">
+                                    <div class="text-light">All Payments</div>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
+                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -133,8 +163,20 @@
                                     data-bs-toggle="dropdown">
                                     <div class="d-flex align-items-center">
                                         <div class="avatar">
-                                            <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                alt class="w-px-40 h-auto rounded-circle" />
+                                            @auth
+                                                @php
+                                                    $profilePhoto = Auth::user()->profile_photo
+                                                        ? asset('storage/' . Auth::user()->profile_photo)
+                                                        : asset(
+                                                            'assetsDashboard/img/profile_pictures/admin_profile.png',
+                                                        );
+                                                @endphp
+                                                <img src="{{ $profilePhoto }}" alt="Profile Photo"
+                                                    class="w-px-40 h-auto rounded-circle" />
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
+                                                    alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
+                                            @endauth
                                         </div>
                                         @auth
                                             <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
@@ -181,7 +223,7 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="#">
+                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
                                             <i class="bx bx-cog me-2"></i>
                                             <span class="align-middle">Settings</span>
                                         </a>

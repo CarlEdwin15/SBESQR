@@ -1,7 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | All Students')
-
+@section('title', 'Admin | Edit Teacher')
 
 @section('content')
 
@@ -36,7 +35,7 @@
                     <!-- Teachers sidebar -->
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
+                            <i class="menu-icon tf-icons bx bx-user-pin"></i>
                             <div class="text-light">Teachers</div>
                         </a>
 
@@ -50,15 +49,15 @@
                     </li>
 
                     {{-- Students sidebar --}}
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bxs-graduation"></i>
-                            <div>Students</div>
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
+                            <div class="text-light">Students</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item active">
+                            <li class="menu-item">
                                 <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">All Students</div>
+                                    <div class="text-light">All Students</div>
                                 </a>
                             </li>
                             <li class="menu-item">
@@ -88,7 +87,6 @@
                             </li>
                         </ul>
                     </li>
-
                     {{-- Announcement sidebar --}}
                     <li class="menu-item">
                         <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
@@ -120,10 +118,10 @@
                     </li>
 
                     {{-- Account Settings sidebar --}}
-                    <li class="menu-item">
-                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
-                            <i class="bx bx-cog me-3 text-light"></i>
-                            <div class="text-light"> Account Settings</div>
+                    <li class="menu-item active">
+                        <a href="{{ route('account.settings') }}" class="menu-link">
+                            <i class="menu-icon bx bx-cog"></i>
+                            <div>Account Settings</div>
                         </a>
                     </li>
 
@@ -145,6 +143,7 @@
 
             <!-- Layout container -->
             <div class="layout-page">
+
                 <!-- Navbar -->
 
                 <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
@@ -157,14 +156,17 @@
 
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
                         <!-- Search -->
-                        <div class="navbar-nav align-items-center">
-
-                        </div>
+                        {{-- <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="bx bx-search fs-4 lh-0"></i>
+                                <input type="text" class="form-control border-0 shadow-none" placeholder="Search..."
+                                    aria-label="Search..." />
+                            </div>
+                        </div> --}}
                         <!-- /Search -->
 
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
-
-                            <!-- User Profile-->
+                            <!-- User -->
                             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
                                     data-bs-toggle="dropdown">
@@ -196,19 +198,16 @@
                                     <li>
                                         <a class="dropdown-item" href="#">
                                             <div class="d-flex">
-
                                                 <div class="flex-shrink-0 me-3">
                                                     <div class="avatar">
                                                         <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
                                                             alt class="w-px-40 h-auto rounded-circle" />
                                                     </div>
                                                 </div>
-
                                                 <div class="flex-grow-1">
                                                     <span class="fw-semibold d-block">{{ Auth::user()->firstName }}</span>
                                                     <small class="text-muted">Admin</small>
                                                 </div>
-
                                             </div>
                                         </a>
                                     </li>
@@ -234,14 +233,12 @@
                                     </li>
                                     <form id="logout-form" method="POST" action="{{ route('logout') }}">
                                         @csrf
-                                        <x-dropdown-link class="dropdown-item" href="{{ route('logout') }}"
+                                        <div class="dropdown-item" href="{{ route('logout') }}"
                                             onclick="event.preventDefault(); confirmLogout();">
                                             <i class="bx bx-power-off me-2"></i>
                                             {{ __('Log Out') }}
-                                        </x-dropdown-link>
+                                        </div>
                                     </form>
-
-
 
                                 </ul>
                             </li>
@@ -256,190 +253,140 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
-                        </span> All Students
+                        </span> Account Settings
                     </h4>
 
-                    {{-- Card --}}
-                    <div class="card d-flex flex-column" style="min-height: 485px;">
-                        <div class="card-header">
-                            <h5 class="fw-bold mb-4 text-primary">All Students</h5>
+                    <hr class="my-4" />
 
-                            <div
-                                class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
-                                <!-- Search input -->
-                                <div class="d-flex align-items-center w-100" style="max-width: 600px;">
-                                    <i class="bx bx-search fs-4 lh-0 me-2"></i>
-                                    <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
-                                        placeholder="Search..." aria-label="Search..." />
-                                </div>
-
-                                <!-- Export button -->
-                                <div class="ms-md-auto">
-                                    <a href="" class="btn btn-success" style="padding: 8px 12px;">
-                                        <i class="bx bx-printer"></i> Export to Excel
-                                    </a>
-                                </div>
-                            </div>
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
+                    @endif
 
-                        <!-- Table content grows to fill space -->
-                        <div class="table-responsive text-nowrap flex-grow-1">
-                            <table class="table table-hover table-bordered text-center mb-0" id="kindergartenTable">
-                                <thead>
-                                    <tr>
-                                        <th>Full Name</th>
-                                        <th>Photo</th>
-                                        <th>LRN</th>
-                                        <th>Grade & Section</th>
-                                        <th>Emergency Contact No.</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="table-border-bottom-0">
-                                    @foreach ($students as $student)
-                                        <tr class="student-row">
-                                            <td>{{ $student->student_lName }}, {{ $student->student_fName }},
-                                                {{ $student->student_extName }} {{ $student->student_mName }}</td>
-                                            <td>
-                                                @if ($student->student_photo)
-                                                    <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                        alt="Profile Photo" width="30" height="30"
-                                                        style="object-fit: cover; border-radius: 50%;">
-                                                @else
-                                                    <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                        alt="No Profile" width="30" height="30"
-                                                        style="object-fit: cover; border-radius: 50%;">
-                                                @endif
-                                            </td>
-                                            <td>{{ $student->student_lrn }}</td>
-                                            <td>{{ $student->class->formatted_grade_level }} -
-                                                {{ ucfirst($student->class->section) }}</td>
-                                            <td>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</td>
-                                            <td>
-                                                <div class="dropdown">
-                                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-                                                        data-bs-toggle="dropdown">
-                                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu">
-                                                        <a class="dropdown-item text-info"
-                                                            href="{{ route('student.info', ['id' => $student->id]) }}">
-                                                            <i class="bx bxs-user-badge me-1"></i> View Profile
-                                                        </a>
-                                                        <a class="dropdown-item text-warning"
-                                                            href="{{ route('edit.student', ['id' => $student->id]) }}">
-                                                            <i class="bx bx-edit-alt me-1"></i> Edit
-                                                        </a>
-                                                        <button type="button" class="dropdown-item text-danger"
-                                                            onclick="confirmDelete({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}')">
-                                                            <i class="bx bx-trash me-1"></i> Delete
-                                                        </button>
-                                                        <form id="delete-form-{{ $student->id }}"
-                                                            action="{{ route('delete.student', $student->id) }}"
-                                                            method="POST" style="display: none;">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Permanently positioned pagination -->
-                        <div class="d-flex justify-content-start px-3 py-2 border-top">
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination mb-0" id="kindergartenPagination"></ul>
-                            </nav>
-                        </div>
+                    <div class="d-flex justify-content-start mb-3 gap-2">
+                        <button type="button" class="btn btn-danger d-flex align-items-center gap-1"
+                            onclick="handleCancel()">
+                            <i class="bx bx-arrow-back"></i>
+                            <span class="d-sm-block">Back</span>
+                            {{-- {{ url()->previous() }} --}}
+                        </button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"
+                            id="saveChangesBtn">
+                            <i class="bx bx-save"></i>
+                            <span class="d-sm-block">Save</span>
+                        </button>
                     </div>
 
-                    <hr class="my-5" />
+                    <!-- User's Details -->
+                    <form action="{{ route('update.admin', ['id' => auth()->user()->id]) }}" method="POST"
+                        enctype="multipart/form-data">
+                        @csrf
+
+                        <div class="mb-3">
+                            <label for="profile_photo" class="form-label">Profile Photo</label><br>
+                            <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile Photo"
+                                width="100">
+                            <input type="file" name="profile_photo" class="form-control mt-2" accept="image/*">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" name="firstName" class="form-control"
+                                value="{{ auth()->user()->firstName }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                value="{{ auth()->user()->email }}" required>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <input type="password" name="current_password" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" name="new_password" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" name="confirm_password" class="form-control">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Update Settings</button>
+                    </form>
+                    <!-- /User's Details -->
 
                 </div>
-                <!-- Content wrapper -->
+                <!-- / Content wrapper -->
 
+                <hr class="my-5" />
             </div>
-            <!-- / Layout page -->
+            <!-- /Account -->
         </div>
     </div>
-    <!-- / Layout wrapper -->
-
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-
-
-
+    <!-- / Layout Wrapper -->
 
 
 @endsection
 
 @push('scripts')
     <script>
-        // search bar
-        document.getElementById('studentSearch').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#studentTable tbody .student-row');
+        //cancel button alert in registration
+        let formChanged = false;
+        const form = document.getElementById('editTeacherForm');
 
-            rows.forEach(row => {
-                const rowText = row.innerText.toLowerCase();
-                row.style.display = rowText.includes(searchValue) ? '' : 'none';
-            });
+        // Detect form changes
+        form.addEventListener('input', () => {
+            formChanged = true;
         });
-    </script>
 
-    <script>
-        // Pagination function
-        function paginateTable(tableId, paginationId, rowsPerPage = 5) {
-            const table = document.getElementById(tableId);
-            const pagination = document.getElementById(paginationId);
-            const rows = table.querySelectorAll("tbody tr");
-            const totalPages = Math.ceil(rows.length / rowsPerPage);
-
-            function showPage(page) {
-                const start = (page - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
-
-                rows.forEach((row, i) => {
-                    row.style.display = (i >= start && i < end) ? "" : "none";
+        // Cancel button logic
+        function handleCancel() {
+            if (!formChanged) {
+                // If form is untouched, just redirect
+                window.location.href = "{{ route('show.teachers') }}";
+            } else {
+                // If form has been changed, ask for confirmation
+                Swal.fire({
+                    title: "Cancel editing and discard any changes?",
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                    confirmButtonText: "Save",
+                    denyButtonText: `Don't save`,
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isDenied) {
+                        form.reset();
+                        window.location.href = "{{ route('show.teachers') }}";
+                    }
+                    // If cancelled, do nothing
                 });
-
-                pagination.innerHTML = "";
-                for (let i = 1; i <= totalPages; i++) {
-                    const btn = document.createElement("button");
-                    btn.textContent = i;
-                    btn.className = `btn btn-sm mx-1 ${i === page ? 'btn-primary' : 'btn-outline-primary'}`;
-                    btn.onclick = () => showPage(i);
-                    pagination.appendChild(btn);
-                }
             }
-
-            showPage(1); // Initialize with the first page
         }
 
-        // Apply pagination to each table
-        document.addEventListener("DOMContentLoaded", () => {
-            paginateTable("kindergartenTable", "kindergartenPagination");
-            paginateTable("grade1Table", "grade1Pagination");
-        });
-    </script>
-
-
-    <script>
-        // delete button alert
-        function confirmDelete(id, student_fName, student_lName) {
+        //save button
+        document.getElementById('saveChangesBtn').addEventListener('click', function() {
             Swal.fire({
-                title: `Delete ${student_fName} ${student_lName}'s record?`,
-                text: "This action cannot be undone.",
+                title: "Save changes?",
+                text: "Are you sure you want to update this teacher's details?",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#6c757d",
-                confirmButtonText: "Yes, delete it!",
+                confirmButtonColor: "#28a745",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, save it",
                 cancelButtonText: "Cancel",
                 customClass: {
                     container: 'my-swal-container'
@@ -447,46 +394,27 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({
-                        title: "Deleting...",
-                        text: "Please wait while we remove the record.",
+                        title: "Saving...",
+                        text: "Please wait while we update the details.",
                         icon: "info",
                         allowOutsideClick: false,
                         showConfirmButton: false,
+                        timer: 1000,
                         customClass: {
                             container: 'my-swal-container'
                         },
-                        didOpen: () => {
-                            setTimeout(() => {
-                                document.getElementById('delete-form-' + id).submit();
-                            }, 1000);
+                        willClose: () => {
+                            document.getElementById('editTeacherForm')
+                                .submit(); // Submit the form after short delay
                         }
                     });
                 }
             });
-        }
-    </script>
-
-
-
-
-
-    <script>
-        // alert after a success edit or delete of teacher's info
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: '{{ session('success') }}',
-                confirmButtonColor: '#3085d6',
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            });
-        @endif
+        });
     </script>
 
     <script>
-        // alert for logout
+        //logout button
         function confirmLogout() {
             Swal.fire({
                 title: "Are you sure?",
@@ -517,26 +445,70 @@
     </script>
 
     <script>
-        // alert for upload and preview profile in registration
-        const uploadInput = document.getElementById('upload');
-        const previewImg = document.getElementById('photo-preview');
-        const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}";
+        // image profile upload/preview
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('upload');
+            const resetBtn = document.querySelector('.account-image-reset');
+            const imagePreview = document.querySelector('.profile-preview');
 
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            if (!fileInput || !resetBtn || !imagePreview) {
+                console.warn('Required elements not found.');
+                return;
             }
-        });
 
-        resetBtn.addEventListener('click', function() {
-            uploadInput.value = '';
-            previewImg.src = defaultImage;
+            const originalImageSrc = imagePreview.src;
+
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            resetBtn.addEventListener('click', function() {
+                fileInput.value = ''; // Clear the file input
+                imagePreview.src = originalImageSrc; // Reset image
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignedSelect = document.getElementById('assigned_classes');
+            const advisorySelect = document.getElementById('advisory_class');
+            const allOptions = Array.from(assignedSelect.options);
+
+            function updateAdvisoryOptions() {
+                const selectedAssigned = Array.from(assignedSelect.selectedOptions).map(opt => opt.value);
+                const selectedAdvisory = advisorySelect.value;
+
+                // Clear current advisory options
+                advisorySelect.innerHTML = '<option value=""> No advisory class </option>';
+
+                allOptions.forEach(option => {
+                    if (selectedAssigned.includes(option.value)) {
+                        const newOption = document.createElement('option');
+                        newOption.value = option.value;
+                        newOption.textContent = option.textContent;
+
+                        if (option.value === selectedAdvisory) {
+                            newOption.selected = true;
+                        }
+
+                        advisorySelect.appendChild(newOption);
+                    }
+                });
+            }
+
+            // Initialize on page load
+            updateAdvisoryOptions();
+
+            // Update on change
+            assignedSelect.addEventListener('change', updateAdvisoryOptions);
         });
     </script>
 @endpush

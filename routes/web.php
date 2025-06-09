@@ -22,6 +22,11 @@ Route::get('/', function () {
 // Teachers management (on ADMIN dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+// User Account Settings (on ADMIN dashboard)
+Route::get('/accountSettings', [AdminController::class, 'accountSettings'])->name('account.settings');
+
+Route::post('/updateAdminAccount/{id}', [AdminController::class, 'updateAdmin'])->name('update.admin');
+
 Route::get('/showAllTeachers', [AdminController::class, 'showAllTeachers'])->name('show.teachers');
 
 Route::post('/registerTeacher', [AdminController::class, 'registerTeacher'])->name('register.teacher');

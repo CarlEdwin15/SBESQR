@@ -89,9 +89,39 @@
                         </ul>
                     </li>
 
+                    {{-- Announcement sidebar --}}
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
+                            <div class="text-light">Announcements</div>
+                        </a>
+                        <ul class="menu-sub">
+                            <li class="menu-item">
+                                <a href="" class="menu-link bg-dark text-light">
+                                    <div class="text-light">All Announcements</div>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    {{-- Payments sidebar --}}
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                            <div class="text-light">Payments</div>
+                        </a>
+                        <ul class="menu-sub">
+                            <li class="menu-item">
+                                <a href="" class="menu-link bg-dark text-light">
+                                    <div class="text-light">All Payments</div>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
+                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -193,7 +223,7 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="#">
+                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
                                             <i class="bx bx-cog me-2"></i>
                                             <span class="align-middle">Settings</span>
                                         </a>
@@ -346,23 +376,17 @@
                                     <div class="col mb-2 mt-2">
                                         <label for="student_section" class="form-label fw-bold">Section</label>
                                         <select name="student_section" id="student_section" class="form-select" required>
-                                            <option
-                                                value="A"{{ $student->class->section == 'A' ? 'selected' : '' }}>
+                                            <option value="A"{{ $student->class->section == 'A' ? 'selected' : '' }}>
                                                 Section A</option>
-                                            <option
-                                                value="B"{{ $student->class->section == 'B' ? 'selected' : '' }}>
+                                            <option value="B"{{ $student->class->section == 'B' ? 'selected' : '' }}>
                                                 Section B</option>
-                                            <option
-                                                value="C"{{ $student->class->section == 'C' ? 'selected' : '' }}>
+                                            <option value="C"{{ $student->class->section == 'C' ? 'selected' : '' }}>
                                                 Section C</option>
-                                            <option
-                                                value="D"{{ $student->class->section == 'D' ? 'selected' : '' }}>
+                                            <option value="D"{{ $student->class->section == 'D' ? 'selected' : '' }}>
                                                 Section D</option>
-                                            <option
-                                                value="E"{{ $student->class->section == 'E' ? 'selected' : '' }}>
+                                            <option value="E"{{ $student->class->section == 'E' ? 'selected' : '' }}>
                                                 Section E</option>
-                                            <option
-                                                value="F"{{ $student->class->section == 'F' ? 'selected' : '' }}>
+                                            <option value="F"{{ $student->class->section == 'F' ? 'selected' : '' }}>
                                                 Section F</option>
                                         </select>
                                     </div>

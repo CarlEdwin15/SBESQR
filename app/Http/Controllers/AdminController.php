@@ -7,9 +7,67 @@ use App\Models\Classes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
+    public function accountSettings()
+    {
+        $user = Auth::user(); // Get the currently logged-in admin
+        return view('admin.accountSettings', compact('user'));
+    }
+
+    public function updateAdmin($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Check if the logged-in user is updating their own account
+        if (Auth::id() != $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $data = request()->all();
+
+        $validated = Validator::make($data, [
+            'firstName' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'current_password' => 'nullable|string',
+            'new_password' => 'nullable|string|min:8|same:confirm_password',
+        ]);
+
+        if ($validated->fails()) {
+            return redirect()->back()->withErrors($validated)->withInput();
+        }
+
+        // Update profile photo if provided
+        if (request()->hasFile('profile_photo')) {
+            if ($user->profile_photo) {
+                Storage::delete('public/' . $user->profile_photo);
+            }
+            $path = request()->file('profile_photo')->store('profile_photos', 'public');
+            $user->profile_photo = $path;
+        }
+
+        // Update basic fields
+        $user->firstName = $data['firstName'];
+        $user->email = $data['email'];
+
+        // Handle password update
+        if (!empty($data['current_password']) && !empty($data['new_password'])) {
+            if (Hash::check($data['current_password'], $user->password)) {
+                $user->password = Hash::make($data['new_password']);
+            } else {
+                return back()->withErrors(['current_password' => 'Current password is incorrect'])->withInput();
+            }
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Account updated successfully');
+    }
+
     public function showAllTeachers()
     {
         $teachers = User::where('role', 'teacher')->get();
