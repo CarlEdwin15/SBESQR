@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Dashboard')
+@section('title', 'Teacher | My Class')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -21,10 +21,10 @@
                 <ul class="menu-inner py-1 bg-dark">
 
                     <!-- Dashboard sidebar-->
-                    <li class="menu-item active">
-                        <a href="{{ '/home ' }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                            <div>Dashboard</div>
+                    <li class="menu-item">
+                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                            <div class="text-light">Dashboard</div>
                         </a>
                     </li>
 
@@ -45,15 +45,15 @@
                     </li>
 
                     {{-- Classes sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0)" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-notepad text-light"></i>
-                            <div class="text-light">Classes</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0)" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bx-notepad"></i>
+                            <div>Classes</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item">
+                            <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">My Classes</div>
+                                    <div class="text-danger">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -215,194 +215,102 @@
 
                 <!-- / Navbar -->
 
-
                 <!-- Content wrapper -->
-                <div class="content-wrapper">
-                    <!-- Content -->
-                    @php
-                        use Illuminate\Support\Facades\Auth;
-                        use App\Models\Student;
-                        use App\Models\Classes;
-                        use App\Models\User;
+                <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h4 class="fw-bold text-warning mb-0">
+                                <span class="text-muted fw-light">
+                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                                    <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
+                                </span>
+                                {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
+                            </h4>
+                            <small class="text-muted">Class Details &amp; Management</small>
+                        </div>
+                        <a href="{{ route('teacher.myClasses', ['section' => $class->section]) }}"
+                            class="btn btn-outline-danger rounded-pill">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                    </div>
 
-                        $teacher = Auth::user(); // Get the logged-in teacher
-                        $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
-
-                        $myTotalStudents = 0;
-                        $newlyEnrolledStudents = 0;
-
-                        if ($class) {
-                            $myTotalStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->count();
-
-                            $newlyEnrolledStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->where('created_at', '>=', now()->subWeek())
-                                ->count();
-                        }
-
-                        $totalTeachers = User::where('role', 'teacher')->count();
-                    @endphp
-
-                    <div class="container-xxl container-p-y">
-
-                        <div class="row mb-4 g-3">
-                            <!-- My Students Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
-                                        <h3 class="card-title mb-2">{{ $myTotalStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Teachers Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
-                                                    alt="Teachers" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
-                                        <h3 class="card-title mb-2">{{ $totalTeachers }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Attendance Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="d-block mb-1 text-primary">Today's Attendance</span>
-                                        <h3 class="card-title text-nowrap mb-2">85%</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Newly Enrolled Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
-                                        <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
-                                    </a>
+                    <div class="row g-4 mb-4">
+                        <!-- Students -->
+                        <div class="col-md-4">
+                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-people-fill fs-1"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-1">Students</h6>
+                                    <div class="display-6 fw-bold">{{ $studentCount }}</div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Charts Section -->
-                        <div class="row">
-                            <!-- Total Enrollees Chart -->
-                            <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="card-title m-0">Total enrollees as of 2025</h6>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-info text-white dropdown-toggle"
-                                                    type="button" id="yearDropdown" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">
-                                                    2025
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                                    <li><a class="dropdown-item" href="#">2024</a></li>
-                                                    <li><a class="dropdown-item" href="#">2023</a></li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <canvas id="enrolleesChart" height="140"></canvas>
+                        <!-- Attendance Today -->
+                        <div class="col-md-4">
+                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-calendar3 fs-1"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-1">Attendance Today</h6>
+                                    <div class="display-6 fw-bold">
+                                        {{ $attendanceToday ?? '0' }}%
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Gender Ratio -->
-                            <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between pb-0">
-                                        <div class="card-title mb-0">
-                                            <h5 class="m-0 me-2">Student Gender Ratio</h5>
-                                            <small class="text-muted">Total: 2,000 Students</small>
-                                        </div>
+                        </div>
+                        <!-- Teacher -->
+                        <div class="col-md-4">
+                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                                <div class="card-body text-center">
+                                    <div class="mb-2">
+                                        <i class="bi bi-person-badge fs-1"></i>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex flex-column align-items-center gap-1">
-                                                <h2 class="mb-2">2,000</h2>
-                                                <span>Total Students</span>
-                                            </div>
-                                            <div id="genderStatisticsChart"></div>
-                                        </div>
-                                        <ul class="p-0 m-0">
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-danger">
-                                                        <i class="bx bx-female"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Female</h6>
-                                                        <small class="text-muted">1,200 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">60%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-info">
-                                                        <i class="bx bx-male"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Male</h6>
-                                                        <small class="text-muted">800 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">40%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
+                                    <h6 class="fw-semibold mb-1">Adviser</h6>
+                                    <div class="fw-bold text-primary">
+                                        {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- / Content -->
-                    <div class="content-backdrop fade"></div>
+                    <!-- Card Links -->
+                    <div class="row g-3 mb-5">
+                        <div class="col-md-3">
+                            <a href="{{ route('teacher.mySchedule', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
+                                <i class="bi bi-clock-history fs-2 mb-2"></i>
+                                <div class="fw-semibold">Schedules</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
+                                <i class="bi bi-clipboard-check fs-2 mb-2"></i>
+                                <div class="fw-semibold">Attendances</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('teacher.myClassMasterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
+                                <i class="bi bi-list-ul fs-2 mb-2"></i>
+                                <div class="fw-semibold">Master's List</div>
+                            </a>
+                        </div>
+
+                        <div class="col-md-3">
+                            <a href=""
+                                class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
+                                <i class="bx bx-message-check fs-2 mb-4"></i>
+                                <div class="fw-semibold">SMS Logs</div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <hr class="my-5" />
                 </div>
                 <!-- Content wrapper -->
 
@@ -560,6 +468,13 @@
 @endpush
 
 @push('styles')
+    <!-- Main CSS File -->
+    <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
+
+    <!-- Vendor CSS Files -->
+    <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
+
     <style>
         .card-hover:hover {
             transform: translateY(-5px);

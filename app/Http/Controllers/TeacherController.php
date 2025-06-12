@@ -2,31 +2,211 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Classes;
 use App\Models\User;
+use App\Models\Classes;
 use App\Models\Student;
+use App\Models\Attendance;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class TeacherController extends Controller
 {
+
+    public function myClasses(Request $request)
+    {
+        $teacher = User::find(Auth::id());
+
+        $sections = $teacher->classes->pluck('section')->unique()->sort();
+
+        $selectedSection = $request->input('section', $sections->first());
+
+        $classes = $teacher->classes()->where('section', $selectedSection)->get();
+
+        // For each class, fetch teachers with pivot role 'adviser' or 'both'
+        foreach ($classes as $class) {
+            $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
+        }
+
+        return view('teacher.classes.index', compact('classes', 'sections', 'selectedSection'));
+    }
+
+    public function myClass($grade_level, $section)
+    {
+        $class = $this->getClass($grade_level, $section);
+
+        $studentCount = $class->students()->count();
+        // $presentToday = $class->students()->whereHas('attendances', function ($query) {
+        //     $query->whereDate('date', now())->where('status', 'present');
+        // })->count();
+
+        // For each class, fetch teachers with pivot role 'adviser' or 'both'
+        $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
+
+        return view('teacher.classes.myClass', compact('class', 'studentCount'));
+    }
+
+    public function myClassMasterList($grade_level, $section)
+    {
+        $class = $this->getClass($grade_level, $section);
+
+        // Fetch students in the class
+        $students = Student::where('class_id', $class->id)->get();
+        // For each class, fetch teachers with pivot role 'adviser' or 'both'
+        $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
+
+        return view('teacher.classes.myMasterList', compact('class', 'students'));
+    }
+
+    public function mySchedule($grade_level, $section)
+    {
+        $class = $this->getClass($grade_level, $section);
+
+        // Get the authenticated teacher's ID
+        $teacherId = Auth::id();
+
+        // Filter schedules only for the logged-in teacher
+        $schedules = \App\Models\Schedule::where('class_id', $class->id)
+            ->where('teacher_id', $teacherId)
+            ->get();
+
+        // Fetch only this teacher's pivot role in this class
+        $teachers = $class->teachers()
+            ->where('users.id', $teacherId)
+            ->wherePivotIn('role', ['adviser', 'subject_teacher', 'both'])
+            ->get();
+
+        return view('teacher.classes.mySchedule', compact('class', 'schedules', 'teachers'));
+    }
+
+    public function myAttendanceRecord($grade_level, $section)
+    {
+        $class = $this->getClass($grade_level, $section);
+        $students = Student::where('class_id', $class->id)
+            ->orderBy('student_sex') // or 'gender'
+            ->orderBy('student_lName')
+            ->orderBy('student_fName')
+            ->orderBy('student_mName')
+            ->get();
+
+        $monthParam = request('month', now()->format('Y-m'));
+        $dateObj = \Carbon\Carbon::createFromFormat('Y-m', $monthParam);
+        $year = $dateObj->year;
+        $month = $dateObj->month;
+
+        // Get teacher's schedule days (e.g., Mon, Tue)
+        $scheduleDays = \App\Models\Schedule::where('class_id', $class->id)
+            ->where('teacher_id', Auth::id())
+            ->pluck('day') // Assuming stored as 'Monday', 'Tuesday', etc.
+            ->map(function ($day) {
+                return \Carbon\Carbon::parse($day)->format('D'); // Mon, Tue, etc.
+            })
+            ->toArray();
+
+        // Fetch attendance records
+        $attendances = \App\Models\Attendance::where('class_id', $class->id)
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->get();
+
+        $calendarDates = [];
+        $startOfMonth = \Carbon\Carbon::create($year, $month, 1);
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
+        for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+            if ($date->isWeekday()) {
+                $calendarDates[] = $date->format('Y-m-d');
+            }
+        }
+
+        $attendanceData = [];
+        foreach ($students as $student) {
+            $attendanceData[$student->id] = [
+                'present' => 0,
+                'absent' => 0,
+                'by_date' => [],
+            ];
+        }
+
+        $combinedTotals = $maleTotals = $femaleTotals = [];
+        foreach ($calendarDates as $date) {
+            $combinedTotals[$date] = 0;
+            $maleTotals[$date] = 0;
+            $femaleTotals[$date] = 0;
+        }
+
+        foreach ($attendances as $attendance) {
+            $date = $attendance->date;
+            $symbol = match ($attendance->status) {
+                'present' => '✓',
+                'absent' => 'X',
+                'late' => '/',
+                default => '-',
+            };
+
+            $attendanceData[$attendance->student_id]['by_date'][$date] = $symbol;
+
+            if (in_array($attendance->status, ['present', 'late'])) {
+                $attendanceData[$attendance->student_id]['present']++;
+            } else {
+                $attendanceData[$attendance->student_id]['absent']++;
+            }
+
+            $student = $students->firstWhere('id', $attendance->student_id);
+            if ($symbol === '✓' || $symbol === '/') {
+                $combinedTotals[$date]++;
+                if ($student->gender === 'Male') {
+                    $maleTotals[$date]++;
+                } else {
+                    $femaleTotals[$date]++;
+                }
+            }
+        }
+
+        $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
+        foreach ($students as $student) {
+            if ($student->gender === 'Male') {
+                $maleTotalPresent += $attendanceData[$student->id]['present'];
+                $maleTotalAbsent += $attendanceData[$student->id]['absent'];
+            } else {
+                $femaleTotalPresent += $attendanceData[$student->id]['present'];
+                $femaleTotalAbsent += $attendanceData[$student->id]['absent'];
+            }
+        }
+
+        $totalPresent = $maleTotalPresent + $femaleTotalPresent;
+        $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
+
+        return view('teacher.classes.myAttendanceRecord', compact(
+            'class',
+            'students',
+            'attendanceData',
+            'calendarDates',
+            'combinedTotals',
+            'maleTotals',
+            'femaleTotals',
+            'monthParam',
+            'maleTotalPresent',
+            'femaleTotalPresent',
+            'maleTotalAbsent',
+            'femaleTotalAbsent',
+            'totalAbsent',
+            'totalPresent',
+            'scheduleDays' // ✅ Add this to view
+        ));
+    }
+
     public function myStudents($grade_level, $section)
     {
         $teacher = Auth::user();
 
-        $class = Classes::where('grade_level', $grade_level)
-            ->where('section', $section)
-            ->firstOrFail();
+        $class = $this->getClass($grade_level, $section);
 
         // Fetch students in the class
         $students = Student::where('class_id', $class->id)->get();
         // Fetch teachers in the class
         $teachers = User::where('class_id', $class->id)->get();
 
-        return view('teacher.students.myStudents', compact('class', 'students'));
+        return view('teacher.students.index', compact('class', 'students'));
     }
-
-
 
     public function studentInfo($student_id)
     {
@@ -112,5 +292,12 @@ class TeacherController extends Controller
         $student->save();
 
         return redirect()->route('teacher.my.students')->with('success', 'Student updated successfully!');
+    }
+
+    private function getClass($grade_level, $section)
+    {
+        return Classes::where('grade_level', $grade_level)
+            ->where('section', $section)
+            ->firstOrFail();
     }
 }

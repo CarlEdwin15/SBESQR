@@ -48,4 +48,9 @@ class Student extends Model
     {
         return $this->belongsToMany(SchoolYear::class, 'school_year_student');
     }
+
+    public function getFullNameAttribute()
+    {
+        return "{$this->student_lName}, {$this->student_fName} {$this->student_mName}";
+    }
 }

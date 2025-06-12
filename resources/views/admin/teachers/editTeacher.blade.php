@@ -380,7 +380,6 @@
 
                             </div>
 
-
                             <div class="row">
 
                                 <!-- First Name Field -->
@@ -668,22 +667,27 @@
         document.addEventListener('DOMContentLoaded', function() {
             const assignedSelect = document.getElementById('assigned_classes');
             const advisorySelect = document.getElementById('advisory_class');
-            const allOptions = Array.from(assignedSelect.options);
+
+            // This array will be filled with IDs of classes that already have advisers
+            const classesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
+            const oldAdvisory = "{{ $advisoryClass }}";
 
             function updateAdvisoryOptions() {
                 const selectedAssigned = Array.from(assignedSelect.selectedOptions).map(opt => opt.value);
-                const selectedAdvisory = advisorySelect.value;
 
-                // Clear current advisory options
                 advisorySelect.innerHTML = '<option value=""> No advisory class </option>';
 
-                allOptions.forEach(option => {
-                    if (selectedAssigned.includes(option.value)) {
+                Array.from(assignedSelect.options).forEach(option => {
+                    const classId = option.value;
+
+                    // Allow only assigned classes that do NOT have an adviser already, OR that are already selected as advisory
+                    if (selectedAssigned.includes(classId) && (!classesWithAdvisers.includes(parseInt(
+                            classId)) || classId === oldAdvisory)) {
                         const newOption = document.createElement('option');
-                        newOption.value = option.value;
+                        newOption.value = classId;
                         newOption.textContent = option.textContent;
 
-                        if (option.value === selectedAdvisory) {
+                        if (classId === oldAdvisory) {
                             newOption.selected = true;
                         }
 
@@ -692,10 +696,7 @@
                 });
             }
 
-            // Initialize on page load
             updateAdvisoryOptions();
-
-            // Update on change
             assignedSelect.addEventListener('change', updateAdvisoryOptions);
         });
     </script>

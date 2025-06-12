@@ -30,7 +30,6 @@ class ClassController extends Controller
             $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
         }
 
-
         return view('admin.classes.allClasses', compact('sections', 'gradeLevels', 'section', 'classes'));
     }
 

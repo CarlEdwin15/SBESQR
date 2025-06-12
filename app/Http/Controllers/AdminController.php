@@ -14,7 +14,7 @@ class AdminController extends Controller
 {
     public function accountSettings()
     {
-        $user = Auth::user(); // Get the currently logged-in admin
+        $user = Auth::user();
         return view('admin.accountSettings', compact('user'));
     }
 
@@ -167,8 +167,6 @@ class AdminController extends Controller
 
         return redirect()->back()->with('success', 'Teacher registered successfully!');
     }
-
-
 
     public function updateTeacher(Request $request, $id)
     {

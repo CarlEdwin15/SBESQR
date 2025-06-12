@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Dashboard')
+@section('title', 'Teacher | Attendances')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -21,10 +21,10 @@
                 <ul class="menu-inner py-1 bg-dark">
 
                     <!-- Dashboard sidebar-->
-                    <li class="menu-item active">
-                        <a href="{{ '/home ' }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                            <div>Dashboard</div>
+                    <li class="menu-item">
+                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                            <div class="text-light">Dashboard</div>
                         </a>
                     </li>
 
@@ -45,15 +45,15 @@
                     </li>
 
                     {{-- Classes sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0)" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-notepad text-light"></i>
-                            <div class="text-light">Classes</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0)" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bx-notepad"></i>
+                            <div>Classes</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item">
+                            <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">My Classes</div>
+                                    <div class="text-danger">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -212,208 +212,227 @@
                         </ul>
                     </div>
                 </nav>
-
                 <!-- / Navbar -->
 
-
                 <!-- Content wrapper -->
-                <div class="content-wrapper">
-                    <!-- Content -->
-                    @php
-                        use Illuminate\Support\Facades\Auth;
-                        use App\Models\Student;
-                        use App\Models\Classes;
-                        use App\Models\User;
-
-                        $teacher = Auth::user(); // Get the logged-in teacher
-                        $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
-
-                        $myTotalStudents = 0;
-                        $newlyEnrolledStudents = 0;
-
-                        if ($class) {
-                            $myTotalStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->count();
-
-                            $newlyEnrolledStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->where('created_at', '>=', now()->subWeek())
-                                ->count();
-                        }
-
-                        $totalTeachers = User::where('role', 'teacher')->count();
-                    @endphp
-
-                    <div class="container-xxl container-p-y">
-
-                        <div class="row mb-4 g-3">
-                            <!-- My Students Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
-                                        <h3 class="card-title mb-2">{{ $myTotalStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Teachers Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
-                                                    alt="Teachers" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
-                                        <h3 class="card-title mb-2">{{ $totalTeachers }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Attendance Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="d-block mb-1 text-primary">Today's Attendance</span>
-                                        <h3 class="card-title text-nowrap mb-2">85%</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Newly Enrolled Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
-                                        <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Charts Section -->
-                        <div class="row">
-                            <!-- Total Enrollees Chart -->
-                            <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="card-title m-0">Total enrollees as of 2025</h6>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-info text-white dropdown-toggle"
-                                                    type="button" id="yearDropdown" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">
-                                                    2025
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                                    <li><a class="dropdown-item" href="#">2024</a></li>
-                                                    <li><a class="dropdown-item" href="#">2023</a></li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <canvas id="enrolleesChart" height="140"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Gender Ratio -->
-                            <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between pb-0">
-                                        <div class="card-title mb-0">
-                                            <h5 class="m-0 me-2">Student Gender Ratio</h5>
-                                            <small class="text-muted">Total: 2,000 Students</small>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex flex-column align-items-center gap-1">
-                                                <h2 class="mb-2">2,000</h2>
-                                                <span>Total Students</span>
-                                            </div>
-                                            <div id="genderStatisticsChart"></div>
-                                        </div>
-                                        <ul class="p-0 m-0">
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-danger">
-                                                        <i class="bx bx-female"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Female</h6>
-                                                        <small class="text-muted">1,200 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">60%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-info">
-                                                        <i class="bx bx-male"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Male</h6>
-                                                        <small class="text-muted">800 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">40%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h4 class="fw-bold text-warning mb-0">
+                                <span class="text-muted fw-light">
+                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                                    <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                                    </a> /
+                                </span>
+                                Attendances
+                            </h4>
                         </div>
                     </div>
 
-                    <!-- / Content -->
-                    <div class="content-backdrop fade"></div>
+                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+
+                    <div class="card p-4 shadow-sm">
+                        <div class="d-flex justify-content-between mb-3 align-items-center">
+                            <h5 class="fw-bold mb-0">{{ $class->formatted_grade_level }} - {{ $class->section }}</h5>
+
+                            <!-- Month Picker -->
+                            <form method="GET"
+                                action="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                class="d-flex align-items-center">
+                                <label for="date" class="me-2 mb-0">Date:</label>
+                                <input type="month" name="month" id="month" class="form-control me-2"
+                                    value="{{ request('month', $monthParam ?? now()->format('Y-m')) }}">
+                                <button type="submit" class="btn btn-primary me-2">Filter</button>
+                                <button type="button" class="btn btn-success">Export</button>
+                            </form>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold text-info">Daily Attendance Reports of Learners</h5>
+                            <div class="alert alert-primary alert-dismissible fade show fw-bold mb-4" role="alert">
+                                Showing Attendance Record for
+                                {{ \Carbon\Carbon::createFromFormat('Y-m', $monthParam)->format('F, Y') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                    aria-label="Close"></button>
+                            </div>
+
+                        </div>
+
+                        <!-- Attendance Table -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm text-center align-middle">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">NO.</th>
+                                        <th rowspan="2">NAME</th>
+
+                                        @php
+                                            $fridayIndexes = [];
+                                            $todayIndex = null;
+                                        @endphp
+
+                                        @foreach ($calendarDates as $i => $date)
+                                            @php
+                                                $carbonDate = \Carbon\Carbon::parse($date);
+                                                $day = $carbonDate->format('D'); // Mon, Tue, etc.
+                                                $isToday = $carbonDate->isToday();
+                                                $isScheduled = in_array($day, $scheduleDays);
+                                                $isFriday = $day === 'Fri';
+
+                                                if ($isFriday) {
+                                                    $fridayIndexes[] = $i;
+                                                }
+                                                if ($isToday) {
+                                                    $todayIndex = $i;
+                                                }
+
+                                                $classes = [];
+                                                if ($isToday) {
+                                                    $classes[] = 'bg-info text-white';
+                                                } elseif ($isScheduled) {
+                                                    $classes[] = 'bg-warning text-dark';
+                                                }
+                                                if ($isFriday) {
+                                                    $classes[] = 'week-end';
+                                                }
+                                                if ($isToday) {
+                                                    $classes[] = 'today-column';
+                                                }
+                                            @endphp
+                                            <th class="{{ implode(' ', $classes) }}">
+                                                {{ $carbonDate->format('M j') }}<br>
+                                                <small>{{ $day }}</small>
+                                            </th>
+                                        @endforeach
+
+                                        <th rowspan="2">ABSENT</th>
+                                        <th rowspan="2">PRESENT</th>
+                                        <th rowspan="2">REMARKS</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @php
+                                        $genderGroups = [
+                                            'Male' => 'table-info bg-opacity-25',
+                                            'Female' => 'table-danger bg-opacity-25',
+                                        ];
+                                        $index = 1;
+                                    @endphp
+
+                                    @foreach ($genderGroups as $gender => $rowClass)
+                                        @php $genderIndex = 1; @endphp
+                                        @foreach (collect($students)->filter(function ($student) use ($gender) {
+                return strtolower(trim($student->student_sex)) === strtolower($gender);
+            })->sortBy(function ($student) {
+                return $student->student_lName . $student->student_fName . $student->student_mName;
+            }) as $student)
+                                            <tr>
+                                                <td>{{ $genderIndex++ }}</td>
+                                                <td class="text-start">
+                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_extName }}
+                                                    @if (!empty($student->student_mName))
+                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
+                                                    @endif
+                                                </td>
+
+                                                @foreach ($calendarDates as $i => $date)
+                                                    @php
+                                                        $isWeekEnd = in_array($i, $fridayIndexes);
+                                                        $isTodayCol = $i === $todayIndex;
+
+                                                        $cellClass = '';
+                                                        if ($isWeekEnd) {
+                                                            $cellClass .= ' week-end';
+                                                        }
+                                                        if ($isTodayCol) {
+                                                            $cellClass .= ' today-column bg-info text-white';
+                                                        }
+
+                                                        $statusSymbol =
+                                                            $attendanceData[$student->id]['by_date'][$date] ?? '-';
+                                                        $statusTitles = [
+                                                            '✓' => 'Present',
+                                                            'X' => 'Absent',
+                                                            '/' => 'Excused',
+                                                            '-' => 'No record',
+                                                        ];
+                                                        $title = $statusTitles[$statusSymbol] ?? ucfirst($statusSymbol);
+                                                    @endphp
+                                                    <td class="{{ $cellClass }}">
+                                                        <span data-bs-toggle="tooltip" title="{{ $title }}">
+                                                            {{ $statusSymbol }}
+                                                        </span>
+                                                    </td>
+                                                @endforeach
+
+                                                <td>{{ $attendanceData[$student->id]['absent'] }}</td>
+                                                <td>{{ $attendanceData[$student->id]['present'] }}</td>
+                                                <td></td>
+                                            </tr>
+                                        @endforeach
+
+                                        <!-- Gender Totals -->
+                                        <tr class="fw-bold {{ $rowClass }}">
+                                            <td colspan="2">{{ $gender }} | Total Per Day</td>
+                                            @foreach ($gender === 'Male' ? $maleTotals : $femaleTotals as $i => $total)
+                                                @php
+                                                    $cellClass = '';
+                                                    if (in_array($i, $fridayIndexes)) {
+                                                        $cellClass .= ' week-end';
+                                                    }
+                                                    if ($i === $todayIndex) {
+                                                        $cellClass .= ' today-column bg-info text-white';
+                                                    }
+                                                @endphp
+                                                <td class="{{ $cellClass }}">{{ $total }}</td>
+                                            @endforeach
+                                            <td>{{ $gender === 'Male' ? $maleTotalAbsent : $femaleTotalAbsent }}</td>
+                                            <td>{{ $gender === 'Male' ? $maleTotalPresent : $femaleTotalPresent }}</td>
+                                            <td></td>
+                                        </tr>
+                                    @endforeach
+
+                                    <!-- Combined Total Per Day -->
+                                    <tr class="fw-bold table-success bg-opacity-25">
+                                        <td colspan="2">Combined Total per Day</td>
+                                        @foreach ($calendarDates as $i => $date)
+                                            @php
+                                                $cellClass = '';
+                                                if (in_array($i, $fridayIndexes)) {
+                                                    $cellClass .= ' week-end';
+                                                }
+                                                if ($i === $todayIndex) {
+                                                    $cellClass .= ' today-column bg-info text-white';
+                                                }
+                                            @endphp
+                                            <td class="{{ $cellClass }}">{{ $combinedTotals[$date] ?? 0 }}</td>
+                                        @endforeach
+                                        <td>{{ $totalAbsent }}</td>
+                                        <td>{{ $totalPresent }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+
+
+                    </div>
                 </div>
-                <!-- Content wrapper -->
+                <!-- / Content wrapper -->
+
 
 
             </div>
-            <!-- / Layout page -->
         </div>
-
-        <!-- Overlay -->
-        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
+
+
     <!-- / Layout wrapper -->
 @endsection
 
@@ -557,9 +576,26 @@
             });
         }
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
 @endpush
 
 @push('styles')
+    <!-- Main CSS File -->
+    <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" rel="stylesheet" />
+
+    <!-- Vendor CSS Files -->
+    <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
+
     <style>
         .card-hover:hover {
             transform: translateY(-5px);
@@ -569,6 +605,16 @@
 
         .card-hover {
             transition: all 0.3s ease;
+        }
+
+        .week-end {
+            border-right: 3px solid #000 !important;
+        }
+
+        .today-column {
+            background-color: #0dcaf0 !important;
+            /* Bootstrap info */
+            color: white !important;
         }
     </style>
 @endpush

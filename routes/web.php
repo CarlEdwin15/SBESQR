@@ -81,6 +81,10 @@ Route::get('/classes/{grade_level}/{section}/schedule', [ScheduleController::cla
 
 Route::post('/classes/{grade_level}/{section}/addSchedule', [ScheduleController::class, 'addSchedule'])->name('classes.addSchedule');
 
+Route::post('classes/{grade_level}/{section}/editSchedule', [ScheduleController::class, 'editSchedule'])->name('classes.editSchedule');
+
+Route::delete('classes/{grade_level}/{section}/deleteSchedule/{subject}', [ScheduleController::class, 'deleteSchedule'])->name('classes.deleteSchedule');
+
 
 // Attendance Management (on ADMIN dashboard)
 Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController::class, 'attendance'])->name('classes.attendance');
@@ -95,12 +99,29 @@ Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController:
 // TEACHER DASHBOARD ROUTES
 
 //List of Teacher's Students (on teacher Dashboard)
-Route::get('/myStudents/{grade_level}/{section}', [TeacherController::class, 'myStudents'])->name('teacher.my.students');
+Route::get('/myStudents/{grade_level}/{section}', [TeacherController::class, 'myStudents'])->name('teacher.myStudents');
+
+Route::get('myClasses', [TeacherController::class, 'myClasses'])->name('teacher.myClasses');
+
+Route::get('myClass/{grade_level}/{section}', [TeacherController::class, 'myClass'])->name('teacher.myClass');
+
+Route::get('mySchedule/{grade_level}/{section}', [TeacherController::class, 'mySchedule'])->name('teacher.mySchedule');
+
+Route::get('myClassMasterList/{grade_level}/{section}', [TeacherController::class, 'myClassMasterList'])->name('teacher.myClassMasterList');
+
+Route::get('myAttendanceRecord/{grade_level}/{section}', [TeacherController::class, 'myAttendanceRecord'])->name('teacher.myAttendanceRecord');
+
+
 
 //List of Student's Info (on teacher Dashboard)
 Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');
 Route::get('/editStudentInfo/{id}', [TeacherController::class, 'editStudentInfo'])->name('teacher.edit.student');
 Route::post('/updateStudentInfo/{id}', [TeacherController::class, 'updateStudentInfo'])->name('teacher.update.student');
+
+
+
+
+
 
 
 // Route::get('/export-students', function () {

@@ -32,4 +32,9 @@ class Schedule extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    public function students()
+    {
+        return $this->hasManyThrough(Student::class, Attendance::class);
+    }
 }

@@ -99,7 +99,7 @@ return new class extends Migration
             $table->string('student_mName')->nullable();
             $table->string('student_extName', 45)->nullable();
             $table->date('student_dob')->nullable();
-            $table->enum('student_sex', ['male', 'female']);
+            $table->enum('student_sex', ['Male', 'Female']);
             $table->string('qr_code')->nullable();
             $table->string('student_photo', 2048)->nullable();
 

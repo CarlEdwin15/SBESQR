@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | Edit Teacher')
+@section('title', 'Admin | Account Settings')
 
 @section('content')
 

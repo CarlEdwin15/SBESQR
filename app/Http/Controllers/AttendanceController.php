@@ -28,7 +28,7 @@ class AttendanceController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function attendanceRecord(Request $request)
     {
         $request->validate([
             'student_id' => 'required|exists:students,id',

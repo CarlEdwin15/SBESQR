@@ -33,7 +33,7 @@ class Attendance extends Model
 
     public function class()
     {
-        return $this->belongsTo(Classes::class); // Adjust if your class model has a different name
+        return $this->belongsTo(Classes::class);
     }
 
     public function schedule()

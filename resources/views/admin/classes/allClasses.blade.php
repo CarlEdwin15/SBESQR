@@ -293,7 +293,7 @@
                                     <div class="col-xl-4 col-md-6" data-aos="zoom-in">
                                         <div class="service-item">
                                             <div class="img">
-                                                <img src="{{ asset('assets/img/classes/kindergarten.jpg') }}"
+                                                <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
                                                     class="img-fluid" alt="" />
                                             </div>
                                             <div class="details position-relative">
@@ -307,8 +307,14 @@
                                                 </div>
                                                 <a href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
                                                     class="stretched-link">
-                                                    <h3>{{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} -
-                                                        {{ $class->section }}</h3>
+                                                    <h3>
+                                                        @if (strtolower($class->grade_level) === 'kindergarten')
+                                                            Kindergarten
+                                                        @else
+                                                            Grade {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
+                                                        @endif
+                                                        - {{ $class->section }}
+                                                    </h3>
                                                     <h5>Adviser:</h5>
 
                                                     @if ($class->adviser)
@@ -326,7 +332,6 @@
                             </div>
                         </div>
                     </section>
-
                     <!-- /Card for All Grade Levels by Section -->
 
                     <hr class="my-5" />
@@ -351,61 +356,27 @@
 
 @push('scripts')
     <script>
-        // search bar
-        document.getElementById('studentSearch').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#studentTable tbody .student-row');
-
-            rows.forEach(row => {
-                const rowText = row.innerText.toLowerCase();
-                row.style.display = rowText.includes(searchValue) ? '' : 'none';
-            });
-        });
-    </script>
-
-    <script>
-        // delete button alert
-        function confirmDelete(student_id, student_fName, student_lName) {
+        // Logout confirmation
+        function confirmLogout() {
             Swal.fire({
-                title: `Delete ${student_fName} ${student_lName}'s record?`,
-                text: "This action cannot be undone.",
+                title: "Are you sure?",
+                text: "You want to log out?",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#6c757d",
-                confirmButtonText: "Yes, delete it!",
-                cancelButtonText: "Cancel",
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, log out!",
                 customClass: {
                     container: 'my-swal-container'
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Deleting...",
-                        text: "Please wait while we remove the record.",
-                        icon: "info",
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        customClass: {
-                            container: 'my-swal-container'
-                        },
-                        didOpen: () => {
-                            setTimeout(() => {
-                                document.getElementById('delete-form-' + student_id).submit();
-                            }, 1000);
-                        }
-                    });
+                    document.getElementById('logout-form').submit();
                 }
             });
         }
-    </script>
 
-
-
-
-
-    <script>
-        // alert after a success edit or delete of teacher's info
+        // Success alert
         @if (session('success'))
             Swal.fire({
                 icon: 'success',
@@ -417,61 +388,6 @@
                 }
             });
         @endif
-    </script>
-
-    <script>
-        // alert for logout
-        function confirmLogout() {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "You want to log out?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, log out!",
-
-                customClass: {
-                    container: 'my-swal-container'
-                }
-
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Logged out Successfully!",
-                        icon: "success",
-                        customClass: {
-                            container: 'my-swal-container'
-                        }
-                    });
-                    document.getElementById('logout-form').submit();
-                }
-            });
-        }
-    </script>
-
-    <script>
-        // alert for upload and preview profile in registration
-        const uploadInput = document.getElementById('upload');
-        const previewImg = document.getElementById('photo-preview');
-        const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}";
-
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        resetBtn.addEventListener('click', function() {
-            uploadInput.value = '';
-            previewImg.src = defaultImage;
-        });
     </script>
 
     <!-- Font Awesome -->

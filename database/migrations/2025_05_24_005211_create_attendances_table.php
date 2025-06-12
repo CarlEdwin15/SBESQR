@@ -30,7 +30,7 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
-            $table->foreignId('schedule_id')->nullable()->constrained('schedules')->onDelete('set null');
+            $table->foreignId('schedule_id')->constrained('schedules')->onDelete('cascade');
             $table->date('date');
             $table->time('time_in')->nullable();
             $table->time('time_out')->nullable();

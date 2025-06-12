@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Dashboard')
+@section('title', 'Teacher | Masters List')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -21,10 +21,10 @@
                 <ul class="menu-inner py-1 bg-dark">
 
                     <!-- Dashboard sidebar-->
-                    <li class="menu-item active">
-                        <a href="{{ '/home ' }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                            <div>Dashboard</div>
+                    <li class="menu-item">
+                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                            <div class="text-light">Dashboard</div>
                         </a>
                     </li>
 
@@ -45,15 +45,15 @@
                     </li>
 
                     {{-- Classes sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0)" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-notepad text-light"></i>
-                            <div class="text-light">Classes</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0)" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bx-notepad"></i>
+                            <div>Classes</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item">
+                            <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">My Classes</div>
+                                    <div class="text-danger">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -215,196 +215,116 @@
 
                 <!-- / Navbar -->
 
-
                 <!-- Content wrapper -->
-                <div class="content-wrapper">
-                    <!-- Content -->
-                    @php
-                        use Illuminate\Support\Facades\Auth;
-                        use App\Models\Student;
-                        use App\Models\Classes;
-                        use App\Models\User;
-
-                        $teacher = Auth::user(); // Get the logged-in teacher
-                        $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
-
-                        $myTotalStudents = 0;
-                        $newlyEnrolledStudents = 0;
-
-                        if ($class) {
-                            $myTotalStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->count();
-
-                            $newlyEnrolledStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->where('created_at', '>=', now()->subWeek())
-                                ->count();
-                        }
-
-                        $totalTeachers = User::where('role', 'teacher')->count();
-                    @endphp
-
-                    <div class="container-xxl container-p-y">
-
-                        <div class="row mb-4 g-3">
-                            <!-- My Students Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
-                                        <h3 class="card-title mb-2">{{ $myTotalStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Teachers Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
-                                                    alt="Teachers" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
-                                        <h3 class="card-title mb-2">{{ $totalTeachers }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Attendance Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="d-block mb-1 text-primary">Today's Attendance</span>
-                                        <h3 class="card-title text-nowrap mb-2">85%</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Newly Enrolled Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
-                                        <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Charts Section -->
-                        <div class="row">
-                            <!-- Total Enrollees Chart -->
-                            <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="card-title m-0">Total enrollees as of 2025</h6>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-info text-white dropdown-toggle"
-                                                    type="button" id="yearDropdown" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">
-                                                    2025
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                                    <li><a class="dropdown-item" href="#">2024</a></li>
-                                                    <li><a class="dropdown-item" href="#">2023</a></li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <canvas id="enrolleesChart" height="140"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Gender Ratio -->
-                            <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between pb-0">
-                                        <div class="card-title mb-0">
-                                            <h5 class="m-0 me-2">Student Gender Ratio</h5>
-                                            <small class="text-muted">Total: 2,000 Students</small>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex flex-column align-items-center gap-1">
-                                                <h2 class="mb-2">2,000</h2>
-                                                <span>Total Students</span>
-                                            </div>
-                                            <div id="genderStatisticsChart"></div>
-                                        </div>
-                                        <ul class="p-0 m-0">
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-danger">
-                                                        <i class="bx bx-female"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Female</h6>
-                                                        <small class="text-muted">1,200 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">60%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-info">
-                                                        <i class="bx bx-male"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Male</h6>
-                                                        <small class="text-muted">800 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">40%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h4 class="fw-bold text-warning mb-0">
+                                <span class="text-muted fw-light">
+                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                                    <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                                </span>
+                                Master’s List
+                            </h4>
                         </div>
                     </div>
 
-                    <!-- / Content -->
-                    <div class="content-backdrop fade"></div>
+                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+                    <div class="card p-4 shadow-sm">
+                        <h5 class="fw-bold mb-2">{{ $class->formatted_grade_level }} - {{ $class->section }}</h5>
+
+                        <!-- Export List Form -->
+                        <form action="" method="GET">
+                            @csrf
+                            <button type="submit" class="btn btn-success ms-md-auto">Export List</button>
+                        </form>
+
+                        <h4 class="mb-4 text-center fw-bold">List of Students</h4><br>
+                        <h5 class="text-center">Adviser:</h5>
+
+                        @if ($class->adviser)
+                            <h5 class="text-info text-center mb-4">
+                                {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
+                            </h5>
+                        @else
+                            <h6 class="text-danger text-center mb-4">No teacher assigned</h6>
+                        @endif
+
+                        <div class="row">
+                            <!-- Male Table -->
+                            <div class="col-md-6">
+                                <table class="table table-bordered text-center" id="studentTable">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>NO.</th>
+                                            <th>MALE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $maleCount = 1; @endphp
+                                        @foreach ($students->where('student_sex', 'male')->sortBy(function ($student) {
+            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
+        }) as $student)
+                                            <tr class="student-row">
+                                                <td>{{ $maleCount++ }}</td>
+                                                <td>
+                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_extName }}
+                                                    @if (!empty($student->student_mName))
+                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        @if ($maleCount === 1)
+                                            <tr>
+                                                <td colspan="2">No male students enrolled.</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Female Table -->
+                            <div class="col-md-6">
+                                <table class="table table-bordered text-center" id="studentTable">
+                                    <thead class="table-danger">
+                                        <tr>
+                                            <th>NO.</th>
+                                            <th>FEMALE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $femaleCount = 1; @endphp
+                                        @foreach ($students->where('student_sex', 'female')->sortBy(function ($student) {
+            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
+        }) as $student)
+                                            <tr class="student-row">
+                                                <td>{{ $femaleCount++ }}</td>
+                                                <td>
+                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_extName }}
+                                                    @if (!empty($student->student_mName))
+                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        @if ($femaleCount === 1)
+                                            <tr>
+                                                <td colspan="2">No female students enrolled.</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <!-- Content wrapper -->
+                <!-- End Content wrapper -->
 
 
             </div>
@@ -560,6 +480,13 @@
 @endpush
 
 @push('styles')
+    <!-- Main CSS File -->
+    <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
+
+    <!-- Vendor CSS Files -->
+    <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
+
     <style>
         .card-hover:hover {
             transform: translateY(-5px);

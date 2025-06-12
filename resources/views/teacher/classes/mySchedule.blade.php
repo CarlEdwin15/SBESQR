@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Dashboard')
+@section('title', 'Teacher | My Schedules')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -21,10 +21,10 @@
                 <ul class="menu-inner py-1 bg-dark">
 
                     <!-- Dashboard sidebar-->
-                    <li class="menu-item active">
-                        <a href="{{ '/home ' }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                            <div>Dashboard</div>
+                    <li class="menu-item">
+                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                            <div class="text-light">Dashboard</div>
                         </a>
                     </li>
 
@@ -45,15 +45,15 @@
                     </li>
 
                     {{-- Classes sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0)" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-notepad text-light"></i>
-                            <div class="text-light">Classes</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0)" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bx-notepad"></i>
+                            <div>Classes</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item">
+                            <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">My Classes</div>
+                                    <div class="text-danger">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -215,194 +215,134 @@
 
                 <!-- / Navbar -->
 
-
                 <!-- Content wrapper -->
-                <div class="content-wrapper">
-                    <!-- Content -->
-                    @php
-                        use Illuminate\Support\Facades\Auth;
-                        use App\Models\Student;
-                        use App\Models\Classes;
-                        use App\Models\User;
-
-                        $teacher = Auth::user(); // Get the logged-in teacher
-                        $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
-
-                        $myTotalStudents = 0;
-                        $newlyEnrolledStudents = 0;
-
-                        if ($class) {
-                            $myTotalStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->count();
-
-                            $newlyEnrolledStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->where('created_at', '>=', now()->subWeek())
-                                ->count();
-                        }
-
-                        $totalTeachers = User::where('role', 'teacher')->count();
-                    @endphp
-
-                    <div class="container-xxl container-p-y">
-
-                        <div class="row mb-4 g-3">
-                            <!-- My Students Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
-                                        <h3 class="card-title mb-2">{{ $myTotalStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Teachers Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
-                                                    alt="Teachers" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
-                                        <h3 class="card-title mb-2">{{ $totalTeachers }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Attendance Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="d-block mb-1 text-primary">Today's Attendance</span>
-                                        <h3 class="card-title text-nowrap mb-2">85%</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Newly Enrolled Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
-                                        <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
+                <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div>
+                            <h4 class="fw-bold text-warning mb-2">
+                                <span class="text-muted fw-light">
+                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">Classes</a>
+                                    /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                                </span>
+                                Schedules
+                            </h4>
                         </div>
+                        <a href="{{ route('teacher.myClasses', ['section' => $class->section]) }}"
+                            class="btn btn-outline-danger rounded-pill">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                    </div>
 
-                        <!-- Charts Section -->
-                        <div class="row">
-                            <!-- Total Enrollees Chart -->
-                            <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="card-title m-0">Total enrollees as of 2025</h6>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-info text-white dropdown-toggle"
-                                                    type="button" id="yearDropdown" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">
-                                                    2025
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                                    <li><a class="dropdown-item" href="#">2024</a></li>
-                                                    <li><a class="dropdown-item" href="#">2023</a></li>
-                                                </ul>
+                    {{-- Card --}}
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="fw-bold mb-4 text-center">Schedules for <span
+                                    class="text-info">{{ ucfirst($class->grade_level) }} - {{ $class->section }} </span>
+                            </h4>
+
+                            <div class="container-xxl flex-grow-1 container-p-y">
+                                <div class="row g-4 mb-4">
+                                    @php
+                                        // Group schedules by subject, teacher, start_time, end_time
+                                        $grouped = [];
+                                        foreach ($schedules as $schedule) {
+                                            $key =
+                                                $schedule->subject_name .
+                                                '|' .
+                                                ($schedule->teacher ? $schedule->teacher->id : '0') .
+                                                '|' .
+                                                $schedule->start_time .
+                                                '|' .
+                                                $schedule->end_time;
+                                            if (!isset($grouped[$key])) {
+                                                $grouped[$key] = [
+                                                    'subject_name' => $schedule->subject_name,
+                                                    'teacher' => $schedule->teacher,
+                                                    'start_time' => $schedule->start_time,
+                                                    'end_time' => $schedule->end_time,
+                                                    'days' => [],
+                                                ];
+                                            }
+                                            // Handle day as array or string
+                                            if (is_array($schedule->day)) {
+                                                $grouped[$key]['days'] = array_merge(
+                                                    $grouped[$key]['days'],
+                                                    $schedule->day,
+                                                );
+                                            } elseif (is_string($schedule->day)) {
+                                                $decoded = json_decode($schedule->day, true);
+                                                if (is_array($decoded)) {
+                                                    $grouped[$key]['days'] = array_merge(
+                                                        $grouped[$key]['days'],
+                                                        $decoded,
+                                                    );
+                                                } else {
+                                                    $grouped[$key]['days'][] = $schedule->day;
+                                                }
+                                            }
+                                        }
+
+                                        $dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+                                        // Remove duplicate days and sort
+                                        foreach ($grouped as &$item) {
+                                            $item['days'] = array_unique($item['days']);
+
+                                            // Custom sort using array_intersect to preserve the correct order
+                                            $item['days'] = array_values(array_intersect($dayOrder, $item['days']));
+                                        }
+                                        unset($item);
+                                    @endphp
+
+                                    @forelse ($grouped as $group)
+                                        <div class="col-md-4">
+                                            <div class="card card-hover border-0 shadow-sm h-100"
+                                                style="background: linear-gradient(160deg, #d0e7ff 50%, #007bff 100%);">
+                                                <div class="card-body text-center">
+                                                    <div class="mb-2">
+                                                        <h4 class="fw-semibold mb-1 text-primary">
+                                                            {{ $group['subject_name'] }}</h4>
+                                                        <i class="bi bi-calendar3 fs-1"></i>
+                                                    </div>
+                                                    <h6 class="fw-semibold mb-1 text-dark">
+                                                        Teacher:
+                                                        @if ($group['teacher'])
+                                                            {{ $group['teacher']->firstName }}
+                                                            {{ $group['teacher']->lastName }}
+                                                        @else
+                                                            <span class="text-muted">N/A</span>
+                                                        @endif
+                                                    </h6>
+                                                    <h6 class="fw-semibold mb-1">
+                                                        Schedule:
+                                                        {{ implode(', ', $group['days']) }}
+                                                    </h6>
+                                                    <div class="display-6 fw-bold text-dark">
+                                                        {{ \Carbon\Carbon::createFromFormat('H:i:s', $group['start_time'])->format('g:i A') }}
+                                                        -
+                                                        {{ \Carbon\Carbon::createFromFormat('H:i:s', $group['end_time'])->format('g:i A') }}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <canvas id="enrolleesChart" height="140"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Gender Ratio -->
-                            <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between pb-0">
-                                        <div class="card-title mb-0">
-                                            <h5 class="m-0 me-2">Student Gender Ratio</h5>
-                                            <small class="text-muted">Total: 2,000 Students</small>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex flex-column align-items-center gap-1">
-                                                <h2 class="mb-2">2,000</h2>
-                                                <span>Total Students</span>
+                                    @empty
+                                        <div class="col-12">
+                                            <div class="alert alert-info text-center mb-0">
+                                                No schedules found for this class.
                                             </div>
-                                            <div id="genderStatisticsChart"></div>
                                         </div>
-                                        <ul class="p-0 m-0">
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-danger">
-                                                        <i class="bx bx-female"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Female</h6>
-                                                        <small class="text-muted">1,200 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">60%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-info">
-                                                        <i class="bx bx-male"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Male</h6>
-                                                        <small class="text-muted">800 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">40%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    @endforelse
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- / Content -->
-                    <div class="content-backdrop fade"></div>
+                    <hr class="my-5" />
                 </div>
                 <!-- Content wrapper -->
 
@@ -560,6 +500,13 @@
 @endpush
 
 @push('styles')
+    <!-- Main CSS File -->
+    <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
+
+    <!-- Vendor CSS Files -->
+    <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
+
     <style>
         .card-hover:hover {
             transform: translateY(-5px);
