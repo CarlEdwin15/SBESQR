@@ -249,7 +249,8 @@
                         </div>
                         <!-- Attendance Today -->
                         <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                            <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                class="card card-hover border-0 shadow-sm h-100 bg-light">
                                 <div class="card-body text-center">
                                     <div class="mb-2">
                                         <i class="bi bi-calendar3 fs-1"></i>
@@ -259,7 +260,7 @@
                                         {{ $attendanceToday ?? '0' }}%
                                     </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                         <!-- Teacher -->
                         <div class="col-md-4">

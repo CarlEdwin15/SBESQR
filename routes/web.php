@@ -111,6 +111,9 @@ Route::get('myClassMasterList/{grade_level}/{section}', [TeacherController::clas
 
 Route::get('myAttendanceRecord/{grade_level}/{section}', [TeacherController::class, 'myAttendanceRecord'])->name('teacher.myAttendanceRecord');
 
+Route::get('attendanceHistory/{grade_level}/{section}/{date?}', [TeacherController::class, 'attendanceHistory'])->name('teacher.attendanceHistory');
+
+Route::post('submitAttendance', [TeacherController::class, 'submitAttendance'])->name('teacher.submitAttendance');
 
 
 //List of Student's Info (on teacher Dashboard)

@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Attendances')
+@section('title', 'Teacher | Attendance History')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -212,6 +212,7 @@
                         </ul>
                     </div>
                 </nav>
+
                 <!-- / Navbar -->
 
                 <!-- Content wrapper -->
@@ -224,223 +225,187 @@
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
                                         href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }}
-                                    </a> /
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
                                 </span>
-                                Attendances
+                                Attendance History
                             </h4>
                         </div>
                     </div>
 
-                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+                    <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        class="btn btn-danger mb-3">Back</a>
 
-                    <div class="card p-4 shadow-sm">
-                        <div class="d-flex justify-content-between mb-3 align-items-center">
-                            <h5 class="fw-bold mb-0">{{ $class->formatted_grade_level }} - {{ $class->section }}</h5>
-
-                            <!-- Month Picker -->
-                            <form method="GET"
-                                action="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="d-flex align-items-center">
-                                <label for="date" class="me-2 mb-0">Date:</label>
-                                <input type="month" name="month" id="month" class="form-control me-2"
-                                    value="{{ request('month', $monthParam ?? now()->format('Y-m')) }}">
-                                <button type="submit" class="btn btn-primary me-2">Filter</button>
-                                <button type="button" class="btn btn-success">Export</button>
-                            </form>
-                        </div>
-
-                        <div class="text-center mb-4">
-                            <h5 class="fw-bold text-info">Daily Attendance Reports of Learners</h5>
-                            <div class="alert alert-primary alert-dismissible fade show fw-bold mb-4" role="alert">
-                                Showing Attendance Record for
-                                {{ \Carbon\Carbon::createFromFormat('Y-m', $monthParam)->format('F, Y') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                    aria-label="Close"></button>
+                    {{-- Date Selection Form --}}
+                    <form id="dateForm" method="GET" class="mb-3">
+                        <div class="d-flex gap-2 align-items-end">
+                            <div>
+                                <label for="date">Choose Date:</label>
+                                <input type="date" id="date" name="date" class="form-control"
+                                    value="{{ $targetDate }}">
                             </div>
+                            <button class="btn btn-primary" type="submit">View</button>
                         </div>
+                    </form>
 
-                        <!-- Attendance Table -->
-                        <div class="table-responsive">
-                            <table class="table table-hover table-bordered table-sm text-center align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th rowspan="2">NO.</th>
-                                        <th rowspan="2">NAME</th>
+                    {{-- Attendance Card --}}
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <h4 class="card-title mb-2 text-warning">
+                                Attendance History {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                            </h4>
+                            <p class="mb-1"><strong>Subject:</strong> {{ $schedule->subject_name }}</p>
+                            <p class="mb-3">
+                                <strong>Schedule:</strong> {{ $schedule->day }}
+                                ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
+                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
+                            </p>
 
-                                        @php
-                                            $fridayIndexes = [];
-                                            $todayIndex = null;
-                                        @endphp
+                            <form method="POST" action="{{ route('teacher.submitAttendance') }}">
+                                @csrf
+                                <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                                <input type="hidden" name="class_id" value="{{ $class->id }}">
+                                <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
+                                <input type="hidden" name="date" value="{{ $targetDate }}">
 
-                                        @foreach ($calendarDates as $i => $date)
-                                            @php
-                                                $carbonDate = \Carbon\Carbon::parse($date);
-                                                $day = $carbonDate->format('D'); // Mon, Tue, etc.
-                                                $isToday = $carbonDate->isToday();
-                                                $isScheduled = in_array($day, $scheduleDays);
-                                                $isFriday = $day === 'Fri';
 
-                                                if ($isFriday) {
-                                                    $fridayIndexes[] = $i;
-                                                }
-                                                if ($isToday) {
-                                                    $todayIndex = $i;
-                                                }
-
-                                                $classes = [];
-                                                if ($isToday) {
-                                                    $classes[] = 'bg-info text-white';
-                                                } elseif ($isScheduled) {
-                                                    $classes[] = 'bg-warning text-dark';
-                                                }
-                                                if ($isFriday) {
-                                                    $classes[] = 'week-end';
-                                                }
-                                                if ($isToday) {
-                                                    $classes[] = 'today-column';
-                                                }
-                                            @endphp
-                                            <th class="{{ implode(' ', $classes) }}">
-                                                @if ($isScheduled)
-                                                    <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section, 'date' => $carbonDate->format('Y-m-d')]) }}"
-                                                        style="text-decoration: none; color: inherit;">
-                                                        {{ $carbonDate->format('M j') }}<br>
-                                                        <small>{{ $day }}</small>
-                                                    </a>
-                                                @else
-                                                    {{ $carbonDate->format('M j') }}<br>
-                                                    <small>{{ $day }}</small>
-                                                @endif
-                                            </th>
-                                        @endforeach
-
-                                        <th rowspan="2">ABSENT</th>
-                                        <th rowspan="2">PRESENT</th>
-                                        <th rowspan="2">REMARKS</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    @php
-                                        $genderGroups = [
-                                            'Male' => 'table-info bg-opacity-25',
-                                            'Female' => 'table-danger bg-opacity-25',
-                                        ];
-                                        $index = 1;
-                                    @endphp
-
-                                    @foreach ($genderGroups as $gender => $rowClass)
-                                        @php $genderIndex = 1; @endphp
-                                        @foreach (collect($students)->filter(function ($student) use ($gender) {
-                return strtolower(trim($student->student_sex)) === strtolower($gender);
-            })->sortBy(function ($student) {
-                return $student->student_lName . $student->student_fName . $student->student_mName;
-            }) as $student)
+                                {{-- MALE STUDENTS --}}
+                                <table class="table table-responsive table-bordered align-middle mb-4">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th style="width: 40px;">No.</th>
+                                            <th>Name</th>
+                                            <th style="width: 160px;">Status</th>
+                                            <th style="width: 120px;">Time In</th>
+                                            <th style="width: 120px;">Time Out</th>
+                                            <th style="width: 160px;">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $maleIndex = 1; @endphp
+                                        @foreach ($students->where('gender', 'Male')->sortBy(function ($student) {
+            return strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName);
+        }) as $student)
+                                            @php $existing = $attendances[$student->id] ?? null; @endphp
                                             <tr>
-                                                <td>{{ $genderIndex++ }}</td>
-                                                <td class="text-start">
-                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_extName }}
-                                                    @if (!empty($student->student_mName))
-                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
-                                                    @endif
-                                                </td>
-
-                                                @foreach ($calendarDates as $i => $date)
-                                                    @php
-                                                        $isWeekEnd = in_array($i, $fridayIndexes);
-                                                        $isTodayCol = $i === $todayIndex;
-
-                                                        $cellClass = '';
-                                                        if ($isWeekEnd) {
-                                                            $cellClass .= ' week-end';
-                                                        }
-                                                        if ($isTodayCol) {
-                                                            $cellClass .= ' today-column bg-info text-white';
-                                                        }
-
-                                                        $statusSymbol =
-                                                            $attendanceData[$student->id]['by_date'][$date] ?? '-';
-                                                        $statusTitles = [
-                                                            '✓' => 'Present',
-                                                            'X' => 'Absent',
-                                                            '/' => 'Excused',
-                                                            '-' => 'No record',
-                                                        ];
-                                                        $title = $statusTitles[$statusSymbol] ?? ucfirst($statusSymbol);
-                                                    @endphp
-                                                    <td class="{{ $cellClass }}">
-                                                        <span data-bs-toggle="tooltip" title="{{ $title }}">
-                                                            {{ $statusSymbol }}
+                                                <td>{{ $maleIndex++ }}</td>
+                                                <td>{{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_mName }}</td>
+                                                <td>
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        @php
+                                                            $status = $existing->status ?? 'absent';
+                                                            $badgeClass = match ($status) {
+                                                                'present' => 'bg-label-success',
+                                                                'late' => 'bg-label-warning',
+                                                                'absent' => 'bg-label-danger',
+                                                                default => 'bg-label-secondary',
+                                                            };
+                                                        @endphp
+                                                        <span class="badge {{ $badgeClass }} text-uppercase">
+                                                            {{ ucfirst($status) }}
                                                         </span>
-                                                    </td>
-                                                @endforeach
-
-                                                <td>{{ $attendanceData[$student->id]['absent'] }}</td>
-                                                <td>{{ $attendanceData[$student->id]['present'] }}</td>
-                                                <td></td>
+                                                        <select name="attendance[{{ $student->id }}][status]"
+                                                            class="form-select w-auto">
+                                                            <option value="present"
+                                                                {{ $existing && $existing->status == 'present' ? 'selected' : '' }}>
+                                                                Present</option>
+                                                            <option value="late"
+                                                                {{ $existing && $existing->status == 'late' ? 'selected' : '' }}>
+                                                                Late</option>
+                                                            <option value="absent"
+                                                                {{ !$existing || $existing->status == 'absent' ? 'selected' : '' }}>
+                                                                Absent</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                                <td>{{ $existing?->time_in ?? '-' }}</td>
+                                                <td>{{ $existing?->time_out ?? '-' }}</td>
+                                                <td>{{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}</td>
                                             </tr>
                                         @endforeach
+                                    </tbody>
+                                </table>
 
-                                        <!-- Gender Totals -->
-                                        <tr class="fw-bold {{ $rowClass }}">
-                                            <td colspan="2">{{ $gender }} | Total Per Day</td>
-                                            @foreach ($gender === 'Male' ? $maleTotals : $femaleTotals as $i => $total)
-                                                @php
-                                                    $cellClass = '';
-                                                    if (in_array($i, $fridayIndexes)) {
-                                                        $cellClass .= ' week-end';
-                                                    }
-                                                    if ($i === $todayIndex) {
-                                                        $cellClass .= ' today-column bg-info text-white';
-                                                    }
-                                                @endphp
-                                                <td class="{{ $cellClass }}">{{ $total }}</td>
-                                            @endforeach
-                                            <td>{{ $gender === 'Male' ? $maleTotalAbsent : $femaleTotalAbsent }}</td>
-                                            <td>{{ $gender === 'Male' ? $maleTotalPresent : $femaleTotalPresent }}</td>
-                                            <td></td>
+                                {{-- FEMALE STUDENTS --}}
+                                <table class="table table-bordered align-middle">
+                                    <thead class="table-danger">
+                                        <tr>
+                                            <th style="width: 40px;">No.</th>
+                                            <th>Name</th>
+                                            <th style="width: 160px;">Status</th>
+                                            <th style="width: 120px;">Time In</th>
+                                            <th style="width: 120px;">Time Out</th>
+                                            <th style="width: 160px;">Date</th>
                                         </tr>
-                                    @endforeach
-
-                                    <!-- Combined Total Per Day -->
-                                    <tr class="fw-bold table-success bg-opacity-25">
-                                        <td colspan="2">Combined Total per Day</td>
-                                        @foreach ($calendarDates as $i => $date)
-                                            @php
-                                                $cellClass = '';
-                                                if (in_array($i, $fridayIndexes)) {
-                                                    $cellClass .= ' week-end';
-                                                }
-                                                if ($i === $todayIndex) {
-                                                    $cellClass .= ' today-column bg-info text-white';
-                                                }
-                                            @endphp
-                                            <td class="{{ $cellClass }}">{{ $combinedTotals[$date] ?? 0 }}</td>
+                                    </thead>
+                                    <tbody>
+                                        @php $femaleIndex = 1; @endphp
+                                        @foreach ($students->where('gender', 'Female')->sortBy(function ($student) {
+            return strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName);
+        }) as $student)
+                                            @php $existing = $attendances[$student->id] ?? null; @endphp
+                                            <tr>
+                                                <td>{{ $femaleIndex++ }}</td>
+                                                <td>{{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    {{ $student->student_mName }}</td>
+                                                <td>
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        @php
+                                                            $status = $existing->status ?? 'absent';
+                                                            $badgeClass = match ($status) {
+                                                                'present' => 'bg-label-success',
+                                                                'late' => 'bg-label-warning',
+                                                                'absent' => 'bg-label-danger',
+                                                                default => 'bg-label-secondary',
+                                                            };
+                                                        @endphp
+                                                        <span class="badge {{ $badgeClass }} text-uppercase">
+                                                            {{ ucfirst($status) }}
+                                                        </span>
+                                                        <select name="attendance[{{ $student->id }}][status]"
+                                                            class="form-select w-auto">
+                                                            <option value="present"
+                                                                {{ $existing && $existing->status == 'present' ? 'selected' : '' }}>
+                                                                Present</option>
+                                                            <option value="late"
+                                                                {{ $existing && $existing->status == 'late' ? 'selected' : '' }}>
+                                                                Late</option>
+                                                            <option value="absent"
+                                                                {{ !$existing || $existing->status == 'absent' ? 'selected' : '' }}>
+                                                                Absent</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                                <td>{{ $existing?->time_in ?? '-' }}</td>
+                                                <td>{{ $existing?->time_out ?? '-' }}</td>
+                                                <td>{{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}</td>
+                                            </tr>
                                         @endforeach
-                                        <td>{{ $totalAbsent }}</td>
-                                        <td>{{ $totalPresent }}</td>
-                                        <td></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+
+                                <div class="mt-3 text-end">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bx bx-check-circle"></i> Submit Attendance
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <!-- / Attendance Table -->
-
-
-
                     </div>
-                </div>
-                <!-- / Content wrapper -->
+                    {{-- / Attendance Card --}}
 
+
+                </div>
+                <!-- End Content wrapper -->
 
 
             </div>
+            <!-- / Layout page -->
         </div>
+
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-
-
     <!-- / Layout wrapper -->
 @endsection
 
@@ -586,11 +551,16 @@
     </script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function(tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+        document.getElementById('dateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const selectedDate = document.getElementById('date').value;
+            const baseUrl = "{{ url('attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
+
+            // If no date, use current
+            const finalUrl = selectedDate ? `${baseUrl}/${selectedDate}` : baseUrl;
+
+            window.location.href = finalUrl;
         });
     </script>
 @endpush
@@ -613,16 +583,6 @@
 
         .card-hover {
             transition: all 0.3s ease;
-        }
-
-        .week-end {
-            border-right: 3px solid #000 !important;
-        }
-
-        .today-column {
-            background-color: #0dcaf0 !important;
-            /* Bootstrap info */
-            color: white !important;
         }
     </style>
 @endpush

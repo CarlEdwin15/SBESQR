@@ -53,4 +53,9 @@ class Student extends Model
     {
         return "{$this->student_lName}, {$this->student_fName} {$this->student_mName}";
     }
+
+    public function getGenderAttribute()
+    {
+        return ucfirst(strtolower($this->student_sex));
+    }
 }

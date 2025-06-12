@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Classes;
 use App\Models\Student;
 use App\Models\Attendance;
+use App\Models\Schedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
@@ -193,6 +194,80 @@ class TeacherController extends Controller
             'scheduleDays' // ✅ Add this to view
         ));
     }
+
+    public function attendanceHistory($grade_level, $section, $date = null)
+    {
+        $class = $this->getClass($grade_level, $section);
+        $targetDate = $date ?? request('date') ?? now()->toDateString();
+        $targetDate = \Carbon\Carbon::parse($targetDate)->format('Y-m-d');
+
+        $dayName = \Carbon\Carbon::parse($targetDate)->format('l');
+
+        // Get schedule for logged-in teacher and this class on today's day
+        $schedule = Schedule::where('teacher_id', Auth::id())
+            ->where('class_id', $class->id)
+            ->where('day', $dayName)
+            ->first();
+
+        if (!$schedule) {
+            return back()->with('error', 'No schedule set for today' . $dayName . '.');
+        }
+
+        // Get students in the class
+        $students = Student::where('class_id', $class->id)->get();
+
+        // Existing attendances for today
+        $attendances = Attendance::where('schedule_id', $schedule->id)
+            ->where('date', $targetDate)
+            ->get()
+            ->keyBy('student_id');
+
+        return view('teacher.classes.attendanceHistory', compact('class', 'students', 'schedule', 'attendances', 'targetDate'));
+    }
+
+    public function submitAttendance(Request $request)
+    {
+        $date = $request->input('date', now()->toDateString());
+        $timeNow = now()->format('H:i:s');
+
+        foreach ($request->attendance as $studentId => $data) {
+            Attendance::updateOrCreate(
+                [
+                    'student_id' => $studentId,
+                    'schedule_id' => $request->schedule_id,
+                    'date' => $date,
+                ],
+                [
+                    'teacher_id' => $request->teacher_id,
+                    'class_id' => $request->class_id,
+                    'status' => $data['status'],
+                    'time_in' => $data['status'] !== 'absent' ? $timeNow : null,
+                    'time_out' => $data['status'] !== 'absent' ? $timeNow : null,
+                ]
+            );
+        }
+
+        return back()->with('success', 'Attendance submitted successfully!');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public function myStudents($grade_level, $section)
     {
