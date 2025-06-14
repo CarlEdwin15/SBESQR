@@ -25,5 +25,20 @@ class AdminSeeder extends Seeder
             'password' => Hash::make('admin2123'),
             'role' => 'admin',
         ]);
+
+        // Sample teacher user
+        User::create([
+            'firstName' => 'Carl Edwin',
+            'middleName' => 'Vasquez',
+            'lastName' => 'Conde',
+            'email' => 'conde@gmail.com',
+            'password' => Hash::make('@Conde123'),
+            'role' => 'teacher',
+            'gender' => 'male',
+            'phone' => '09171234567',
+            'municipality_city' => 'Quezon City',
+            'province' => 'Metro Manila',
+            'country' => 'Philippines',
+        ]);
     }
 }

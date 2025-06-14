@@ -82,8 +82,9 @@ class TeacherController extends Controller
     public function myAttendanceRecord($grade_level, $section)
     {
         $class = $this->getClass($grade_level, $section);
+
         $students = Student::where('class_id', $class->id)
-            ->orderBy('student_sex') // or 'gender'
+            ->orderBy('student_sex')
             ->orderBy('student_lName')
             ->orderBy('student_fName')
             ->orderBy('student_mName')
@@ -94,16 +95,18 @@ class TeacherController extends Controller
         $year = $dateObj->year;
         $month = $dateObj->month;
 
-        // Get teacher's schedule days (e.g., Mon, Tue)
         $scheduleDays = \App\Models\Schedule::where('class_id', $class->id)
             ->where('teacher_id', Auth::id())
-            ->pluck('day') // Assuming stored as 'Monday', 'Tuesday', etc.
-            ->map(function ($day) {
-                return \Carbon\Carbon::parse($day)->format('D'); // Mon, Tue, etc.
-            })
+            ->pluck('day')
+            ->map(fn($day) => \Carbon\Carbon::parse($day)->format('D'))
             ->toArray();
 
-        // Fetch attendance records
+        $schedules = \App\Models\Schedule::where('class_id', $class->id)
+            ->where('teacher_id', Auth::id())
+            ->get();
+
+        $schedulesById = $schedules->keyBy('id');
+
         $attendances = \App\Models\Attendance::where('class_id', $class->id)
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
@@ -112,10 +115,9 @@ class TeacherController extends Controller
         $calendarDates = [];
         $startOfMonth = \Carbon\Carbon::create($year, $month, 1);
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
+
         for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
-            if ($date->isWeekday()) {
-                $calendarDates[] = $date->format('Y-m-d');
-            }
+            $calendarDates[] = $date->format('Y-m-d');
         }
 
         $attendanceData = [];
@@ -139,11 +141,22 @@ class TeacherController extends Controller
             $symbol = match ($attendance->status) {
                 'present' => '✓',
                 'absent' => 'X',
-                'late' => '/',
+                'late' => 'L',
+                'excused' => 'E',
                 default => '-',
             };
 
-            $attendanceData[$attendance->student_id]['by_date'][$date] = $symbol;
+            $schedule = $schedulesById->get($attendance->schedule_id);
+
+            if (!$schedule) {
+                continue; // skip if no matching schedule
+            }
+
+            $attendanceData[$attendance->student_id]['by_date'][$date][] = [
+                'status' => $symbol,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+            ];
 
             if (in_array($attendance->status, ['present', 'late'])) {
                 $attendanceData[$attendance->student_id]['present']++;
@@ -152,7 +165,7 @@ class TeacherController extends Controller
             }
 
             $student = $students->firstWhere('id', $attendance->student_id);
-            if ($symbol === '✓' || $symbol === '/') {
+            if (in_array($symbol, ['✓', 'L'])) {
                 $combinedTotals[$date]++;
                 if ($student->gender === 'Male') {
                     $maleTotals[$date]++;
@@ -191,7 +204,8 @@ class TeacherController extends Controller
             'femaleTotalAbsent',
             'totalAbsent',
             'totalPresent',
-            'scheduleDays' // ✅ Add this to view
+            'scheduleDays',
+            'schedules'
         ));
     }
 
@@ -204,25 +218,29 @@ class TeacherController extends Controller
         $dayName = \Carbon\Carbon::parse($targetDate)->format('l');
 
         // Get schedule for logged-in teacher and this class on today's day
-        $schedule = Schedule::where('teacher_id', Auth::id())
+        $schedules = Schedule::where('teacher_id', Auth::id())
             ->where('class_id', $class->id)
             ->where('day', $dayName)
-            ->first();
+            ->get();
 
-        if (!$schedule) {
+        if (!$schedules) {
             return back()->with('error', 'No schedule set for today' . $dayName . '.');
         }
 
         // Get students in the class
         $students = Student::where('class_id', $class->id)->get();
 
-        // Existing attendances for today
-        $attendances = Attendance::where('schedule_id', $schedule->id)
+        // Get all attendance records for the day and group them by schedule_id and then student_id
+        $attendancesGrouped = Attendance::whereIn('schedule_id', $schedules->pluck('id'))
             ->where('date', $targetDate)
             ->get()
-            ->keyBy('student_id');
+            ->groupBy('schedule_id')
+            ->map(function ($items) {
+                return $items->keyBy('student_id');
+            });
 
-        return view('teacher.classes.attendanceHistory', compact('class', 'students', 'schedule', 'attendances', 'targetDate'));
+
+        return view('teacher.classes.attendanceHistory', compact('class', 'students', 'schedules', 'attendancesGrouped', 'targetDate'));
     }
 
     public function submitAttendance(Request $request)
@@ -241,20 +259,14 @@ class TeacherController extends Controller
                     'teacher_id' => $request->teacher_id,
                     'class_id' => $request->class_id,
                     'status' => $data['status'],
-                    'time_in' => $data['status'] !== 'absent' ? $timeNow : null,
-                    'time_out' => $data['status'] !== 'absent' ? $timeNow : null,
+                    'time_in' => !in_array($data['status'], ['absent', 'excused']) ? $timeNow : null,
+                    'time_out' => !in_array($data['status'], ['absent', 'excused']) ? $timeNow : null,
                 ]
             );
         }
 
         return back()->with('success', 'Attendance submitted successfully!');
     }
-
-
-
-
-
-
 
 
 

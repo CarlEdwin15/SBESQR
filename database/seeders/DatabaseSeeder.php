@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
         ]);
 
+        $this->call([
+            StudentSeeder::class,
+        ]);
+
 
         // User::factory(10)->create();
 

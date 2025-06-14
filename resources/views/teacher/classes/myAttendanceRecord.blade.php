@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Attendances')
+@section('title', 'Teacher | Attendance Records')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -232,7 +232,8 @@
                         </div>
                     </div>
 
-                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        class="btn btn-danger mb-3">Back</a>
 
                     <div class="card p-4 shadow-sm">
                         <div class="d-flex justify-content-between mb-3 align-items-center">
@@ -258,6 +259,13 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
                             </div>
+                            @if (empty($scheduleDays) || count($scheduleDays) === 0)
+                                <div class="alert alert-warning alert-dismissible fade show fw-bold mb-0" role="alert">
+                                    You have no schedules yet for this class
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @endif
                         </div>
 
                         <!-- Attendance Table -->
@@ -360,23 +368,81 @@
                                                             $cellClass .= ' today-column bg-info text-white';
                                                         }
 
-                                                        $statusSymbol =
-                                                            $attendanceData[$student->id]['by_date'][$date] ?? '-';
+                                                        $symbols =
+                                                            $attendanceData[$student->id]['by_date'][$date] ?? [];
+
+                                                        $dayAbbrev = \Carbon\Carbon::parse($date)->format('D');
+                                                        $daySchedule = $schedules[$dayAbbrev] ?? null;
+
+                                                        $formattedSchedule = $daySchedule
+                                                            ? '(' .
+                                                                \Carbon\Carbon::parse($daySchedule->start_time)->format(
+                                                                    'g:i A',
+                                                                ) .
+                                                                ' - ' .
+                                                                \Carbon\Carbon::parse($daySchedule->end_time)->format(
+                                                                    'g:i A',
+                                                                ) .
+                                                                ')'
+                                                            : '';
+
                                                         $statusTitles = [
-                                                            '✓' => 'Present',
-                                                            'X' => 'Absent',
-                                                            '/' => 'Excused',
-                                                            '-' => 'No record',
+                                                            '✓' => 'Present ' . $formattedSchedule,
+                                                            'X' => 'Absent ' . $formattedSchedule,
+                                                            'L' => 'Late ' . $formattedSchedule,
+                                                            'E' => 'Excused ' . $formattedSchedule,
                                                         ];
-                                                        $title = $statusTitles[$statusSymbol] ?? ucfirst($statusSymbol);
                                                     @endphp
+
                                                     <td class="{{ $cellClass }}">
-                                                        <span data-bs-toggle="tooltip" title="{{ $title }}">
-                                                            {{ $statusSymbol }}
-                                                        </span>
+                                                        @if (!empty($symbols))
+                                                            @foreach ($symbols as $symbolEntry)
+                                                                @php
+                                                                    $symbol = $symbolEntry['status'];
+                                                                    $start = \Carbon\Carbon::parse(
+                                                                        $symbolEntry['start_time'],
+                                                                    )->format('g:i A');
+                                                                    $end = \Carbon\Carbon::parse(
+                                                                        $symbolEntry['end_time'],
+                                                                    )->format('g:i A');
+                                                                    $title = match ($symbol) {
+                                                                        '✓' => "Present ($start - $end)",
+                                                                        'X' => "Absent ($start - $end)",
+                                                                        'L' => "Late ($start - $end)",
+                                                                        'E' => "Excused ($start - $end)",
+                                                                        default => ucfirst($symbol),
+                                                                    };
+                                                                @endphp
+
+                                                                <span class="me-1" data-bs-toggle="tooltip"
+                                                                    title="{{ $title }}">
+                                                                    @switch($symbol)
+                                                                        @case('✓')
+                                                                            <span class="text-success fw-bold">✓</span>
+                                                                        @break
+
+                                                                        @case('X')
+                                                                            <span class="text-danger fw-bold">X</span>
+                                                                        @break
+
+                                                                        @case('L')
+                                                                            <span class="text-warning fw-bold">L</span>
+                                                                        @break
+
+                                                                        @case('E')
+                                                                            <span class="text-primary fw-bold">E</span>
+                                                                        @break
+
+                                                                        @default
+                                                                            {{ $symbol }}
+                                                                    @endswitch
+                                                                </span>
+                                                            @endforeach
+                                                        @else
+                                                            -
+                                                        @endif
                                                     </td>
                                                 @endforeach
-
                                                 <td>{{ $attendanceData[$student->id]['absent'] }}</td>
                                                 <td>{{ $attendanceData[$student->id]['present'] }}</td>
                                                 <td></td>
@@ -424,6 +490,7 @@
                                         <td></td>
                                     </tr>
                                 </tbody>
+
                             </table>
                         </div>
                         <!-- / Attendance Table -->

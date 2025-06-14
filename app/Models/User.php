@@ -48,6 +48,7 @@ class User extends Authenticatable
         'dob',
         'password',
         'profile_photo',
+        'role'
     ];
 
     public function classes()

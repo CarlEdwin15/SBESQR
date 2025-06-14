@@ -322,7 +322,6 @@
                                     <input type="text" name="student_lrn" id="student_lrn" class="form-control"
                                         list="datalistOptions" placeholder="Enter Student's LRN" required autofocus
                                         autocomplete="student_lrn" value="{{ old('student_lrn') }}" />
-
                                     <datalist id="datalistOptions">
                                         <option value="112828"></option>
                                     </datalist>
@@ -417,7 +416,9 @@
 
                                 <!-- Extension Name Field -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_extName" class="form-label fw-bold">Extension Name</label>
+                                    <label for="student_extName" class="form-label fw-bold">Extension Name
+                                        <span class="text-muted">(optional)</span>
+                                    </label>
                                     <input type="text" name="student_extName" id="student_extName"
                                         class="form-control" placeholder="e.g Jr., III (if applicable)"
                                         value="{{ old('student_extName') }}" />
@@ -438,7 +439,7 @@
                                 <div class="col mb-2 mt-2">
                                     <label for="student_dob" class="form-label fw-bold">Date of Birth</label>
                                     <input class="form-control" name="student_dob" type="date" id="student_dob"
-                                        value="{{ old('student_dob') }}" />
+                                        max="{{ date('Y-m-d') }}" value="{{ old('student_dob') }}" />
                                 </div>
                             </div>
 

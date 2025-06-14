@@ -232,167 +232,225 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                        class="btn btn-danger mb-3">Back</a>
+                    <h2 class="card-title mb-2 fw-bold text-primary text-center">
+                        Attendance History {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                    </h2>
 
-                    {{-- Date Selection Form --}}
-                    <form id="dateForm" method="GET" class="mb-3">
-                        <div class="d-flex gap-2 align-items-end">
-                            <div>
-                                <label for="date">Choose Date:</label>
-                                <input type="date" id="date" name="date" class="form-control"
-                                    value="{{ $targetDate }}">
-                            </div>
-                            <button class="btn btn-primary" type="submit">View</button>
-                        </div>
-                    </form>
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                            class="btn btn-danger">Back</a>
 
-                    {{-- Attendance Card --}}
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-body">
-                            <h4 class="card-title mb-2 text-warning">
-                                Attendance History {{ ucfirst($class->grade_level) }} - {{ $class->section }}
-                            </h4>
-                            <p class="mb-1"><strong>Subject:</strong> {{ $schedule->subject_name }}</p>
-                            <p class="mb-3">
-                                <strong>Schedule:</strong> {{ $schedule->day }}
-                                ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
-                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
-                            </p>
-
-                            <form method="POST" action="{{ route('teacher.submitAttendance') }}">
-                                @csrf
-                                <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
-                                <input type="hidden" name="class_id" value="{{ $class->id }}">
-                                <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
-                                <input type="hidden" name="date" value="{{ $targetDate }}">
-
-
-                                {{-- MALE STUDENTS --}}
-                                <table class="table table-responsive table-bordered align-middle mb-4">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th style="width: 40px;">No.</th>
-                                            <th>Name</th>
-                                            <th style="width: 160px;">Status</th>
-                                            <th style="width: 120px;">Time In</th>
-                                            <th style="width: 120px;">Time Out</th>
-                                            <th style="width: 160px;">Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php $maleIndex = 1; @endphp
-                                        @foreach ($students->where('gender', 'Male')->sortBy(function ($student) {
-            return strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName);
-        }) as $student)
-                                            @php $existing = $attendances[$student->id] ?? null; @endphp
-                                            <tr>
-                                                <td>{{ $maleIndex++ }}</td>
-                                                <td>{{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_mName }}</td>
-                                                <td>
-                                                    <div class="d-flex justify-content-between align-items-center gap-2">
-                                                        @php
-                                                            $status = $existing->status ?? 'absent';
-                                                            $badgeClass = match ($status) {
-                                                                'present' => 'bg-label-success',
-                                                                'late' => 'bg-label-warning',
-                                                                'absent' => 'bg-label-danger',
-                                                                default => 'bg-label-secondary',
-                                                            };
-                                                        @endphp
-                                                        <span class="badge {{ $badgeClass }} text-uppercase">
-                                                            {{ ucfirst($status) }}
-                                                        </span>
-                                                        <select name="attendance[{{ $student->id }}][status]"
-                                                            class="form-select w-auto">
-                                                            <option value="present"
-                                                                {{ $existing && $existing->status == 'present' ? 'selected' : '' }}>
-                                                                Present</option>
-                                                            <option value="late"
-                                                                {{ $existing && $existing->status == 'late' ? 'selected' : '' }}>
-                                                                Late</option>
-                                                            <option value="absent"
-                                                                {{ !$existing || $existing->status == 'absent' ? 'selected' : '' }}>
-                                                                Absent</option>
-                                                        </select>
-                                                    </div>
-                                                </td>
-                                                <td>{{ $existing?->time_in ?? '-' }}</td>
-                                                <td>{{ $existing?->time_out ?? '-' }}</td>
-                                                <td>{{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-
-                                {{-- FEMALE STUDENTS --}}
-                                <table class="table table-bordered align-middle">
-                                    <thead class="table-danger">
-                                        <tr>
-                                            <th style="width: 40px;">No.</th>
-                                            <th>Name</th>
-                                            <th style="width: 160px;">Status</th>
-                                            <th style="width: 120px;">Time In</th>
-                                            <th style="width: 120px;">Time Out</th>
-                                            <th style="width: 160px;">Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php $femaleIndex = 1; @endphp
-                                        @foreach ($students->where('gender', 'Female')->sortBy(function ($student) {
-            return strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName);
-        }) as $student)
-                                            @php $existing = $attendances[$student->id] ?? null; @endphp
-                                            <tr>
-                                                <td>{{ $femaleIndex++ }}</td>
-                                                <td>{{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_mName }}</td>
-                                                <td>
-                                                    <div class="d-flex justify-content-between align-items-center gap-2">
-                                                        @php
-                                                            $status = $existing->status ?? 'absent';
-                                                            $badgeClass = match ($status) {
-                                                                'present' => 'bg-label-success',
-                                                                'late' => 'bg-label-warning',
-                                                                'absent' => 'bg-label-danger',
-                                                                default => 'bg-label-secondary',
-                                                            };
-                                                        @endphp
-                                                        <span class="badge {{ $badgeClass }} text-uppercase">
-                                                            {{ ucfirst($status) }}
-                                                        </span>
-                                                        <select name="attendance[{{ $student->id }}][status]"
-                                                            class="form-select w-auto">
-                                                            <option value="present"
-                                                                {{ $existing && $existing->status == 'present' ? 'selected' : '' }}>
-                                                                Present</option>
-                                                            <option value="late"
-                                                                {{ $existing && $existing->status == 'late' ? 'selected' : '' }}>
-                                                                Late</option>
-                                                            <option value="absent"
-                                                                {{ !$existing || $existing->status == 'absent' ? 'selected' : '' }}>
-                                                                Absent</option>
-                                                        </select>
-                                                    </div>
-                                                </td>
-                                                <td>{{ $existing?->time_in ?? '-' }}</td>
-                                                <td>{{ $existing?->time_out ?? '-' }}</td>
-                                                <td>{{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-
-                                <div class="mt-3 text-end">
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="bx bx-check-circle"></i> Submit Attendance
-                                    </button>
+                        {{-- Date Selection Form --}}
+                        <form id="dateForm" method="GET">
+                            <div class="d-flex gap-2 align-items-end">
+                                <div>
+                                    <label for="date">Date Selection:</label>
+                                    <input type="date" id="date" name="date" class="form-control"
+                                        value="{{ $targetDate }}">
                                 </div>
-                            </form>
-                        </div>
+                                <button class="btn btn-primary" type="submit">View</button>
+                            </div>
+                        </form>
                     </div>
-                    {{-- / Attendance Card --}}
+
+                    <!-- Attendance History -->
+                    <div class="accordion mt-4" id="attendanceAccordion">
+                        @forelse ($schedules as $index => $schedule)
+                            @php
+                                $collapseId = 'scheduleCollapse' . $schedule->id;
+                                $headingId = 'heading' . $schedule->id;
+                            @endphp
+
+                            <div class="accordion-item card mb-2">
+                                <h2 class="accordion-header" id="{{ $headingId }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#{{ $collapseId }}" aria-expanded="false"
+                                        aria-controls="{{ $collapseId }}">
+                                        {{ $schedule->subject_name }} | {{ $schedule->day }}
+                                        ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
+                                        {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
+                                        -
+                                        {{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}
+                                    </button>
+                                </h2>
+
+                                <div id="{{ $collapseId }}" class="accordion-collapse collapse"
+                                    aria-labelledby="{{ $headingId }}" data-bs-parent="#attendanceAccordion">
+                                    <h2 class="text-warning text-center fw-bold">{{ $schedule->subject_name }}</h2>
+                                    <div class="accordion-body">
+                                        <form method="POST" action="{{ route('teacher.submitAttendance') }}">
+                                            @csrf
+                                            <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                                            <input type="hidden" name="class_id" value="{{ $class->id }}">
+                                            <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
+                                            <input type="hidden" name="date" value="{{ $targetDate }}">
+
+
+                                            {{-- MALE STUDENTS --}}
+                                            <div class="table-responsive mb-4">
+                                                <table class="table table-hover table-bordered align-middle">
+                                                    <thead class="table-info">
+                                                        <tr class="text-center">
+                                                            <th style="width: 40px; text-align: center;">No.</th>
+                                                            <th style="text-align: center;">Name</th>
+                                                            <th style="width: 160px; text-align: center;">Status</th>
+                                                            <th style="width: 120px; text-align: center;">Time In</th>
+                                                            <th style="width: 120px; text-align: center;">Time Out</th>
+                                                            <th style="width: 150px; text-align: center;">Date</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @php $maleIndex = 1; @endphp
+                                                        @foreach ($students->where('gender', 'Male')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
+                                                            @php
+                                                                $existing =
+                                                                    $attendancesGrouped[$schedule->id][$student->id] ??
+                                                                    null;
+                                                                $status = $existing->status ?? 'absent';
+                                                                $badgeClass = match ($status) {
+                                                                    'present' => 'bg-label-success',
+                                                                    'late' => 'bg-label-warning',
+                                                                    'absent' => 'bg-label-danger',
+                                                                    'excused' => 'bg-label-secondary',
+                                                                    default => 'bg-label-info',
+                                                                };
+                                                            @endphp
+                                                            <tr>
+                                                                <td class="text-center">{{ $maleIndex++ }}</td>
+                                                                <td>{{ $student->student_lName }},
+                                                                    {{ $student->student_fName }}
+                                                                    {{ $student->student_mName }}</td>
+                                                                <td>
+                                                                    <div
+                                                                        class="d-flex justify-content-between align-items-center gap-2">
+                                                                        <span
+                                                                            class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                                                        <select
+                                                                            name="attendance[{{ $student->id }}][status]"
+                                                                            class="form-select w-auto">
+                                                                            <option value="present"
+                                                                                {{ $status == 'present' ? 'selected' : '' }}>
+                                                                                Present</option>
+                                                                            <option value="absent"
+                                                                                {{ $status == 'absent' ? 'selected' : '' }}>
+                                                                                Absent</option>
+                                                                            <option value="late"
+                                                                                {{ $status == 'late' ? 'selected' : '' }}>
+                                                                                Late</option>
+                                                                            <option value="excused"
+                                                                                {{ $status == 'excused' ? 'selected' : '' }}>
+                                                                                Excused</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    {{ $existing?->time_in ? \Carbon\Carbon::parse($existing->time_in)->format('g:i A') : '-' }}
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    {{ $existing?->time_out ? \Carbon\Carbon::parse($existing->time_out)->format('g:i A') : '-' }}
+                                                                </td>
+
+                                                                <td class="text-center">
+                                                                    {{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {{-- FEMALE STUDENTS --}}
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-bordered align-middle">
+                                                    <thead class="table-danger">
+                                                        <tr class="text-center">
+                                                            <th style="width: 40px; text-align: center;">No.</th>
+                                                            <th style="text-align: center;">Name</th>
+                                                            <th style="width: 160px; text-align: center;">Status</th>
+                                                            <th style="width: 120px; text-align: center;">Time In</th>
+                                                            <th style="width: 120px; text-align: center;">Time Out</th>
+                                                            <th style="width: 150px; text-align: center;">Date</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @php $femaleIndex = 1; @endphp
+                                                        @foreach ($students->where('gender', 'Female')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
+                                                            @php
+                                                                $existing =
+                                                                    $attendancesGrouped[$schedule->id][$student->id] ??
+                                                                    null;
+                                                                $status = $existing->status ?? 'absent';
+                                                                $badgeClass = match ($status) {
+                                                                    'present' => 'bg-label-success',
+                                                                    'late' => 'bg-label-warning',
+                                                                    'absent' => 'bg-label-danger',
+                                                                    'excused' => 'bg-label-info',
+                                                                    default => 'bg-label-secondary',
+                                                                };
+                                                            @endphp
+                                                            <tr>
+                                                                <td class="text-center">{{ $femaleIndex++ }}</td>
+                                                                <td>{{ $student->student_lName }},
+                                                                    {{ $student->student_fName }}
+                                                                    {{ $student->student_mName }}</td>
+                                                                <td>
+                                                                    <div
+                                                                        class="d-flex justify-content-between align-items-center gap-2">
+                                                                        <span
+                                                                            class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                                                        <select
+                                                                            name="attendance[{{ $student->id }}][status]"
+                                                                            class="form-select w-auto">
+                                                                            <option value="present"
+                                                                                {{ $status == 'present' ? 'selected' : '' }}>
+                                                                                Present</option>
+                                                                            <option value="absent"
+                                                                                {{ $status == 'absent' ? 'selected' : '' }}>
+                                                                                Absent</option>
+                                                                            <option value="late"
+                                                                                {{ $status == 'late' ? 'selected' : '' }}>
+                                                                                Late</option>
+                                                                            <option value="excused"
+                                                                                {{ $status == 'excused' ? 'selected' : '' }}>
+                                                                                Excused</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    {{ $existing?->time_in ? \Carbon\Carbon::parse($existing->time_in)->format('g:i A') : '-' }}
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    {{ $existing?->time_out ? \Carbon\Carbon::parse($existing->time_out)->format('g:i A') : '-' }}
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    {{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="text-end mt-3">
+                                                <button type="submit" class="btn btn-success">
+                                                    <i class="bx bx-check-circle"></i> Save Attendance
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12">
+                                <div class="alert alert-info text-center mb-0">
+                                    No schedules for this date
+                                    ({{ \Carbon\Carbon::parse($targetDate)->format('l, F j, Y') }})
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                    <!-- /Attendance History -->
+
 
 
                 </div>

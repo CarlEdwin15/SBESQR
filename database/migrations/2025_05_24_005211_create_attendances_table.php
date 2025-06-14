@@ -34,7 +34,7 @@ return new class extends Migration
             $table->date('date');
             $table->time('time_in')->nullable();
             $table->time('time_out')->nullable();
-            $table->enum('status', ['present', 'absent', 'late'])->default('absent');
+            $table->enum('status', ['present', 'absent', 'late', 'excused'])->default('absent');
             $table->index(['student_id', 'class_id', 'date']);
 
             $table->timestamps();
