@@ -17,14 +17,13 @@ class StudentSeeder extends Seeder
 
     public function run(): void
     {
-        // 1. Create or retrieve a class
-        $class = Classes::firstOrCreate([
+        // Kindergarten - Section A
+        $classKinder = Classes::firstOrCreate([
             'grade_level' => 'kindergarten',
             'section' => 'A',
         ]);
 
-        // Sample data for 10 students
-        $students = [
+        $studentsKinder = [
             [
                 'lrn' => '112828123456',
                 'fName' => 'Carl Edwin',
@@ -107,8 +106,7 @@ class StudentSeeder extends Seeder
             ],
         ];
 
-        foreach ($students as $student) {
-            // 2. Create address
+        foreach ($studentsKinder as $student) {
             $address = StudentAddress::create([
                 'house_no' => rand(100, 999),
                 'street_name' => 'Main St',
@@ -120,7 +118,6 @@ class StudentSeeder extends Seeder
                 'pob' => 'Sample City',
             ]);
 
-            // 3. Create parent info
             $parent = ParentInfo::create([
                 'father_fName' => 'Juan',
                 'father_mName' => 'Dela',
@@ -136,7 +133,6 @@ class StudentSeeder extends Seeder
                 'emergCont_phone' => '0920' . rand(1000000, 9999999),
             ]);
 
-            // 4. Create the student
             Student::create([
                 'student_lrn' => $student['lrn'],
                 'student_fName' => $student['fName'],
@@ -147,7 +143,139 @@ class StudentSeeder extends Seeder
                 'student_sex' => $student['sex'],
                 'student_photo' => null,
                 'qr_code' => Str::uuid(),
-                'class_id' => $class->id,
+                'class_id' => $classKinder->id,
+                'address_id' => $address->id,
+                'parent_id' => $parent->id,
+            ]);
+        }
+
+        // Grade 1 - Section A
+        $classGrade1 = Classes::firstOrCreate([
+            'grade_level' => 'grade1',
+            'section' => 'A',
+        ]);
+
+        $studentsGrade1 = [
+            [
+                'lrn' => '112828123466',
+                'fName' => 'Matthew',
+                'mName' => 'Santos',
+                'lName' => 'Cruz',
+                'dob' => '2011-01-15',
+                'sex' => 'Male',
+            ],
+            [
+                'lrn' => '112828123467',
+                'fName' => 'Olivia',
+                'mName' => 'Garcia',
+                'lName' => 'Lopez',
+                'dob' => '2011-02-20',
+                'sex' => 'Female',
+            ],
+            [
+                'lrn' => '112828123468',
+                'fName' => 'Ethan',
+                'mName' => 'Torres',
+                'lName' => 'Reyes',
+                'dob' => '2011-03-10',
+                'sex' => 'Male',
+            ],
+            [
+                'lrn' => '112828123469',
+                'fName' => 'Ava',
+                'mName' => 'Dela Cruz',
+                'lName' => 'Santos',
+                'dob' => '2011-04-05',
+                'sex' => 'Female',
+            ],
+            [
+                'lrn' => '112828123470',
+                'fName' => 'Noah',
+                'mName' => 'Fernandez',
+                'lName' => 'Gonzales',
+                'dob' => '2011-05-18',
+                'sex' => 'Male',
+            ],
+            [
+                'lrn' => '112828123471',
+                'fName' => 'Mia',
+                'mName' => 'Ramos',
+                'lName' => 'Villanueva',
+                'dob' => '2011-06-22',
+                'sex' => 'Female',
+            ],
+            [
+                'lrn' => '112828123472',
+                'fName' => 'James',
+                'mName' => 'Santiago',
+                'lName' => 'Garcia',
+                'dob' => '2011-07-30',
+                'sex' => 'Male',
+            ],
+            [
+                'lrn' => '112828123473',
+                'fName' => 'Charlotte',
+                'mName' => 'Mendoza',
+                'lName' => 'Torres',
+                'dob' => '2011-08-14',
+                'sex' => 'Female',
+            ],
+            [
+                'lrn' => '112828123474',
+                'fName' => 'Benjamin',
+                'mName' => 'Reyes',
+                'lName' => 'Santos',
+                'dob' => '2011-09-09',
+                'sex' => 'Male',
+            ],
+            [
+                'lrn' => '112828123475',
+                'fName' => 'Amelia',
+                'mName' => 'Lopez',
+                'lName' => 'Dela Cruz',
+                'dob' => '2011-10-27',
+                'sex' => 'Female',
+            ],
+        ];
+
+        foreach ($studentsGrade1 as $student) {
+            $address = StudentAddress::create([
+                'house_no' => rand(100, 999),
+                'street_name' => 'Main St',
+                'barangay' => 'Barangay Uno',
+                'municipality_city' => 'Sample City',
+                'province' => 'Sample Province',
+                'zip_code' => '1000',
+                'country' => 'Philippines',
+                'pob' => 'Sample City',
+            ]);
+
+            $parent = ParentInfo::create([
+                'father_fName' => 'Juan',
+                'father_mName' => 'Dela',
+                'father_lName' => 'Cruz',
+                'father_phone' => '0917' . rand(1000000, 9999999),
+                'mother_fName' => 'Maria',
+                'mother_mName' => 'Santos',
+                'mother_lName' => 'Reyes',
+                'mother_phone' => '0918' . rand(1000000, 9999999),
+                'emergCont_fName' => 'Pedro',
+                'emergCont_mName' => 'Lopez',
+                'emergCont_lName' => 'Gomez',
+                'emergCont_phone' => '0920' . rand(1000000, 9999999),
+            ]);
+
+            Student::create([
+                'student_lrn' => $student['lrn'],
+                'student_fName' => $student['fName'],
+                'student_mName' => $student['mName'],
+                'student_lName' => $student['lName'],
+                'student_extName' => null,
+                'student_dob' => $student['dob'],
+                'student_sex' => $student['sex'],
+                'student_photo' => null,
+                'qr_code' => Str::uuid(),
+                'class_id' => $classGrade1->id,
                 'address_id' => $address->id,
                 'parent_id' => $parent->id,
             ]);

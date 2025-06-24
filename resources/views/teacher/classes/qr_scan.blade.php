@@ -1,6 +1,6 @@
-@extends('./layouts.main')
+@extends('layouts.main')
 
-@section('title', 'Teacher | Master List')
+@section('title', 'Teacher | Scan Attendance')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -223,110 +223,109 @@
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                                        href="{{ route('teacher.myClass', ['grade_level' => $grade, 'section' => $section]) }}">
+                                        {{ ucfirst($grade) }} - {{ $section }} </a> /
                                 </span>
-                                Master List
+                                Scan Attendance
                             </h4>
                         </div>
                     </div>
 
-                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
-                    <div class="card p-4 shadow-sm">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h3 class="fw-bold mb-2 text-primary">{{ $class->formatted_grade_level }} -
-                                {{ $class->section }}</h3>
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                            class="btn btn-danger">Back</a>
+                    </div>
 
-                            <!-- Export List Form -->
-                            <form action="" method="GET">
-                                @csrf
-                                <button type="submit" class="btn btn-success ms-md-auto">Export List</button>
-                            </form>
+                    {{-- Card --}}
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="fw-bold mb-0 text-center text-warning">{{ $schedule->subject_name }} <span
+                                    class="text-muted">|</span>
+                                <span class="text-info">{{ ucfirst($grade) }} - {{ $section }} </span>
+                            </h4>
                         </div>
 
-                        <h4 class="mb-4 text-center fw-bold text-warning">Class Master List</h4><br>
-                        <h5 class="text-center">Adviser:</h5>
+                        <div class="container my-4">
+                            <div class="row">
+                                <!-- Left: Class Info -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card text-center p-3">
 
-                        @if ($class->adviser)
-                            <h5 class="text-info text-center mb-4 fw-bold">
-                                {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
-                            </h5>
-                        @else
-                            <h6 class="text-danger text-center mb-4">No teacher assigned</h6>
-                        @endif
+                                        <p class="fw-bold mb-0 text-muted">📅
+                                            {{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</p>
 
-                        <div class="row">
-                            <!-- Male Table -->
-                            <div class="col-md-6">
-                                <table class="table table-bordered text-center" id="studentTable">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th>NO.</th>
-                                            <th>MALE</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php $maleCount = 1; @endphp
-                                        @foreach ($students->where('student_sex', 'male')->sortBy(function ($student) {
-            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
-        }) as $student)
-                                            <tr class="student-row">
-                                                <td>{{ $maleCount++ }}</td>
-                                                <td>
-                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_extName }}
-                                                    @if (!empty($student->student_mName))
-                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                        @if ($maleCount === 1)
-                                            <tr>
-                                                <td colspan="2">No male students enrolled.</td>
-                                            </tr>
+                                        @if ($schedule)
+                                            <p class="fw-bold mb-2 text-primary">🕒
+                                                {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} -
+                                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}</p>
+                                        @else
+                                            <p class="text-danger fw-bold mb-0">Schedule not found</p>
                                         @endif
-                                    </tbody>
-                                </table>
-                            </div>
 
-                            <!-- Female Table -->
-                            <div class="col-md-6">
-                                <table class="table table-bordered text-center" id="studentTable">
-                                    <thead class="table-danger">
-                                        <tr>
-                                            <th>NO.</th>
-                                            <th>FEMALE</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php $femaleCount = 1; @endphp
-                                        @foreach ($students->where('student_sex', 'female')->sortBy(function ($student) {
-            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
-        }) as $student)
-                                            <tr class="student-row">
-                                                <td>{{ $femaleCount++ }}</td>
-                                                <td>
-                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_extName }}
-                                                    @if (!empty($student->student_mName))
-                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                        @if ($femaleCount === 1)
-                                            <tr>
-                                                <td colspan="2">No female students enrolled.</td>
-                                            </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
+                                        <div class="my-1">
+                                            <video id="preview" width="100%" height="370px" autoplay class="rounded"
+                                                style="object-fit: cover; object-position: center;" playsinline></video>
+                                        </div>
+
+                                        <h5 class="fw-bold text-primary">{{ strtoupper($grade) }} - {{ $section }}
+                                        </h5>
+
+                                    </div>
+                                </div>
+
+                                <!-- Right: Student List -->
+                                <div class="col-md-6">
+                                    <div class="card p-3">
+                                        <h6 class="fw-bold">LIST OF STUDENTS</h6>
+                                        <div class="table-responsive">
+                                            <table class="table align-middle table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($students->sortBy('full_name') as $student)
+                                                        <tr data-student-id="{{ $student->id }}">
+                                                            <td>{{ $student->full_name }}</td>
+                                                            <td>
+                                                                @php
+                                                                    $att = $student->attendances->firstWhere(
+                                                                        'date',
+                                                                        $date,
+                                                                    );
+                                                                    $status = $att->status ?? null;
+                                                                @endphp
+                                                                <span
+                                                                    class="badge status-badge
+            @if ($status === 'present') bg-success
+            @elseif ($status === 'absent') bg-danger
+            @elseif ($status === 'late') bg-warning text-dark
+            @else bg-secondary @endif
+        ">
+                                                                    {{ ucfirst($status ?? '-') }}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div id="qr-result" class="mt-2 text-success fw-bold"></div>
+                                    </div>
+                                </div>
+                                <!-- /Right: Student List -->
+
                             </div>
                         </div>
                     </div>
+                    {{-- /Card --}}
+
+
+                    <hr class="my-5" />
                 </div>
-                <!-- End Content wrapper -->
+                <!-- Content wrapper -->
 
 
             </div>
@@ -340,165 +339,118 @@
 @endsection
 
 @push('scripts')
-    <!-- Include Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('js/qr/instascan.min.js') }}"></script>
 
-    <!-- Chart Initialization Script -->
     <script>
-        // Enrollees Chart
-        const ctx1 = document.getElementById('enrolleesChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Kndg', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
-                datasets: [{
-                    label: 'Enrollees',
-                    data: [45, 35, 42, 155, 46, 34, 43],
-                    backgroundColor: [
-                        '#FF8A8A', '#82E6E6', '#FFE852', '#C9A5FF',
-                        '#FF8A8A', '#82E6E6', '#FFE852'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 10
+        const scheduleId = @json($schedule_id);
+        const grade = @json($grade);
+        const section = @json($section);
+        const date = @json($date);
+        const grace = {{ $gracePeriod ?? 10 }}; // ✅ Passed from controller
+
+        let scanner = new Instascan.Scanner({
+            video: document.getElementById('preview'),
+            mirror: true
+        });
+
+        const qrResult = document.getElementById('qr-result');
+        let scanning = false;
+
+        scanner.addListener('scan', function(content) {
+            if (scanning) return;
+            scanning = true;
+
+            qrResult.innerText = '🔍 Processing scan...';
+
+            try {
+                const data = JSON.parse(content);
+
+                fetch('{{ route('teacher.markAttendanceFromQR') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            student_id: data.student_id,
+                            grade: grade,
+                            section: section,
+                            date: date,
+                            schedule_id: scheduleId,
+                            grace: grace // ✅ Send grace period
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            qrResult.classList.remove('text-danger');
+                            qrResult.classList.add('text-success');
+                            qrResult.innerText = '✔️ Attendance marked for: ' + res.student;
+
+                            const row = document.querySelector(`tr[data-student-id="${res.student_id}"]`);
+                            if (row) {
+                                const badge = row.querySelector('.status-badge');
+                                if (badge) {
+                                    badge.textContent = capitalize(res.status);
+                                    badge.className = 'badge status-badge ' + getStatusClass(res.status);
+                                }
+                            }
+
+                            setTimeout(() => {
+                                scanning = false;
+                                qrResult.innerText = '';
+                            }, 2500);
+                        } else {
+                            qrResult.classList.remove('text-success');
+                            qrResult.classList.add('text-danger');
+                            qrResult.innerText = '❌ ' + res.message;
+
+                            setTimeout(() => {
+                                scanning = false;
+                                qrResult.innerText = '';
+                            }, 3000);
                         }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
+                    })
+                    .catch(err => {
+                        qrResult.classList.remove('text-success');
+                        qrResult.classList.add('text-danger');
+                        qrResult.innerText = '❌ Network error.';
+                        scanning = false;
+                    });
+
+            } catch (e) {
+                qrResult.classList.remove('text-success');
+                qrResult.classList.add('text-danger');
+                qrResult.innerText = '❌ Invalid QR code format.';
+                scanning = false;
             }
         });
 
-        // Gender Chart
-        // Gender Statistics Chart
-        const chartGenderStatistics = document.querySelector('#genderStatisticsChart');
+        Instascan.Camera.getCameras().then(cameras => {
+            if (cameras.length > 0) scanner.start(cameras[0]);
+            else alert('No cameras found.');
+        }).catch(e => {
+            console.error(e);
+            alert('Camera error: ' + e);
+        });
 
-        const genderChartConfig = {
-            chart: {
-                height: 165,
-                width: 130,
-                type: 'donut'
-            },
-            labels: ['Female', 'Male'],
-            series: [60, 40],
-            colors: ['#FF5B5B', '#2AD3E6'], // Red for Female, Blue for Male
-            stroke: {
-                width: 5,
-                colors: '#fff'
-            },
-            dataLabels: {
-                enabled: false,
-                formatter: function(val) {
-                    return parseInt(val) + '%';
-                }
-            },
-            legend: {
-                show: false
-            },
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    right: 15
-                }
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '75%',
-                        labels: {
-                            show: true,
-                            value: {
-                                fontSize: '1.5rem',
-                                fontFamily: 'Public Sans',
-                                color: '#333',
-                                offsetY: -15,
-                                formatter: function(val) {
-                                    return parseInt(val) + '%';
-                                }
-                            },
-                            name: {
-                                offsetY: 20,
-                                fontFamily: 'Public Sans'
-                            },
-                            total: {
-                                show: true,
-                                fontSize: '0.8125rem',
-                                color: '#aaa',
-                                label: 'Gender Ratio',
-                                formatter: function() {
-                                    return '100%';
-                                }
-                            }
-                        }
-                    }
-                }
+        function getStatusClass(status) {
+            switch (status) {
+                case 'present':
+                    return 'bg-success';
+                case 'absent':
+                    return 'bg-danger';
+                case 'late':
+                    return 'bg-warning text-dark';
+                case 'excused':
+                    return 'bg-info';
+                default:
+                    return 'bg-secondary';
             }
-        };
+        }
 
-        if (chartGenderStatistics) {
-            const genderChart = new ApexCharts(chartGenderStatistics, genderChartConfig);
-            genderChart.render();
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
         }
     </script>
-
-    <script>
-        // logout confirmation
-        function confirmLogout() {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "You want to log out?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, log out!",
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Logged out Successfully!",
-                        icon: "success",
-                        customClass: {
-                            container: 'my-swal-container'
-                        }
-                    });
-                    document.getElementById('logout-form').submit();
-                }
-            });
-        }
-    </script>
-@endpush
-
-@push('styles')
-    <!-- Main CSS File -->
-    <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
-    <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
-    <link href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" rel="stylesheet" />
-
-    <!-- Vendor CSS Files -->
-    <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
-
-    <style>
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-    </style>
 @endpush

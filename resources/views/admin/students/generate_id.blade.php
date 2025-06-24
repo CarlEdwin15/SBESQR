@@ -376,7 +376,11 @@
                                         {{-- QR Code --}}
                                         <div class="text-center mt-1 mb-1">
                                             <div style="display: inline-block; border: 2px solid #000; padding: 5px;">
-                                                {!! QrCode::size(190)->generate(route('student.info', ['id' => $student->id])) !!}
+                                                {!! QrCode::size(150)->generate(
+                                                    json_encode([
+                                                        'student_id' => $student->id,
+                                                    ]),
+                                                ) !!}
                                             </div>
                                         </div>
 

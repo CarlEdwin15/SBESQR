@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\Schedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TeacherController extends Controller
 {
@@ -147,15 +148,24 @@ class TeacherController extends Controller
             };
 
             $schedule = $schedulesById->get($attendance->schedule_id);
-
             if (!$schedule) {
-                continue; // skip if no matching schedule
+                continue;
+            }
+
+            // ✅ Ensure student entry exists
+            if (!isset($attendanceData[$attendance->student_id])) {
+                $attendanceData[$attendance->student_id] = [
+                    'present' => 0,
+                    'absent' => 0,
+                    'by_date' => [],
+                ];
             }
 
             $attendanceData[$attendance->student_id]['by_date'][$date][] = [
                 'status' => $symbol,
                 'start_time' => $schedule->start_time,
                 'end_time' => $schedule->end_time,
+                'subject_name' => $schedule->subject_name ?? 'N/A',
             ];
 
             if (in_array($attendance->status, ['present', 'late'])) {
@@ -165,7 +175,7 @@ class TeacherController extends Controller
             }
 
             $student = $students->firstWhere('id', $attendance->student_id);
-            if (in_array($symbol, ['✓', 'L'])) {
+            if ($student && in_array($symbol, ['✓', 'L'])) {
                 $combinedTotals[$date]++;
                 if ($student->gender === 'Male') {
                     $maleTotals[$date]++;
@@ -177,6 +187,10 @@ class TeacherController extends Controller
 
         $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
         foreach ($students as $student) {
+            if (!isset($attendanceData[$student->id])) {
+                continue;
+            }
+
             if ($student->gender === 'Male') {
                 $maleTotalPresent += $attendanceData[$student->id]['present'];
                 $maleTotalAbsent += $attendanceData[$student->id]['absent'];
@@ -248,25 +262,161 @@ class TeacherController extends Controller
         $date = $request->input('date', now()->toDateString());
         $timeNow = now()->format('H:i:s');
 
+        // Fetch the schedule to get its end_time
+        $schedule = Schedule::findOrFail($request->schedule_id);
+        $timeOutFixed = $schedule->end_time;
+
         foreach ($request->attendance as $studentId => $data) {
-            Attendance::updateOrCreate(
-                [
-                    'student_id' => $studentId,
-                    'schedule_id' => $request->schedule_id,
-                    'date' => $date,
-                ],
-                [
-                    'teacher_id' => $request->teacher_id,
-                    'class_id' => $request->class_id,
-                    'status' => $data['status'],
-                    'time_in' => !in_array($data['status'], ['absent', 'excused']) ? $timeNow : null,
-                    'time_out' => !in_array($data['status'], ['absent', 'excused']) ? $timeNow : null,
-                ]
-            );
+            $status = $data['status'];
+
+            // Check if an attendance record already exists for this student/schedule/date
+            $attendance = Attendance::where('student_id', $studentId)
+                ->where('schedule_id', $request->schedule_id)
+                ->where('date', $date)
+                ->first();
+
+            if (
+                !$attendance ||
+                $attendance->status !== $status
+            ) {
+                Attendance::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'schedule_id' => $request->schedule_id,
+                        'date' => $date,
+                    ],
+                    [
+                        'teacher_id' => $request->teacher_id,
+                        'class_id' => $request->class_id,
+                        'status' => $status,
+                        'time_in' => !in_array($status, ['absent', 'excused']) ? $timeNow : null,
+                        'time_out' => !in_array($status, ['absent', 'excused']) ? $timeOutFixed : null,
+                    ]
+                );
+            }
         }
 
         return back()->with('success', 'Attendance submitted successfully!');
     }
+
+    public function showScanner($grade, $section, $date = null, $schedule_id = null)
+    {
+        $date = $date ?? now()->toDateString();
+        $class = Classes::where('grade_level', $grade)->where('section', $section)->firstOrFail();
+        $dayName = \Carbon\Carbon::parse($date)->format('l');
+
+        $schedules = Schedule::where('class_id', $class->id)
+            ->where('teacher_id', Auth::id())
+            ->where('day', $dayName)
+            ->get();
+
+        $schedule = $schedule_id ? Schedule::find($schedule_id) : $schedules->first();
+        if (!$schedule) return back()->with('error', 'Schedule not found.');
+
+        $gracePeriod = request()->query('grace', 10); // default to 10 mins if not provided
+
+        $students = Student::where('class_id', $class->id)
+            ->with(['attendances' => function ($q) use ($date, $schedule_id) {
+                $q->where('date', $date);
+                if ($schedule_id) $q->where('schedule_id', $schedule_id);
+            }])->get();
+
+        return view('teacher.classes.qr_scan', compact(
+            'grade',
+            'section',
+            'date',
+            'students',
+            'schedule_id',
+            'schedule',
+            'schedules',
+            'class',
+            'gracePeriod'
+        ));
+    }
+
+    public function markAttendanceFromQR(Request $request)
+    {
+        $studentId = $request->input('student_id');
+        $grade = $request->input('grade');
+        $section = $request->input('section');
+        $date = $request->input('date') ?? now()->toDateString();
+        $scheduleId = $request->input('schedule_id');
+        $graceMinutes = (int) $request->input('grace', 10); // default to 10 mins
+
+        $student = Student::find($studentId);
+        if (!$student) {
+            return response()->json(['success' => false, 'message' => 'Student not found']);
+        }
+
+        $class = Classes::where('grade_level', $grade)
+            ->where('section', $section)
+            ->first();
+
+        if (!$class) {
+            return response()->json(['success' => false, 'message' => 'Class not found.']);
+        }
+
+        if ($student->class_id !== $class->id) {
+            Log::warning('Unauthorized QR scan attempt', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'scanned_class' => $grade . ' - ' . $section,
+                'actual_class_id' => $student->class_id,
+                'timestamp' => now()->toDateTimeString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => '⛔ QR Code does not belong to this class (' . $grade . ' - ' . $section . ').'
+            ]);
+        }
+
+        $schedule = Schedule::find($scheduleId);
+        if (!$schedule) {
+            return response()->json(['success' => false, 'message' => 'Schedule not found.']);
+        }
+
+        // ✅ Check if attendance already exists
+        $existing = Attendance::where([
+            'student_id' => $student->id,
+            'schedule_id' => $schedule->id,
+            'date' => $date
+        ])->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => '⚠️ Student QR already scanned for this schedule.'
+            ]);
+        }
+
+        $now = now();
+        $startTime = \Carbon\Carbon::parse($schedule->start_time);
+        $graceLimit = $startTime->copy()->addMinutes($graceMinutes);
+
+        $status = $now->lte($graceLimit) ? 'present' : 'late';
+
+        // ✅ Mark new attendance
+        Attendance::create([
+            'student_id' => $student->id,
+            'schedule_id' => $schedule->id,
+            'date' => $date,
+            'status' => $status,
+            'teacher_id' => Auth::id(),
+            'class_id' => $class->id,
+            'time_in' => now()->format('H:i:s'),
+            'time_out' => $schedule->end_time,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'student' => $student->full_name,
+            'student_id' => $student->id,
+            'status' => 'present',
+        ]);
+    }
+
+
 
 
 

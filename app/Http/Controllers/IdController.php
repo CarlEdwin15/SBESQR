@@ -25,7 +25,7 @@ class IdController extends Controller
         $qrCode = base64_encode(
             QrCode::format('svg')
                 ->size(150)
-                ->generate(route('student.info', ['id' => $student->id]))
+                ->generate(json_encode(['route' => 'student.info', 'id' => $student->id]))
         );
 
         // 2.125in = 153.75pt, 3.375in = 243.75pt (width x height in portrait)

@@ -24,16 +24,6 @@ class ClassesSeeder extends Seeder
 
         $now = now();
 
-        // // PH academic year: starts in June
-        // $today = Carbon::now();
-        // $startMonth = 6; // June
-
-        // if ($today->month >= $startMonth) {
-        //     $schoolYear = $today->year . '-' . ($today->year + 1);
-        // } else {
-        //     $schoolYear = ($today->year - 1) . '-' . $today->year;
-        // }
-
         $data = [];
 
         foreach ($gradeLevels as $grade) {

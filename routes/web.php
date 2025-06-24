@@ -109,11 +109,19 @@ Route::get('mySchedule/{grade_level}/{section}', [TeacherController::class, 'myS
 
 Route::get('myClassMasterList/{grade_level}/{section}', [TeacherController::class, 'myClassMasterList'])->name('teacher.myClassMasterList');
 
+
+// Attendance Management (Teacher's Dashboard)
 Route::get('myAttendanceRecord/{grade_level}/{section}', [TeacherController::class, 'myAttendanceRecord'])->name('teacher.myAttendanceRecord');
 
-Route::get('attendanceHistory/{grade_level}/{section}/{date?}', [TeacherController::class, 'attendanceHistory'])->name('teacher.attendanceHistory');
+Route::get('attendanceHistory/{grade_level}/{section}/{date?}/{schedule_id?}', [TeacherController::class, 'attendanceHistory'])->name('teacher.attendanceHistory');
 
 Route::post('submitAttendance', [TeacherController::class, 'submitAttendance'])->name('teacher.submitAttendance');
+
+Route::get('/teacher/attendance/scan/{grade}/{section}/{date?}/{schedule_id?}', [TeacherController::class, 'showScanner'])
+    ->name('teacher.scanAttendance');
+
+Route::post('/teacher/attendance/mark', [TeacherController::class, 'markAttendanceFromQR'])
+    ->name('teacher.markAttendanceFromQR');
 
 
 //List of Student's Info (on teacher Dashboard)

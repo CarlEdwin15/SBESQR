@@ -265,15 +265,18 @@
                         </span> Student Infromation
                     </h4>
 
-                    <a href="{{ route('show.students') }}" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
-                        class="btn btn-danger mt-3">Back</a>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <a href="{{ route('show.students') }}"
+                            style="margin: auto; margin-bottom: 10px; margin-left: 10px"
+                            class="btn btn-danger mt-3">Back</a>
 
-                    <!-- Generate ID Form -->
-                    <form action="{{ route('students.generateID', $student->id) }}" method="GET">
-                        @csrf
-                        <button type="submit" class="btn btn-success"
-                            style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
-                    </form>
+                        <!-- Generate ID Form -->
+                        <form action="{{ route('students.generateID', $student->id) }}" method="GET">
+                            @csrf
+                            <button type="submit" class="btn btn-success"
+                                style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
+                        </form>
+                    </div>
                     <!-- Student's Details -->
                     <div class="card shadow">
                         <div class="card-body">
@@ -394,7 +397,11 @@
                                             <tr>
                                                 <th class="text-primary">QR Code</th>
                                                 <td>
-                                                    {!! QrCode::size(150)->generate(route('student.info', ['id' => $student->id])) !!}
+                                                    {!! QrCode::size(150)->generate(
+                                                        json_encode([
+                                                            'student_id' => $student->id,
+                                                        ]),
+                                                    ) !!}
                                                 </td>
                                             </tr>
 

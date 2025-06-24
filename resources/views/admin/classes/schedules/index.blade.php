@@ -482,15 +482,27 @@
                                                             {{ $group['subject_name'] }}</h4>
                                                         <i class="bi bi-calendar3 fs-1"></i>
                                                     </div>
-                                                    <h6 class="fw-semibold mb-1 text-dark">
-                                                        Teacher:
+                                                    <h6 class="fw-semibold mb-3 text-dark">
                                                         @if ($group['teacher'])
+                                                            @php
+                                                                $roleLabel = match (
+                                                                    $group['teacher']->pivot->role ?? ''
+                                                                ) {
+                                                                    'adviser' => 'Adviser: ',
+                                                                    'subject_teacher' => 'Subject Teacher: ',
+                                                                    'both' => 'Adviser & Subject Teacher: ',
+                                                                    default => 'Teacher: ',
+                                                                };
+                                                            @endphp
+
+                                                            {{ $roleLabel }}
                                                             {{ $group['teacher']->firstName }}
                                                             {{ $group['teacher']->lastName }}
                                                         @else
-                                                            <span class="text-muted">N/A</span>
+                                                            <span class="text-muted">Teacher: N/A</span>
                                                         @endif
                                                     </h6>
+
                                                     <h6 class="fw-semibold mb-1">
                                                         Schedule:
                                                         {{ implode(', ', $group['days']) }}
@@ -526,15 +538,30 @@
 
                                                         <div class="row mb-3">
                                                             <div class="col-md-6 mb-2">
-                                                                <h6 class="fw-semibold text-muted mb-1">Teacher:</h6>
-                                                                <p class="mb-0">
+                                                                <h6 class="fw-semibold mb-3 text-muted">
                                                                     @if ($group['teacher'])
+                                                                        @php
+                                                                            $roleLabel = match (
+                                                                                $group['teacher']->pivot->role ?? ''
+                                                                            ) {
+                                                                                'adviser' => 'Adviser: ',
+                                                                                'subject_teacher'
+                                                                                    => 'Subject Teacher: ',
+                                                                                'both' => 'Adviser & Subject Teacher: ',
+                                                                                default => 'Teacher: ',
+                                                                            };
+                                                                        @endphp
+
+                                                                        {{ $roleLabel }}<br>
+                                                                        <span class="text-dark">
+                                                                        {{-- Display teacher's full name --}}
                                                                         {{ $group['teacher']->firstName }}
                                                                         {{ $group['teacher']->lastName }}
+                                                                        </span>
                                                                     @else
-                                                                        <span class="text-muted">N/A</span>
+                                                                        <span class="text-muted">Teacher: N/A</span>
                                                                     @endif
-                                                                </p>
+                                                                </h6>
                                                             </div>
 
                                                             <div class="col-md-6 mb-2">
@@ -555,6 +582,12 @@
                                                     <div class="modal-footer bg-light rounded-bottom-4">
                                                         <div
                                                             class="modal-footer bg-light rounded-bottom-4 justify-content-between">
+                                                            <button type="button" class="btn btn-warning text-white"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#editModal{{ $modalIndex }}"
+                                                                data-bs-dismiss="modal">
+                                                                <i class="bi bi-pencil-square me-1"></i> Edit
+                                                            </button>
                                                             <form
                                                                 action="{{ route('classes.deleteSchedule', ['grade_level' => $class->grade_level, 'section' => $class->section, 'subject' => $group['subject_name']]) }}"
                                                                 method="POST"
@@ -565,18 +598,6 @@
                                                                     <i class="bi bi-trash me-1"></i> Delete
                                                                 </button>
                                                             </form>
-
-                                                            <button type="button" class="btn btn-warning text-white"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#editModal{{ $modalIndex }}"
-                                                                data-bs-dismiss="modal">
-                                                                <i class="bi bi-pencil-square me-1"></i> Edit
-                                                            </button>
-
-                                                            <button type="button" class="btn btn-outline-secondary"
-                                                                data-bs-dismiss="modal">
-                                                                <i class="bi bi-x-circle me-1"></i> Close
-                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -600,14 +621,16 @@
                                                     </div>
 
                                                     <div class="modal-body">
-                                                        <!-- Subject Name (readonly) -->
+                                                        <!-- Subject Name -->
                                                         <div class="mb-3">
                                                             <label for="subject_name_edit_{{ $modalIndex }}"
                                                                 class="form-label fw-semibold">Subject Name</label>
                                                             <input type="text" class="form-control"
                                                                 name="subject_name"
                                                                 id="subject_name_edit_{{ $modalIndex }}"
-                                                                value="{{ $group['subject_name'] }}" readonly>
+                                                                value="{{ $group['subject_name'] }}" required>
+                                                            <input type="hidden" name="original_subject_name"
+                                                                value="{{ $group['subject_name'] }}">
                                                         </div>
 
                                                         <!-- Teacher -->

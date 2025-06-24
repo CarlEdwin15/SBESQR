@@ -235,9 +235,26 @@
                     <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
                         class="btn btn-danger mb-3">Back</a>
 
+                    <div class="alert alert-primary alert-dismissible fade show fw-bold mb-4 text-center" role="alert"
+                        id="attendance-alert">
+                        Showing Attendance Record for
+                        {{ \Carbon\Carbon::createFromFormat('Y-m', $monthParam)->format('F, Y') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <script>
+                        setTimeout(function() {
+                            var alertElem = document.getElementById('attendance-alert');
+                            if (alertElem) {
+                                var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
+                                bsAlert.close();
+                            }
+                        }, 5000);
+                    </script>
+
                     <div class="card p-4 shadow-sm">
                         <div class="d-flex justify-content-between mb-3 align-items-center">
-                            <h5 class="fw-bold mb-0">{{ $class->formatted_grade_level }} - {{ $class->section }}</h5>
+                            <h3 class="fw-bold mb-0 text-primary">{{ $class->formatted_grade_level }} -
+                                {{ $class->section }}</h3>
 
                             <!-- Month Picker -->
                             <form method="GET"
@@ -253,12 +270,6 @@
 
                         <div class="text-center mb-4">
                             <h5 class="fw-bold text-info">Daily Attendance Reports of Learners</h5>
-                            <div class="alert alert-primary alert-dismissible fade show fw-bold mb-4" role="alert">
-                                Showing Attendance Record for
-                                {{ \Carbon\Carbon::createFromFormat('Y-m', $monthParam)->format('F, Y') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                    aria-label="Close"></button>
-                            </div>
                             @if (empty($scheduleDays) || count($scheduleDays) === 0)
                                 <div class="alert alert-warning alert-dismissible fade show fw-bold mb-0" role="alert">
                                     You have no schedules yet for this class
@@ -405,44 +416,43 @@
                                                                     $end = \Carbon\Carbon::parse(
                                                                         $symbolEntry['end_time'],
                                                                     )->format('g:i A');
+                                                                    $subject = $symbolEntry['subject_name'] ?? 'N/A';
+
                                                                     $title = match ($symbol) {
-                                                                        '✓' => "Present ($start - $end)",
-                                                                        'X' => "Absent ($start - $end)",
-                                                                        'L' => "Late ($start - $end)",
-                                                                        'E' => "Excused ($start - $end)",
+                                                                        '✓' => "PRESENT | $subject | ($start - $end)",
+                                                                        'X' => "ABSENT | $subject | ($start - $end)",
+                                                                        'L' => "LATE | $subject | ($start - $end)",
+                                                                        'E' => "EXCUSED | $subject | ($start - $end)",
                                                                         default => ucfirst($symbol),
                                                                     };
+
+                                                                    // Add a class for white border if today
+                                                                    $symbolBorderClass = $isTodayCol
+                                                                        ? 'attendance-symbol-border'
+                                                                        : '';
+                                                                    $symbolColorClass = $isTodayCol
+                                                                        ? 'text-white'
+                                                                        : match ($symbol) {
+                                                                            '✓' => 'text-success',
+                                                                            'X' => 'text-danger',
+                                                                            'L' => 'text-warning',
+                                                                            'E' => 'text-primary',
+                                                                            default => '',
+                                                                        };
                                                                 @endphp
 
                                                                 <span class="me-1" data-bs-toggle="tooltip"
                                                                     title="{{ $title }}">
-                                                                    @switch($symbol)
-                                                                        @case('✓')
-                                                                            <span class="text-success fw-bold">✓</span>
-                                                                        @break
-
-                                                                        @case('X')
-                                                                            <span class="text-danger fw-bold">X</span>
-                                                                        @break
-
-                                                                        @case('L')
-                                                                            <span class="text-warning fw-bold">L</span>
-                                                                        @break
-
-                                                                        @case('E')
-                                                                            <span class="text-primary fw-bold">E</span>
-                                                                        @break
-
-                                                                        @default
-                                                                            {{ $symbol }}
-                                                                    @endswitch
+                                                                    <span
+                                                                        class="fw-bold {{ $symbolBorderClass }} {{ $symbolColorClass }}">{{ $symbol }}</span>
                                                                 </span>
                                                             @endforeach
                                                         @else
-                                                            -
+                                                            <span data-bs-toggle="tooltip" title="No Record">-</span>
                                                         @endif
                                                     </td>
                                                 @endforeach
+
                                                 <td>{{ $attendanceData[$student->id]['absent'] }}</td>
                                                 <td>{{ $attendanceData[$student->id]['present'] }}</td>
                                                 <td></td>

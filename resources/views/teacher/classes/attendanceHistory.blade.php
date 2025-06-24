@@ -255,16 +255,47 @@
 
                     <!-- Attendance History -->
                     <div class="accordion mt-4" id="attendanceAccordion">
+                        @php
+                            // Find the nearest schedule to current time
+                            $now = \Carbon\Carbon::now();
+                            $nearestIndex = null;
+                            $minDiff = null;
+                            foreach ($schedules as $idx => $schedule) {
+                                $start = \Carbon\Carbon::parse($schedule->start_time);
+                                $end = \Carbon\Carbon::parse($schedule->end_time);
+
+                                // If today is not the same as $targetDate, use $targetDate for comparison
+                                $dateToUse = \Carbon\Carbon::parse($targetDate)->toDateString();
+                                $start = $start->copy()->setDateFrom(\Carbon\Carbon::parse($dateToUse));
+                                $end = $end->copy()->setDateFrom(\Carbon\Carbon::parse($dateToUse));
+                                // If now is between start and end, diff is 0
+                                if ($now->between($start, $end)) {
+                                    $nearestIndex = $idx;
+                                    break;
+                                }
+                                // Otherwise, find the minimum absolute diff
+                                $diff = min(
+                                    abs($now->diffInSeconds($start, false)),
+                                    abs($now->diffInSeconds($end, false)),
+                                );
+                                if (is_null($minDiff) || $diff < $minDiff) {
+                                    $minDiff = $diff;
+                                    $nearestIndex = $idx;
+                                }
+                            }
+                        @endphp
                         @forelse ($schedules as $index => $schedule)
                             @php
                                 $collapseId = 'scheduleCollapse' . $schedule->id;
                                 $headingId = 'heading' . $schedule->id;
+                                $isOpen = $index === $nearestIndex;
                             @endphp
 
                             <div class="accordion-item card mb-2">
                                 <h2 class="accordion-header" id="{{ $headingId }}">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                        data-bs-target="#{{ $collapseId }}" aria-expanded="false"
+                                    <button class="accordion-button{{ $isOpen ? '' : ' collapsed' }}" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}"
+                                        aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
                                         aria-controls="{{ $collapseId }}">
                                         {{ $schedule->subject_name }} | {{ $schedule->day }}
                                         ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
@@ -274,11 +305,29 @@
                                     </button>
                                 </h2>
 
-                                <div id="{{ $collapseId }}" class="accordion-collapse collapse"
+                                <div id="{{ $collapseId }}"
+                                    class="accordion-collapse collapse{{ $isOpen ? ' show' : '' }}"
                                     aria-labelledby="{{ $headingId }}" data-bs-parent="#attendanceAccordion">
+
+                                    <div class="d-flex align-items-center justify-content-between mb-3"
+                                        style="padding: 0 20px;">
+                                        <button class="btn btn-primary my-2"
+                                            onclick="chooseGracePeriod(
+                    '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}',
+                    '{{ $schedule->start_time }}',
+                    '{{ $schedule->end_time }}'
+                    )">
+                                            📷 Start QR Attendance
+                                            ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
+                                            {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
+                                        </button>
+                                    </div>
+
+
                                     <h2 class="text-warning text-center fw-bold">{{ $schedule->subject_name }}</h2>
                                     <div class="accordion-body">
-                                        <form method="POST" action="{{ route('teacher.submitAttendance') }}">
+                                        <form method="POST" action="{{ route('teacher.submitAttendance') }}"
+                                            class="attendance-form">
                                             @csrf
                                             <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
                                             <input type="hidden" name="class_id" value="{{ $class->id }}">
@@ -292,7 +341,7 @@
                                                     <thead class="table-info">
                                                         <tr class="text-center">
                                                             <th style="width: 40px; text-align: center;">No.</th>
-                                                            <th style="text-align: center;">Name</th>
+                                                            <th style="text-align: center;">Male || Name</th>
                                                             <th style="width: 160px; text-align: center;">Status</th>
                                                             <th style="width: 120px; text-align: center;">Time In</th>
                                                             <th style="width: 120px; text-align: center;">Time Out</th>
@@ -365,7 +414,7 @@
                                                     <thead class="table-danger">
                                                         <tr class="text-center">
                                                             <th style="width: 40px; text-align: center;">No.</th>
-                                                            <th style="text-align: center;">Name</th>
+                                                            <th style="text-align: center;">Female || Name</th>
                                                             <th style="width: 160px; text-align: center;">Status</th>
                                                             <th style="width: 120px; text-align: center;">Time In</th>
                                                             <th style="width: 120px; text-align: center;">Time Out</th>
@@ -451,8 +500,6 @@
                     </div>
                     <!-- /Attendance History -->
 
-
-
                 </div>
                 <!-- End Content wrapper -->
 
@@ -471,112 +518,70 @@
     <!-- Include Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Chart Initialization Script -->
     <script>
-        // Enrollees Chart
-        const ctx1 = document.getElementById('enrolleesChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Kndg', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
-                datasets: [{
-                    label: 'Enrollees',
-                    data: [45, 35, 42, 155, 46, 34, 43],
-                    backgroundColor: [
-                        '#FF8A8A', '#82E6E6', '#FFE852', '#C9A5FF',
-                        '#FF8A8A', '#82E6E6', '#FFE852'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 10
-                        }
+        // SweetAlert for attendance save
+        document.querySelectorAll('.attendance-form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const thisForm = this;
+                Swal.fire({
+                    title: 'Save Attendance?',
+                    text: "Are you sure you want to save the attendance?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, save it!',
+                    cancelButtonText: 'Cancel',
+                    customClass: {
+                        container: 'my-swal-container'
                     }
-                },
-                plugins: {
-                    legend: {
-                        display: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Submit the form via AJAX to avoid page reload
+                        let formData = new FormData(thisForm);
+                        fetch(thisForm.action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector(
+                                        'input[name="_token"]').value,
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            })
+                            .then(response => {
+                                if (response.ok) {
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: 'Attendance has been saved.',
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false,
+                                        customClass: {
+                                            container: 'my-swal-container'
+                                        }
+                                    }).then(() => {
+                                        window.location.reload();
+                                    });
+                                } else {
+                                    return response.json().then(data => {
+                                        throw new Error(data.message ||
+                                            'Failed to save attendance.');
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: error.message,
+                                    icon: 'error',
+                                    customClass: {
+                                        container: 'my-swal-container'
+                                    }
+                                });
+                            });
                     }
-                }
-            }
+                });
+            });
         });
-
-        // Gender Chart
-        // Gender Statistics Chart
-        const chartGenderStatistics = document.querySelector('#genderStatisticsChart');
-
-        const genderChartConfig = {
-            chart: {
-                height: 165,
-                width: 130,
-                type: 'donut'
-            },
-            labels: ['Female', 'Male'],
-            series: [60, 40],
-            colors: ['#FF5B5B', '#2AD3E6'], // Red for Female, Blue for Male
-            stroke: {
-                width: 5,
-                colors: '#fff'
-            },
-            dataLabels: {
-                enabled: false,
-                formatter: function(val) {
-                    return parseInt(val) + '%';
-                }
-            },
-            legend: {
-                show: false
-            },
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    right: 15
-                }
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '75%',
-                        labels: {
-                            show: true,
-                            value: {
-                                fontSize: '1.5rem',
-                                fontFamily: 'Public Sans',
-                                color: '#333',
-                                offsetY: -15,
-                                formatter: function(val) {
-                                    return parseInt(val) + '%';
-                                }
-                            },
-                            name: {
-                                offsetY: 20,
-                                fontFamily: 'Public Sans'
-                            },
-                            total: {
-                                show: true,
-                                fontSize: '0.8125rem',
-                                color: '#aaa',
-                                label: 'Gender Ratio',
-                                formatter: function() {
-                                    return '100%';
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        if (chartGenderStatistics) {
-            const genderChart = new ApexCharts(chartGenderStatistics, genderChartConfig);
-            genderChart.render();
-        }
     </script>
 
     <script>
@@ -620,6 +625,120 @@
 
             window.location.href = finalUrl;
         });
+    </script>
+
+    <script>
+        function chooseGracePeriod(scanUrlBase, startTime, endTime) {
+            const options = [5, 10, 15, 20, 30, 60, 'specified'];
+
+            Swal.fire({
+                title: 'Marked as late if not scanned within',
+                input: 'select',
+                inputOptions: Object.fromEntries(
+                    options.map(min => [
+                        min,
+                        min === 60 ?
+                        '1 hour' :
+                        min === 'specified' ?
+                        'Other (Specify)' :
+                        min + ' mins'
+                    ])
+                ),
+                // inputPlaceholder: 'Marked as late if not scanned within',
+                inputValue: 10,
+                showCancelButton: true,
+                confirmButtonText: 'Next',
+                cancelButtonText: 'Cancel',
+                icon: 'question',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then(result => {
+                if (result.isConfirmed) {
+                    let grace = result.value || 10;
+                    if (grace === 'specified') {
+                        Swal.fire({
+                            title: 'Specify Grace Period (minutes)',
+                            input: 'number',
+                            inputAttributes: {
+                                min: 1,
+                                max: 180,
+                                step: 1
+                            },
+                            inputPlaceholder: 'Enter minutes (e.g. 7)',
+                            showCancelButton: true,
+                            confirmButtonText: 'Start Scanning',
+                            cancelButtonText: 'Cancel',
+                            icon: 'question',
+                            customClass: {
+                                container: 'my-swal-container'
+                            },
+                            preConfirm: (value) => {
+                                if (!value || value < 1) {
+                                    Swal.showValidationMessage(
+                                        'Please enter a valid number of minutes');
+                                    return false;
+                                }
+                                return value;
+                            }
+                        }).then(specifiedResult => {
+                            if (specifiedResult.isConfirmed) {
+                                grace = specifiedResult.value;
+                                openScanner(scanUrlBase, startTime, endTime, grace);
+                            } else if (specifiedResult.dismiss === Swal.DismissReason.cancel) {
+                                Swal.fire({
+                                    title: 'Cancelled',
+                                    text: 'QR scanning not started.',
+                                    icon: 'info',
+                                    customClass: {
+                                        container: 'my-swal-container'
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        openScanner(scanUrlBase, startTime, endTime, grace);
+                    }
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    Swal.fire({
+                        title: 'Cancelled',
+                        text: 'QR scanning not started.',
+                        icon: 'info',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                }
+            });
+        }
+
+        function openScanner(scanUrlBase, startTime, endTime, grace) {
+            const scanUrl = `${scanUrlBase}?grace=${grace}`;
+            Swal.fire({
+                toast: true,
+                icon: 'success',
+                title: `Opening scanner for ${formatTime(startTime)} - ${formatTime(endTime)}`,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+            setTimeout(() => {
+                window.open(scanUrl, '_blank');
+            }, 300);
+        }
+
+        function formatTime(timeStr) {
+            const [hour, minute] = timeStr.split(':');
+            const date = new Date();
+            date.setHours(hour, minute);
+            return date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
     </script>
 @endpush
 
