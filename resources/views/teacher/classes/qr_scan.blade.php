@@ -251,15 +251,15 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="card text-center p-3">
 
-                                        <p class="fw-bold mb-0 text-muted">📅
-                                            {{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</p>
+                                        <h5 class="fw-bold mb-0 text-muted">📅
+                                            {{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</h5>
 
                                         @if ($schedule)
-                                            <p class="fw-bold mb-2 text-primary">🕒
+                                            <h5 class="fw-bold mb-2 text-primary">🕒
                                                 {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} -
-                                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}</p>
+                                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}</h5>
                                         @else
-                                            <p class="text-danger fw-bold mb-0">Schedule not found</p>
+                                            <h5 class="text-danger fw-bold mb-0">Schedule not found</h5>
                                         @endif
 
                                         <div class="my-1">
@@ -277,9 +277,11 @@
                                                         $schedule->end_time,
                                                     )->format('g:i A');
                                                 @endphp
-                                                <p><strong>Note:</strong> <span class="text-success">Students can only be
-                                                        marked as present within
-                                                        <strong class="text-info">{{ $endTimeFormatted }}</strong></span>
+                                                <p><strong class="text-danger">Note:</strong> <span
+                                                        class="text-warning">Students can only be
+                                                        marked as <span class="text-success">present</span> within
+                                                        <strong
+                                                            class="text-success">{{ $endTimeFormatted }}</strong></span>
                                                 </p>
                                             @elseif ($gracePeriod === 0)
                                                 @php
@@ -325,7 +327,9 @@
                                                             $status = $att->status ?? null;
                                                         @endphp
                                                         <tr data-student-id="{{ $student->id }}"
-                                                            @if ($status === 'present') class="table-success" @endif>
+                                                            @if ($status === 'present') class="table-success"
+                                                            @elseif ($status === 'late') class="table-warning"
+                                                            @elseif ($status === 'absent') class="table-danger" @endif>
                                                             <td class="text-center">{{ $student->full_name }}</td>
                                                             <td class="text-center">
                                                                 {{-- Display attendance status --}}
@@ -348,6 +352,9 @@
                                     </div>
                                 </div>
                                 <!-- /Right: Student List -->
+
+                                <audio id="success-sound" src="{{ asset('sounds/attendance_present.mp3') }}"
+                                    preload="auto"></audio>
 
                             </div>
                         </div>
@@ -415,12 +422,22 @@
                     .then(res => res.json())
                     .then(res => {
                         if (res.success) {
+                            document.getElementById('success-sound').play(); // 🔔 Play sound on success
+
                             qrResult.classList.remove('text-danger');
                             qrResult.classList.add('text-success');
                             qrResult.innerText = '✔️ Attendance marked for: ' + res.student;
 
                             const row = document.querySelector(`tr[data-student-id="${res.student_id}"]`);
                             if (row) {
+                                // 🧼 Clean up old table-* classes
+                                row.classList.remove('table-success', 'table-warning', 'table-danger',
+                                    'table-secondary', 'table-info');
+
+                                // 🆕 Add new row color based on status
+                                row.classList.add(getRowClass(res.status));
+
+                                // ✅ Update badge
                                 const badge = row.querySelector('.status-badge');
                                 if (badge) {
                                     badge.textContent = capitalize(res.status);
@@ -483,6 +500,21 @@
 
         function capitalize(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function getRowClass(status) {
+            switch (status) {
+                case 'present':
+                    return 'table-success';
+                case 'absent':
+                    return 'table-danger';
+                case 'late':
+                    return 'table-warning';
+                case 'excused':
+                    return 'table-info';
+                default:
+                    return 'table-secondary';
+            }
         }
     </script>
 @endpush
