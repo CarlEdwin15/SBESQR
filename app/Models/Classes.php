@@ -42,4 +42,9 @@ class Classes extends Model
             ->withPivot('role')
             ->withTimestamps();
     }
+
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'class_id');
+    }
 }

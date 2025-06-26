@@ -51,7 +51,7 @@ class Student extends Model
 
     public function getFullNameAttribute()
     {
-        return "{$this->student_lName}, {$this->student_fName} {$this->student_mName}";
+        return "{$this->student_lName}, {$this->student_fName} {$this->student_mName} {$this->student_extName}";
     }
 
     public function getGenderAttribute()

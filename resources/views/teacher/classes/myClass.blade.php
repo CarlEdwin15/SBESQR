@@ -255,7 +255,7 @@
                                     </div>
                                     <h6 class="fw-semibold mb-1">Attendance Today</h6>
                                     <div class="display-6 fw-bold">
-                                        {{ $attendanceToday ?? '0' }}%
+                                        {{ $attendanceToday }}%
                                     </div>
                                 </div>
                             </a>

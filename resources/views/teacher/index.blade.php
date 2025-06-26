@@ -218,32 +218,62 @@
 
                 <!-- Content wrapper -->
                 <div class="content-wrapper">
+
                     <!-- Content -->
                     @php
                         use Illuminate\Support\Facades\Auth;
                         use App\Models\Student;
                         use App\Models\Classes;
+                        use App\Models\Attendance;
                         use App\Models\User;
+                        use Carbon\Carbon;
 
-                        $teacher = Auth::user(); // Get the logged-in teacher
+                        $teacher = Auth::user();
                         $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
 
-                        $myTotalStudents = 0;
+                        $studentCount = 0;
                         $newlyEnrolledStudents = 0;
+                        $attendanceToday = 0;
 
                         if ($class) {
-                            $myTotalStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
-                                ->count();
+                            $studentCount = $class->students()->count();
 
-                            $newlyEnrolledStudents = Classes::where('grade_level', $class->grade_level)
-                                ->where('section', $class->section)
+                            $newlyEnrolledStudents = $class
+                                ->students()
                                 ->where('created_at', '>=', now()->subWeek())
                                 ->count();
-                        }
 
-                        $totalTeachers = User::where('role', 'teacher')->count();
+                            $today = Carbon::now()->format('Y-m-d');
+                            $now = Carbon::now();
+                            $todayDayName = $now->format('l');
+
+                            // Get today's schedules and sort by start_time
+    $schedule = $class
+        ->schedules()
+        ->where('day', $todayDayName)
+        ->orderBy('start_time')
+        ->get()
+        ->filter(function ($sched) use ($now) {
+            return Carbon::parse($sched->end_time)->gt($now);
+        })
+        ->first(); // nearest ongoing or upcoming schedule
+
+    if ($schedule) {
+        $presentCount = $schedule
+            ->attendances()
+            ->whereDate('date', $today)
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+
+        $attendanceToday =
+            $studentCount > 0 ? min(100, round(($presentCount / $studentCount) * 100)) : 0;
+    }
+}
+
+$totalTeachers = User::where('role', 'teacher')->count();
                     @endphp
+
+
 
                     <div class="container-xxl container-p-y">
 
@@ -262,7 +292,7 @@
                                             </div>
                                         </div>
                                         <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
-                                        <h3 class="card-title mb-2">{{ $myTotalStudents }}</h3>
+                                        <h3 class="card-title mb-2">{{ $studentCount }}</h3>
                                     </a>
                                 </div>
                             </div>
@@ -270,7 +300,7 @@
                             <!-- Teachers Card -->
                             <div class="col-6 col-md-3">
                                 <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
+                                    <a class="card-body" href="{{ route('teacher.myClasses') }}">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
                                                 <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
@@ -278,7 +308,9 @@
                                             </div>
                                         </div>
                                         <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
-                                        <h3 class="card-title mb-2">{{ $totalTeachers }}</h3>
+                                        <h3 class="card-title mb-2">
+                                            {{ Auth::user()->advisoryClasses()->count() + Auth::user()->subjectClasses()->count() }}
+                                        </h3>
                                     </a>
                                 </div>
                             </div>
@@ -286,15 +318,26 @@
                             <!-- Attendance Card -->
                             <div class="col-6 col-md-3">
                                 <div class="card h-100 card-hover">
-                                    <a class="card-body" href="">
+                                    <a class="card-body"
+                                        href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
                                                 <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
                                                     alt="Attendance" class="rounded" />
                                             </div>
                                         </div>
-                                        <span class="d-block mb-1 text-primary">Today's Attendance</span>
-                                        <h3 class="card-title text-nowrap mb-2">85%</h3>
+                                        <span class="d-block mb-1 text-primary">
+                                            @if (isset($schedule))
+                                                {{ $schedule->subject_name ?? ($schedule->subject->name ?? 'Subject') }}
+                                                ({{ ucfirst($class->grade_level) }} - {{ ucfirst($class->section) }}) <br>
+                                                {{ Carbon::parse($schedule->start_time)->format('h:i A') }} -
+                                                {{ Carbon::parse($schedule->end_time)->format('h:i A') }}
+                                            @else
+                                                No Upcoming Schedule
+                                            @endif
+                                        </span>
+
+                                        <h3 class="card-title text-nowrap mb-2">{{ $attendanceToday }}%</h3>
                                     </a>
                                 </div>
                             </div>

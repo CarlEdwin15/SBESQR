@@ -334,9 +334,11 @@
                                             </th>
                                         @endforeach
 
-                                        <th rowspan="2">ABSENT</th>
-                                        <th rowspan="2">PRESENT</th>
-                                        <th rowspan="2">REMARKS</th>
+                                        <th class="bg-danger text-white" rowspan="2" style="min-width: 100px;">Monthly
+                                            ABSENT</th>
+                                        <th class="bg-success text-white" rowspan="2" style="min-width: 100px;">
+                                            Monthly PRESENT</th>
+                                        <th rowspan="2" style="min-width: 140px;">REMARKS</th>
                                     </tr>
                                 </thead>
 
@@ -346,6 +348,16 @@
                                             'Male' => 'table-info bg-opacity-25',
                                             'Female' => 'table-danger bg-opacity-25',
                                         ];
+
+                                        $genderCounts = [
+                                            'Male' => collect($students)
+                                                ->filter(fn($s) => strtolower(trim($s->student_sex)) === 'male')
+                                                ->count(),
+                                            'Female' => collect($students)
+                                                ->filter(fn($s) => strtolower(trim($s->student_sex)) === 'female')
+                                                ->count(),
+                                        ];
+
                                         $index = 1;
                                     @endphp
 
@@ -359,7 +371,9 @@
                                             <tr>
                                                 <td>{{ $genderIndex++ }}</td>
                                                 <td class="text-start">
-                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                    <span
+                                                        class="fw-bold text-primary">{{ $student->student_lName }}</span>,
+                                                    {{ $student->student_fName }}
                                                     {{ $student->student_extName }}
                                                     @if (!empty($student->student_mName))
                                                         {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
@@ -461,7 +475,8 @@
 
                                         <!-- Gender Totals -->
                                         <tr class="fw-bold {{ $rowClass }}">
-                                            <td colspan="2">{{ $gender }} | Total Per Day</td>
+                                            <td>{{ $genderCounts[$gender] }}</td> {{-- This aligns with NO. --}}
+                                            <td>{{ $gender }} | Total Per Day</td> {{-- This aligns with NAME --}}
                                             @foreach ($gender === 'Male' ? $maleTotals : $femaleTotals as $i => $total)
                                                 @php
                                                     $cellClass = '';
@@ -482,7 +497,8 @@
 
                                     <!-- Combined Total Per Day -->
                                     <tr class="fw-bold table-success bg-opacity-25">
-                                        <td colspan="2">Combined Total per Day</td>
+                                        <td>{{ $genderCounts['Male'] + $genderCounts['Female'] }}</td>
+                                        <td>Combined | Total per Day</td>
                                         @foreach ($calendarDates as $i => $date)
                                             @php
                                                 $cellClass = '';

@@ -10,6 +10,7 @@ use App\Models\Schedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class TeacherController extends Controller
 {
@@ -35,16 +36,37 @@ class TeacherController extends Controller
     public function myClass($grade_level, $section)
     {
         $class = $this->getClass($grade_level, $section);
-
         $studentCount = $class->students()->count();
-        // $presentToday = $class->students()->whereHas('attendances', function ($query) {
-        //     $query->whereDate('date', now())->where('status', 'present');
-        // })->count();
-
-        // For each class, fetch teachers with pivot role 'adviser' or 'both'
         $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
 
-        return view('teacher.classes.myClass', compact('class', 'studentCount'));
+        $today = Carbon::now()->format('Y-m-d');
+        $todayDayName = Carbon::now()->format('l');
+
+        // Get all schedules for today
+        $schedulesToday = $class->schedules()->where('day', $todayDayName)->get();
+
+        // Total possible attendance entries = number of schedules × number of students
+        $scheduleCount = $schedulesToday->count();
+        $totalPossibleAttendance = $studentCount * $scheduleCount;
+
+        // Get the count of all present or late attendance entries for all schedules today
+        $presentCount = Attendance::whereIn('schedule_id', $schedulesToday->pluck('id'))
+            ->whereDate('date', $today)
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+
+        // Cap at 100%
+        $attendanceToday = $totalPossibleAttendance > 0
+            ? min(100, round(($presentCount / $totalPossibleAttendance) * 100))
+            : 0;
+
+        return view('teacher.classes.myClass', compact(
+            'class',
+            'studentCount',
+            'presentCount',
+            'totalPossibleAttendance',
+            'attendanceToday'
+        ));
     }
 
     public function myClassMasterList($grade_level, $section)
@@ -118,7 +140,10 @@ class TeacherController extends Controller
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
         for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
-            $calendarDates[] = $date->format('Y-m-d');
+            // Keep only weekdays (Mon to Fri)
+            if (!in_array($date->format('D'), ['Sat', 'Sun'])) {
+                $calendarDates[] = $date->format('Y-m-d');
+            }
         }
 
         $attendanceData = [];
@@ -313,7 +338,7 @@ class TeacherController extends Controller
         $schedule = $schedule_id ? Schedule::find($schedule_id) : $schedules->first();
         if (!$schedule) return back()->with('error', 'Schedule not found.');
 
-        $gracePeriod = request()->query('grace', 10); // default to 10 mins if not provided
+        $gracePeriod = (int) request()->query('grace', 0);  // Default to no grace period
 
         $students = Student::where('class_id', $class->id)
             ->with(['attendances' => function ($q) use ($date, $schedule_id) {
@@ -341,7 +366,7 @@ class TeacherController extends Controller
         $section = $request->input('section');
         $date = $request->input('date') ?? now()->toDateString();
         $scheduleId = $request->input('schedule_id');
-        $graceMinutes = (int) $request->input('grace', 10); // default to 10 mins
+        $graceMinutes = (int) $request->input('grace', 0); // Default to no grace period
 
         $student = Student::find($studentId);
         if (!$student) {
@@ -390,11 +415,22 @@ class TeacherController extends Controller
             ]);
         }
 
+
         $now = now();
-        $startTime = \Carbon\Carbon::parse($schedule->start_time);
-        $graceLimit = $startTime->copy()->addMinutes($graceMinutes);
+        $startTime = Carbon::parse($schedule->start_time);
+
+        // $graceLimit = $startTime->copy()->addMinutes($graceMinutes);
+        if ($graceMinutes === -1) {
+            $graceLimit = Carbon::parse($schedule->end_time);
+        } else {
+            $graceLimit = Carbon::parse($schedule->start_time)->addMinutes($graceMinutes);
+        }
+
+        // 🔧 Debugging line
+        Log::debug("Now: $now | StartTime: $startTime | GraceLimit: $graceLimit | Grace: $graceMinutes");
 
         $status = $now->lte($graceLimit) ? 'present' : 'late';
+
 
         // ✅ Mark new attendance
         Attendance::create([
@@ -412,7 +448,7 @@ class TeacherController extends Controller
             'success' => true,
             'student' => $student->full_name,
             'student_id' => $student->id,
-            'status' => 'present',
+            'status' => $status,
         ]);
     }
 

@@ -355,25 +355,32 @@
                                                                 $existing =
                                                                     $attendancesGrouped[$schedule->id][$student->id] ??
                                                                     null;
-                                                                $status = $existing->status ?? 'absent';
+                                                                $status = $existing->status ?? null;
                                                                 $badgeClass = match ($status) {
                                                                     'present' => 'bg-label-success',
                                                                     'late' => 'bg-label-warning',
                                                                     'absent' => 'bg-label-danger',
-                                                                    'excused' => 'bg-label-secondary',
-                                                                    default => 'bg-label-info',
+                                                                    'excused' => 'bg-label-primary',
+                                                                    default => 'bg-label-secondary',
+                                                                };
+                                                                $badgeLabel = match ($status) {
+                                                                    'present', 'late', 'absent', 'excused' => ucfirst(
+                                                                        $status,
+                                                                    ),
+                                                                    default => 'No record',
                                                                 };
                                                             @endphp
                                                             <tr>
                                                                 <td class="text-center">{{ $maleIndex++ }}</td>
                                                                 <td>{{ $student->student_lName }},
                                                                     {{ $student->student_fName }}
-                                                                    {{ $student->student_mName }}</td>
+                                                                    {{ $student->student_mName }}
+                                                                    {{ $student->student_extName }}</td>
                                                                 <td>
                                                                     <div
                                                                         class="d-flex justify-content-between align-items-center gap-2">
                                                                         <span
-                                                                            class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                                                            class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
                                                                         <select
                                                                             name="attendance[{{ $student->id }}][status]"
                                                                             class="form-select w-auto">
@@ -381,7 +388,7 @@
                                                                                 {{ $status == 'present' ? 'selected' : '' }}>
                                                                                 Present</option>
                                                                             <option value="absent"
-                                                                                {{ $status == 'absent' ? 'selected' : '' }}>
+                                                                                {{ $status == 'absent' || is_null($status) ? 'selected' : '' }}>
                                                                                 Absent</option>
                                                                             <option value="late"
                                                                                 {{ $status == 'late' ? 'selected' : '' }}>
@@ -428,13 +435,19 @@
                                                                 $existing =
                                                                     $attendancesGrouped[$schedule->id][$student->id] ??
                                                                     null;
-                                                                $status = $existing->status ?? 'absent';
+                                                                $status = $existing->status ?? null;
                                                                 $badgeClass = match ($status) {
                                                                     'present' => 'bg-label-success',
                                                                     'late' => 'bg-label-warning',
                                                                     'absent' => 'bg-label-danger',
-                                                                    'excused' => 'bg-label-info',
+                                                                    'excused' => 'bg-label-primary',
                                                                     default => 'bg-label-secondary',
+                                                                };
+                                                                $badgeLabel = match ($status) {
+                                                                    'present', 'late', 'absent', 'excused' => ucfirst(
+                                                                        $status,
+                                                                    ),
+                                                                    default => 'No record',
                                                                 };
                                                             @endphp
                                                             <tr>
@@ -446,7 +459,7 @@
                                                                     <div
                                                                         class="d-flex justify-content-between align-items-center gap-2">
                                                                         <span
-                                                                            class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                                                            class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
                                                                         <select
                                                                             name="attendance[{{ $student->id }}][status]"
                                                                             class="form-select w-auto">
@@ -454,7 +467,7 @@
                                                                                 {{ $status == 'present' ? 'selected' : '' }}>
                                                                                 Present</option>
                                                                             <option value="absent"
-                                                                                {{ $status == 'absent' ? 'selected' : '' }}>
+                                                                                {{ $status == 'absent' || is_null($status) ? 'selected' : '' }}>
                                                                                 Absent</option>
                                                                             <option value="late"
                                                                                 {{ $status == 'late' ? 'selected' : '' }}>
@@ -628,15 +641,17 @@
     </script>
 
     <script>
+        // script for Grace Period Selection and Scanner Opening
         function chooseGracePeriod(scanUrlBase, startTime, endTime) {
-            const options = [5, 10, 15, 20, 30, 60, 'specified'];
+            const options = ['none', 5, 10, 15, 20, 30, 60, 'specified'];
 
             Swal.fire({
-                title: 'Marked as late if not scanned within',
+                title: 'Select Grace Period for Marking as Late',
                 input: 'select',
                 inputOptions: Object.fromEntries(
                     options.map(min => [
                         min,
+                        min === 'none' ? `None (marked as present until ${formatTime(endTime)})` :
                         min === 60 ?
                         '1 hour' :
                         min === 'specified' ?
@@ -644,8 +659,7 @@
                         min + ' mins'
                     ])
                 ),
-                // inputPlaceholder: 'Marked as late if not scanned within',
-                inputValue: 10,
+                inputValue: 'none',
                 showCancelButton: true,
                 confirmButtonText: 'Next',
                 cancelButtonText: 'Cancel',
@@ -655,7 +669,17 @@
                 }
             }).then(result => {
                 if (result.isConfirmed) {
-                    let grace = result.value || 10;
+                    let grace = result.value || 0;
+
+                    // ✅ Handle "None" option
+                    if (grace === 'none') {
+                        grace = -1; // -1 means: present until end_time
+                        openScanner(scanUrlBase, startTime, endTime, grace);
+                        return;
+                    }
+
+
+                    // ✅ Handle other options
                     if (grace === 'specified') {
                         Swal.fire({
                             title: 'Specify Grace Period (minutes)',
@@ -717,7 +741,7 @@
             Swal.fire({
                 toast: true,
                 icon: 'success',
-                title: `Opening scanner for ${formatTime(startTime)} - ${formatTime(endTime)}`,
+                title: `Opening scanner for ${formatTime(startTime)} - ${formatTime(endTime)} (Grace: ${grace === -1 ? 'None' : grace + ' min'})`,
                 position: 'top-end',
                 showConfirmButton: false,
                 timer: 2000,

@@ -270,6 +270,39 @@
                                         <h5 class="fw-bold text-primary">{{ strtoupper($grade) }} - {{ $section }}
                                         </h5>
 
+                                        <h5 class="text-muted mb-0">
+                                            @if ($gracePeriod === -1)
+                                                @php
+                                                    $endTimeFormatted = \Carbon\Carbon::parse(
+                                                        $schedule->end_time,
+                                                    )->format('g:i A');
+                                                @endphp
+                                                <p><strong>Note:</strong> <span class="text-success">Students can only be
+                                                        marked as present within
+                                                        <strong class="text-info">{{ $endTimeFormatted }}</strong></span>
+                                                </p>
+                                            @elseif ($gracePeriod === 0)
+                                                @php
+                                                    $startTimeFormatted = \Carbon\Carbon::parse(
+                                                        $schedule->start_time,
+                                                    )->format('g:i A');
+                                                @endphp
+                                                <p><strong>No grace period</strong> — students must scan by
+                                                    <strong>{{ $startTimeFormatted }}</strong>.
+                                                </p>
+                                            @else
+                                                @php
+                                                    $lateTime = \Carbon\Carbon::parse($schedule->start_time)
+                                                        ->addMinutes($gracePeriod)
+                                                        ->format('g:i A');
+                                                @endphp
+                                                <p><strong>Note:</strong> Marked as <span class="text-warning">LATE</span>
+                                                    after <strong>{{ $lateTime }}</strong> ({{ $gracePeriod }} min
+                                                    grace).</p>
+                                            @endif
+                                        </h5>
+
+
                                     </div>
                                 </div>
 
@@ -278,25 +311,24 @@
                                     <div class="card p-3">
                                         <h6 class="fw-bold">LIST OF STUDENTS</h6>
                                         <div class="table-responsive">
-                                            <table class="table align-middle table-hover">
+                                            <table class="table align-middle table-hover table-bordered">
                                                 <thead>
                                                     <tr>
-                                                        <th>Name</th>
-                                                        <th>Status</th>
+                                                        <th class="text-center">Name</th>
+                                                        <th class="text-center">Status</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     @foreach ($students->sortBy('full_name') as $student)
-                                                        <tr data-student-id="{{ $student->id }}">
-                                                            <td>{{ $student->full_name }}</td>
-                                                            <td>
-                                                                @php
-                                                                    $att = $student->attendances->firstWhere(
-                                                                        'date',
-                                                                        $date,
-                                                                    );
-                                                                    $status = $att->status ?? null;
-                                                                @endphp
+                                                        @php
+                                                            $att = $student->attendances->firstWhere('date', $date);
+                                                            $status = $att->status ?? null;
+                                                        @endphp
+                                                        <tr data-student-id="{{ $student->id }}"
+                                                            @if ($status === 'present') class="table-success" @endif>
+                                                            <td class="text-center">{{ $student->full_name }}</td>
+                                                            <td class="text-center">
+                                                                {{-- Display attendance status --}}
                                                                 <span
                                                                     class="badge status-badge
             @if ($status === 'present') bg-success
@@ -346,7 +378,7 @@
         const grade = @json($grade);
         const section = @json($section);
         const date = @json($date);
-        const grace = {{ $gracePeriod ?? 10 }}; // ✅ Passed from controller
+        const grace = {{ $gracePeriod ?? 0 }}; // ✅ Passed from controller
 
         let scanner = new Instascan.Scanner({
             video: document.getElementById('preview'),
