@@ -231,9 +231,17 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-end mb-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 gap-3">
                         <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                            class="btn btn-danger">Back</a>
+                            class="btn btn-danger mb-2 mb-md-0">Back</a>
+
+                        <!-- Time-Out Selector -->
+                        <div class="d-flex align-items-center">
+                            <label for="custom-timeout" class="fw-bold text-muted me-2 mb-0">Select Time-Out:</label>
+                            <input type="time" id="custom-timeout" class="form-control me-2" style="width: 130px;"
+                                value="{{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}">
+                            <button class="btn btn-primary" onclick="setCustomTimeout()">Apply</button>
+                        </div>
                     </div>
 
                     {{-- Card --}}
@@ -249,9 +257,10 @@
                             <div class="row">
                                 <!-- Left: Class Info -->
                                 <div class="col-md-6 mb-3">
+
                                     <div class="card text-center p-3">
 
-                                        <h5 class="fw-bold mb-0 text-muted">📅
+                                        <h5 class="fw-bold mb-3 text-muted">📅
                                             {{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</h5>
 
                                         @if ($schedule)
@@ -267,9 +276,9 @@
                                                 style="object-fit: cover; object-position: center;" playsinline></video>
                                         </div>
 
-                                        <h5 class="fw-bold text-primary">{{ strtoupper($grade) }} - {{ $section }}
-                                        </h5>
+                                    </div>
 
+                                    <div class="mt-3 text-center">
                                         <h5 class="text-muted mb-0">
                                             @if ($gracePeriod === -1)
                                                 @php
@@ -303,10 +312,9 @@
                                                     grace).</p>
                                             @endif
                                         </h5>
-
-
                                     </div>
                                 </div>
+
 
                                 <!-- Right: Student List -->
                                 <div class="col-md-6">
@@ -318,6 +326,7 @@
                                                     <tr>
                                                         <th class="text-center">Name</th>
                                                         <th class="text-center">Status</th>
+                                                        <th class="text-center">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -326,22 +335,63 @@
                                                             $att = $student->attendances->firstWhere('date', $date);
                                                             $status = $att->status ?? null;
                                                         @endphp
-                                                        <tr data-student-id="{{ $student->id }}"
+                                                        <tr data-student-id="{{ $student->id }}" class=""
                                                             @if ($status === 'present') class="table-success"
                                                             @elseif ($status === 'late') class="table-warning"
-                                                            @elseif ($status === 'absent') class="table-danger" @endif>
-                                                            <td class="text-center">{{ $student->full_name }}</td>
+                                                            @elseif ($status === 'absent') class="table-danger"
+                                                            @elseif ($status === 'excused') class="table-secondary" @endif>
+                                                            <td class="text-center">
+                                                                <span
+                                                                    class="fw-bold text-primary">{{ $student->student_lName }}</span>,
+                                                                {{ $student->student_fName }}
+                                                                {{ $student->student_mName }}
+                                                                {{ $student->student_extName }}
+                                                            </td>
                                                             <td class="text-center">
                                                                 {{-- Display attendance status --}}
                                                                 <span
                                                                     class="badge status-badge
-            @if ($status === 'present') bg-success
-            @elseif ($status === 'absent') bg-danger
-            @elseif ($status === 'late') bg-warning text-dark
-            @else bg-secondary @endif
-        ">
-                                                                    {{ ucfirst($status ?? '-') }}
-                                                                </span>
+                                                                    @if ($status === 'present') bg-success
+                                                                    @elseif ($status === 'absent') bg-danger
+                                                                    @elseif ($status === 'late') bg-warning
+                                                                    @elseif ($status === 'excused') bg-dark
+                                                                    @else bg-secondary @endif">{{ ucfirst($status ?? '-') }}</span>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                {{-- Dropdown for manual attendance --}}
+                                                                <div class="dropdown">
+                                                                    <button type="button"
+                                                                        class="btn p-0 dropdown-toggle hide-arrow"
+                                                                        data-bs-toggle="dropdown">
+                                                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                                                    </button>
+                                                                    <div class="dropdown-menu">
+                                                                        <button type="button"
+                                                                            class="dropdown-item text-success attendance-btn"
+                                                                            data-status="present"
+                                                                            data-student-id="{{ $student->id }}">
+                                                                            <i class="bx bx-user-check me-1"></i> Present
+                                                                        </button>
+                                                                        <button type="button"
+                                                                            class="dropdown-item text-warning attendance-btn"
+                                                                            data-status="late"
+                                                                            data-student-id="{{ $student->id }}">
+                                                                            <i class="bx bx-alarm me-1"></i> Late
+                                                                        </button>
+                                                                        <button type="button"
+                                                                            class="dropdown-item text-danger attendance-btn"
+                                                                            data-status="absent"
+                                                                            data-student-id="{{ $student->id }}">
+                                                                            <i class="bx bx-user-x me-1"></i> Absent
+                                                                        </button>
+                                                                        <button type="button"
+                                                                            class="dropdown-item text-secondary attendance-btn"
+                                                                            data-status="excused"
+                                                                            data-student-id="{{ $student->id }}">
+                                                                            <i class="bx bx-calendar-x me-1"></i> Excused
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     @endforeach
@@ -353,13 +403,33 @@
                                 </div>
                                 <!-- /Right: Student List -->
 
-                                <audio id="success-sound" src="{{ asset('sounds/attendance_present.mp3') }}"
+                                <audio id="success-sound-1" src="{{ asset('sounds/attendance_present.mp3') }}"
+                                    preload="auto"></audio>
+
+                                <audio id="success-sound-2" src="{{ asset('sounds/attendance_present1.m4a') }}"
                                     preload="auto"></audio>
 
                             </div>
                         </div>
                     </div>
                     {{-- /Card --}}
+
+
+                    <!-- Floating Attendance Notification -->
+                    <div id="attendance-popup" class="position-fixed top-0 start-50 translate-middle-x d-none"
+                        style="margin-top: 20px; z-index: 9999;">
+                        <div class="alert alert-success shadow-lg d-flex align-items-center justify-content-between gap-3 px-4 py-3 rounded-3 border-0"
+                            id="popup-content" style="min-width: 320px;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div id="popup-icon" class="fs-3">✅</div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold" id="popup-name">John Doe</h6>
+                                    <small id="popup-status">Marked as Present</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
 
                     <hr class="my-5" />
@@ -381,11 +451,41 @@
     <script src="{{ asset('js/qr/instascan.min.js') }}"></script>
 
     <script>
+        // logout confirmation
+        function confirmLogout() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You want to log out?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, log out!",
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: "Logged out Successfully!",
+                        icon: "success",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    document.getElementById('logout-form').submit();
+                }
+            });
+        }
+    </script>
+
+    <script>
+        // Initialize QR scanner
         const scheduleId = @json($schedule_id);
         const grade = @json($grade);
         const section = @json($section);
         const date = @json($date);
-        const grace = {{ $gracePeriod ?? 0 }}; // ✅ Passed from controller
+        const grace = {{ $gracePeriod ?? 60 }}; // Set default grace period to 60 minutes if not set
 
         let scanner = new Instascan.Scanner({
             video: document.getElementById('preview'),
@@ -400,6 +500,8 @@
             scanning = true;
 
             qrResult.innerText = '🔍 Processing scan...';
+
+            const customTimeout = document.getElementById('custom-timeout').value;
 
             try {
                 const data = JSON.parse(content);
@@ -416,28 +518,27 @@
                             section: section,
                             date: date,
                             schedule_id: scheduleId,
-                            grace: grace // ✅ Send grace period
+                            grace: grace,
+                            custom_timeout: customTimeout
                         })
+
                     })
                     .then(res => res.json())
                     .then(res => {
                         if (res.success) {
-                            document.getElementById('success-sound').play(); // 🔔 Play sound on success
+                            document.getElementById('success-sound-1').play(); // ✅ Play success sound
+                            document.getElementById('success-sound-2').play();
 
-                            qrResult.classList.remove('text-danger');
-                            qrResult.classList.add('text-success');
-                            qrResult.innerText = '✔️ Attendance marked for: ' + res.student;
+                            // ✅ Show floating popup
+                            showPopup(res.student, res.status);
 
+                            // ✅ Update table as before
                             const row = document.querySelector(`tr[data-student-id="${res.student_id}"]`);
                             if (row) {
-                                // 🧼 Clean up old table-* classes
                                 row.classList.remove('table-success', 'table-warning', 'table-danger',
                                     'table-secondary', 'table-info');
-
-                                // 🆕 Add new row color based on status
                                 row.classList.add(getRowClass(res.status));
 
-                                // ✅ Update badge
                                 const badge = row.querySelector('.status-badge');
                                 if (badge) {
                                     badge.textContent = capitalize(res.status);
@@ -490,9 +591,9 @@
                 case 'absent':
                     return 'bg-danger';
                 case 'late':
-                    return 'bg-warning text-dark';
+                    return 'bg-warning';
                 case 'excused':
-                    return 'bg-info';
+                    return 'bg-dark';
                 default:
                     return 'bg-secondary';
             }
@@ -511,10 +612,186 @@
                 case 'late':
                     return 'table-warning';
                 case 'excused':
-                    return 'table-info';
+                    return 'table-secondary';
                 default:
                     return 'table-secondary';
             }
         }
+
+        let popupTimeout; // Global timeout tracker
+
+        // Function to show the floating popup
+        function showPopup(studentName, status) {
+            const popup = document.getElementById('attendance-popup');
+            const content = document.getElementById('popup-content');
+            const name = document.getElementById('popup-name');
+            const statusText = document.getElementById('popup-status');
+            const icon = document.getElementById('popup-icon');
+
+            name.textContent = studentName;
+            statusText.textContent = `Marked as ${capitalize(status)}`;
+
+            // 🎨 Change color based on status
+            let colorClass = 'alert-success';
+            let emoji = '✅';
+            if (status === 'late') {
+                colorClass = 'alert-warning';
+                emoji = '⏰';
+            } else if (status === 'absent') {
+                colorClass = 'alert-danger';
+                emoji = '❌';
+            } else if (status === 'excused') {
+                colorClass = 'alert-dark';
+                emoji = '📘';
+            }
+
+            content.className =
+                `alert ${colorClass} shadow-lg d-flex align-items-center justify-content-between gap-3 px-4 py-3 rounded-3 border-0`;
+            icon.textContent = emoji;
+
+            popup.classList.remove('d-none');
+            popup.style.opacity = 1;
+
+            // 🔁 Clear any previous timeout so new notifications reset the timer
+            if (popupTimeout) {
+                clearTimeout(popupTimeout);
+            }
+
+            // ⏲️ Set a new timeout to hide the popup after 3.5s of inactivity
+            popupTimeout = setTimeout(() => {
+                popup.style.opacity = 0;
+                setTimeout(() => popup.classList.add('d-none'), 600);
+            }, 3500);
+        }
+
+        // Function to set custom timeout
+        let customTimeout = document.getElementById('custom-timeout').value;
+
+        function setCustomTimeout() {
+            customTimeout = document.getElementById('custom-timeout').value;
+
+            function formatTime(timeStr) {
+                if (!timeStr) return '';
+                const [hour, minute] = timeStr.split(':');
+                let h = parseInt(hour, 10);
+                const m = minute;
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                if (h === 0) h = 12;
+                return `${h}:${m} ${ampm}`;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Time-Out Applied!',
+                text: 'Custom time-out set to: ' + formatTime(customTimeout),
+                timer: 2500,
+                showConfirmButton: false,
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        }
+    </script>
+
+    <script>
+        // Handle manual attendance button clicks with SweetAlert confirmation
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.attendance-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const studentId = button.getAttribute('data-student-id');
+                    const status = button.getAttribute('data-status');
+                    const statusLabel = capitalize(status);
+
+                    // Determine SweetAlert confirm button color based on status
+                    let confirmButtonColor = '#3085d6'; // default
+                    switch (status) {
+                        case 'present':
+                            confirmButtonColor = '#28a745'; // Bootstrap success
+                            break;
+                        case 'late':
+                            confirmButtonColor = '#ffc107'; // Bootstrap warning
+                            break;
+                        case 'absent':
+                            confirmButtonColor = '#dc3545'; // Bootstrap danger
+                            break;
+                        case 'excused':
+                            confirmButtonColor = '#6c757d'; // Bootstrap secondary
+                            break;
+                    }
+
+                    // Show SweetAlert confirmation
+                    Swal.fire({
+                        title: `Mark as ${statusLabel}?`,
+                        text: "Are you sure you want to update the student's attendance?",
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: confirmButtonColor,
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, mark it!',
+                        cancelButtonText: 'Cancel',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Proceed to mark attendance
+                            fetch('{{ route('teacher.markManualAttendance') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    },
+                                    body: JSON.stringify({
+                                        student_id: studentId,
+                                        status: status,
+                                        date: date,
+                                        schedule_id: scheduleId
+                                    })
+                                })
+                                .then(res => res.json())
+                                .then(res => {
+                                    if (res.success) {
+                                        const row = document.querySelector(
+                                            `tr[data-student-id="${res.student_id}"]`
+                                        );
+                                        if (row) {
+                                            row.classList.remove('table-success',
+                                                'table-warning', 'table-danger',
+                                                'table-info', 'table-secondary');
+                                            row.classList.add(getRowClass(res.status));
+
+                                            const badge = row.querySelector(
+                                                '.status-badge');
+                                            if (badge) {
+                                                badge.textContent = capitalize(res
+                                                    .status);
+                                                badge.className =
+                                                    'badge status-badge ' +
+                                                    getStatusClass(res.status);
+                                            }
+                                        }
+
+                                        showPopup(res.student, res.status);
+                                        document.getElementById('success-sound-1')
+                                            .play();
+                                        document.getElementById('success-sound-2')
+                                            .play();
+                                    } else {
+                                        Swal.fire('Error', res.message, 'error');
+                                    }
+                                })
+                                .catch(() => Swal.fire('Network Error',
+                                    'Failed to update attendance.', 'error'));
+                        }
+                    });
+                });
+            });
+
+            // Utility function: capitalize string
+            function capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+        });
     </script>
 @endpush

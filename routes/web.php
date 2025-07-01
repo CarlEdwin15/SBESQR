@@ -123,6 +123,9 @@ Route::get('/teacher/attendance/scan/{grade}/{section}/{date?}/{schedule_id?}', 
 Route::post('/teacher/attendance/mark', [TeacherController::class, 'markAttendanceFromQR'])
     ->name('teacher.markAttendanceFromQR');
 
+Route::post('/teacher/manual-attendance', [TeacherController::class, 'markManualAttendance'])->name('teacher.markManualAttendance');
+
+
 
 //List of Student's Info (on teacher Dashboard)
 Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');

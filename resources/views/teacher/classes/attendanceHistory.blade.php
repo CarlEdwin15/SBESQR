@@ -360,7 +360,7 @@
                                                                     'present' => 'bg-label-success',
                                                                     'late' => 'bg-label-warning',
                                                                     'absent' => 'bg-label-danger',
-                                                                    'excused' => 'bg-label-primary',
+                                                                    'excused' => 'bg-label-dark',
                                                                     default => 'bg-label-secondary',
                                                                 };
                                                                 $badgeLabel = match ($status) {
@@ -440,7 +440,7 @@
                                                                     'present' => 'bg-label-success',
                                                                     'late' => 'bg-label-warning',
                                                                     'absent' => 'bg-label-danger',
-                                                                    'excused' => 'bg-label-primary',
+                                                                    'excused' => 'bg-label-dark',
                                                                     default => 'bg-label-secondary',
                                                                 };
                                                                 $badgeLabel = match ($status) {
@@ -493,11 +493,28 @@
                                                 </table>
                                             </div>
 
-                                            <div class="text-end mt-3">
-                                                <button type="submit" class="btn btn-success">
-                                                    <i class="bx bx-check-circle"></i> Save Attendance
-                                                </button>
-                                            </div>
+                                            @php
+                                                // Determine if the schedule is done (current time is after end_time of this schedule for the selected date)
+                                                $scheduleEnd = \Carbon\Carbon::parse($schedule->end_time)
+                                                    ->copy()
+                                                    ->setDateFrom(\Carbon\Carbon::parse($targetDate));
+                                                $isScheduleDone = \Carbon\Carbon::now()->greaterThan($scheduleEnd);
+                                            @endphp
+
+                                            @if ($isScheduleDone)
+                                                <div class="text-end mt-3">
+                                                    <button type="submit" class="btn btn-success">
+                                                        <i class="bx bx-check-circle"></i> Save Attendance
+                                                    </button>
+                                                </div>
+                                            @else
+                                                <div class="text-end mt-3">
+                                                    <button type="button" class="btn btn-success" disabled
+                                                        title="You can save attendance after the schedule ends.">
+                                                        <i class="bx bx-check-circle"></i> Save Attendance
+                                                    </button>
+                                                </div>
+                                            @endif
                                         </form>
                                     </div>
                                 </div>
@@ -678,7 +695,6 @@
                         return;
                     }
 
-
                     // ✅ Handle other options
                     if (grace === 'specified') {
                         Swal.fire({
@@ -750,7 +766,7 @@
                 }
             });
             setTimeout(() => {
-                window.open(scanUrl, '_blank');
+                window.location.href = scanUrl;
             }, 300);
         }
 

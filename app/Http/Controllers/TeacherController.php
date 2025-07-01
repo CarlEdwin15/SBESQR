@@ -89,8 +89,10 @@ class TeacherController extends Controller
         $teacherId = Auth::id();
 
         // Filter schedules only for the logged-in teacher
-        $schedules = \App\Models\Schedule::where('class_id', $class->id)
+        $schedules = Schedule::where('class_id', $class->id)
             ->where('teacher_id', $teacherId)
+            ->orderBy('day')
+            ->orderBy('start_time')
             ->get();
 
         // Fetch only this teacher's pivot role in this class
@@ -124,8 +126,10 @@ class TeacherController extends Controller
             ->map(fn($day) => \Carbon\Carbon::parse($day)->format('D'))
             ->toArray();
 
+        // Order schedules by start_time (AM to PM)
         $schedules = \App\Models\Schedule::where('class_id', $class->id)
             ->where('teacher_id', Auth::id())
+            ->orderBy('start_time')
             ->get();
 
         $schedulesById = $schedules->keyBy('id');
@@ -191,6 +195,7 @@ class TeacherController extends Controller
                 'start_time' => $schedule->start_time,
                 'end_time' => $schedule->end_time,
                 'subject_name' => $schedule->subject_name ?? 'N/A',
+                'schedule_order' => $schedule->start_time, // for sorting
             ];
 
             if (in_array($attendance->status, ['present', 'late'])) {
@@ -209,6 +214,16 @@ class TeacherController extends Controller
                 }
             }
         }
+
+        // Sort attendance by schedule (AM to PM) for each student/date
+        foreach ($attendanceData as &$studentAttendance) {
+            foreach ($studentAttendance['by_date'] as &$entries) {
+                usort($entries, function ($a, $b) {
+                    return strcmp($a['schedule_order'], $b['schedule_order']);
+                });
+            }
+        }
+        unset($studentAttendance);
 
         $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
         foreach ($students as $student) {
@@ -253,23 +268,20 @@ class TeacherController extends Controller
         $class = $this->getClass($grade_level, $section);
         $targetDate = $date ?? request('date') ?? now()->toDateString();
         $targetDate = \Carbon\Carbon::parse($targetDate)->format('Y-m-d');
-
         $dayName = \Carbon\Carbon::parse($targetDate)->format('l');
 
-        // Get schedule for logged-in teacher and this class on today's day
         $schedules = Schedule::where('teacher_id', Auth::id())
             ->where('class_id', $class->id)
             ->where('day', $dayName)
             ->get();
 
-        if (!$schedules) {
-            return back()->with('error', 'No schedule set for today' . $dayName . '.');
+        if (!$schedules || $schedules->isEmpty()) {
+            return back()->with('error', 'No schedule set for today ' . $dayName . '.');
         }
 
-        // Get students in the class
         $students = Student::where('class_id', $class->id)->get();
 
-        // Get all attendance records for the day and group them by schedule_id and then student_id
+        // Reload grouped attendance
         $attendancesGrouped = Attendance::whereIn('schedule_id', $schedules->pluck('id'))
             ->where('date', $targetDate)
             ->get()
@@ -277,7 +289,6 @@ class TeacherController extends Controller
             ->map(function ($items) {
                 return $items->keyBy('student_id');
             });
-
 
         return view('teacher.classes.attendanceHistory', compact('class', 'students', 'schedules', 'attendancesGrouped', 'targetDate'));
     }
@@ -338,8 +349,36 @@ class TeacherController extends Controller
         $schedule = $schedule_id ? Schedule::find($schedule_id) : $schedules->first();
         if (!$schedule) return back()->with('error', 'Schedule not found.');
 
-        $gracePeriod = (int) request()->query('grace', 0);  // Default to no grace period
+        $gracePeriod = (int) request()->query('grace', 60); // default 60 minutes
 
+        $students = Student::where('class_id', $class->id)->get();
+
+        // ✅ Mark students who haven't scanned and class has ended as Absent
+        $now = now();
+        if ($now->gt(Carbon::parse($schedule->end_time))) {
+            foreach ($students as $student) {
+                $existing = Attendance::where([
+                    'student_id' => $student->id,
+                    'schedule_id' => $schedule->id,
+                    'date' => $date
+                ])->first();
+
+                if (!$existing) {
+                    Attendance::create([
+                        'student_id' => $student->id,
+                        'schedule_id' => $schedule->id,
+                        'date' => $date,
+                        'status' => 'absent',
+                        'teacher_id' => Auth::id(),
+                        'class_id' => $class->id,
+                        'time_in' => null,
+                        'time_out' => null,
+                    ]);
+                }
+            }
+        }
+
+        // Reload students with updated attendance
         $students = Student::where('class_id', $class->id)
             ->with(['attendances' => function ($q) use ($date, $schedule_id) {
                 $q->where('date', $date);
@@ -366,7 +405,16 @@ class TeacherController extends Controller
         $section = $request->input('section');
         $date = $request->input('date') ?? now()->toDateString();
         $scheduleId = $request->input('schedule_id');
-        $graceMinutes = (int) $request->input('grace', 0); // Default to no grace period
+        $graceMinutes = (int) $request->input('grace', 60); // Set default grace period to 60 minutes
+        $customTimeout = $request->input('custom_timeout');
+
+        // ✅ Validate custom timeout format (HH:MM)
+        if ($customTimeout && !preg_match('/^\d{2}:\d{2}$/', $customTimeout)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid timeout format. Use HH:MM.'
+            ]);
+        }
 
         $student = Student::find($studentId);
         if (!$student) {
@@ -415,22 +463,26 @@ class TeacherController extends Controller
             ]);
         }
 
-
         $now = now();
         $startTime = Carbon::parse($schedule->start_time);
 
-        // $graceLimit = $startTime->copy()->addMinutes($graceMinutes);
         if ($graceMinutes === -1) {
             $graceLimit = Carbon::parse($schedule->end_time);
         } else {
             $graceLimit = Carbon::parse($schedule->start_time)->addMinutes($graceMinutes);
         }
 
+        $endTime = Carbon::parse($schedule->end_time);
+        if ($now->lte($graceLimit)) {
+            $status = 'present';
+        } elseif ($now->gt($endTime)) {
+            $status = 'absent';
+        } else {
+            $status = 'late';
+        }
+
         // 🔧 Debugging line
-        Log::debug("Now: $now | StartTime: $startTime | GraceLimit: $graceLimit | Grace: $graceMinutes");
-
-        $status = $now->lte($graceLimit) ? 'present' : 'late';
-
+        Log::debug("Now: $now | Start: $startTime | End: $endTime | Grace: $graceLimit | Status: $status");
 
         // ✅ Mark new attendance
         Attendance::create([
@@ -441,7 +493,7 @@ class TeacherController extends Controller
             'teacher_id' => Auth::id(),
             'class_id' => $class->id,
             'time_in' => now()->format('H:i:s'),
-            'time_out' => $schedule->end_time,
+            'time_out' => $customTimeout ?? $schedule->end_time,
         ]);
 
         return response()->json([
@@ -451,6 +503,48 @@ class TeacherController extends Controller
             'status' => $status,
         ]);
     }
+
+    public function markManualAttendance(Request $request)
+    {
+        $studentId = $request->input('student_id');
+        $status = $request->input('status');
+        $date = $request->input('date') ?? now()->toDateString();
+        $scheduleId = $request->input('schedule_id');
+
+        $student = Student::find($studentId);
+        if (!$student) {
+            return response()->json(['success' => false, 'message' => 'Student not found']);
+        }
+
+        $schedule = Schedule::find($scheduleId);
+        if (!$schedule) {
+            return response()->json(['success' => false, 'message' => 'Schedule not found']);
+        }
+
+        $attendance = Attendance::updateOrCreate(
+            [
+                'student_id' => $student->id,
+                'schedule_id' => $schedule->id,
+                'date' => $date
+            ],
+            [
+                'status' => $status,
+                'teacher_id' => Auth::id(),
+                'class_id' => $student->class_id,
+                'time_in' => now()->format('H:i:s'),
+                'time_out' => $schedule->end_time,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'student_id' => $student->id,
+            'student' => $student->full_name,
+            'status' => $status
+        ]);
+    }
+
+
 
 
 

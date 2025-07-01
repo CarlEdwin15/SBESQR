@@ -285,7 +285,7 @@
                                 <thead>
                                     <tr>
                                         <th rowspan="2">NO.</th>
-                                        <th rowspan="2">NAME</th>
+                                        <th rowspan="2" style="min-width: 140px;">NAME</th>
 
                                         @php
                                             $fridayIndexes = [];
@@ -334,9 +334,11 @@
                                             </th>
                                         @endforeach
 
-                                        <th class="bg-danger text-white" rowspan="2" style="min-width: 100px;">Monthly
+                                        <th class="bg-danger text-white no-hover-bg" rowspan="2"
+                                            style="min-width: 100px;">Monthly
                                             ABSENT</th>
-                                        <th class="bg-success text-white" rowspan="2" style="min-width: 100px;">
+                                        <th class="bg-success text-white no-hover-bg" rowspan="2"
+                                            style="min-width: 100px;">
                                             Monthly PRESENT</th>
                                         <th rowspan="2" style="min-width: 140px;">REMARKS</th>
                                     </tr>
@@ -467,8 +469,10 @@
                                                     </td>
                                                 @endforeach
 
-                                                <td>{{ $attendanceData[$student->id]['absent'] }}</td>
-                                                <td>{{ $attendanceData[$student->id]['present'] }}</td>
+                                                <td class="bg-danger text-white no-hover-bg">
+                                                    {{ $attendanceData[$student->id]['absent'] }}</td>
+                                                <td class="bg-success text-white no-hover-bg">
+                                                    {{ $attendanceData[$student->id]['present'] }}</td>
                                                 <td></td>
                                             </tr>
                                         @endforeach
@@ -489,8 +493,12 @@
                                                 @endphp
                                                 <td class="{{ $cellClass }}">{{ $total }}</td>
                                             @endforeach
-                                            <td>{{ $gender === 'Male' ? $maleTotalAbsent : $femaleTotalAbsent }}</td>
-                                            <td>{{ $gender === 'Male' ? $maleTotalPresent : $femaleTotalPresent }}</td>
+                                            <td class="bg-danger text-white fs-5 no-hover-bg">
+                                                {{-- This aligns with Monthly ABSENT --}}
+                                                {{ $gender === 'Male' ? $maleTotalAbsent : $femaleTotalAbsent }}</td>
+                                            <td class="bg-success text-white fs-5 no-hover-bg">
+                                                {{-- This aligns with Monthly PRESENT --}}
+                                                {{ $gender === 'Male' ? $maleTotalPresent : $femaleTotalPresent }}</td>
                                             <td></td>
                                         </tr>
                                     @endforeach
@@ -511,8 +519,8 @@
                                             @endphp
                                             <td class="{{ $cellClass }}">{{ $combinedTotals[$date] ?? 0 }}</td>
                                         @endforeach
-                                        <td>{{ $totalAbsent }}</td>
-                                        <td>{{ $totalPresent }}</td>
+                                        <td class="bg-danger text-white fs-5 no-hover-bg">{{ $totalAbsent }}</td>
+                                        <td class="bg-success text-white fs-5 no-hover-bg">{{ $totalPresent }}</td>
                                         <td></td>
                                     </tr>
                                 </tbody>
@@ -540,114 +548,6 @@
 @push('scripts')
     <!-- Include Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Chart Initialization Script -->
-    <script>
-        // Enrollees Chart
-        const ctx1 = document.getElementById('enrolleesChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Kndg', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
-                datasets: [{
-                    label: 'Enrollees',
-                    data: [45, 35, 42, 155, 46, 34, 43],
-                    backgroundColor: [
-                        '#FF8A8A', '#82E6E6', '#FFE852', '#C9A5FF',
-                        '#FF8A8A', '#82E6E6', '#FFE852'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 10
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Gender Chart
-        // Gender Statistics Chart
-        const chartGenderStatistics = document.querySelector('#genderStatisticsChart');
-
-        const genderChartConfig = {
-            chart: {
-                height: 165,
-                width: 130,
-                type: 'donut'
-            },
-            labels: ['Female', 'Male'],
-            series: [60, 40],
-            colors: ['#FF5B5B', '#2AD3E6'], // Red for Female, Blue for Male
-            stroke: {
-                width: 5,
-                colors: '#fff'
-            },
-            dataLabels: {
-                enabled: false,
-                formatter: function(val) {
-                    return parseInt(val) + '%';
-                }
-            },
-            legend: {
-                show: false
-            },
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    right: 15
-                }
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '75%',
-                        labels: {
-                            show: true,
-                            value: {
-                                fontSize: '1.5rem',
-                                fontFamily: 'Public Sans',
-                                color: '#333',
-                                offsetY: -15,
-                                formatter: function(val) {
-                                    return parseInt(val) + '%';
-                                }
-                            },
-                            name: {
-                                offsetY: 20,
-                                fontFamily: 'Public Sans'
-                            },
-                            total: {
-                                show: true,
-                                fontSize: '0.8125rem',
-                                color: '#aaa',
-                                label: 'Gender Ratio',
-                                formatter: function() {
-                                    return '100%';
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        if (chartGenderStatistics) {
-            const genderChart = new ApexCharts(chartGenderStatistics, genderChartConfig);
-            genderChart.render();
-        }
-    </script>
 
     <script>
         // logout confirmation
@@ -715,6 +615,17 @@
         .today-column {
             background-color: #0dcaf0 !important;
             /* Bootstrap info */
+            color: white !important;
+        }
+
+        /* NEW: Universal override */
+        tr:hover .no-hover-bg.bg-danger {
+            background-color: #dc3545 !important;
+            color: white !important;
+        }
+
+        tr:hover .no-hover-bg.bg-success {
+            background-color: #198754 !important;
             color: white !important;
         }
     </style>

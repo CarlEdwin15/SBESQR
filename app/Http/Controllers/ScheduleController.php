@@ -14,7 +14,11 @@ class ScheduleController extends Controller
             ->where('section', $section)
             ->firstOrFail();
 
-        $schedules = Schedule::where('class_id', $class->id)->with('teacher')->get();
+        $schedules = Schedule::where('class_id', $class->id)
+            ->with('teacher')
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get();
 
         // Get teachers with pivot role
         $teachers = $class->teachers()

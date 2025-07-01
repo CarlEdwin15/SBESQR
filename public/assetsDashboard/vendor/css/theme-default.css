@@ -286,13 +286,13 @@ button.list-group-item-primary.active {
 .dropdown-item:not(.disabled).active,
 .dropdown-item:not(.disabled):active {
   background-color: rgba(105, 108, 255, 0.08);
-  color: #ff4a17 !important;
+  color: #1778ff !important;
 }
 
 .dropdown-menu > li:not(.disabled) > a:not(.dropdown-item):active,
 .dropdown-menu > li.active:not(.disabled) > a:not(.dropdown-item) {
   background-color: rgba(105, 108, 255, 0.08);
-  color: #ff4a17 !important;
+  color: #1778ff !important;
 }
 
 .nav .nav-link:hover, .nav .nav-link:focus {
