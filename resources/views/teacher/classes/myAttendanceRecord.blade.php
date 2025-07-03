@@ -232,8 +232,12 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                        class="btn btn-danger mb-3">Back</a>
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                        <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                            class="btn btn-danger mb-3">Back</a>
+
+                        <button type="button" class="btn btn-success">Export</button>
+                    </div>
 
                     <div class="alert alert-primary alert-dismissible fade show fw-bold mb-4 text-center" role="alert"
                         id="attendance-alert">
@@ -264,7 +268,6 @@
                                 <input type="month" name="month" id="month" class="form-control me-2"
                                     value="{{ request('month', $monthParam ?? now()->format('Y-m')) }}">
                                 <button type="submit" class="btn btn-primary me-2">Filter</button>
-                                <button type="button" class="btn btn-success">Export</button>
                             </form>
                         </div>
 

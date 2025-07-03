@@ -231,7 +231,9 @@
                         </div>
                     </div>
 
-                    <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        class="btn btn-danger mb-3">Back</a>
+
                     <div class="card p-4 shadow-sm">
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <h3 class="fw-bold mb-2 text-primary">{{ $class->formatted_grade_level }} -
@@ -342,114 +344,6 @@
 @push('scripts')
     <!-- Include Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Chart Initialization Script -->
-    <script>
-        // Enrollees Chart
-        const ctx1 = document.getElementById('enrolleesChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Kndg', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
-                datasets: [{
-                    label: 'Enrollees',
-                    data: [45, 35, 42, 155, 46, 34, 43],
-                    backgroundColor: [
-                        '#FF8A8A', '#82E6E6', '#FFE852', '#C9A5FF',
-                        '#FF8A8A', '#82E6E6', '#FFE852'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 10
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Gender Chart
-        // Gender Statistics Chart
-        const chartGenderStatistics = document.querySelector('#genderStatisticsChart');
-
-        const genderChartConfig = {
-            chart: {
-                height: 165,
-                width: 130,
-                type: 'donut'
-            },
-            labels: ['Female', 'Male'],
-            series: [60, 40],
-            colors: ['#FF5B5B', '#2AD3E6'], // Red for Female, Blue for Male
-            stroke: {
-                width: 5,
-                colors: '#fff'
-            },
-            dataLabels: {
-                enabled: false,
-                formatter: function(val) {
-                    return parseInt(val) + '%';
-                }
-            },
-            legend: {
-                show: false
-            },
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    right: 15
-                }
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '75%',
-                        labels: {
-                            show: true,
-                            value: {
-                                fontSize: '1.5rem',
-                                fontFamily: 'Public Sans',
-                                color: '#333',
-                                offsetY: -15,
-                                formatter: function(val) {
-                                    return parseInt(val) + '%';
-                                }
-                            },
-                            name: {
-                                offsetY: 20,
-                                fontFamily: 'Public Sans'
-                            },
-                            total: {
-                                show: true,
-                                fontSize: '0.8125rem',
-                                color: '#aaa',
-                                label: 'Gender Ratio',
-                                formatter: function() {
-                                    return '100%';
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        if (chartGenderStatistics) {
-            const genderChart = new ApexCharts(chartGenderStatistics, genderChartConfig);
-            genderChart.render();
-        }
-    </script>
 
     <script>
         // logout confirmation

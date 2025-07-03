@@ -309,19 +309,32 @@
                                     class="accordion-collapse collapse{{ $isOpen ? ' show' : '' }}"
                                     aria-labelledby="{{ $headingId }}" data-bs-parent="#attendanceAccordion">
 
-                                    <div class="d-flex align-items-center justify-content-between mb-3"
-                                        style="padding: 0 20px;">
-                                        <button class="btn btn-primary my-2"
-                                            onclick="chooseGracePeriod(
-                    '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}',
-                    '{{ $schedule->start_time }}',
-                    '{{ $schedule->end_time }}'
-                    )">
-                                            📷 Start QR Attendance
-                                            ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
-                                            {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
-                                        </button>
-                                    </div>
+                                    @php
+                                        // Calculate schedule start and end for the selected date
+                                        $scheduleStart = \Carbon\Carbon::parse($schedule->start_time)
+                                            ->copy()
+                                            ->setDateFrom(\Carbon\Carbon::parse($targetDate));
+                                        $scheduleEnd = \Carbon\Carbon::parse($schedule->end_time)
+                                            ->copy()
+                                            ->setDateFrom(\Carbon\Carbon::parse($targetDate));
+                                        $now = \Carbon\Carbon::now();
+                                    @endphp
+
+                                    @if ($now->between($scheduleStart, $scheduleEnd))
+                                        <div class="d-flex align-items-center justify-content-between mb-3"
+                                            style="padding: 0 20px;">
+                                            <button class="btn btn-primary my-2"
+                                                onclick="chooseGracePeriod(
+                                                    '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}',
+                                                    '{{ $schedule->start_time }}',
+                                                    '{{ $schedule->end_time }}'
+                                                )">
+                                                📷 Start QR Attendance
+                                                ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
+                                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
+                                            </button>
+                                        </div>
+                                    @endif
 
 
                                     <h2 class="text-warning text-center fw-bold">{{ $schedule->subject_name }}</h2>
@@ -504,13 +517,6 @@
                                             @if ($isScheduleDone)
                                                 <div class="text-end mt-3">
                                                     <button type="submit" class="btn btn-success">
-                                                        <i class="bx bx-check-circle"></i> Save Attendance
-                                                    </button>
-                                                </div>
-                                            @else
-                                                <div class="text-end mt-3">
-                                                    <button type="button" class="btn btn-success" disabled
-                                                        title="You can save attendance after the schedule ends.">
                                                         <i class="bx bx-check-circle"></i> Save Attendance
                                                     </button>
                                                 </div>

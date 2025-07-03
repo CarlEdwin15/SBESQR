@@ -510,6 +510,15 @@ class TeacherController extends Controller
         $status = $request->input('status');
         $date = $request->input('date') ?? now()->toDateString();
         $scheduleId = $request->input('schedule_id');
+        $customTimeout = $request->input('custom_timeout');
+
+        // ✅ Validate custom timeout format (HH:MM)
+        if ($customTimeout && !preg_match('/^\d{2}:\d{2}$/', $customTimeout)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid timeout format. Use HH:MM.'
+            ]);
+        }
 
         $student = Student::find($studentId);
         if (!$student) {
@@ -532,7 +541,7 @@ class TeacherController extends Controller
                 'teacher_id' => Auth::id(),
                 'class_id' => $student->class_id,
                 'time_in' => now()->format('H:i:s'),
-                'time_out' => $schedule->end_time,
+                'time_out' => $customTimeout ?? $schedule->end_time,
             ]
         );
 

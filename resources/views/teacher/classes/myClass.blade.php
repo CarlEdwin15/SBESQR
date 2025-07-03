@@ -224,91 +224,124 @@
                                 </span>
                                 {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
                             </h4>
-                            <small class="text-muted">Class Details &amp; Management</small>
+
                         </div>
-                        <a href="{{ route('teacher.myClasses', ['section' => $class->section]) }}"
-                            class="btn btn-outline-danger rounded-pill">
-                            <i class="bi bi-arrow-left"></i> Back
-                        </a>
                     </div>
 
-                    <div class="row g-4 mb-4">
-                        <!-- Students -->
-                        <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                <div class="card-body text-center">
-                                    <div class="mb-2">
-                                        <i class="bi bi-people-fill fs-1"></i>
-                                    </div>
-                                    <h6 class="fw-semibold mb-1">Students</h6>
-                                    <div class="display-6 fw-bold">{{ $studentCount }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Attendance Today -->
-                        <div class="col-md-4">
-                            <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                <div class="card-body text-center">
-                                    <div class="mb-2">
-                                        <i class="bi bi-calendar3 fs-1"></i>
-                                    </div>
-                                    <h6 class="fw-semibold mb-1">Attendance Today</h6>
-                                    <div class="display-6 fw-bold">
-                                        {{ $attendanceToday }}%
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- Teacher -->
-                        <div class="col-md-4">
-                            <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                <div class="card-body text-center">
-                                    <div class="mb-2">
-                                        <i class="bi bi-person-badge fs-1"></i>
-                                    </div>
-                                    <h6 class="fw-semibold mb-1">Adviser</h6>
-                                    <div class="fw-bold text-primary">
-                                        {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
+                    <a href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        class="btn btn-danger mb-3">Back</a>
+
+                    <div class="card p-4 shadow-sm mb-4">
+                        <h4 class="fw-bold text-warning text-center">Class Details &amp; Management</h4>
+                        <div class="row g-4 mb-4">
+                            <!-- Students -->
+                            <div class="col-md-4">
+                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                                    <div class="card-body text-center">
+                                        <div class="card-title d-flex align-items-center justify-content-between">
+                                            <div class="avatar">
+                                                @if ($class)
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
+                                                        alt="Students" class="rounded"
+                                                        style="width:110px; height:110px;" />
+                                                @endif
+                                            </div>
+                                            <h5 class="fw-semibold mb-1">Students</h5>
+                                        </div>
+                                        <div class="display-6 fw-bold">{{ $studentCount }}</div>
                                     </div>
                                 </div>
                             </div>
+                            <!-- /Students -->
+
+                            <!-- Attendance Today -->
+                            <div class="col-md-4">
+                                <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                    class="card card-hover border-0 shadow-sm h-100 bg-light">
+                                    <div class="card-body text-center">
+                                        <div class="card-title d-flex align-items-center justify-content-between">
+                                            <div class="avatar">
+                                                @if ($class)
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
+                                                        alt="Students" class="rounded"
+                                                        style="width:110px; height:110px;" />
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <h5 class="fw-semibold mb-1">Attendance Today</h5>
+                                        <div class="display-6 fw-bold">
+                                            {{ $attendanceToday }}%
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <!-- / Attendance Today -->
+
+                            <!-- Teacher -->
+                            <div class="col-md-4">
+                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                                    <div class="card-body text-center">
+                                        <div class="card-title d-flex align-items-center justify-content-between">
+                                            <div class="avatar">
+                                                @if (isset($class->adviser) && $class->adviser)
+                                                    @if ($class->adviser->gender === 'male')
+                                                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/adviser.png') }}"
+                                                            alt="Adviser (Male)" class="rounded"
+                                                            style="width:110px; height:110px;" />
+                                                    @elseif($class->adviser->gender === 'female')
+                                                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                                            alt="Adviser (Female)" class="rounded"
+                                                            style="width:110px; height:110px;" />
+                                                    @endif
+                                                @else
+                                                    <p>No adviser assigned.</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <h5 class="fw-semibold mb-1">Adviser</h5>
+                                        <div class="fw-bold text-primary">
+                                            {{ $class->adviser->firstName ?? 'N/A' }}
+                                            {{ $class->adviser->lastName ?? '' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- / Teacher -->
+                        </div>
+
+                        <!-- Card Links -->
+                        <div class="row g-3 mb-5">
+                            <div class="col-md-3">
+                                <a href="{{ route('teacher.mySchedule', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
+                                    <i class="bi bi-clock-history fs-2 mb-2"></i>
+                                    <div class="fw-semibold">Schedules</div>
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
+                                    <i class="bi bi-clipboard-check fs-2 mb-2"></i>
+                                    <div class="fw-semibold">Attendances</div>
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="{{ route('teacher.myClassMasterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
+                                    <i class="bi bi-list-ul fs-2 mb-2"></i>
+                                    <div class="fw-semibold">Master's List</div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-3">
+                                <a href=""
+                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
+                                    <i class="bx bx-message-check fs-2 mb-4"></i>
+                                    <div class="fw-semibold">SMS Logs</div>
+                                </a>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Card Links -->
-                    <div class="row g-3 mb-5">
-                        <div class="col-md-3">
-                            <a href="{{ route('teacher.mySchedule', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
-                                <i class="bi bi-clock-history fs-2 mb-2"></i>
-                                <div class="fw-semibold">Schedules</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
-                                <i class="bi bi-clipboard-check fs-2 mb-2"></i>
-                                <div class="fw-semibold">Attendances</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('teacher.myClassMasterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
-                                <i class="bi bi-list-ul fs-2 mb-2"></i>
-                                <div class="fw-semibold">Master's List</div>
-                            </a>
-                        </div>
-
-                        <div class="col-md-3">
-                            <a href=""
-                                class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
-                                <i class="bx bx-message-check fs-2 mb-4"></i>
-                                <div class="fw-semibold">SMS Logs</div>
-                            </a>
-                        </div>
-                    </div>
-
                     <hr class="my-5" />
                 </div>
                 <!-- Content wrapper -->

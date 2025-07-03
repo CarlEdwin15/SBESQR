@@ -334,12 +334,25 @@
                                                         @php
                                                             $att = $student->attendances->firstWhere('date', $date);
                                                             $status = $att->status ?? null;
+
+                                                            $rowClass = match ($status) {
+                                                                'present' => 'table-success',
+                                                                'late' => 'table-warning',
+                                                                'absent' => 'table-danger',
+                                                                'excused' => 'table-secondary',
+                                                                default => '',
+                                                            };
+
+                                                            $badgeClass = match ($status) {
+                                                                'present' => 'bg-success',
+                                                                'late' => 'bg-warning',
+                                                                'absent' => 'bg-danger',
+                                                                'excused' => 'bg-dark',
+                                                                default => 'bg-secondary',
+                                                            };
                                                         @endphp
-                                                        <tr data-student-id="{{ $student->id }}" class=""
-                                                            @if ($status === 'present') class="table-success"
-                                                            @elseif ($status === 'late') class="table-warning"
-                                                            @elseif ($status === 'absent') class="table-danger"
-                                                            @elseif ($status === 'excused') class="table-secondary" @endif>
+                                                        <tr data-student-id="{{ $student->id }}"
+                                                            class="{{ $rowClass }}">
                                                             <td class="text-center">
                                                                 <span
                                                                     class="fw-bold text-primary">{{ $student->student_lName }}</span>,
@@ -349,13 +362,9 @@
                                                             </td>
                                                             <td class="text-center">
                                                                 {{-- Display attendance status --}}
-                                                                <span
-                                                                    class="badge status-badge
-                                                                    @if ($status === 'present') bg-success
-                                                                    @elseif ($status === 'absent') bg-danger
-                                                                    @elseif ($status === 'late') bg-warning
-                                                                    @elseif ($status === 'excused') bg-dark
-                                                                    @else bg-secondary @endif">{{ ucfirst($status ?? '-') }}</span>
+                                                                <span class="badge status-badge {{ $badgeClass }}">
+                                                                    {{ ucfirst($status ?? '-') }}
+                                                                </span>
                                                             </td>
                                                             <td class="text-center">
                                                                 {{-- Dropdown for manual attendance --}}
@@ -402,6 +411,7 @@
                                     </div>
                                 </div>
                                 <!-- /Right: Student List -->
+
 
                                 <audio id="success-sound-1" src="{{ asset('sounds/attendance_present.mp3') }}"
                                     preload="auto"></audio>
@@ -727,7 +737,7 @@
                         icon: 'question',
                         showCancelButton: true,
                         confirmButtonColor: confirmButtonColor,
-                        cancelButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
                         confirmButtonText: 'Yes, mark it!',
                         cancelButtonText: 'Cancel',
                         customClass: {
@@ -746,7 +756,9 @@
                                         student_id: studentId,
                                         status: status,
                                         date: date,
-                                        schedule_id: scheduleId
+                                        schedule_id: scheduleId,
+                                        custom_timeout: document.getElementById(
+                                            'custom-timeout')?.value ?? ''
                                     })
                                 })
                                 .then(res => res.json())

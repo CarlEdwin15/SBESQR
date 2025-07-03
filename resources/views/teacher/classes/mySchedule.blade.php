@@ -232,11 +232,12 @@
                                 Schedules
                             </h4>
                         </div>
-                        <a href="{{ route('teacher.myClasses', ['section' => $class->section]) }}"
-                            class="btn btn-outline-danger rounded-pill">
-                            <i class="bi bi-arrow-left"></i> Back
-                        </a>
                     </div>
+
+                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        class="btn btn-danger mb-3">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
 
                     {{-- Card --}}
                     <div class="card">
@@ -341,6 +342,7 @@
                             </div>
                         </div>
                     </div>
+                    {{-- /Card --}}
 
                     <hr class="my-5" />
                 </div>
