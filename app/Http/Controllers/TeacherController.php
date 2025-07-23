@@ -15,6 +15,17 @@ use Carbon\Carbon;
 class TeacherController extends Controller
 {
 
+    public function index()
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'teacher') {
+            abort(403, 'Unauthorized');
+        }
+
+        return view('teacher.index');
+    }
+
     public function myClasses(Request $request)
     {
         $teacher = User::find(Auth::id());

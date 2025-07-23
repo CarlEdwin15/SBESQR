@@ -67,7 +67,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -328,6 +328,8 @@
 
                                         <div class="modal-body">
 
+                                            <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+
                                             <!-- Subject Name -->
                                             <div class="mb-3">
                                                 <label for="subject_name" class="form-label fw-semibold">Subject
@@ -340,7 +342,9 @@
                                             <div class="mb-3">
                                                 <label for="teacher_id" class="form-label fw-semibold">Teacher</label>
                                                 <select class="form-select" id="teacher_id" name="teacher_id" required>
-                                                    <option value="" selected disabled>Select Teacher</option>
+                                                    <option value="" selected disabled>
+                                                        {{ $teachers->isEmpty() ? 'No teachers available for the Selected School Year' : 'Select Teacher' }}
+                                                    </option>
                                                     @foreach ($teachers as $teacher)
                                                         @php
                                                             $role = $teacher->pivot->role;
@@ -554,9 +558,9 @@
 
                                                                         {{ $roleLabel }}<br>
                                                                         <span class="text-dark">
-                                                                        {{-- Display teacher's full name --}}
-                                                                        {{ $group['teacher']->firstName }}
-                                                                        {{ $group['teacher']->lastName }}
+                                                                            {{-- Display teacher's full name --}}
+                                                                            {{ $group['teacher']->firstName }}
+                                                                            {{ $group['teacher']->lastName }}
                                                                         </span>
                                                                     @else
                                                                         <span class="text-muted">Teacher: N/A</span>
@@ -589,11 +593,17 @@
                                                                 <i class="bi bi-pencil-square me-1"></i> Edit
                                                             </button>
                                                             <form
-                                                                action="{{ route('classes.deleteSchedule', ['grade_level' => $class->grade_level, 'section' => $class->section, 'subject' => $group['subject_name']]) }}"
+                                                                action="{{ route('classes.deleteSchedule', [
+                                                                    'grade_level' => $class->grade_level,
+                                                                    'section' => $class->section,
+                                                                    'subject' => $group['subject_name'],
+                                                                ]) }}"
                                                                 method="POST"
                                                                 onsubmit="return confirm('Are you sure you want to delete this schedule?');">
                                                                 @csrf
                                                                 @method('DELETE')
+                                                                <input type="hidden" name="school_year"
+                                                                    value="{{ request('school_year') }}">
                                                                 <button type="submit" class="btn btn-danger">
                                                                     <i class="bi bi-trash me-1"></i> Delete
                                                                 </button>
@@ -613,6 +623,10 @@
                                                     action="{{ route('classes.editSchedule', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
                                                     method="POST">
                                                     @csrf
+
+                                                    <input type="hidden" name="school_year"
+                                                        value="{{ request('school_year') }}">
+
                                                     <div class="modal-header bg-warning text-white">
                                                         <h5 class="modal-title fw-bold"
                                                             id="editModal{{ $modalIndex }}Label">Edit Schedule</h5>

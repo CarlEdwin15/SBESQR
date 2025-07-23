@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
             $table->string('firstName')->nullable();
             $table->string('lastName')->nullable();
             $table->string('middleName')->nullable();
             $table->string('extName')->nullable();
             $table->string('email')->unique();
-            $table->enum('role', ['teacher', 'admin'])->default('teacher');
+            $table->enum('role', ['teacher', 'admin', 'parent'])->default('teacher');
             $table->enum('gender', ['male', 'female'])->nullable();
             $table->string('phone')->nullable();
 
@@ -45,9 +44,9 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->enum('role', ['adviser', 'subject_teacher', 'both'])->default('subject_teacher');
+            $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
+            $table->unique(['user_id', 'class_id', 'school_year_id'], 'unique_user_class_sy');
             $table->timestamps();
-
-            $table->unique(['user_id', 'class_id'], 'user_class_unique');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

@@ -82,17 +82,16 @@ return new class extends Migration
             $table->string('mother_lName')->nullable();
             $table->string('mother_phone')->nullable();
 
-            $table->string('emergCont_fName')->nullable();
-            $table->string('emergCont_mName')->nullable();
-            $table->string('emergCont_lName')->nullable();
-            $table->string('emergCont_phone')->nullable();
+            $table->string('emergcont_fName')->nullable();
+            $table->string('emergcont_mName')->nullable();
+            $table->string('emergcont_lName')->nullable();
+            $table->string('emergcont_phone')->nullable();
             $table->timestamps();
         });
 
         // 3. Create 'students' table last
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->string('student_lrn', 20)->unique();
             $table->string('student_lName');
             $table->string('student_fName');
@@ -100,14 +99,23 @@ return new class extends Migration
             $table->string('student_extName', 45)->nullable();
             $table->date('student_dob')->nullable();
             $table->enum('student_sex', ['male', 'female']);
-            $table->string('qr_code')->nullable();
+            $table->string('qr_code')->nullable()->unique();
             $table->string('student_photo', 2048)->nullable();
-
-            // One-to-one relationships via foreign keys
             $table->foreignId('address_id')->unique()->constrained('addresses')->onDelete('cascade');
             $table->foreignId('parent_id')->unique()->constrained('parent_info')->onDelete('cascade');
-
             $table->timestamps();
+        });
+
+        Schema::create('class_student', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
+            $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
+            $table->enum('enrollment_status', ['enrolled', 'not_enrolled', 'archived', 'graduated'])->default('enrolled');
+            $table->enum('enrollment_type', ['regular', 'transferee', 'returnee'])->nullable()->default('regular');
+            $table->timestamps();
+            // Ensure the combination of student_id, class_id, and school_year_id is unique
+            $table->unique(['student_id', 'class_id', 'school_year_id'], 'unique_class_student_sy');
         });
     }
 
@@ -118,6 +126,7 @@ return new class extends Migration
     public function down(): void
     {
         // Drop students first (depends on other tables)
+        Schema::dropIfExists('class_student');
         Schema::dropIfExists('students');
         Schema::dropIfExists('parent_info');
         Schema::dropIfExists('addresses');

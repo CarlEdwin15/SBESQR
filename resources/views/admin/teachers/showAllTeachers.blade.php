@@ -46,6 +46,11 @@
                                     <div class="text-danger">All Teacherss</div>
                                 </a>
                             </li>
+                            <li class="menu-item">
+                                <a href="" class="menu-link bg-dark text-light">
+                                    <div class="text-light">Re-assignment & Validation</div>
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
@@ -67,7 +72,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -260,10 +265,40 @@
                         </span> All Teachers
                     </h4>
 
+                    {{-- Notification when year is changed --}}
+                    @if (session('school_year_notice'))
+                        <div class="alert alert-info alert-dismissible fade show mt-2 text-center text-primary fw-bold"
+                            role="alert" id="school-year-alert">
+                            {{ session('school_year_notice') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
                     <!-- Modal Backdrop -->
                     <div class="col-lg-4 col-md-3">
 
                         <div class="mt-3">
+                            {{-- @php
+                                $now = now();
+                                $year = $now->year;
+                                $cutoff = $now->copy()->setMonth(6)->setDay(1);
+                                $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+
+                                $allowedYears = [
+                                    $currentYear . '-' . ($currentYear + 1),
+                                    $currentYear + 1 . '-' . ($currentYear + 2),
+                                ];
+                            @endphp
+
+                            @if (in_array($selectedYear, $allowedYears))
+                                <!-- Button trigger modal -->
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#backDropModal"
+                                    style="margin: auto; margin-bottom: 30px; margin-left: 10px">
+                                    Register New Teacher
+                                </button>
+                            @endif --}}
+
                             <!-- Button trigger modal -->
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#backDropModal"
@@ -288,6 +323,9 @@
                                         <div class="modal-body">
 
                                             <h5 class="fw-bold text-primary">Teacher's Personal Information</h5>
+
+                                            <input type="hidden" name="selected_school_year"
+                                                value="{{ $selectedYear }}">
 
                                             <!-- Profile Photo Upload with Preview and Default -->
                                             <div class="row">
@@ -425,8 +463,8 @@
                                                 <!-- Assigned Classes as Multi-select Dropdown -->
                                                 <div class="col-md-6 mb-3">
                                                     <label class="form-label fw-bold">Assign Classes</label>
-                                                    <select name="assigned_classes[]" id="assigned_classes"
-                                                        class="form-select mb-2" multiple required>
+                                                    <select name="assigned_classes[]" id="assigned_classes" multiple
+                                                        required>
                                                         @foreach ($allClasses as $class)
                                                             @php
                                                                 $adviser = $class->teachers
@@ -442,16 +480,14 @@
                                                                 {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
                                                                 - {{ $class->section }}
                                                                 @if ($hasAdviser)
-                                                                    ({{ $adviser->firstName }}
-                                                                    {{ $adviser->lastName }})
+                                                                    ({{ $adviser->firstName }} {{ $adviser->lastName }})
                                                                 @endif
                                                             </option>
                                                         @endforeach
                                                     </select>
-
-                                                    <small class="form-text text-muted text-center">Hold Ctrl (Windows) or
-                                                        Cmd (Mac) to
-                                                        select multiple classes.</small>
+                                                    <small class="form-text text-muted text-center">
+                                                        You can select multiple classes
+                                                    </small>
                                                 </div>
 
                                                 <!-- Advisory Class Dropdown -->
@@ -599,10 +635,48 @@
                         </div>
                     </div>
 
+                    {{-- School Year Selection --}}
+                    <div class="row mb-3">
+                        <div class="col-md-8"></div>
+                        <div class="col-md-4 d-flex justify-content-end">
+                            <form method="GET" action="" class="d-flex">
+                                <label for="school_year" class="form-label me-2">School Year :</label>
+                                <select name="school_year" id="school_year" class="form-select"
+                                    onchange="this.form.submit()">
+                                    @foreach ($schoolYears as $year)
+                                        <option value="{{ $year }}"
+                                            {{ $year == $selectedYear ? 'selected' : '' }}>
+                                            {{ $year }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </form>
+
+                            {{-- "Now" button --}}
+                            <form method="GET" action="{{ route('show.teachers') }}">
+                                <input type="hidden" name="school_year"
+                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary ms-2">
+                                    Now
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <script>
+                        setTimeout(function() {
+                            var alertElem = document.getElementById('school-year-alert');
+                            if (alertElem) {
+                                var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
+                                bsAlert.close();
+                            }
+                        }, 10000);
+                    </script>
+
                     {{-- Card --}}
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="fw-bold mb-4">All Teachers</h5>
+                            <h3 class="text-center text-info fw-bold mb-4">Teacher Management</h3>
 
                             <div
                                 class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
@@ -643,7 +717,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="table-border-bottom-0">
-                                    @foreach ($teachers as $teacher)
+                                    @forelse ($teachers as $teacher)
                                         <tr class="teacher-row">
                                             <td>{{ $teacher->firstName }} {{ $teacher->middleName }}
                                                 {{ $teacher->lastName }} {{ $teacher->extName }}</td>
@@ -699,16 +773,21 @@
                                                             <i class="bx bxs-user-badge me-1"></i> View Profile
                                                         </a>
                                                         <a class="dropdown-item text-warning"
-                                                            href="{{ route('edit.teacher', ['id' => $teacher->id]) }}">
+                                                            href="{{ route('edit.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
                                                             <i class="bx bx-edit-alt me-1"></i> Edit
                                                         </a>
+                                                        @php
+                                                            $selectedYear = request('school_year'); // Or pass explicitly
+                                                        @endphp
+
                                                         <button type="button" class="dropdown-item text-danger"
-                                                            onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}')">
+                                                            onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}', '{{ $selectedYear }}')">
                                                             <i class="bx bx-trash me-1"></i> Delete
                                                         </button>
+
                                                         <!-- Hidden form to submit delete -->
-                                                        <form id="delete-form-{{ $teacher->id }}"
-                                                            action="{{ route('delete.teacher', $teacher->id) }}"
+                                                        <form id="delete-form-{{ $teacher->id }}-{{ $selectedYear }}"
+                                                            action="{{ route('delete.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}"
                                                             method="POST" style="display: none;">
                                                             @csrf
                                                             @method('DELETE')
@@ -717,11 +796,17 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                    @endforeach
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center text-danger fw-bold">No teachers found.
+                                            </td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
                     </div>
+                    {{-- / Card --}}
 
 
                     <hr class="my-5" />
@@ -738,10 +823,6 @@
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 
-
-
-
-
 @endsection
 
 @push('scripts')
@@ -755,22 +836,22 @@
         });
 
         // Delete confirmation
-        function confirmDelete(teacherId, firstName, lastName) {
+        function confirmDelete(teacherId, firstName, lastName, schoolYear) {
             Swal.fire({
-                title: `Delete ${firstName} ${lastName}'s record?`,
-                text: "This action cannot be undone.",
+                title: `Remove ${firstName} ${lastName} from ${schoolYear}?`,
+                text: "They will be unassigned from all classes for this school year only.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
                 cancelButtonColor: "#6c757d",
-                confirmButtonText: "Yes, delete it!",
+                confirmButtonText: "Yes, remove",
                 cancelButtonText: "Cancel",
                 customClass: {
                     container: 'my-swal-container'
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    document.getElementById('delete-form-' + teacherId).submit();
+                    document.getElementById(`delete-form-${teacherId}-${schoolYear}`).submit();
                 }
             });
         }
@@ -944,4 +1025,35 @@
             });
         @endif
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        new TomSelect('#assigned_classes', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Select classes...",
+        });
+    </script>
+@endpush
+
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+    <style>
+        .ts-control {
+            background-color: #e0f7fa;
+            border-color: #42a5f5;
+        }
+
+        .ts-control .item {
+            background-color: #4dd0e1;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 4px;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+    </style>
 @endpush

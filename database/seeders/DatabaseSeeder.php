@@ -15,17 +15,12 @@ class DatabaseSeeder extends Seeder
     {
 
         $this->call([
+            SchoolYearSeeder::class,
             ClassesSeeder::class,
-            // Add other seeders here
-        ]);
-
-        $this->call([
             AdminSeeder::class,
-        ]);
-
-        $this->call([
             StudentSeeder::class,
         ]);
+
 
 
         // User::factory(10)->create();

@@ -16,6 +16,7 @@ class Schedule extends Model
         'day',
         'start_time',
         'end_time',
+        'school_year_id',
     ];
 
     public function teacher()
@@ -25,16 +26,21 @@ class Schedule extends Model
 
     public function class()
     {
-        return $this->belongsTo(Classes::class);
+        return $this->belongsTo(Classes::class, 'class_id');
     }
 
     public function attendances()
     {
-        return $this->hasMany(Attendance::class);
+        return $this->hasMany(Attendance::class, 'schedule_id');
     }
 
     public function students()
     {
-        return $this->hasManyThrough(Student::class, Attendance::class);
+        return $this->hasManyThrough(Student::class, Attendance::class, 'schedule_id', 'id', 'id', 'student_id');
+    }
+
+    public function schoolYear()
+    {
+        return $this->belongsTo(SchoolYear::class);
     }
 }

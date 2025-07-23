@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Classes;
+use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
@@ -68,16 +69,81 @@ class AdminController extends Controller
         return back()->with('success', 'Account updated successfully');
     }
 
-    public function showAllTeachers()
+    public function showAllTeachers(Request $request)
     {
-        $teachers = User::where('role', 'teacher')->get();
-        $allClasses = Classes::with('teachers')->get();
-        return view('admin.teachers.showAllTeachers', compact('teachers', 'allClasses'));
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
+
+        // Fetch all saved school years from DB
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
+
+        // Extract numeric start years
+        $savedStartYears = array_map(function ($sy) {
+            return (int)substr($sy, 0, 4);
+        }, $savedYears);
+
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        // Build school years from minYear up to currentYear
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+
+        // Add current and next school year if missing
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+        if (!in_array($nextSchoolYear, $schoolYears)) {
+            $schoolYears[] = $nextSchoolYear;
+        }
+
+        // Sort school years ascending
+        usort($schoolYears, function ($a, $b) {
+            return intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4));
+        });
+
+        // Determine selected year
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
+
+        $teachers = collect();
+        $allClasses = collect();
+
+        if ($schoolYear) {
+            $teachers = User::where('role', 'teacher')
+                ->whereHas('classes', function ($query) use ($schoolYear) {
+                    $query->where('class_user.school_year_id', $schoolYear->id);
+                })
+                ->with(['classes' => function ($query) use ($schoolYear) {
+                    $query->where('class_user.school_year_id', $schoolYear->id);
+                }])
+                ->get();
+
+            $allClasses = Classes::with(['teachers' => function ($query) use ($schoolYear) {
+                $query->wherePivot('school_year_id', $schoolYear->id);
+            }])->get();
+
+            session()->flash('school_year_notice', 'Displaying teachers for School Year: ' . $selectedYear);
+        }
+
+        return view('admin.teachers.showAllTeachers', compact(
+            'teachers',
+            'schoolYears',
+            'selectedYear',
+            'allClasses',
+            'currentYear'
+        ));
     }
 
     public function registerTeacher(Request $request)
     {
-        // Validate the request data with enhanced password rules
+        // Validate the request data
         $request->validate([
             'firstName' => 'required|string|max:255',
             'lastName' => 'required|string|max:255',
@@ -108,36 +174,46 @@ class AdminController extends Controller
             'assigned_classes' => 'required|array|min:1',
             'assigned_classes.*' => 'exists:classes,id',
             'advisory_class' => 'nullable|exists:classes,id',
-        ], [
-            'email.unique' => 'The email is already taken.', // ✅ Custom message
+            'selected_school_year' => 'required|string|exists:school_years,school_year', // ✅ Ensure valid school year
         ]);
 
+        // Get school year ID
+        $schoolYear = SchoolYear::where('school_year', $request->selected_school_year)->first();
 
-        // Ensure advisory class is part of assigned classes
+        if (!$schoolYear) {
+            return back()->withErrors([
+                'selected_school_year' => 'Invalid school year selected.'
+            ])->withInput();
+        }
+
+        // Ensure advisory class is in assigned classes
         if ($request->advisory_class && !in_array($request->advisory_class, $request->assigned_classes)) {
             return back()->withErrors([
                 'advisory_class' => 'Advisory Class must be one of the Assigned Classes.'
             ])->withInput();
         }
 
-        // Check if the advisory class already has an adviser
+        // Check if advisory class already has an adviser for this school year
         if ($request->advisory_class) {
             $advisoryClass = Classes::find($request->advisory_class);
-
-            if ($advisoryClass->teachers()->wherePivot('role', 'adviser')->exists()) {
+            if ($advisoryClass->teachers()
+                ->wherePivot('school_year_id', $schoolYear->id)
+                ->wherePivot('role', 'adviser')
+                ->exists()
+            ) {
                 return back()->withErrors([
-                    'advisory_class' => 'This class already has an adviser assigned.'
+                    'advisory_class' => 'This class already has an adviser assigned for the selected school year.'
                 ])->withInput();
             }
         }
 
-        // Handle profile photo upload
+        // Handle profile photo
         $profilePhotoPath = null;
         if ($request->hasFile('profile_photo')) {
             $profilePhotoPath = $request->file('profile_photo')->store('profile_photos', 'public');
         }
 
-        // Create the teacher user
+        // Create the teacher
         $teacher = User::create([
             'firstName' => $request->firstName,
             'lastName' => $request->lastName,
@@ -159,10 +235,13 @@ class AdminController extends Controller
             'role' => 'teacher',
         ]);
 
-        // Attach classes with pivot role
+        // Attach classes with role and school year
         foreach ($request->assigned_classes as $classId) {
             $role = ($classId == $request->advisory_class) ? 'adviser' : 'subject_teacher';
-            $teacher->classes()->attach($classId, ['role' => $role]);
+            $teacher->classes()->attach($classId, [
+                'role' => $role,
+                'school_year_id' => $schoolYear->id
+            ]);
         }
 
         return redirect()->back()->with('success', 'Teacher registered successfully!');
@@ -190,7 +269,10 @@ class AdminController extends Controller
             'assigned_classes' => 'required|array|min:1',
             'assigned_classes.*' => 'exists:classes,id',
             'advisory_class' => 'nullable|exists:classes,id',
+            'selected_school_year' => 'required|string|exists:school_years,school_year',
         ]);
+
+        $schoolYear = SchoolYear::where('school_year', $request->selected_school_year)->firstOrFail();
 
         if ($request->advisory_class && !in_array($request->advisory_class, $request->assigned_classes)) {
             return back()->withErrors([
@@ -229,48 +311,88 @@ class AdminController extends Controller
         $teacher->dob = $request->dob;
         $teacher->save();
 
-        // Sync classes with pivot role
+        // Sync classes with pivot role for the selected school year
         $syncData = [];
         foreach ($request->assigned_classes as $classId) {
             $role = ($classId == $request->advisory_class) ? 'adviser' : 'subject_teacher';
-            $syncData[$classId] = ['role' => $role];
+            $syncData[$classId] = ['role' => $role, 'school_year_id' => $schoolYear->id];
         }
-        $teacher->classes()->sync($syncData);
+        $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->sync($syncData);
 
-        return redirect()->route('show.teachers')->with('success', 'Teacher details updated successfully!');
+        return redirect()->route('show.teachers')->with('success', 'Teacher details updated successfully for the selected school year!');
     }
 
-    public function editTeacher($id)
+    public function editTeacher(Request $request, $id)
     {
-        $teacher = User::findOrFail($id);
+        $selectedSchoolYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->firstOrFail();
+
+        $teacher = User::with(['classes' => function ($query) use ($schoolYear) {
+            $query->wherePivot('school_year_id', $schoolYear->id);
+        }])->findOrFail($id);
+
         $allClasses = Classes::all();
-        $assignedClasses = $teacher->classes()->pluck('classes.id')->toArray();
-        $advisoryClass = $teacher->classes()->wherePivot('role', 'adviser')->pluck('classes.id')->first();
+        $assignedClasses = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->pluck('classes.id')->toArray();
+        $advisoryClass = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->wherePivot('role', 'adviser')->pluck('classes.id')->first();
 
-        return view('admin.teachers.editTeacher', compact('teacher', 'allClasses', 'assignedClasses', 'advisoryClass'));
+        $schoolYears = SchoolYear::pluck('school_year')->toArray();
+        $currentSchoolYear = $this->getDefaultSchoolYear();
+
+        return view('admin.teachers.editTeacher', compact(
+            'teacher',
+            'allClasses',
+            'assignedClasses',
+            'advisoryClass',
+            'schoolYears',
+            'currentSchoolYear',
+            'selectedSchoolYear'
+        ));
     }
 
-
-    public function deleteTeacher($id)
+    public function deleteTeacher(Request $request, $id)
     {
         $teacher = User::findOrFail($id);
 
+        $selectedSchoolYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->firstOrFail();
+
+        // Delete profile photo if exists
         if ($teacher->profile_photo && Storage::disk('public')->exists($teacher->profile_photo)) {
             Storage::disk('public')->delete($teacher->profile_photo);
         }
 
-        $teacher->delete();
+        // Detach classes for the selected school year
+        $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->detach();
 
-        return redirect()->route('show.teachers')->with('success', 'Teacher details deleted successfully!');
+        // Delete teacher if no classes are left
+        if ($teacher->classes()->count() === 0) {
+            $teacher->delete();
+        }
+
+        return redirect()->route('show.teachers')->with('success', 'Teacher details deleted successfully for the selected school year!');
     }
 
-
-    public function teacherInfo($id)
+    public function teacherInfo(Request $request, $id)
     {
-        $teacher = User::findOrFail($id);
-        $assignedClasses = $teacher->classes()->get();
-        $advisoryClass = $teacher->classes()->wherePivot('role', 'adviser')->first();
+        $selectedSchoolYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->firstOrFail();
 
-        return view('admin.teachers.teacherInfo', compact('teacher', 'assignedClasses', 'advisoryClass'));
+        $teacher = User::with(['classes' => function ($query) use ($schoolYear) {
+            $query->wherePivot('school_year_id', $schoolYear->id);
+        }])->findOrFail($id);
+
+        $assignedClasses = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->get();
+        $advisoryClass = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->wherePivot('role', 'adviser')->first();
+
+        return view('admin.teachers.teacherInfo', compact('teacher', 'assignedClasses', 'advisoryClass', 'selectedSchoolYear'));
+    }
+
+    private function getDefaultSchoolYear()
+    {
+        $now = now();
+        $year = $now->year;
+        $cutoff = now()->copy()->setMonth(6)->setDay(1);
+        $start = $now->lt($cutoff) ? $year - 1 : $year;
+        return $start . '-' . ($start + 1);
     }
 }

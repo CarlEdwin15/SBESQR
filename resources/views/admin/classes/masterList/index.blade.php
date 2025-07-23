@@ -68,7 +68,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -262,7 +262,7 @@
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                        href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}">
                                         {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
                                 </span>
                                 Master’s List
@@ -272,15 +272,21 @@
 
                     <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
                     <div class="card p-4 shadow-sm">
-                        <h5 class="fw-bold mb-2">{{ $class->formatted_grade_level }} - {{ $class->section }}</h5>
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <h5 class="fw-bold mb-2">School Year: {{ $selectedYear }}</h5>
 
-                        <!-- Export List Form -->
-                        <form action="" method="GET">
-                            @csrf
-                            <button type="submit" class="btn btn-success ms-md-auto">Export List</button>
-                        </form>
+                            <!-- Export List Form -->
+                            <form action="" method="GET">
+                                @csrf
+                                <button type="submit" class="btn btn-success ms-md-auto">
+                                    <i class="bx bx-printer"></i>Export List
+                                </button>
+                            </form>
+                        </div>
 
-                        <h4 class="mb-4 text-center fw-bold">List of Students</h4><br>
+                        <h3 class="mb-4 text-center fw-bold">List of Students for
+                            {{ $class->formatted_grade_level }} -
+                            {{ $class->section }}</h3><br>
                         <h5 class="text-center">Adviser:</h5>
 
                         @if ($class->adviser)

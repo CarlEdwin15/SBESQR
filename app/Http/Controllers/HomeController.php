@@ -14,12 +14,11 @@ class HomeController extends Controller
             $role = Auth::user()->role; // Fetch user role
 
             if ($role == 'teacher') {
-
                 return view('teacher.index');
-
-            } else {
-
+            } elseif ($role == 'admin') {
                 return view('admin.index');
+            } elseif ($role == 'parent') {
+                return view('parent.index');
             }
         }
 

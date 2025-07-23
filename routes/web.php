@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\Auth\FacebookController;
+use App\Http\Controllers\ParentController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\IdController;
 use App\Http\Controllers\HomeController;
@@ -21,6 +24,14 @@ Route::get('/', function () {
 
 // Teachers management (on ADMIN dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+// Google login
+Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
+// Facebook login
+Route::get('/auth/facebook', [FacebookController::class, 'redirectToFacebook'])->name('facebook.parent.login');
+Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
 
 // User Account Settings (on ADMIN dashboard)
 Route::get('/accountSettings', [AdminController::class, 'accountSettings'])->name('account.settings');
@@ -55,9 +66,16 @@ Route::get('/editStudent/{id}', [StudentController::class, 'edit'])->name('edit.
 
 Route::post('/updateStudent/{id}', [StudentController::class, 'update'])->name('update.student');
 
-Route::delete('/deleteStudent/{id}', [StudentController::class, 'destroy'])->name('delete.student');
+Route::delete('/unenrollStudent/{id}', [StudentController::class, 'unenroll'])->name('unenroll.student');
 
-Route::get('/students/{id}', [StudentController::class, 'showStudentInfo'])->name('student.info');
+Route::get('/student-info/{id}', [StudentController::class, 'showStudentInfo'])->name('student.info');
+
+// View students eligible for promotion
+Route::get('/promote-students', [StudentController::class, 'showPromotionView'])->name('students.promote.view');
+
+// Handle the promotion
+Route::post('/promote-students', [StudentController::class, 'promoteStudents'])->name('students.promote');
+
 
 
 // ID Management (on ADMIN dashboard)

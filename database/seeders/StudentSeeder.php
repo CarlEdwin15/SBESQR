@@ -7,278 +7,93 @@ use App\Models\Student;
 use App\Models\StudentAddress;
 use App\Models\ParentInfo;
 use App\Models\Classes;
+use App\Models\SchoolYear;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class StudentSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-
     public function run(): void
     {
-        // Kindergarten - Section A
-        $classKinder = Classes::firstOrCreate([
-            'grade_level' => 'kindergarten',
-            'section' => 'A',
-        ]);
+        $schoolYear = SchoolYear::where('school_year', '2024-2025')->firstOrFail();
 
-        $studentsKinder = [
-            [
-                'lrn' => '112828123456',
-                'fName' => 'Carl Edwin',
-                'mName' => 'Vasquez',
-                'lName' => 'Conde',
-                'dob' => '2012-03-01',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123457',
-                'fName' => 'Anna Marie',
-                'mName' => 'Lopez',
-                'lName' => 'Santos',
-                'dob' => '2012-04-12',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123458',
-                'fName' => 'John Paul',
-                'mName' => 'Reyes',
-                'lName' => 'Dela Cruz',
-                'dob' => '2012-05-23',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123459',
-                'fName' => 'Maria Clara',
-                'mName' => 'Garcia',
-                'lName' => 'Torres',
-                'dob' => '2012-06-15',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123460',
-                'fName' => 'Miguel',
-                'mName' => 'Santos',
-                'lName' => 'Ramos',
-                'dob' => '2012-07-10',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123461',
-                'fName' => 'Sophia',
-                'mName' => 'Dela Cruz',
-                'lName' => 'Mendoza',
-                'dob' => '2012-08-19',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123462',
-                'fName' => 'Gabriel',
-                'mName' => 'Reyes',
-                'lName' => 'Fernandez',
-                'dob' => '2012-09-25',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123463',
-                'fName' => 'Isabella',
-                'mName' => 'Torres',
-                'lName' => 'Gonzales',
-                'dob' => '2012-10-30',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123464',
-                'fName' => 'Lucas',
-                'mName' => 'Garcia',
-                'lName' => 'Santiago',
-                'dob' => '2012-11-11',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123465',
-                'fName' => 'Emma',
-                'mName' => 'Ramos',
-                'lName' => 'Villanueva',
-                'dob' => '2012-12-21',
-                'sex' => 'Female',
-            ],
+        $gradeLevels = [
+            'kindergarten',
+            // 'grade1',
+            // 'grade2',
+            // 'grade3',
+            // 'grade4',
+            // 'grade5',
+            // 'grade6'
         ];
 
-        foreach ($studentsKinder as $student) {
-            $address = StudentAddress::create([
-                'house_no' => rand(100, 999),
-                'street_name' => 'Main St',
-                'barangay' => 'Barangay Uno',
-                'municipality_city' => 'Sample City',
-                'province' => 'Sample Province',
-                'zip_code' => '1000',
-                'country' => 'Philippines',
-                'pob' => 'Sample City',
-            ]);
-
-            $parent = ParentInfo::create([
-                'father_fName' => 'Juan',
-                'father_mName' => 'Dela',
-                'father_lName' => 'Cruz',
-                'father_phone' => '0917' . rand(1000000, 9999999),
-                'mother_fName' => 'Maria',
-                'mother_mName' => 'Santos',
-                'mother_lName' => 'Reyes',
-                'mother_phone' => '0918' . rand(1000000, 9999999),
-                'emergCont_fName' => 'Pedro',
-                'emergCont_mName' => 'Lopez',
-                'emergCont_lName' => 'Gomez',
-                'emergCont_phone' => '0920' . rand(1000000, 9999999),
-            ]);
-
-            Student::create([
-                'student_lrn' => $student['lrn'],
-                'student_fName' => $student['fName'],
-                'student_mName' => $student['mName'],
-                'student_lName' => $student['lName'],
-                'student_extName' => null,
-                'student_dob' => $student['dob'],
-                'student_sex' => $student['sex'],
-                'student_photo' => null,
-                'qr_code' => Str::uuid(),
-                'class_id' => $classKinder->id,
-                'address_id' => $address->id,
-                'parent_id' => $parent->id,
+        $classes = [];
+        foreach ($gradeLevels as $level) {
+            $classes[$level] = Classes::firstOrCreate([
+                'grade_level' => $level,
+                'section' => 'A',
             ]);
         }
 
-        // Grade 1 - Section A
-        $classGrade1 = Classes::firstOrCreate([
-            'grade_level' => 'grade1',
-            'section' => 'A',
-        ]);
+        $baseLRN = 112828080000; // base LRN for autogenerated students
 
-        $studentsGrade1 = [
-            [
-                'lrn' => '112828123466',
-                'fName' => 'Matthew',
-                'mName' => 'Santos',
-                'lName' => 'Cruz',
-                'dob' => '2011-01-15',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123467',
-                'fName' => 'Olivia',
-                'mName' => 'Garcia',
-                'lName' => 'Lopez',
-                'dob' => '2011-02-20',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123468',
-                'fName' => 'Ethan',
-                'mName' => 'Torres',
-                'lName' => 'Reyes',
-                'dob' => '2011-03-10',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123469',
-                'fName' => 'Ava',
-                'mName' => 'Dela Cruz',
-                'lName' => 'Santos',
-                'dob' => '2011-04-05',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123470',
-                'fName' => 'Noah',
-                'mName' => 'Fernandez',
-                'lName' => 'Gonzales',
-                'dob' => '2011-05-18',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123471',
-                'fName' => 'Mia',
-                'mName' => 'Ramos',
-                'lName' => 'Villanueva',
-                'dob' => '2011-06-22',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123472',
-                'fName' => 'James',
-                'mName' => 'Santiago',
-                'lName' => 'Garcia',
-                'dob' => '2011-07-30',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123473',
-                'fName' => 'Charlotte',
-                'mName' => 'Mendoza',
-                'lName' => 'Torres',
-                'dob' => '2011-08-14',
-                'sex' => 'Female',
-            ],
-            [
-                'lrn' => '112828123474',
-                'fName' => 'Benjamin',
-                'mName' => 'Reyes',
-                'lName' => 'Santos',
-                'dob' => '2011-09-09',
-                'sex' => 'Male',
-            ],
-            [
-                'lrn' => '112828123475',
-                'fName' => 'Amelia',
-                'mName' => 'Lopez',
-                'lName' => 'Dela Cruz',
-                'dob' => '2011-10-27',
-                'sex' => 'Female',
-            ],
-        ];
+        foreach ($gradeLevels as $gradeIndex => $gradeLevel) {
+            for ($i = 0; $i < 30; $i++) {
+                $isMale = $i < 15;
+                $firstNames = $isMale
+                    ? ['Liam', 'Noah', 'James', 'Lucas', 'Benjamin', 'Elijah', 'Logan', 'Mason', 'Ethan', 'Alexander', 'Daniel', 'Matthew', 'Jacob', 'Michael', 'William']
+                    : ['Emma', 'Olivia', 'Ava', 'Isabella', 'Sophia', 'Charlotte', 'Amelia', 'Mia', 'Harper', 'Evelyn', 'Abigail', 'Ella', 'Elizabeth', 'Camila', 'Luna'];
 
-        foreach ($studentsGrade1 as $student) {
-            $address = StudentAddress::create([
-                'house_no' => rand(100, 999),
-                'street_name' => 'Main St',
-                'barangay' => 'Barangay Uno',
-                'municipality_city' => 'Sample City',
-                'province' => 'Sample Province',
-                'zip_code' => '1000',
-                'country' => 'Philippines',
-                'pob' => 'Sample City',
-            ]);
+                $lastNames = ['Garcia', 'Santos', 'Reyes', 'Cruz', 'Torres', 'Lopez', 'Dela Cruz', 'Gomez', 'Domingo', 'Morales', 'Navarro', 'Castillo', 'Ramos', 'Mendoza', 'Flores'];
 
-            $parent = ParentInfo::create([
-                'father_fName' => 'Juan',
-                'father_mName' => 'Dela',
-                'father_lName' => 'Cruz',
-                'father_phone' => '0917' . rand(1000000, 9999999),
-                'mother_fName' => 'Maria',
-                'mother_mName' => 'Santos',
-                'mother_lName' => 'Reyes',
-                'mother_phone' => '0918' . rand(1000000, 9999999),
-                'emergCont_fName' => 'Pedro',
-                'emergCont_mName' => 'Lopez',
-                'emergCont_lName' => 'Gomez',
-                'emergCont_phone' => '0920' . rand(1000000, 9999999),
-            ]);
+                $lrn = (string) ($baseLRN + ($gradeIndex * 100) + $i);
 
-            Student::create([
-                'student_lrn' => $student['lrn'],
-                'student_fName' => $student['fName'],
-                'student_mName' => $student['mName'],
-                'student_lName' => $student['lName'],
-                'student_extName' => null,
-                'student_dob' => $student['dob'],
-                'student_sex' => $student['sex'],
-                'student_photo' => null,
-                'qr_code' => Str::uuid(),
-                'class_id' => $classGrade1->id,
-                'address_id' => $address->id,
-                'parent_id' => $parent->id,
-            ]);
+                $address = StudentAddress::create([
+                    'house_no' => rand(100, 999),
+                    'street_name' => 'Main St',
+                    'barangay' => 'Barangay Uno',
+                    'municipality_city' => 'Sample City',
+                    'province' => 'Sample Province',
+                    'zip_code' => '1000',
+                    'country' => 'Philippines',
+                    'pob' => 'Sample City',
+                ]);
+
+                $parent = ParentInfo::create([
+                    'father_fName' => 'Juan',
+                    'father_mName' => 'Dela',
+                    'father_lName' => 'Cruz',
+                    'father_phone' => '0917' . rand(1000000, 9999999),
+                    'mother_fName' => 'Maria',
+                    'mother_mName' => 'Santos',
+                    'mother_lName' => 'Reyes',
+                    'mother_phone' => '0918' . rand(1000000, 9999999),
+                    'emergCont_fName' => 'Pedro',
+                    'emergCont_mName' => 'Lopez',
+                    'emergCont_lName' => 'Gomez',
+                    'emergCont_phone' => '0920' . rand(1000000, 9999999),
+                ]);
+
+                $student = Student::create([
+                    'student_lrn' => $lrn,
+                    'student_fName' => $firstNames[$i % 15],
+                    'student_mName' => 'M.', // Static middle name for demo
+                    'student_lName' => $lastNames[$i % 15],
+                    'student_extName' => null,
+                    'student_dob' => now()->subYears(5 + $gradeIndex)->format('Y-m-d'),
+                    'student_sex' => $isMale ? 'male' : 'female',
+                    'student_photo' => null,
+                    'qr_code' => Str::uuid(),
+                    'address_id' => $address->id,
+                    'parent_id' => $parent->id,
+                ]);
+
+                DB::table('class_student')->insert([
+                    'student_id' => $student->id,
+                    'class_id' => $classes[$gradeLevel]->id,
+                    'school_year_id' => $schoolYear->id,
+                ]);
+            }
         }
     }
 }

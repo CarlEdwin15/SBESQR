@@ -67,7 +67,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -240,9 +240,6 @@
                                             {{ __('Log Out') }}
                                         </x-dropdown-link>
                                     </form>
-
-
-
                                 </ul>
                             </li>
                             <!--/ User -->
@@ -270,6 +267,42 @@
                         </div>
                     @endif
 
+                    {{-- School Year Selection --}}
+                    <div class="row mb-3">
+                        <div class="col-md-8"></div>
+                        <div class="col-md-4 d-flex justify-content-end">
+                            <form method="GET" action="{{ route('add.student') }}" class="d-flex">
+                                <label for="school_year" class="form-label me-2">School Year :</label>
+                                <select name="school_year" id="school_year" class="form-select"
+                                    onchange="this.form.submit()">
+                                    @foreach ($schoolYears as $year)
+                                        <option value="{{ $year }}"
+                                            {{ $year == $selectedYear ? 'selected' : '' }}>
+                                            {{ $year }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </form>
+
+                            {{-- "Now" button --}}
+                            <form method="GET" action="{{ route('add.student') }}" class="d-flex align-items-center">
+                                <input type="hidden" name="school_year"
+                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                                <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
+                                    Now
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {{-- Notification when year is changed --}}
+                    @if (session('school_year_notice'))
+                        <div class="alert alert-info alert-dismissible fade show mt-2" role="alert">
+                            {{ session('school_year_notice') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
                     <form class="modal-content" action="{{ route('store.student') }}" id="studentRegistrationForm"
                         method="POST" enctype="multipart/form-data">
                         @csrf
@@ -280,6 +313,9 @@
                                     <h4 class="fw-bold text-primary mb-0">Student's Personal Information</h4>
                                 </div>
                             </div>
+
+                            <input type="hidden" name="selected_school_year" value="{{ $selectedYear }}">
+                            <input type="hidden" name="enrollment_status" value="enrolled">
 
                             <div class="row">
                                 <!-- Profile Photo and School Year Row -->
@@ -310,6 +346,21 @@
 
                                         <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                     </div>
+
+                                    <input type="hidden" name="selected_school_year" value="{{ $selectedYear }}">
+                                </div>
+
+                                <!-- Enrollment Status Field -->
+                                <div class="col mb-2 mt-2">
+                                    <label for="enrollment_type" class="form-label fw-bold">Enrollment Status</label>
+                                    <select name="enrollment_type" id="enrollment_type" class="form-select" required>
+                                        <option value="regular"
+                                            {{ old('enrollment_type') == 'regular' ? 'selected' : '' }}>
+                                            Regular</option>
+                                        <option value="transferee"
+                                            {{ old('enrollment_type') == 'transferee' ? 'selected' : '' }}>
+                                            Transferee</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -754,10 +805,6 @@
             });
         }
     </script>
-
-
-
-
 
     <script>
         // alert after a success edit or delete of teacher's info

@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Dashboard')
+@section('title', 'Parent | Dashboard')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -12,7 +12,7 @@
                 <div class="app-brand bg-dark">
                     <a href="{{ url('/home') }}" class="app-brand-link">
                         <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
-                        <span class="app-brand-text menu-text fw-bolder text-warning" style="padding: 9px">Teacher's
+                        <span class="app-brand-text menu-text fw-bolder text-warning" style="padding: 9px">Parent's
                             <span class="text-warning">Management</span>
                         </span>
                     </a>
@@ -128,14 +128,25 @@
                                     data-bs-toggle="dropdown">
                                     <div class="d-flex align-items-center">
                                         <div class="avatar">
+                                            @php use Illuminate\Support\Str; @endphp
+
                                             @auth
                                                 @php
-                                                    $profilePhoto = Auth::user()->profile_photo
-                                                        ? asset('storage/' . Auth::user()->profile_photo)
-                                                        : asset(
+                                                    $profilePhoto = Auth::user()->profile_photo;
+
+                                                    if (!$profilePhoto) {
+                                                        // Fallback if none is stored
+                                                        $profilePhoto = asset(
                                                             'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
                                                         );
+                                                    } elseif (
+                                                        !Str::startsWith($profilePhoto, ['http://', 'https://'])
+                                                    ) {
+                                                        // Stored locally
+                                                        $profilePhoto = asset('storage/' . $profilePhoto);
+                                                    }
                                                 @endphp
+
                                                 <img src="{{ $profilePhoto }}" alt="Profile Photo"
                                                     class="w-px-40 h-auto rounded-circle" />
                                             @else
@@ -156,12 +167,21 @@
                                                 <div class="avatar">
                                                     @auth
                                                         @php
-                                                            $profilePhoto = Auth::user()->profile_photo
-                                                                ? asset('storage/' . Auth::user()->profile_photo)
-                                                                : asset(
+                                                            $profilePhoto = Auth::user()->profile_photo;
+
+                                                            if (!$profilePhoto) {
+                                                                // Fallback if none is stored
+                                                                $profilePhoto = asset(
                                                                     'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
                                                                 );
+                                                            } elseif (
+                                                                !Str::startsWith($profilePhoto, ['http://', 'https://'])
+                                                            ) {
+                                                                // Stored locally
+                                                                $profilePhoto = asset('storage/' . $profilePhoto);
+                                                            }
                                                         @endphp
+
                                                         <img src="{{ $profilePhoto }}" alt="Profile Photo"
                                                             class="w-px-40 h-auto rounded-circle" />
                                                     @else
@@ -215,239 +235,9 @@
 
                 <!-- / Navbar -->
 
-
-                <!-- Content wrapper -->
-                <div class="content-wrapper">
-
-                    <!-- Content -->
-                    @php
-                        use Illuminate\Support\Facades\Auth;
-                        use App\Models\Student;
-                        use App\Models\Classes;
-                        use App\Models\Attendance;
-                        use App\Models\User;
-                        use Carbon\Carbon;
-
-                        $teacher = Auth::user();
-                        $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
-
-                        $studentCount = 0;
-                        $newlyEnrolledStudents = 0;
-                        $attendanceToday = 0;
-
-                        if ($class) {
-                            $studentCount = $class->students()->count();
-
-                            $newlyEnrolledStudents = $class
-                                ->students()
-                                ->where('students.created_at', '>=', now()->subWeek())
-                                ->count();
-
-                            $today = Carbon::now()->format('Y-m-d');
-                            $now = Carbon::now();
-                            $todayDayName = $now->format('l');
-
-                            $schedule = $class
-                                ->schedules()
-                                ->where('day', $todayDayName)
-                                ->orderBy('start_time')
-                                ->get()
-                                ->filter(function ($sched) use ($now) {
-                                    return Carbon::parse($sched->end_time)->gt($now);
-                                })
-                                ->first(); // nearest ongoing or upcoming schedule
-
-                            if ($schedule) {
-                                $presentCount = $schedule
-                                    ->attendances()
-                                    ->whereDate('date', $today)
-                                    ->whereIn('status', ['present', 'late'])
-                                    ->count();
-
-                                $attendanceToday =
-                                    $studentCount > 0 ? min(100, round(($presentCount / $studentCount) * 100)) : 0;
-                            }
-                        }
-
-                        $totalTeachers = User::where('role', 'teacher')->count();
-                    @endphp
-
-
-
-                    <div class="container-xxl container-p-y">
-
-                        <div class="row mb-4 g-3">
-                            <!-- My Students Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
-                                        <h3 class="card-title mb-2">{{ $studentCount }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Teachers Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body" href="{{ route('teacher.myClasses') }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/classroomIcon.png') }}"
-                                                    alt="Teachers" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
-                                        <h3 class="card-title mb-2">
-                                            {{ Auth::user()->advisoryClasses()->count() + Auth::user()->subjectClasses()->count() }}
-                                        </h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Attendance Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance" class="rounded" />
-                                            </div>
-                                        </div>
-                                        <span class="d-block mb-1 text-primary">
-                                            @if (isset($schedule))
-                                                {{ $schedule->subject_name ?? ($schedule->subject->name ?? 'Subject') }}
-                                                ({{ ucfirst($class->grade_level) }} - {{ ucfirst($class->section) }}) <br>
-                                                {{ Carbon::parse($schedule->start_time)->format('h:i A') }} -
-                                                {{ Carbon::parse($schedule->end_time)->format('h:i A') }}
-                                            @else
-                                                No Upcoming Schedule
-                                            @endif
-                                        </span>
-
-                                        <h3 class="card-title text-nowrap mb-2">{{ $attendanceToday }}%</h3>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Newly Enrolled Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
-                                        <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Charts Section -->
-                        <div class="row">
-                            <!-- Total Enrollees Chart -->
-                            <div class="col-md-7 col-lg-7 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="card-title m-0">Total enrollees as of 2025</h6>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-info text-white dropdown-toggle"
-                                                    type="button" id="yearDropdown" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">
-                                                    2025
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                                    <li><a class="dropdown-item" href="#">2024</a></li>
-                                                    <li><a class="dropdown-item" href="#">2023</a></li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <canvas id="enrolleesChart" height="140"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Gender Ratio -->
-                            <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between pb-0">
-                                        <div class="card-title mb-0">
-                                            <h5 class="m-0 me-2">Student Gender Ratio</h5>
-                                            <small class="text-muted">Total: 2,000 Students</small>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex flex-column align-items-center gap-1">
-                                                <h2 class="mb-2">2,000</h2>
-                                                <span>Total Students</span>
-                                            </div>
-                                            <div id="genderStatisticsChart"></div>
-                                        </div>
-                                        <ul class="p-0 m-0">
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-danger">
-                                                        <i class="bx bx-female"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Female</h6>
-                                                        <small class="text-muted">1,200 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">60%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-info">
-                                                        <i class="bx bx-male"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Male</h6>
-                                                        <small class="text-muted">800 Students</small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <small class="fw-semibold">40%</small>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- / Content -->
-                    <div class="content-backdrop fade"></div>
-                </div>
                 <!-- Content wrapper -->
 
+                <!-- / Content wrapper -->
 
             </div>
             <!-- / Layout page -->

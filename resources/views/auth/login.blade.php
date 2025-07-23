@@ -1,51 +1,156 @@
-<!DOCTYPE html>
+@extends('./layouts.main')
 
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light-style customizer-hide" dir="ltr"
-    data-theme="theme-default" data-assetsDashboard-path="assetsDashboard/" data-template="vertical-menu-template-free">
+@section('title', 'Login')
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Login') }}</title>
+@section('content')
 
-    <meta name="description" content="" />
+    <!-- Content -->
+    <div class="container-xxl">
+        <div class="authentication-wrapper authentication-basic container-p-y">
+            <!-- Register -->
+            <div class="card">
+                <div class="card-body">
+                    <!-- Logo -->
+                    <div class="login-logo">
+                        <a href="{{ url('/') }}">
+                            <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="login-logo-img">
+                        </a>
+                    </div>
+                    <!-- /Logo -->
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('assetsDashboard/img/favicon/logo.png')}}" />
+                    {{-- @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif --}}
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
-        rel="stylesheet" />
+                    @if ($errors->any())
+                        <div class="toast-container position-fixed top-0 end-0 p-4">
+                            {{-- Toast for displaying errors --}}
+                            <div class="toast show align-items-center bg-danger border-0" role="alert"
+                                aria-live="assertive" aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body">
+                                        <ul class="mb-0">
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                                        data-bs-dismiss="toast" aria-label="Close"></button>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
-    <!-- Icons. Uncomment required icon fonts -->
-    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/fonts/boxicons.css')}}" />
+                    {{-- Form --}}
+                    <form id="formAuthentication" class="mb-0" action="{{ route('login') }}" method="POST">
+                        @csrf
 
-    <!-- Core CSS -->
-    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/core.css')}}" class="template-customizer-core-css" />
-    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/theme-default.css')}}"
-        class="template-customizer-theme-css" />
-    <link rel="stylesheet" href="{{ asset('assetsDashboard/css/demo.css')}}" />
+                        {{-- Email Input --}}
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-bold">Email</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" :value="old('email')"
+                                    name="email" aria-describedby="email" placeholder="Enter your Email" required
+                                    autofocus autocomplete="email" />
+                            </div>
+                        </div>
 
-    <!-- Livewire Styles -->
-    @livewireStyles
+                        {{-- Password Input --}}
+                        <div class="mb-3 form-password-toggle">
+                            <div class="d-flex justify-content-between">
+                                <label class="form-label fw-bold" for="password">Password</label>
 
-    <!-- Vendors CSS -->
-    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/libs/perfect-scrollbar/perfect-scrollbar.css')}}" />
+                                {{-- Forgot Password --}}
+                                @if (Route::has('password.request'))
+                                    <a class="text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                        href="{{ route('password.request') }}">
+                                        <small class="text-primary">{{ __('Forgot your password?') }}</small>
+                                    </a>
+                                @endif
+                            </div>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-lock"></i></span>
+                                <input type="password" id="password" class="form-control" name="password"
+                                    placeholder="Enter your Password" aria-describedby="password" />
+                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                            </div>
+                        </div>
 
-    <!-- Page CSS -->
+                        <div class="mb-3">
+                            <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
+                        </div>
+
+
+                        <p class="text-center text-warning fw-bold mb-3">Or sign as Parent:</p>
+
+                        {{-- Google Login --}}
+                        {{-- <div class="mb-3" style="display: flex; justify-content: center; align-items: center;">
+                            <a href="{{ route('google.parent.login') }}">
+                                <img src="https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png"
+                                    alt="Login with Google">
+                            </a>
+                        </div> --}}
+
+                        {{-- Google Login --}}
+                        <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
+                            <a href="{{ route('google.login') }}" class="btn btn-light d-flex align-items-center mb-1"
+                                style="gap: 10px; padding: 8px 16px;">
+                                <img src="{{ asset('assetsDashboard/img/icons/brands/google.png') }}" alt="Google"
+                                    style="height: 20px; width: 20px;">
+                                <span>Sign in with Google</span>
+                            </a>
+                        </div>
+                        {{-- <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
+                            <a href="{{ route('google.parent.login') }}"
+                                class="btn btn-light d-flex align-items-center mb-1" style="gap: 10px; padding: 8px 16px;">
+                                <img src="{{ asset('assetsDashboard/img/icons/brands/google.png') }}" alt="Google"
+                                    style="height: 20px; width: 20px;">
+                                <span>Sign in with Google</span>
+                            </a>
+                        </div> --}}
+
+                        {{-- Facebook Login --}}
+                        <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
+                            <a href="{{ route('facebook.parent.login') }}" class="btn btn-light d-flex align-items-center"
+                                style="gap: 10px; padding: 8px 16px;">
+                                <img src="{{ asset('assetsDashboard/img/icons/brands/facebook1.png') }}" alt="Facebook"
+                                    style="height: 20px; width: 20px;">
+                                <span>Sign in with Facebook</span>
+                            </a>
+                        </div>
+
+                        {{-- Facebook Login --}}
+                        {{-- <div style="display: flex; justify-content: center; align-items: center;">
+                            <a href="{{ route('facebook.parent.login') }}" class="btn btn-primary">
+                                <i class="fab fa-facebook me-2"></i> Sign in with Facebook
+                            </a>
+                        </div> --}}
+
+                    </form>
+                    {{-- /Form --}}
+
+                </div>
+            </div>
+            <!-- /Register -->
+
+        </div>
+    </div>
+    <!-- / Content -->
+
+@endsection
+@push('styles')
     <!-- Page -->
-    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/pages/page-auth.css')}}" />
-    <!-- Helpers -->
-    <script src="{{ asset('assetsDashboard/vendor/js/helpers.js')}}"></script>
+    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/pages/page-auth.css') }}" />
 
-    <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
-    <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
-    <script src="{{ asset('assetsDashboard/js/config.js')}}"></script>
+    <!-- Custom Styles -->
     <style>
         body {
             background: url('assets/img/hero-bg.jpg') no-repeat center center fixed;
@@ -106,101 +211,12 @@
             object-fit: contain;
             display: block;
         }
+
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 1000px white inset !important;
+            box-shadow: 0 0 0 1000px white inset !important;
+            -webkit-text-fill-color: #000 !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
     </style>
-</head>
-
-<body>
-
-    <div class="container-xxl">
-        <div class="authentication-wrapper authentication-basic container-p-y">
-            <!-- Register -->
-            <div class="card">
-                <div class="card-body">
-                    <!-- Logo -->
-                    <div class="login-logo">
-                        <a href="{{ url('/') }}">
-                            <img src="{{ asset('assets/img/logo.png')}}" alt="Logo" class="login-logo-img">
-                        </a>
-                    </div>
-                    <!-- /Logo -->
-
-                    <h4 class="mb-2 text-center fw-bold">Welcome to SBESqr! 👋</h4>
-                    <p class="mb-4 text-center">Please sign in to your account and start the adventure</p>
-
-                    {{-- Form --}}
-                    <form id="formAuthentication" class="mb-3" action="{{ route('login') }}" method="POST">
-                        @csrf
-
-                        {{-- Email Input --}}
-                        <div class="mb-3">
-                            <label for="email" class="form-label fw-bold">Email</label>
-                            <input type="email" class="form-control" id="email" :value="old('email')"
-                                name="email" placeholder="Enter your Email" required autofocus autocomplete="email" />
-                        </div>
-
-                        {{-- Password Input --}}
-                        <div class="mb-3 form-password-toggle">
-                            <div class="d-flex justify-content-between">
-                                <label class="form-label fw-bold" for="password">Password</label>
-
-                                {{-- Forgot Password --}}
-                                @if (Route::has('password.request'))
-                                    <a class="text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                        href="{{ route('password.request') }}">
-                                        <small>{{ __('Forgot your password?') }}</small>
-                                    </a>
-                                @endif
-                            </div>
-                            <div class="input-group input-group-merge">
-                                <input type="password" id="password" class="form-control" name="password"
-                                    placeholder="••••••••••••" aria-describedby="password" />
-                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
-                        </div>
-                    </form>
-
-                    {{-- Register
-                    <p class="text-center">
-                        <span>New on our platform?</span>
-                        <a href="{{ route('register') }}">
-                            <span>Create an account</span>
-                        </a>
-                    </p> --}}
-                </div>
-            </div>
-            <!-- /Register -->
-
-        </div>
-    </div>
-
-    <!-- / Content -->
-
-    <!-- Core JS -->
-    <!-- build:jassetsDashboard/vendor/js/core.js -->
-    <script src="{{ asset('assetsDashboard/vendor/libs/jquery/jquery.js')}}"></script>
-    <script src="{{ asset('assetsDashboard/vendor/libs/popper/popper.js')}}"></script>
-    <script src="{{ asset('assetsDashboard/vendor/js/bootstrap.js')}}"></script>
-    <script src="{{ asset('assetsDashboard/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')}}"></script>
-
-    <script src="{{ asset('assetsDashboard/vendor/js/menu.js')}}"></script>
-    <!-- endbuild -->
-
-    <!-- Vendors JS -->
-
-    <!-- Livewire JS -->
-    @livewireScripts
-
-    <!-- Main JS -->
-    <script src="{{ asset('assetsDashboard/js/main.js')}}"></script>
-
-    <!-- Page JS -->
-
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-</body>
-
-</html>
+@endpush

@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | All Classes')
+@section('title', 'Admin | Class Promotion')
 
 
 @section('content')
@@ -50,10 +50,10 @@
                     </li>
 
                     {{-- Students sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
-                            <div class="text-light">Students</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bxs-graduation"></i>
+                            <div class="text-danger">Students</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
@@ -66,24 +66,24 @@
                                     <div class="text-light">Student Enrollment</div>
                                 </a>
                             </li>
-                            <li class="menu-item">
-                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Promotion</div>
+                            <li class="menu-item active">
+                                <a href="{{ route('students.promote') }}" class="menu-link bg-dark text-light">
+                                    <div class="text-danger">Student Promotion</div>
                                 </a>
                             </li>
                         </ul>
                     </li>
 
                     {{-- Classes sidebar --}}
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left"></i>
-                            <div class="text-danger">Classes</div>
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item active">
+                            <li class="menu-item">
                                 <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">All Classes</div>
+                                    <div class="text-light">All Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -241,9 +241,6 @@
                                             {{ __('Log Out') }}
                                         </x-dropdown-link>
                                     </form>
-
-
-
                                 </ul>
                             </li>
                             <!--/ User -->
@@ -256,110 +253,92 @@
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('all.classes') }}"> Classes / </a>
-                        </span> All Classes
+                            <a class="text-muted fw-light" href="{{ route('show.students') }}"> Students / </a>
+                        </span> Promote Students
                     </h4>
 
-                    <!-- Filter Section -->
+                    <h2 class="text-center text-info fw-bold">Class Re-Enrollment for {{ $currentSchoolYear }}</h2>
 
-                    <h5 class="alert alert-primary alert-dismissible fade show mt-2 text-center text-primary fw-bold"
-                        role="alert">Showing Grade Levels in <strong class="text-warning"> Section
-                            {{ $section }}</strong> for
-                        School Year <strong class="text-warning">{{ $selectedYear }}</strong>
-                    </h5>
-
-                    {{-- Section and School Year Selection --}}
+                    {{-- Section Selection --}}
                     <div class="row mb-4 d-flex justify-content-between align-items-center">
                         {{-- Section Selection --}}
                         <div class="col-md-4">
-                            <form method="GET" action="{{ route('all.classes') }}">
-                                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+                            <form method="GET" action="{{ route('students.promote.view') }}">
                                 <label for="section" class="form-label">Select Section</label>
                                 <select name="section" id="section" class="form-select" onchange="this.form.submit()">
                                     @foreach ($sections as $s)
-                                        <option value="{{ $s }}" {{ $section == $s ? 'selected' : '' }}>
+                                        <option value="{{ $s }}"
+                                            {{ $selectedSection == $s ? 'selected' : '' }}>
                                             Section {{ $s }}
                                         </option>
                                     @endforeach
                                 </select>
                             </form>
                         </div>
-
-                        {{-- School Year Selection --}}
-                        <div class="col-md-4">
-                            <form method="GET" action="{{ route('all.classes') }}">
-                                <input type="hidden" name="section" value="{{ $section }}">
-                                <label for="school_year" class="form-label me-2">School Year :</label>
-                                <select name="school_year" id="school_year" class="form-select"
-                                    onchange="this.form.submit()">
-                                    @foreach ($schoolYears as $year)
-                                        <option value="{{ $year }}"
-                                            {{ $year == $selectedYear ? 'selected' : '' }}>
-                                            {{ $year }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
-
-                            {{-- "Now" button --}}
-                            <form method="GET" action="{{ route('all.classes') }}">
-                                <input type="hidden" name="school_year"
-                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                <input type="hidden" name="section" value="{{ $section }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary ms-2">
-                                    Now
-                                </button>
-                            </form>
-                        </div>
                     </div>
-                    {{-- / Section and School Year Selection --}}
-
+                    {{-- / Section Selection --}}
 
                     <!-- Card for All Grade Levels by Section -->
                     <section id="services" class="services section">
                         <div class="container" data-aos="fade-up" data-aos-delay="100">
                             <div class="row gy-5">
+                                {{-- @if ($classes->isEmpty())
+                                    <div class="col-12">
+                                        <div class="alert alert-warning text-center">
+                                            No students available for promotion in this section.
+                                        </div>
+                                    </div>
+                                @endif --}}
+
                                 @php $iconIndex = 1; @endphp
 
                                 @foreach ($classes as $class)
-                                    <div class="col-xl-4 col-md-6" data-aos="zoom-in">
-                                        <div class="service-item">
-                                            <div class="img">
-                                                <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
-                                                    class="img-fluid" alt="" />
-                                            </div>
-                                            <div class="details position-relative">
-                                                <div class="icon">
-                                                    @if ($class->grade_level === 'kindergarten')
-                                                        <i class="fa-solid fa-child"></i>
-                                                    @else
-                                                        <i class="fa-solid fa-{{ $iconIndex }}"></i>
-                                                        @php $iconIndex++; @endphp
-                                                    @endif
+                                    @if ($class->promotable_count > 0)
+                                        <div class="col-xl-4 col-md-6" data-aos="zoom-in">
+                                            <div class="service-item">
+                                                <div class="img">
+                                                    <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
+                                                        class="img-fluid" alt="" />
                                                 </div>
-                                                <a href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                                    class="stretched-link">
-                                                    <h3>
-                                                        @if (strtolower($class->grade_level) === 'kindergarten')
-                                                            Kindergarten
+                                                <div class="details position-relative">
+                                                    <div class="icon">
+                                                        @if ($class->grade_level === 'kindergarten')
+                                                            <i class="fa-solid fa-child"></i>
                                                         @else
-                                                            Grade {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
+                                                            <i class="fa-solid fa-{{ $iconIndex }}"></i>
+                                                            @php $iconIndex++; @endphp
                                                         @endif
-                                                        - {{ $class->section }}
-                                                    </h3>
-                                                    <h5>Adviser:</h5>
-
-                                                    @if ($class->adviser)
-                                                        <h5 class="text-info">{{ $class->adviser->firstName }}
-                                                            {{ $class->adviser->lastName }}</h5>
-                                                    @else
-                                                        <h6 class="text-warning">No adviser assigned</h6>
-                                                    @endif
-                                                </a>
+                                                    </div>
+                                                    <a href="{{ route('students.promote.view') }}?grade_level={{ $class->grade_level }}&section={{ $class->section }}"
+                                                        class="stretched-link">
+                                                        <h3>
+                                                            @if (strtolower($class->grade_level) === 'kindergarten')
+                                                                Kindergarten
+                                                            @else
+                                                                Grade
+                                                                {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
+                                                            @endif
+                                                            - {{ $class->section }}
+                                                        </h3>
+                                                        <h5 class="text-primary mt-2">
+                                                            {{ $class->promotable_count }}
+                                                            student{{ $class->promotable_count > 1 ? 's' : '' }} ready for
+                                                            promotion
+                                                        </h5>
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    @endif
                                 @endforeach
+
+                                @if ($classes->where('promotable_count', '>', 0)->isEmpty())
+                                    <div class="col-12">
+                                        <div class="alert alert-warning text-center">
+                                            No students available for promotion in this section.
+                                        </div>
+                                    </div>
+                                @endif
 
                             </div>
                         </div>
@@ -377,16 +356,12 @@
     </div>
     <!-- / Layout wrapper -->
 
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-
-
-
-
-
 @endsection
 
 @push('scripts')
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+
     <script>
         // Logout confirmation
         function confirmLogout() {

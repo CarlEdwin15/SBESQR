@@ -72,7 +72,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -277,6 +277,7 @@
                                 style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
                         </form>
                     </div>
+
                     <!-- Student's Details -->
                     <div class="card shadow">
                         <div class="card-body">
@@ -286,6 +287,9 @@
                                         class="btn btn-warning mt-2 mb-2 me-2">Edit</a>
                                 </div>
 
+                                <h5 class="text-center text-success mt-2">
+                                    School Year: {{ $schoolYear->school_year ?? 'N/A' }}
+                                </h5>
                                 <h4 class="mt-2 text-primary text-center" style="font-weight: 600;">Student Profile:
                                     <br>{{ $student->student_fName }} {{ $student->student_lName }}
                                 </h4>
@@ -318,13 +322,24 @@
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Grade Level</th>
-                                                <td>{{ ucfirst($student->class->formatted_grade_level ?? 'N/A') }} -
-                                                    {{ $student->class->section ?? 'N/A' }}</td>
+                                                <td>
+                                                    @if ($class)
+                                                        {{ $class->formatted_grade_level }} - {{ $class->section }}
+                                                    @else
+                                                        <span class="text-danger">Not enrolled in selected school
+                                                            year</span>
+                                                    @endif
+                                                </td>
                                             </tr>
-
+                                            <tr>
+                                                <th class="text-primary">School Year</th>
+                                                <td>
+                                                    {{ $schoolYear->school_year ?? 'N/A' }}
+                                                </td>
+                                            </tr>
                                             <tr>
                                                 <th class="text-primary">Date of Birth</th>
-                                                <td>{{ \Carbon\Carbon::parse($student->student_dob)->format('F j, Y') }}
+                                                <td>{{ Carbon::parse($student->student_dob)->format('F j, Y') }}
                                                 </td>
                                             </tr>
 
@@ -408,6 +423,7 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                {{-- / Student Details --}}
                             </div>
                         </div>
                     </div>

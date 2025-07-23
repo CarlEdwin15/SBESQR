@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-    // protected $primaryKey = 'student_id';
-
     protected $fillable = [
         'student_lrn',
         'student_fName',
@@ -18,11 +16,9 @@ class Student extends Model
         'student_sex',
         'student_photo',
         'qr_code',
-        'class_id',
         'address_id',
         'parent_id',
     ];
-
 
     public function address()
     {
@@ -36,22 +32,27 @@ class Student extends Model
 
     public function class()
     {
-        return $this->belongsTo(Classes::class, 'class_id');
+        return $this->belongsToMany(Classes::class, 'class_student', 'student_id', 'class_id')
+            ->withPivot('school_year_id', 'enrollment_status', 'enrollment_type')
+            ->withTimestamps();
     }
+
 
     public function attendances()
     {
-        return $this->hasMany(Attendance::class);
+        return $this->hasMany(Attendance::class, 'student_id');
     }
 
     public function schoolYears()
     {
-        return $this->belongsToMany(SchoolYear::class, 'school_year_student');
+        return $this->belongsToMany(SchoolYear::class, 'class_student', 'class_id', 'student_id')
+            ->withPivot('school_year_id', 'enrollment_status', 'enrollment_type')
+            ->withTimestamps();
     }
 
     public function getFullNameAttribute()
     {
-        return "{$this->student_lName}, {$this->student_fName} {$this->student_mName} {$this->student_extName}";
+        return trim("{$this->student_lName}, {$this->student_fName} {$this->student_mName} {$this->student_extName}");
     }
 
     public function getGenderAttribute()

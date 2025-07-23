@@ -37,11 +37,15 @@
                             <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
                             <div class="text-light">Teachers</div>
                         </a>
-
                         <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">All Teacherss</div>
+                                </a>
+                            </li>
+                            <li class="menu-item">
+                                <a href="" class="menu-link bg-dark text-light">
+                                    <div class="text-light">Re-assignment & Validation</div>
                                 </a>
                             </li>
                         </ul>
@@ -65,7 +69,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -153,6 +157,48 @@
                             <i class="bx bx-menu bx-sm"></i>
                         </a>
                     </div>
+
+                    {{-- @php
+                        $now = now();
+                        $year = $now->year;
+                        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+                        $startYear = $now->lt($cutoff) ? $year - 1 : $year;
+                        $schoolYear = $startYear . '-' . ($startYear + 1);
+                    @endphp
+
+                    <div class="d-flex align-items-center ms-3">
+                        <h5 class="mb-0">Current School Year: {{ $schoolYear }}</h5>
+                    </div> --}}
+
+                    @php
+                        $nowPH = now('Asia/Manila')->format('Y-m-d H:i:s');
+                    @endphp
+
+                    <div class="d-flex align-items-center ms-3 text-primary">
+                        <h6 class="mb-0"><span id="realtime-clock">{{ $nowPH }}</span></h6>
+                    </div>
+
+                    <script>
+                        let currentTime = new Date("{{ $nowPH }} GMT+0800");
+
+                        function updateClock() {
+                            currentTime.setSeconds(currentTime.getSeconds() + 1);
+                            const formatted = currentTime.toLocaleString('en-PH', {
+                                weekday: 'long', // Include day name
+                                year: 'numeric',
+                                month: 'long',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: true,
+                                timeZone: 'Asia/Manila'
+                            }).replace(' at ', ' '); // Remove the word "at"
+                            document.getElementById('realtime-clock').textContent = formatted;
+                        }
+
+                        setInterval(updateClock, 1000);
+                    </script>
 
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
 
@@ -255,14 +301,26 @@
                 <div class="content-wrapper">
                     <!-- Content -->
                     @php
+                        use Illuminate\Support\Carbon;
+
+                        // Get the default school year
+                        $now = now();
+                        $year = $now->year;
+                        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+                        $startYear = $now->lt($cutoff) ? $year - 1 : $year;
+                        $schoolYearStart = Carbon::create($startYear, 6, 1);
+                        $schoolYearEnd = Carbon::create($startYear + 1, 5, 31)->endOfDay();
+
+                        // Totals
                         $totalStudents = \App\Models\Student::count();
                         $totalTeachers = \App\Models\User::where('role', 'teacher')->count();
-                        $newlyEnrolledStudents = \App\Models\Student::where(
-                            'created_at',
-                            '>=',
-                            now()->subMonth(),
-                        )->count();
                         $totalClasses = \App\Models\Classes::count();
+
+                        // Newly enrolled students within current school year
+                        $newlyEnrolledStudents = \App\Models\Student::whereBetween('created_at', [
+                            $schoolYearStart,
+                            $schoolYearEnd,
+                        ])->count();
                     @endphp
 
                     <div class="container-xxl container-p-y">
@@ -278,17 +336,7 @@
 
                                                 <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
                                                     alt="Students" class="rounded" />
-
                                             </div>
-                                            {{-- <div class="dropdown">
-                                                <button class="btn p-0" type="button" data-bs-toggle="dropdown">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <div class="dropdown-menu">
-                                                    <a class="dropdown-item" href="{{ route('show.students') }}">View
-                                                        More</a>
-                                                </div>
-                                            </div> --}}
                                         </div>
                                         <span class="fw-semibold d-block mb-1 text-primary">Students</span>
                                         <h3 class="card-title mb-2">{{ $totalStudents }}</h3>
@@ -356,7 +404,7 @@
                                 <div class="card h-100">
                                     <div class="card-body p-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <h6 class="card-title m-0">Total enrollees as of 2025</h6>
+                                            <h6 class="card-title m-0">Total enrollees for School Year 2025-2026</h6>
                                             <div class="dropdown">
                                                 <button class="btn btn-sm btn-info text-white dropdown-toggle"
                                                     type="button" id="yearDropdown" data-bs-toggle="dropdown"
@@ -373,6 +421,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- / Total Enrollees Chart -->
 
                             <!-- Gender Distribution Card -->
                             <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
@@ -428,12 +477,10 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <!-- Gender Distribution Card -->
 
                         </div>
-
-
-
+                        <!-- / Enrollees and Gender Chart Section (Compact) -->
 
                     </div>
                     <!-- / Content -->

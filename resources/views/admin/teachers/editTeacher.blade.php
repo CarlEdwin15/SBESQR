@@ -66,7 +66,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -276,6 +276,8 @@
                     <form class="modal-content" action="{{ route('update.teacher', ['id' => $teacher->id]) }}"
                         id="editTeacherForm" method="POST" enctype="multipart/form-data">
                         @csrf
+
+                        <input type="hidden" name="selected_school_year" value="{{ $selectedSchoolYear }}">
 
                         @if ($errors->any())
                             <div class="alert alert-danger">

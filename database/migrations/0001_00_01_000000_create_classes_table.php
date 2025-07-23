@@ -28,10 +28,11 @@ return new class extends Migration
 
             $table->enum('section', ['A', 'B', 'C', 'D', 'E', 'F']);
 
-            $table->timestamps();
 
-            // Prevent multiple classes with the same grade_level + section + school_year
+            // Add foreign key for school_year and unique constraint for grade_level, section, and school_year
             $table->unique(['grade_level', 'section'], 'unique_class_section');
+
+            $table->timestamps();
         });
     }
 

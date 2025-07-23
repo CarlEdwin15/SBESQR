@@ -5,34 +5,40 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Classes;
+use App\Models\SchoolYear;
 use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // First admin user
+
+        // Admin accounts
         User::create([
             'firstName' => 'Admin',
-            'email' => 'admin@gmail.com',
+            'email' => 'sbesqr@gmail.com',
             'password' => Hash::make('admin123'),
             'role' => 'admin',
         ]);
 
-        // Second admin user
         User::create([
             'firstName' => 'Admin 2',
-            'email' => 'admin2@gmail.com',
-            'password' => Hash::make('admin2123'),
+            'email' => 'caconde@my.cspc.edu.ph',
+            'password' => Hash::make('admin123'),
             'role' => 'admin',
         ]);
 
-        // Teacher user 1
+        // Create or retrieve school year
+        $schoolYear = SchoolYear::firstOrCreate([
+            'school_year' => '2025-2026',
+        ]);
+
+        // Teacher 1
         $teacher1 = User::create([
             'firstName' => 'Carl Edwin',
             'middleName' => 'Vasquez',
             'lastName' => 'Conde',
-            'email' => 'conde@gmail.com',
+            'email' => 'carledwinconde@gmail.com',
             'password' => Hash::make('@Conde123'),
             'role' => 'teacher',
             'gender' => 'male',
@@ -42,14 +48,18 @@ class AdminSeeder extends Seeder
             'country' => 'Philippines',
         ]);
 
-        // Assign teacher 1 to class (Kindergarten - A)
         $class1 = Classes::firstOrCreate([
             'grade_level' => 'kindergarten',
             'section' => 'A',
         ]);
-        $teacher1->classes()->attach($class1->id);
 
-        // Teacher user 2
+        $teacher1->classes()->attach($class1->id, [
+            'role' => 'adviser',
+            'school_year_id' => $schoolYear->id,
+        ]);
+
+
+        // Teacher 2
         $teacher2 = User::create([
             'firstName' => 'Jison',
             'middleName' => 'Santos',
@@ -64,11 +74,14 @@ class AdminSeeder extends Seeder
             'country' => 'Philippines',
         ]);
 
-        // Assign teacher 2 to class (Grade 1 - A)
         $class2 = Classes::firstOrCreate([
             'grade_level' => 'grade1',
             'section' => 'A',
         ]);
-        $teacher2->classes()->attach($class2->id);
+
+        $teacher2->classes()->attach($class2->id, [
+            'role' => 'adviser',
+            'school_year_id' => $schoolYear->id,
+        ]);
     }
 }

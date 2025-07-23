@@ -67,7 +67,7 @@
                                 </a>
                             </li>
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">Student Promotion</div>
                                 </a>
                             </li>
@@ -262,6 +262,16 @@
 
                     <hr class="my-4" />
 
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="d-flex justify-content-start mb-3 gap-2">
                         <button type="button" class="btn btn-danger d-flex align-items-center gap-1"
                             onclick="handleCancel()">
@@ -345,27 +355,28 @@
                                         <label for="student_grade_level" class="form-label fw-bold">Grade
                                             Level</label>
                                         <select name="student_grade_level" id="student_grade_level" class="form-select"
-                                            required autofocus>
+                                            required>
+                                            @php $studentClass = $student->class->first(); @endphp
                                             <option
-                                                value="kindergarten"{{ $student->class->grade_level == 'kindergarten' ? 'selected' : '' }}>
+                                                value="kindergarten"{{ $studentClass && $studentClass->grade_level == 'kindergarten' ? 'selected' : '' }}>
                                                 Kindergarten</option>
                                             <option
-                                                value="grade1"{{ $student->class->grade_level == 'grade1' ? 'selected' : '' }}>
+                                                value="grade1"{{ $studentClass && $studentClass->grade_level == 'grade1' ? 'selected' : '' }}>
                                                 Grade 1</option>
                                             <option
-                                                value="grade2"{{ $student->class->grade_level == 'grade2' ? 'selected' : '' }}>
+                                                value="grade2"{{ $studentClass && $studentClass->grade_level == 'grade2' ? 'selected' : '' }}>
                                                 Grade 2</option>
                                             <option
-                                                value="grade3"{{ $student->class->grade_level == 'grade3' ? 'selected' : '' }}>
+                                                value="grade3"{{ $studentClass && $studentClass->grade_level == 'grade3' ? 'selected' : '' }}>
                                                 Grade 3</option>
                                             <option
-                                                value="grade4"{{ $student->class->grade_level == 'grade4' ? 'selected' : '' }}>
+                                                value="grade4"{{ $studentClass && $studentClass->grade_level == 'grade4' ? 'selected' : '' }}>
                                                 Grade 4</option>
                                             <option
-                                                value="grade5"{{ $student->class->grade_level == 'grade5' ? 'selected' : '' }}>
+                                                value="grade5"{{ $studentClass && $studentClass->grade_level == 'grade5' ? 'selected' : '' }}>
                                                 Grade 5</option>
                                             <option
-                                                value="grade6"{{ $student->class->grade_level == 'grade6' ? 'selected' : '' }}>
+                                                value="grade6"{{ $studentClass && $studentClass->grade_level == 'grade6' ? 'selected' : '' }}>
                                                 Grade 6</option>
                                         </select>
                                     </div>
@@ -376,17 +387,26 @@
                                     <div class="col mb-2 mt-2">
                                         <label for="student_section" class="form-label fw-bold">Section</label>
                                         <select name="student_section" id="student_section" class="form-select" required>
-                                            <option value="A"{{ $student->class->section == 'A' ? 'selected' : '' }}>
+                                            @php
+                                                $studentSection = $student->class()->first();
+                                            @endphp
+                                            <option
+                                                value="A"{{ $studentSection && $studentSection->section == 'A' ? 'selected' : '' }}>
                                                 Section A</option>
-                                            <option value="B"{{ $student->class->section == 'B' ? 'selected' : '' }}>
+                                            <option
+                                                value="B"{{ $studentSection && $studentSection->section == 'B' ? 'selected' : '' }}>
                                                 Section B</option>
-                                            <option value="C"{{ $student->class->section == 'C' ? 'selected' : '' }}>
+                                            <option
+                                                value="C"{{ $studentSection && $studentSection->section == 'C' ? 'selected' : '' }}>
                                                 Section C</option>
-                                            <option value="D"{{ $student->class->section == 'D' ? 'selected' : '' }}>
+                                            <option
+                                                value="D"{{ $studentSection && $studentSection->section == 'D' ? 'selected' : '' }}>
                                                 Section D</option>
-                                            <option value="E"{{ $student->class->section == 'E' ? 'selected' : '' }}>
+                                            <option
+                                                value="E"{{ $studentSection && $studentSection->section == 'E' ? 'selected' : '' }}>
                                                 Section E</option>
-                                            <option value="F"{{ $student->class->section == 'F' ? 'selected' : '' }}>
+                                            <option
+                                                value="F"{{ $studentSection && $studentSection->section == 'F' ? 'selected' : '' }}>
                                                 Section F</option>
                                         </select>
                                     </div>

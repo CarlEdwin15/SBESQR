@@ -80,7 +80,7 @@
             <div class="container d-flex flex-column align-items-center">
                 <h2 style="text-align: center" data-aos="fade-up" data-aos-delay="100">WELCOME TO <span
                         class="highlight">SBESqr</span></h2>
-                <p class="tagline" style="color: rgb(255, 200, 0)" data-aos="fade-up" data-aos-delay="200">Bringing Efficiency with Technology to
+                <p class="tagline text-center" style="color: rgb(255, 200, 0)" data-aos="fade-up" data-aos-delay="200">Bringing Efficiency with Technology to
                     Sta. Barbara
                     Elementary School</p>
                 <div class="d-flex mt-4" data-aos="fade-up" data-aos-delay="300">
