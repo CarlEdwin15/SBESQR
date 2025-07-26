@@ -50,6 +50,8 @@ Route::delete('/deleteTeacher/{id}', [AdminController::class, 'deleteTeacher'])-
 
 Route::get('/teacherInfo/{id}', [AdminController::class, 'teacherInfo'])->name('teacher.info');
 
+Route::post('/teacher_reassignment', [AdminController::class, 'reassignment'])->name('teacher.reassignment');
+
 Route::get('/export-teachers', function () {
     return Excel::download(new TeachersExport, 'List of teachers.xlsx');
 })->name('export.teachers');

@@ -63,7 +63,7 @@ class ClassController extends Controller
         foreach ($classes as $class) {
             $class->adviser = $class->teachers()
                 ->wherePivot('school_year_id', $schoolYear->id)
-                ->wherePivotIn('role', ['adviser', 'both'])
+                ->wherePivotIn('role', ['adviser'])
                 ->first();
         }
 
@@ -82,15 +82,16 @@ class ClassController extends Controller
     public function showClass(Request $request, $grade_level, $section)
     {
         $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
-
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
         $class = $this->getClass($grade_level, $section);
 
-        $studentCount = $class->students()->count();
+        $studentCount = $class->students()->wherePivot('school_year_id', $schoolYear->id)
+            ->count();
 
         $class->adviser = $class->teachers()
             ->wherePivot('school_year_id', $schoolYear->id)
-            ->wherePivotIn('role', ['adviser', 'both'])
+            ->wherePivotIn('role', ['adviser'])
             ->first();
 
         return view('admin.classes.showClass', compact('class', 'studentCount', 'selectedYear'));
@@ -111,7 +112,7 @@ class ClassController extends Controller
 
         $class->adviser = $class->teachers()
             ->wherePivot('school_year_id', $schoolYear->id)
-            ->wherePivotIn('role', ['adviser', 'both'])
+            ->wherePivotIn('role', ['adviser'])
             ->first();
 
         return view('admin.classes.masterList.index', compact('class', 'students', 'selectedYear'));

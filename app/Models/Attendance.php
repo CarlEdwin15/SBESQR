@@ -14,6 +14,7 @@ class Attendance extends Model
         'teacher_id',
         'class_id',
         'schedule_id',
+        'school_year_id',
         'date',
         'time_in',
         'time_out',
@@ -39,5 +40,10 @@ class Attendance extends Model
     public function schedule()
     {
         return $this->belongsTo(Schedule::class, 'schedule_id');
+    }
+
+    public function schoolYear()
+    {
+        return $this->belongsTo(SchoolYear::class, 'school_year_id');
     }
 }

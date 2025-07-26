@@ -327,22 +327,23 @@
                                     id="table-{{ Str::slug($grade) }}">
                                     <thead>
                                         <tr>
-                                            <th style="width: 25%;">Full Name</th>
+                                            <th style="min-width: 220px;">Full Name</th>
                                             <th style="width: 10%;">Photo</th>
                                             <th style="width: 15%;">LRN</th>
                                             <th style="width: 20%;">Grade & Section</th>
                                             <th style="width: 15%;">Enrollment Status</th>
-                                            <th style="width: 10%;">Emergency Contact No.</th>
-                                            <th style="width: 5%;">Actions</th>
+                                            <th style="width: 15%;">Enrollment Type</th>
+                                            <th style="width: 15%;">Emergency Contact No.</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @forelse ($students->sortBy([
-                                                            ['student_lName', 'asc'],
-                                                            ['student_fName', 'asc'],
-                                                            ['student_mName', 'asc'],
-                                                            ['student_extName', 'asc'],
-                                                            ]) as $student)
+                                                                        ['student_lName', 'asc'],
+                                                                        ['student_fName', 'asc'],
+                                                                        ['student_mName', 'asc'],
+                                                                        ['student_extName', 'asc'],
+                                                                        ]) as $student)
                                             <tr class="student-row"
                                                 data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                                 data-section="{{ strtolower(optional($student->class->first())->section) }}"
@@ -381,6 +382,22 @@
                                                     @endphp
                                                     <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
                                                         {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    @php
+                                                        $type =
+                                                            optional($student->class->first())->pivot
+                                                                ->enrollment_type ?? 'N/A';
+                                                        $badgeClass = match ($type) {
+                                                            'regular' => 'bg-label-primary',
+                                                            'transferee' => 'bg-label-info',
+                                                            'returnee' => 'bg-label-warning',
+                                                            default => 'bg-label-dark',
+                                                        };
+                                                    @endphp
+                                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                                        {{ strtoupper(str_replace('_', ' ', $type)) }}
                                                     </span>
                                                 </td>
                                                 <td>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</td>
@@ -722,6 +739,13 @@
 
 @push('styles')
     <style>
+        table td,
+        table th {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+
         .grade-card {
             transition: all 0.3s ease;
         }

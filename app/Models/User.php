@@ -54,12 +54,12 @@ class User extends Authenticatable
 
     public function advisoryClasses()
     {
-        return $this->classes()->wherePivotIn('role', ['adviser', 'both']);
+        return $this->classes()->wherePivotIn('role', ['adviser']);
     }
 
     public function subjectClasses()
     {
-        return $this->classes()->wherePivotIn('role', ['subject_teacher', 'both']);
+        return $this->classes()->wherePivotIn('role', ['subject_teacher']);
     }
 
     public function schoolYears()

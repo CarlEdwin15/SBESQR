@@ -269,7 +269,7 @@
 
                     <h2 class="text-center text-primary fw-bold">Class Details &amp; Management</h2>
 
-                    <a href="{{ route('all.classes', ['section' => $class->section]) }}" class="btn btn-danger mb-3">
+                    <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}" class="btn btn-danger mb-3">
                         <i class="bi bi-arrow-left"></i> Back
                     </a>
 

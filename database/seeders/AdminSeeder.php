@@ -30,7 +30,7 @@ class AdminSeeder extends Seeder
 
         // Create or retrieve school year
         $schoolYear = SchoolYear::firstOrCreate([
-            'school_year' => '2025-2026',
+            'school_year' => '2024-2025',
         ]);
 
         // Teacher 1

@@ -43,11 +43,6 @@
                                     <div class="text-light">All Teacherss</div>
                                 </a>
                             </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Re-assignment & Validation</div>
-                                </a>
-                            </li>
                         </ul>
                     </li>
 

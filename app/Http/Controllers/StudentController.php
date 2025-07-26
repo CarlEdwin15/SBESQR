@@ -282,7 +282,6 @@ class StudentController extends Controller
             $selectedSchoolYear = $this->getDefaultSchoolYear(); // fallback just in case
         }
 
-
         // Ensure it exists or create it
         [$start, $end] = explode('-', $selectedSchoolYear);
         $schoolYear = SchoolYear::firstOrCreate(
@@ -292,7 +291,6 @@ class StudentController extends Controller
                 'end_date' => "$end-03-31",
             ]
         );
-
 
         // Inactivate previous enrollments of this student
         DB::table('class_student')

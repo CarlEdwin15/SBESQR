@@ -284,7 +284,7 @@
                             <script>
                                 function handleCancel() {
                                     window.location.href =
-                                        "{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}";
+                                        "{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}";
                                 }
                             </script>
 
@@ -351,7 +351,6 @@
                                                             $roleLabel = match ($role) {
                                                                 'adviser' => ' (Adviser)',
                                                                 'subject_teacher' => ' (Subject Teacher)',
-                                                                'both' => ' (Adviser & Subject Teacher)',
                                                                 default => '',
                                                             };
                                                         @endphp
@@ -494,7 +493,6 @@
                                                                 ) {
                                                                     'adviser' => 'Adviser: ',
                                                                     'subject_teacher' => 'Subject Teacher: ',
-                                                                    'both' => 'Adviser & Subject Teacher: ',
                                                                     default => 'Teacher: ',
                                                                 };
                                                             @endphp
@@ -551,7 +549,6 @@
                                                                                 'adviser' => 'Adviser: ',
                                                                                 'subject_teacher'
                                                                                     => 'Subject Teacher: ',
-                                                                                'both' => 'Adviser & Subject Teacher: ',
                                                                                 default => 'Teacher: ',
                                                                             };
                                                                         @endphp
@@ -659,7 +656,6 @@
                                                                         $roleLabel = match ($role) {
                                                                             'adviser' => ' (Adviser)',
                                                                             'subject_teacher' => ' (Subject Teacher)',
-                                                                            'both' => ' (Adviser & Subject Teacher)',
                                                                             default => '',
                                                                         };
                                                                     @endphp
@@ -750,24 +746,9 @@
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 
 
-
-
-
 @endsection
 
 @push('scripts')
-    <script>
-        // search bar
-        document.getElementById('teacherSearch').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#teachersTable tbody .teacher-row');
-
-            rows.forEach(row => {
-                const rowText = row.innerText.toLowerCase();
-                row.style.display = rowText.includes(searchValue) ? '' : 'none';
-            });
-        });
-    </script>
 
     <script>
         // register alert
@@ -876,10 +857,6 @@
         }
     </script>
 
-
-
-
-
     <script>
         // alert after a success edit or delete of teacher's info
         @if (session('success'))
@@ -922,29 +899,6 @@
         }
     </script>
 
-    <script>
-        // alert for upload and preview profile in registration
-        const uploadInput = document.getElementById('upload');
-        const previewImg = document.getElementById('photo-preview');
-        const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}";
-
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        resetBtn.addEventListener('click', function() {
-            uploadInput.value = '';
-            previewImg.src = defaultImage;
-        });
-    </script>
 @endpush
 
 @push('styles')

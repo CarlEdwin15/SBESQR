@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -110,7 +111,33 @@ class AdminController extends Controller
 
         // Determine selected year
         $selectedYear = $request->query('school_year', $currentSchoolYear);
+
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
+        $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
+
+        // Get re-assignable teachers: previously assigned but currently archived, and not yet re-assigned this year
+        $reAssignableTeachers = User::where('role', 'teacher')
+            ->whereHas('classes', function ($query) use ($schoolYear) {
+                $query->where('class_user.status', 'archived')
+                    ->where('class_user.school_year_id', '<>', $schoolYear->id);
+            })
+            ->whereDoesntHave('classes', function ($query) use ($schoolYear) {
+                $query->where('class_user.school_year_id', $schoolYear->id)
+                    ->where('class_user.status', 'active');
+            })
+            ->with(['classes' => function ($query) {
+                $query->withPivot('school_year_id', 'status');
+            }])
+            ->get();
+
+
+        // 1. Auto-archive "active" from past years
+        if ($currentSchoolYearRecord) {
+            DB::table('class_user')
+                ->where('school_year_id', '<>', $currentSchoolYearRecord->id)
+                ->where('status', 'active')
+                ->update(['status' => 'archived']);
+        }
 
         $teachers = collect();
         $allClasses = collect();
@@ -121,7 +148,8 @@ class AdminController extends Controller
                     $query->where('class_user.school_year_id', $schoolYear->id);
                 })
                 ->with(['classes' => function ($query) use ($schoolYear) {
-                    $query->where('class_user.school_year_id', $schoolYear->id);
+                    $query->where('class_user.school_year_id', $schoolYear->id)
+                        ->withPivot('status', 'school_year_id');;
                 }])
                 ->get();
 
@@ -137,7 +165,8 @@ class AdminController extends Controller
             'schoolYears',
             'selectedYear',
             'allClasses',
-            'currentYear'
+            'currentYear',
+            'reAssignableTeachers',
         ));
     }
 
@@ -174,7 +203,7 @@ class AdminController extends Controller
             'assigned_classes' => 'required|array|min:1',
             'assigned_classes.*' => 'exists:classes,id',
             'advisory_class' => 'nullable|exists:classes,id',
-            'selected_school_year' => 'required|string|exists:school_years,school_year', // ✅ Ensure valid school year
+            'selected_school_year' => 'required|string|exists:school_years,school_year',
         ]);
 
         // Get school year ID
@@ -274,15 +303,31 @@ class AdminController extends Controller
 
         $schoolYear = SchoolYear::where('school_year', $request->selected_school_year)->firstOrFail();
 
+        // Ensure advisory class is in assigned classes
         if ($request->advisory_class && !in_array($request->advisory_class, $request->assigned_classes)) {
             return back()->withErrors([
                 'advisory_class' => 'Advisory Class must be one of the Assigned Classes.'
             ])->withInput();
         }
 
+        // Check if advisory class already has an adviser for this school year (excluding current teacher)
+        if ($request->advisory_class) {
+            $advisoryClass = Classes::find($request->advisory_class);
+            if ($advisoryClass->teachers()
+                ->wherePivot('school_year_id', $schoolYear->id)
+                ->wherePivot('role', 'adviser')
+                ->where('users.id', '!=', $id)
+                ->exists()
+            ) {
+                return back()->withErrors([
+                    'advisory_class' => 'This class already has an adviser assigned for the selected school year.'
+                ])->withInput();
+            }
+        }
+
         $teacher = User::findOrFail($id);
 
-        // Handle profile photo upload
+        // Handle profile photo
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
             $path = $file->store('profile_photos', 'public');
@@ -294,32 +339,38 @@ class AdminController extends Controller
             $teacher->profile_photo = $path;
         }
 
-        $teacher->firstName = $request->firstName;
-        $teacher->lastName = $request->lastName;
-        $teacher->middleName = $request->middleName;
-        $teacher->extName = $request->extName;
-        $teacher->email = $request->email;
-        $teacher->gender = $request->gender;
-        $teacher->phone = $request->phone;
-        $teacher->house_no = $request->house_no;
-        $teacher->street_name = $request->street_name;
-        $teacher->barangay = $request->barangay;
-        $teacher->municipality_city = $request->municipality_city;
-        $teacher->province = $request->province;
-        $teacher->country = $request->country ?? 'Philippines';
-        $teacher->zip_code = $request->zip_code;
-        $teacher->dob = $request->dob;
-        $teacher->save();
+        // Update teacher info
+        $teacher->update([
+            'firstName' => $request->firstName,
+            'lastName' => $request->lastName,
+            'middleName' => $request->middleName,
+            'extName' => $request->extName,
+            'email' => $request->email,
+            'gender' => $request->gender,
+            'phone' => $request->phone,
+            'house_no' => $request->house_no,
+            'street_name' => $request->street_name,
+            'barangay' => $request->barangay,
+            'municipality_city' => $request->municipality_city,
+            'province' => $request->province,
+            'country' => $request->country ?? 'Philippines',
+            'zip_code' => $request->zip_code,
+            'dob' => $request->dob,
+        ]);
 
-        // Sync classes with pivot role for the selected school year
-        $syncData = [];
+        // Detach only classes for this school year
+        $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->detach();
+
+        // Attach new assignments for selected school year
         foreach ($request->assigned_classes as $classId) {
             $role = ($classId == $request->advisory_class) ? 'adviser' : 'subject_teacher';
-            $syncData[$classId] = ['role' => $role, 'school_year_id' => $schoolYear->id];
+            $teacher->classes()->attach($classId, [
+                'role' => $role,
+                'school_year_id' => $schoolYear->id
+            ]);
         }
-        $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->sync($syncData);
 
-        return redirect()->route('show.teachers')->with('success', 'Teacher details updated successfully for the selected school year!');
+        return redirect()->route('show.teachers')->with('success', 'Teacher updated successfully for the selected school year.');
     }
 
     public function editTeacher(Request $request, $id)
@@ -331,9 +382,16 @@ class AdminController extends Controller
             $query->wherePivot('school_year_id', $schoolYear->id);
         }])->findOrFail($id);
 
-        $allClasses = Classes::all();
+        // Get all classes with teachers for the selected year
+        $allClasses = Classes::with(['teachers' => function ($query) use ($schoolYear) {
+            $query->wherePivot('school_year_id', $schoolYear->id);
+        }])->get();
+
         $assignedClasses = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->pluck('classes.id')->toArray();
-        $advisoryClass = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->wherePivot('role', 'adviser')->pluck('classes.id')->first();
+        $advisoryClass = $teacher->classes()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('role', 'adviser')
+            ->pluck('classes.id')->first();
 
         $schoolYears = SchoolYear::pluck('school_year')->toArray();
         $currentSchoolYear = $this->getDefaultSchoolYear();
@@ -374,7 +432,7 @@ class AdminController extends Controller
 
     public function teacherInfo(Request $request, $id)
     {
-        $selectedSchoolYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $selectedSchoolYear = $request->query('school_year', $this->getDefaultSchoolYear());
         $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->firstOrFail();
 
         $teacher = User::with(['classes' => function ($query) use ($schoolYear) {
@@ -385,6 +443,45 @@ class AdminController extends Controller
         $advisoryClass = $teacher->classes()->wherePivot('school_year_id', $schoolYear->id)->wherePivot('role', 'adviser')->first();
 
         return view('admin.teachers.teacherInfo', compact('teacher', 'assignedClasses', 'advisoryClass', 'selectedSchoolYear'));
+    }
+
+    public function reassignment(Request $request)
+    {
+        $request->validate([
+            'teacher_id' => 'required|exists:users,id',
+            'selected_school_year' => 'required|string|exists:school_years,school_year',
+            'reassign_classes' => 'required|array|min:1',
+            'reassign_classes.*' => 'exists:classes,id',
+            'reassign_advisory_class' => 'nullable|in:' . implode(',', $request->input('reassign_classes', [])),
+        ]);
+
+        $teacherId = $request->teacher_id;
+        $selectedYear = $request->selected_school_year;
+        $classIds = $request->reassign_classes;
+        $advisoryClassId = $request->reassign_advisory_class;
+
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        // Remove any existing assignments for this teacher in that school year (optional safety step)
+        DB::table('class_user')
+            ->where('user_id', $teacherId)
+            ->where('school_year_id', $schoolYear->id)
+            ->delete();
+
+        $now = now();
+        foreach ($classIds as $classId) {
+            DB::table('class_user')->insert([
+                'user_id' => $teacherId,
+                'class_id' => $classId,
+                'school_year_id' => $schoolYear->id,
+                'status' => 'active',
+                'role' => $advisoryClassId == $classId ? 'adviser' : 'subject_teacher',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Teacher reassigned successfully to selected classes.');
     }
 
     private function getDefaultSchoolYear()

@@ -223,15 +223,15 @@
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }}) </a> /
                                 </span>
                                 Master List
                             </h4>
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
                         class="btn btn-danger mb-3">Back</a>
 
                     <div class="card p-4 shadow-sm">
@@ -246,7 +246,7 @@
                             </form>
                         </div>
 
-                        <h4 class="mb-4 text-center fw-bold text-warning">Class Master List</h4><br>
+                        <h4 class="mb-4 text-center fw-bold text-warning">Class Master List ({{ $selectedYear }})</h4><br>
                         <h5 class="text-center">Adviser:</h5>
 
                         @if ($class->adviser)

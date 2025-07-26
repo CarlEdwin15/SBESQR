@@ -223,18 +223,18 @@
                                 <span class="text-muted fw-light">
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">Classes</a>
+                                        href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">Classes</a>
                                     /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }}) </a> /
                                 </span>
                                 Schedules
                             </h4>
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
                         class="btn btn-danger mb-3">
                         <i class="bi bi-arrow-left"></i> Back
                     </a>

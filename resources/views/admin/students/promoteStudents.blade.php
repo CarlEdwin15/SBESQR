@@ -299,7 +299,11 @@
                             <select class="form-select w-auto" name="batch_grade" id="batchGrade" required>
                                 <option value="" disabled selected>Promote To Grade</option>
                                 @foreach ($promotionMap[$gradeLevel] ?? [] as $level)
-                                    <option value="{{ $level }}">{{ ucfirst($level) }}</option>
+                                    @php
+                                        $label = $level === $gradeLevel ? '(returnee)' : '(promoted)';
+                                        $formatted = ucfirst($level) . " $label";
+                                    @endphp
+                                    <option value="{{ $level }}">{{ $formatted }}</option>
                                 @endforeach
                             </select>
 
@@ -437,7 +441,7 @@
                                     sectionSelect.disabled = true;
                                     sectionSelect.required = false;
                                     sectionSelect.closest('.form-select').classList.add(
-                                    'd-none'); // Optional: hide visually
+                                        'd-none'); // Optional: hide visually
                                 } else {
                                     sectionSelect.disabled = false;
                                     sectionSelect.required = true;

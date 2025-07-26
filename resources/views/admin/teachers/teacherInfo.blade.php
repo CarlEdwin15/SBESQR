@@ -294,6 +294,10 @@
                                                 </td>
                                             </tr>
                                             <tr>
+                                                <th class="text-primary">School Year</th>
+                                                <td>{{ $selectedSchoolYear }}</td>
+                                            </tr>
+                                            <tr>
                                                 <th class="text-primary">Advisory Class</th>
                                                 <td>
                                                     @php

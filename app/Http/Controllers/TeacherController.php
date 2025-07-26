@@ -7,6 +7,7 @@ use App\Models\Classes;
 use App\Models\Student;
 use App\Models\Attendance;
 use App\Models\Schedule;
+use App\Models\SchoolYear;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,59 +15,116 @@ use Carbon\Carbon;
 
 class TeacherController extends Controller
 {
-
-    public function index()
-    {
-        $user = Auth::user();
-
-        if ($user->role !== 'teacher') {
-            abort(403, 'Unauthorized');
-        }
-
-        return view('teacher.index');
-    }
-
     public function myClasses(Request $request)
     {
         $teacher = User::find(Auth::id());
 
-        $sections = $teacher->classes->pluck('section')->unique()->sort();
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
 
-        $selectedSection = $request->input('section', $sections->first());
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
 
-        $classes = $teacher->classes()->where('section', $selectedSection)->get();
+        // Fetch all saved school years
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
 
-        // For each class, fetch teachers with pivot role 'adviser' or 'both'
-        foreach ($classes as $class) {
-            $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
+        // Extract numeric start years
+        $savedStartYears = array_map(function ($sy) {
+            return (int)substr($sy, 0, 4);
+        }, $savedYears);
+
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        // Build range of school years
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
         }
 
-        return view('teacher.classes.index', compact('classes', 'sections', 'selectedSection'));
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+        if (!in_array($nextSchoolYear, $schoolYears)) {
+            $schoolYears[] = $nextSchoolYear;
+        }
+
+        // Sort school years ascending
+        usort($schoolYears, function ($a, $b) {
+            return intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4));
+        });
+
+        // Selected school year
+        $selectedYear = $request->input('school_year', $currentSchoolYear);
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        // Get all classes assigned to the teacher for that school year
+        $classes = $teacher->classes()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->get();
+
+        // Get distinct sections from those classes (no sorting)
+        $sections = $classes->pluck('section')->unique()->values();
+
+        // Section filter (optional)
+        $selectedSection = $request->input('section');
+
+        if ($selectedSection) {
+            $classes = $classes->where('section', $selectedSection)->values();
+        }
+
+        // Attach adviser info
+        foreach ($classes as $class) {
+            $class->adviser = $class->teachers()
+                ->wherePivot('school_year_id', $schoolYear->id)
+                ->wherePivot('role', 'adviser')
+                ->first();
+        }
+
+        return view('teacher.classes.index', [
+            'classes' => $classes,
+            'sections' => $sections,
+            'selectedSection' => $selectedSection,
+            'selectedYear' => $selectedYear,
+            'schoolYears' => $schoolYears,
+            'currentYear' => $currentYear,
+            'section' => $selectedSection,
+        ]);
     }
 
-    public function myClass($grade_level, $section)
+    public function myClass(Request $request, $grade_level, $section)
     {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
         $class = $this->getClass($grade_level, $section);
-        $studentCount = $class->students()->count();
-        $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
 
-        $today = Carbon::now()->format('Y-m-d');
-        $todayDayName = Carbon::now()->format('l');
+        $studentCount = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->count();
 
-        // Get all schedules for today
-        $schedulesToday = $class->schedules()->where('day', $todayDayName)->get();
+        $class->adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('role', 'adviser')
+            ->first();
 
-        // Total possible attendance entries = number of schedules × number of students
+        $today = now()->format('Y-m-d');
+        $dayName = now()->format('l');
+
+        $schedulesToday = $class->schedules()
+            ->where('day', $dayName)
+            ->where('school_year_id', $schoolYear->id)
+            ->get();
+
         $scheduleCount = $schedulesToday->count();
         $totalPossibleAttendance = $studentCount * $scheduleCount;
 
-        // Get the count of all present or late attendance entries for all schedules today
         $presentCount = Attendance::whereIn('schedule_id', $schedulesToday->pluck('id'))
             ->whereDate('date', $today)
             ->whereIn('status', ['present', 'late'])
             ->count();
 
-        // Cap at 100%
         $attendanceToday = $totalPossibleAttendance > 0
             ? min(100, round(($presentCount / $totalPossibleAttendance) * 100))
             : 0;
@@ -76,86 +134,113 @@ class TeacherController extends Controller
             'studentCount',
             'presentCount',
             'totalPossibleAttendance',
-            'attendanceToday'
+            'attendanceToday',
+            'selectedYear'
         ));
     }
 
-    public function myClassMasterList($grade_level, $section)
+    public function myClassMasterList(Request $request, $grade_level, $section)
     {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
         $class = $this->getClass($grade_level, $section);
 
-        // Fetch students in the class
-        $students = Student::where('class_id', $class->id)->get();
-        // For each class, fetch teachers with pivot role 'adviser' or 'both'
-        $class->adviser = $class->teachers()->wherePivotIn('role', ['adviser', 'both'])->first();
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->get();
 
-        return view('teacher.classes.myMasterList', compact('class', 'students'));
+        $class->adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('role', 'adviser')
+            ->first();
+
+        return view('teacher.classes.myMasterList', compact('class', 'students', 'selectedYear'));
     }
 
-    public function mySchedule($grade_level, $section)
+    public function mySchedule(Request $request, $grade_level, $section)
     {
-        $class = $this->getClass($grade_level, $section);
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
 
-        // Get the authenticated teacher's ID
+        $class = $this->getClass($grade_level, $section);
         $teacherId = Auth::id();
 
-        // Filter schedules only for the logged-in teacher
         $schedules = Schedule::where('class_id', $class->id)
             ->where('teacher_id', $teacherId)
+            ->where('school_year_id', $schoolYear->id)
             ->orderBy('day')
             ->orderBy('start_time')
             ->get();
 
-        // Fetch only this teacher's pivot role in this class
         $teachers = $class->teachers()
             ->where('users.id', $teacherId)
-            ->wherePivotIn('role', ['adviser', 'subject_teacher', 'both'])
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivotIn('role', ['adviser', 'subject_teacher'])
             ->get();
 
-        return view('teacher.classes.mySchedule', compact('class', 'schedules', 'teachers'));
+        return view('teacher.classes.mySchedule', compact('class', 'schedules', 'teachers', 'selectedYear'));
     }
 
-    public function myAttendanceRecord($grade_level, $section)
+    public function myAttendanceRecord(Request $request, $grade_level, $section)
     {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
         $class = $this->getClass($grade_level, $section);
 
-        $students = Student::where('class_id', $class->id)
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
             ->orderBy('student_sex')
             ->orderBy('student_lName')
             ->orderBy('student_fName')
             ->orderBy('student_mName')
             ->get();
 
-        $monthParam = request('month', now()->format('Y-m'));
-        $dateObj = \Carbon\Carbon::createFromFormat('Y-m', $monthParam);
+        // ✅ Use school year start date as default instead of now()
+        $defaultMonth = Carbon::parse($schoolYear->start_date)->format('Y-m');
+        $monthParam = request('month', $defaultMonth);
+        $dateObj = Carbon::createFromFormat('Y-m', $monthParam);
+
+        // ✅ Clamp date within school year bounds
+        $schoolStart = Carbon::parse($schoolYear->start_date)->startOfMonth();
+        $schoolEnd = Carbon::parse($schoolYear->end_date)->endOfMonth();
+
+        if ($dateObj->lt($schoolStart)) {
+            $dateObj = $schoolStart;
+        } elseif ($dateObj->gt($schoolEnd)) {
+            $dateObj = $schoolEnd;
+        }
+
         $year = $dateObj->year;
         $month = $dateObj->month;
 
-        $scheduleDays = \App\Models\Schedule::where('class_id', $class->id)
+        $scheduleDays = Schedule::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
             ->where('teacher_id', Auth::id())
             ->pluck('day')
-            ->map(fn($day) => \Carbon\Carbon::parse($day)->format('D'))
+            ->map(fn($day) => Carbon::parse($day)->format('D'))
             ->toArray();
 
-        // Order schedules by start_time (AM to PM)
-        $schedules = \App\Models\Schedule::where('class_id', $class->id)
+        $schedules = Schedule::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
             ->where('teacher_id', Auth::id())
             ->orderBy('start_time')
             ->get();
 
         $schedulesById = $schedules->keyBy('id');
 
-        $attendances = \App\Models\Attendance::where('class_id', $class->id)
+        $attendances = Attendance::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->get();
 
         $calendarDates = [];
-        $startOfMonth = \Carbon\Carbon::create($year, $month, 1);
+        $startOfMonth = Carbon::create($year, $month, 1);
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
         for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
-            // Keep only weekdays (Mon to Fri)
             if (!in_array($date->format('D'), ['Sat', 'Sun'])) {
                 $calendarDates[] = $date->format('Y-m-d');
             }
@@ -192,7 +277,6 @@ class TeacherController extends Controller
                 continue;
             }
 
-            // ✅ Ensure student entry exists
             if (!isset($attendanceData[$attendance->student_id])) {
                 $attendanceData[$attendance->student_id] = [
                     'present' => 0,
@@ -206,7 +290,7 @@ class TeacherController extends Controller
                 'start_time' => $schedule->start_time,
                 'end_time' => $schedule->end_time,
                 'subject_name' => $schedule->subject_name ?? 'N/A',
-                'schedule_order' => $schedule->start_time, // for sorting
+                'schedule_order' => $schedule->start_time,
             ];
 
             if (in_array($attendance->status, ['present', 'late'])) {
@@ -226,12 +310,9 @@ class TeacherController extends Controller
             }
         }
 
-        // Sort attendance by schedule (AM to PM) for each student/date
         foreach ($attendanceData as &$studentAttendance) {
             foreach ($studentAttendance['by_date'] as &$entries) {
-                usort($entries, function ($a, $b) {
-                    return strcmp($a['schedule_order'], $b['schedule_order']);
-                });
+                usort($entries, fn($a, $b) => strcmp($a['schedule_order'], $b['schedule_order']));
             }
         }
         unset($studentAttendance);
@@ -270,38 +351,71 @@ class TeacherController extends Controller
             'totalAbsent',
             'totalPresent',
             'scheduleDays',
-            'schedules'
-        ));
+            'schedules',
+            'selectedYear',
+            'schoolYear',
+        ))->with('selectedYearObj', $schoolYear);
     }
 
-    public function attendanceHistory($grade_level, $section, $date = null)
+    public function attendanceHistory(Request $request, $grade_level, $section, $date = null, $schedule_id = null)
     {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
         $class = $this->getClass($grade_level, $section);
-        $targetDate = $date ?? request('date') ?? now()->toDateString();
-        $targetDate = \Carbon\Carbon::parse($targetDate)->format('Y-m-d');
-        $dayName = \Carbon\Carbon::parse($targetDate)->format('l');
 
-        $schedules = Schedule::where('teacher_id', Auth::id())
-            ->where('class_id', $class->id)
-            ->where('day', $dayName)
-            ->get();
+        // Use date from route (if present) or fallback to query or default
+        $defaultDate = Carbon::parse($schoolYear->start_date)->toDateString();
+        $targetDate = $date ?? $request->input('date', $defaultDate);
+        $dateObj = Carbon::parse($targetDate);
 
-        if (!$schedules || $schedules->isEmpty()) {
-            return back()->with('error', 'No schedule set for today ' . $dayName . '.');
+        // Clamp targetDate within school year range
+        $schoolStart = Carbon::parse($schoolYear->start_date);
+        $schoolEnd = Carbon::parse($schoolYear->end_date);
+        if ($dateObj->lt($schoolStart)) {
+            $dateObj = $schoolStart;
+        } elseif ($dateObj->gt($schoolEnd)) {
+            $dateObj = $schoolEnd;
         }
 
-        $students = Student::where('class_id', $class->id)->get();
+        $targetDate = $dateObj->toDateString(); // Normalize date
+        $year = $dateObj->year;
+        $month = $dateObj->month;
 
-        // Reload grouped attendance
-        $attendancesGrouped = Attendance::whereIn('schedule_id', $schedules->pluck('id'))
-            ->where('date', $targetDate)
-            ->get()
-            ->groupBy('schedule_id')
-            ->map(function ($items) {
-                return $items->keyBy('student_id');
-            });
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->orderBy('student_sex')
+            ->orderBy('student_lName')
+            ->orderBy('student_fName')
+            ->orderBy('student_mName')
+            ->get();
 
-        return view('teacher.classes.attendanceHistory', compact('class', 'students', 'schedules', 'attendancesGrouped', 'targetDate'));
+        $schedules = Schedule::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('teacher_id', Auth::id())
+            ->where('day', ucfirst($dateObj->format('l')))
+            ->orderBy('start_time')
+            ->get();
+
+        $attendanceData = Attendance::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->whereDate('date', $targetDate)
+            ->get();
+
+        $attendancesGrouped = [];
+        foreach ($attendanceData as $attendance) {
+            $attendancesGrouped[$attendance->schedule_id][$attendance->student_id] = $attendance;
+        }
+
+        return view('teacher.classes.attendanceHistory', compact(
+            'class',
+            'students',
+            'schedules',
+            'attendancesGrouped',
+            'targetDate',
+            'selectedYear',
+            'schoolYear'
+        ));
     }
 
     public function submitAttendance(Request $request)
@@ -309,35 +423,39 @@ class TeacherController extends Controller
         $date = $request->input('date', now()->toDateString());
         $timeNow = now()->format('H:i:s');
 
-        // Fetch the schedule to get its end_time
         $schedule = Schedule::findOrFail($request->schedule_id);
         $timeOutFixed = $schedule->end_time;
+
+        // Resolve the school year object (supports both ID or string format)
+        $schoolYear = SchoolYear::where('school_year', $request->input('school_year'))
+            ->orWhere('id', $request->input('school_year'))
+            ->firstOrFail();
 
         foreach ($request->attendance as $studentId => $data) {
             $status = $data['status'];
 
-            // Check if an attendance record already exists for this student/schedule/date
+            // Get the existing record for the day/schedule/student
             $attendance = Attendance::where('student_id', $studentId)
-                ->where('schedule_id', $request->schedule_id)
+                ->where('schedule_id', $schedule->id)
                 ->where('date', $date)
+                ->where('school_year_id', $schoolYear->id)
                 ->first();
 
-            if (
-                !$attendance ||
-                $attendance->status !== $status
-            ) {
+            // Determine if we should write/update the record
+            if (!$attendance || $attendance->status !== $status) {
                 Attendance::updateOrCreate(
                     [
                         'student_id' => $studentId,
-                        'schedule_id' => $request->schedule_id,
+                        'schedule_id' => $schedule->id,
                         'date' => $date,
+                        'school_year_id' => $schoolYear->id,
                     ],
                     [
                         'teacher_id' => $request->teacher_id,
                         'class_id' => $request->class_id,
                         'status' => $status,
-                        'time_in' => !in_array($status, ['absent', 'excused']) ? $timeNow : null,
-                        'time_out' => !in_array($status, ['absent', 'excused']) ? $timeOutFixed : null,
+                        'time_in' => in_array($status, ['present', 'late']) ? $timeNow : null,
+                        'time_out' => in_array($status, ['present', 'late']) ? $timeOutFixed : null,
                     ]
                 );
             }
@@ -350,7 +468,7 @@ class TeacherController extends Controller
     {
         $date = $date ?? now()->toDateString();
         $class = Classes::where('grade_level', $grade)->where('section', $section)->firstOrFail();
-        $dayName = \Carbon\Carbon::parse($date)->format('l');
+        $dayName = Carbon::parse($date)->format('l');
 
         $schedules = Schedule::where('class_id', $class->id)
             ->where('teacher_id', Auth::id())
@@ -562,6 +680,17 @@ class TeacherController extends Controller
             'student' => $student->full_name,
             'status' => $status
         ]);
+    }
+
+    // Helper function to get the default school year (e.g., "2024-2025")
+    private function getDefaultSchoolYear()
+    {
+        $now = now();
+        $year = $now->year;
+        $cutoff = now()->copy()->setMonth(6)->setDay(1);
+        $start = $now->lt($cutoff) ? $year - 1 : $year;
+
+        return $start . '-' . ($start + 1);
     }
 
 

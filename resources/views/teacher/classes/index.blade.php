@@ -226,68 +226,109 @@
 
                     <!-- Filter Section -->
 
-                    <h5 class="alert alert-info">Showing Grade Levels for <strong>Section {{ $selectedSection }}</strong>
+                    <h5 class="alert alert-info alert-dismissible fade show mt-2 text-center text-primary fw-bold"
+                        role="alert" id="school-year-alert">
+                        Showing Classes for School Year <strong>{{ $selectedYear }}</strong>.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </h5>
 
-                    <form method="GET" action="{{ route('teacher.myClasses') }}" class="mb-4">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label for="section" class="form-label">Select Section</label>
-                                <select name="section" id="section" class="form-select" onchange="this.form.submit()">
-                                    @foreach ($sections as $s)
-                                        <option value="{{ $s }}"
-                                            {{ $selectedSection == $s ? 'selected' : '' }}>
-                                            Section {{ $s }}
+                    <script>
+                        setTimeout(function() {
+                            var alertElem = document.getElementById('school-year-alert');
+                            if (alertElem) {
+                                var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
+                                bsAlert.close();
+                            }
+                        }, 10000);
+                    </script>
+
+                    {{-- School Year Selection --}}
+                    <div class="row mb-3">
+                        <div class="col-12 d-flex justify-content-end align-items-end gap-2">
+                            {{-- School Year Filter Form --}}
+                            <form method="GET" action="{{ route('teacher.myClasses') }}" class="d-flex flex-column">
+                                <label for="school_year" class="form-label mb-1">School Year</label>
+                                <select name="school_year" id="school_year" class="form-select"
+                                    onchange="this.form.submit()" style="min-width: 150px;">
+                                    @foreach ($schoolYears as $year)
+                                        <option value="{{ $year }}"
+                                            {{ $year == $selectedYear ? 'selected' : '' }}>
+                                            {{ $year }}
                                         </option>
                                     @endforeach
                                 </select>
-                            </div>
+                            </form>
+
+                            {{-- "Now" Button Form --}}
+                            <form method="GET" action="{{ route('teacher.myClasses') }}"
+                                class="d-flex flex-column align-items-start">
+                                <label class="form-label invisible mb-1">Now</label> {{-- Keeps vertical alignment --}}
+                                <input type="hidden" name="school_year"
+                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                                <input type="hidden" name="section" value="{{ $section }}">
+                                <button type="submit" class="btn btn-primary">
+                                    Now
+                                </button>
+                            </form>
                         </div>
-                    </form>
+                    </div>
+                    {{-- /School Year Selection --}}
 
                     <!-- Card for Grade Levels by Section Assigned To Teacher -->
                     <section id="services" class="services section">
                         <div class="container" data-aos="fade-up" data-aos-delay="100">
                             <div class="row gy-5">
-                                @php $iconIndex = 1; @endphp
 
-                                @foreach ($classes as $class)
-                                    <div class="col-xl-4 col-md-6" data-aos="zoom-in">
-                                        <div class="service-item">
-                                            <div class="img">
-                                                <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
-                                                    class="img-fluid" alt="" />
-                                            </div>
-                                            <div class="details position-relative">
-                                                <div class="icon">
-                                                    @if ($class->grade_level === 'kindergarten')
-                                                        <i class="fa-solid fa-child"></i>
-                                                    @else
-                                                        <i class="fa-solid fa-{{ $iconIndex }}"></i>
-                                                        @php $iconIndex++; @endphp
-                                                    @endif
-                                                </div>
-                                                <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                                    class="stretched-link">
-                                                    <h3>
-                                                        @if (strtolower($class->grade_level) === 'kindergarten')
-                                                            Kindergarten
-                                                        @else
-                                                            Grade {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
-                                                        @endif
-                                                        - {{ $class->section }}
-                                                    </h3>
-                                                    <h5>Schedule:</h5>
-                                                </a>
-                                            </div>
+                                @if ($classes->isEmpty())
+                                    <div class="col-12">
+                                        <div class="alert alert-warning text-center">
+                                            No Assigned Classes for <strong>{{ $selectedSection }}</strong>
+                                            School Year
+                                            <strong>{{ $selectedYear }}</strong>.
+                                            <br>
+                                            <span class="text-primary">Please check back later or contact the
+                                                administration for more information.</span>
                                         </div>
                                     </div>
-                                @endforeach
+                                @else
+                                    @php $iconIndex = 1; @endphp
+                                    @foreach ($classes as $class)
+                                        <div class="col-xl-4 col-md-6" data-aos="zoom-in">
+                                            <div class="service-item">
+                                                <div class="img">
+                                                    <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
+                                                        class="img-fluid" alt="" />
+                                                </div>
+                                                <div class="details position-relative">
+                                                    <div class="icon">
+                                                        @if ($class->grade_level === 'kindergarten')
+                                                            <i class="fa-solid fa-child"></i>
+                                                        @else
+                                                            <i class="fa-solid fa-{{ $iconIndex }}"></i>
+                                                            @php $iconIndex++; @endphp
+                                                        @endif
+                                                    </div>
+                                                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
+                                                        class="stretched-link">
+                                                        <h3>
+                                                            @if (strtolower($class->grade_level) === 'kindergarten')
+                                                                Kindergarten
+                                                            @else
+                                                                Grade
+                                                                {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
+                                                            @endif
+                                                            - {{ $class->section }}
+                                                        </h3>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @endif
 
                             </div>
                         </div>
                     </section>
-
                     <!-- /Card for All Grade Levels by Section -->
 
                     <hr class="my-5" />
@@ -307,117 +348,6 @@
 @endsection
 
 @push('scripts')
-    <!-- Include Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Chart Initialization Script -->
-    <script>
-        // Enrollees Chart
-        const ctx1 = document.getElementById('enrolleesChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['Kndg', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
-                datasets: [{
-                    label: 'Enrollees',
-                    data: [45, 35, 42, 155, 46, 34, 43],
-                    backgroundColor: [
-                        '#FF8A8A', '#82E6E6', '#FFE852', '#C9A5FF',
-                        '#FF8A8A', '#82E6E6', '#FFE852'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 10
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Gender Chart
-        // Gender Statistics Chart
-        const chartGenderStatistics = document.querySelector('#genderStatisticsChart');
-
-        const genderChartConfig = {
-            chart: {
-                height: 165,
-                width: 130,
-                type: 'donut'
-            },
-            labels: ['Female', 'Male'],
-            series: [60, 40],
-            colors: ['#FF5B5B', '#2AD3E6'], // Red for Female, Blue for Male
-            stroke: {
-                width: 5,
-                colors: '#fff'
-            },
-            dataLabels: {
-                enabled: false,
-                formatter: function(val) {
-                    return parseInt(val) + '%';
-                }
-            },
-            legend: {
-                show: false
-            },
-            grid: {
-                padding: {
-                    top: 0,
-                    bottom: 0,
-                    right: 15
-                }
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '75%',
-                        labels: {
-                            show: true,
-                            value: {
-                                fontSize: '1.5rem',
-                                fontFamily: 'Public Sans',
-                                color: '#333',
-                                offsetY: -15,
-                                formatter: function(val) {
-                                    return parseInt(val) + '%';
-                                }
-                            },
-                            name: {
-                                offsetY: 20,
-                                fontFamily: 'Public Sans'
-                            },
-                            total: {
-                                show: true,
-                                fontSize: '0.8125rem',
-                                color: '#aaa',
-                                label: 'Gender Ratio',
-                                formatter: function() {
-                                    return '100%';
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        if (chartGenderStatistics) {
-            const genderChart = new ApexCharts(chartGenderStatistics, genderChartConfig);
-            genderChart.render();
-        }
-    </script>
-
     <script>
         // logout confirmation
         function confirmLogout() {
@@ -446,12 +376,16 @@
             });
         }
     </script>
+
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/ab677fe211.js" crossorigin="anonymous"></script>
 @endpush
 
 @push('styles')
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
     <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" rel="stylesheet" />
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />

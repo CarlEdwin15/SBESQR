@@ -224,8 +224,9 @@
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }})
+                                    </a> /
                                 </span>
                                 Attendance History
                             </h4>
@@ -234,14 +235,15 @@
 
                     <h2 class="card-title mb-2 fw-bold text-primary text-center">
                         Attendance History {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                        ({{ $selectedYear }})
                     </h2>
 
                     <div class="d-flex justify-content-between align-items-end mb-3">
-                        <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
                             class="btn btn-danger">Back</a>
-
                         {{-- Date Selection Form --}}
                         <form id="dateForm" method="GET">
+                            <input type="hidden" name="school_year" value="{{ $selectedYear }}">
                             <div class="d-flex gap-2 align-items-end">
                                 <div>
                                     <label for="date">Date Selection:</label>
@@ -342,6 +344,7 @@
                                         <form method="POST" action="{{ route('teacher.submitAttendance') }}"
                                             class="attendance-form">
                                             @csrf
+                                            <input type="hidden" name="school_year" value="{{ $selectedYear }}">
                                             <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
                                             <input type="hidden" name="class_id" value="{{ $class->id }}">
                                             <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
@@ -650,14 +653,17 @@
     </script>
 
     <script>
+        // Date selection form submission
         document.getElementById('dateForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const selectedDate = document.getElementById('date').value;
-            const baseUrl = "{{ url('attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
+            const schoolYear = document.querySelector('input[name="school_year"]').value;
 
-            // If no date, use current
-            const finalUrl = selectedDate ? `${baseUrl}/${selectedDate}` : baseUrl;
+            const baseUrl = "{{ url('attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
+            const finalUrl = selectedDate ?
+                `${baseUrl}/${selectedDate}?school_year=${encodeURIComponent(schoolYear)}` :
+                `${baseUrl}?school_year=${encodeURIComponent(schoolYear)}`;
 
             window.location.href = finalUrl;
         });

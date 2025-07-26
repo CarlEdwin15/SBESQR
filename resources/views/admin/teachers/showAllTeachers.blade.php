@@ -46,11 +46,6 @@
                                     <div class="text-danger">All Teacherss</div>
                                 </a>
                             </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Re-assignment & Validation</div>
-                                </a>
-                            </li>
                         </ul>
                     </li>
 
@@ -274,6 +269,16 @@
                         </div>
                     @endif
 
+                    <script>
+                        setTimeout(function() {
+                            var alertElem = document.getElementById('school-year-alert');
+                            if (alertElem) {
+                                var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
+                                bsAlert.close();
+                            }
+                        }, 10000);
+                    </script>
+
                     <!-- Modal Backdrop -->
                     <div class="col-lg-4 col-md-3">
 
@@ -293,28 +298,21 @@
                             @if (in_array($selectedYear, $allowedYears))
                                 <!-- Button trigger modal -->
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                    data-bs-target="#backDropModal"
+                                    data-bs-target="#registerModal"
                                     style="margin: auto; margin-bottom: 30px; margin-left: 10px">
                                     Register New Teacher
                                 </button>
                             @endif --}}
 
-                            <!-- Button trigger modal -->
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#backDropModal"
-                                style="margin: auto; margin-bottom: 30px; margin-left: 10px">
-                                Register New Teacher
-                            </button>
-
                             <!-- Register Modal -->
-                            <div class="modal fade" id="backDropModal" data-bs-backdrop="static" tabindex="-1">
+                            <div class="modal fade" id="registerModal" data-bs-backdrop="static" tabindex="-1">
 
                                 <div class="modal-dialog">
                                     <form class="modal-content" action="{{ route('register.teacher') }}" method="POST"
                                         enctype="multipart/form-data">
                                         @csrf
                                         <div class="modal-header">
-                                            <h4 class="modal-title fw-bold text-info" id="backDropModalTitle">
+                                            <h4 class="modal-title fw-bold text-info" id="registerModalTitle">
                                                 REGISTER NEW TEACHER
                                             </h4>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
@@ -618,6 +616,107 @@
                             </div>
                             <!-- /Register Modal -->
 
+                            <!-- Re-assign Modal -->
+                            <div class="modal fade" id="reAssignModal" data-bs-backdrop="static" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <form class="modal-content" action="{{ route('teacher.reassignment') }}"
+                                        method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h4 class="modal-title fw-bold text-info" id="reAssignModalTitle">
+                                                RE-ASSIGN TEACHER TO THE SELECTED SCHOOL YEAR
+                                            </h4>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <input type="hidden" name="selected_school_year"
+                                                value="{{ $selectedYear }}">
+
+                                            <!-- Select Teacher -->
+                                            <div class="mb-3">
+                                                <label for="teacher_id" class="form-label fw-bold">Select Teacher</label>
+                                                <select name="teacher_id" id="teacher_id" class="form-select" required>
+                                                    <option value="">-- Select Teacher --</option>
+                                                    @foreach ($reAssignableTeachers as $teacher)
+                                                        @php
+                                                            $archivedYears = $teacher->classes
+                                                                ->filter(function ($class) use ($selectedYear) {
+                                                                    return $class->pivot->status === 'archived';
+                                                                })
+                                                                ->map(function ($class) {
+                                                                    return $class->pivot->school_year_id;
+                                                                })
+                                                                ->unique()
+                                                                ->values();
+
+                                                            $archivedYearLabels = \App\Models\SchoolYear::whereIn(
+                                                                'id',
+                                                                $archivedYears,
+                                                            )
+                                                                ->pluck('school_year')
+                                                                ->implode(', ');
+                                                        @endphp
+                                                        <option value="{{ $teacher->id }}">
+                                                            {{ $teacher->firstName }} {{ $teacher->lastName }}
+                                                            (Archived: {{ $archivedYearLabels }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Select Classes -->
+                                            <div class="mb-3">
+                                                <label for="reassign_classes" class="form-label fw-bold">Assign to
+                                                    Classes</label>
+                                                <select name="reassign_classes[]" id="reassign_classes" multiple required>
+                                                    @foreach ($allClasses as $class)
+                                                        @php
+                                                            $adviser = $class->teachers
+                                                                ->where('pivot.role', 'adviser')
+                                                                ->first();
+                                                            $hasAdviser = !is_null($adviser);
+                                                        @endphp
+                                                        <option value="{{ $class->id }}">
+                                                            {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                            - {{ $class->section }}
+                                                            @if ($hasAdviser)
+                                                                ({{ $adviser->firstName }} {{ $adviser->lastName }})
+                                                            @endif
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <small class="form-text text-muted">Hold Ctrl or Cmd to select multiple
+                                                    classes.</small>
+                                            </div>
+
+                                            <!-- Select Advisory Class -->
+                                            <div class="mb-3">
+                                                <label for="reassign_advisory_class" class="form-label fw-bold">Select
+                                                    Advisory Class</label>
+                                                <select name="reassign_advisory_class" id="reassign_advisory_class"
+                                                    class="form-select">
+                                                    <option value="">-- Select advisory class from assigned --
+                                                    </option>
+                                                </select>
+                                                <small class="form-text text-muted">Must be one of the selected
+                                                    classes.</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                data-bs-dismiss="modal">
+                                                Close
+                                            </button>
+                                            <button type="submit" class="btn btn-primary"
+                                                id="reAssignTeacherBtn">Re-Assign</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <!-- /Re-assign Modal -->
+
                             @if ($errors->has('email'))
                                 <script>
                                     Swal.fire({
@@ -634,13 +733,29 @@
 
                         </div>
                     </div>
+                    <!--/ Modal Backdrop -->
 
-                    {{-- School Year Selection --}}
-                    <div class="row mb-3">
-                        <div class="col-md-8"></div>
-                        <div class="col-md-4 d-flex justify-content-end">
-                            <form method="GET" action="" class="d-flex">
-                                <label for="school_year" class="form-label me-2">School Year :</label>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                        <div class="d-flex gap-1 mb-2 mb-md-0">
+                            <!-- Register Button trigger modal -->
+                            <button type="button" class="btn btn-primary d-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#registerModal">
+                                <i class='bx bx-user-plus me-2'></i>
+                                <span class="d-none d-sm-block">Register New Teacher</span>
+                            </button>
+
+                            <!-- Re-Assignment Button trigger modal -->
+                            <button type="button" class="btn btn-warning d-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#reAssignModal">
+                                <i class='bx bx-repost me-2'></i>
+                                <span class="d-none d-sm-block">Re-Assign Teacher</span>
+                            </button>
+                        </div>
+
+                        <!-- Filter Form -->
+                        <div class="d-flex align-items-center gap-2">
+                            <form method="GET" action="" class="d-flex align-items-center">
+                                <span class="d-none d-sm-block form-label me-2 mb-0">School Year</span>
                                 <select name="school_year" id="school_year" class="form-select"
                                     onchange="this.form.submit()">
                                     @foreach ($schoolYears as $year)
@@ -652,26 +767,17 @@
                                 </select>
                             </form>
 
-                            {{-- "Now" button --}}
-                            <form method="GET" action="{{ route('show.teachers') }}">
+                            <!-- "Now" button -->
+                            <form method="GET" action="{{ route('show.teachers') }}"
+                                class="d-flex align-items-center">
                                 <input type="hidden" name="school_year"
                                     value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary ms-2">
+                                <button type="submit" class="btn btn-sm btn-primary">
                                     Now
                                 </button>
                             </form>
                         </div>
                     </div>
-
-                    <script>
-                        setTimeout(function() {
-                            var alertElem = document.getElementById('school-year-alert');
-                            if (alertElem) {
-                                var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
-                                bsAlert.close();
-                            }
-                        }, 10000);
-                    </script>
 
                     {{-- Card --}}
                     <div class="card">
@@ -712,6 +818,7 @@
                                                 Classes</span>
                                         </th>
                                         <th>Email</th>
+                                        <th>Status</th>
                                         <th>Contact No.</th>
                                         <th>Actions</th>
                                     </tr>
@@ -738,7 +845,7 @@
                                                         @php
                                                             $role = $class->pivot->role ?? null;
                                                             $isAdvisory = $role === 'adviser';
-                                                            $badgeClass = $isAdvisory ? 'bg-warning' : 'bg-secondary';
+                                                            $badgeClass = $isAdvisory ? 'bg-warning text-black' : 'bg-secondary';
                                                         @endphp
 
                                                         <span class="badge {{ $badgeClass }} text-auto mb-1">
@@ -760,6 +867,20 @@
                                                 @endif
                                             </td>
                                             <td>{{ $teacher->email }}</td>
+                                            <td>
+                                                @php
+                                                    $status =
+                                                        optional($teacher->classes->first())->pivot->status ?? 'N/A';
+                                                    $badgeClass = match ($status) {
+                                                        'active' => 'bg-label-success',
+                                                        'archived' => 'bg-label-warning',
+                                                        default => 'bg-label-dark',
+                                                    };
+                                                @endphp
+                                                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                                    {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                                </span>
+                                            </td>
                                             <td>{{ $teacher->phone }}</td>
                                             <td>
                                                 <div class="dropdown">
@@ -769,7 +890,7 @@
                                                     </button>
                                                     <div class="dropdown-menu">
                                                         <a class="dropdown-item text-info"
-                                                            href="{{ route('teacher.info', ['id' => $teacher->id]) }}">
+                                                            href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
                                                             <i class="bx bxs-user-badge me-1"></i> View Profile
                                                         </a>
                                                         <a class="dropdown-item text-warning"
@@ -798,7 +919,8 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center text-danger fw-bold">No teachers found.
+                                            <td colspan="6" class="text-center text-danger fw-bold">No teachers
+                                                found.
                                             </td>
                                         </tr>
                                     @endforelse
@@ -898,7 +1020,7 @@
 
         // Register Teacher Modal Form Validation and Submission
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('#backDropModal form');
+            const form = document.querySelector('#registerModal form');
             const registerBtn = document.getElementById('registerTeacherBtn');
 
             registerBtn.addEventListener('click', function(e) {
@@ -999,6 +1121,79 @@
             assignedSelect.addEventListener('change', updateAdvisoryOptions);
         });
 
+        // Re-assignment Modal Form Validation and Submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const reassignForm = document.querySelector('#reAssignModal form');
+            const reassignBtn = document.getElementById('reAssignTeacherBtn');
+            const classSelect = document.getElementById('reassign_classes');
+            const advisorySelect = document.getElementById('reassign_advisory_class');
+
+            // IDs of classes that already have advisers
+            const reassignClassesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
+
+            function updateAdvisoryClassOptions() {
+                const selected = Array.from(classSelect.selectedOptions).map(opt => parseInt(opt.value));
+                advisorySelect.innerHTML = '<option value="">-- Select advisory class from assigned --</option>';
+                Array.from(classSelect.options).forEach(opt => {
+                    const id = parseInt(opt.value);
+                    if (selected.includes(id) && !reassignClassesWithAdvisers.includes(id)) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = opt.value;
+                        newOpt.textContent = opt.textContent;
+                        advisorySelect.appendChild(newOpt);
+                    }
+                });
+            }
+
+            classSelect.addEventListener('change', updateAdvisoryClassOptions);
+            updateAdvisoryClassOptions();
+
+            reassignBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                let valid = true;
+                reassignForm.querySelectorAll('[required]').forEach(input => {
+                    if (!input.value.trim()) {
+                        valid = false;
+                        input.classList.add('is-invalid');
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+
+                if (!valid) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Form',
+                        text: 'Please fill in all required fields.',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Confirm Re-Assignment?",
+                    text: "Are you sure you want to re-assign this teacher?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#06D001",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, re-assign",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        reassignForm.submit();
+                    }
+                });
+            });
+        });
+
         // Success alert
         @if (session('success'))
             Swal.fire({
@@ -1025,9 +1220,17 @@
             });
         @endif
     </script>
+
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
     <script>
         new TomSelect('#assigned_classes', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Select classes...",
+        });
+
+        new TomSelect('#reassign_classes', {
             plugins: ['remove_button'],
             maxItems: null,
             placeholder: "Select classes...",
@@ -1037,6 +1240,7 @@
 
 @push('styles')
     <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+
     <style>
         .ts-control {
             background-color: #e0f7fa;

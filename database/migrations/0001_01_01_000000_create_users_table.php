@@ -42,8 +42,9 @@ return new class extends Migration
         Schema::create('class_user', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
-            $table->enum('role', ['adviser', 'subject_teacher', 'both'])->default('subject_teacher');
+            $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
+            $table->enum('status', ['active', 'archived'])->default('active');
+            $table->enum('role', ['adviser', 'subject_teacher'])->nullable()->default('subject_teacher');
             $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
             $table->unique(['user_id', 'class_id', 'school_year_id'], 'unique_user_class_sy');
             $table->timestamps();

@@ -340,18 +340,18 @@
                                     <label for="assigned_classes" class="form-label fw-bold">
                                         Assigned Classes <span class="text-danger">*</span>
                                     </label>
-                                    <select name="assigned_classes[]" id="assigned_classes" class="form-select mb-2"
+                                    <select name="assigned_classes[]" id="assigned_classes" class="mb-2"
                                         multiple required>
                                         @foreach ($allClasses as $class)
                                             @php
-                                                $adviser = $class->teachers->where('pivot.role', 'adviser')->first();
-                                                $hasAdviser = !is_null($adviser);
+                                                // Get adviser for this class for the selected school year
+                                                $adviser = $class->teachers->firstWhere('pivot.role', 'adviser');
                                             @endphp
                                             <option value="{{ $class->id }}"
                                                 {{ in_array($class->id, $assignedClasses) ? 'selected' : '' }}>
                                                 {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }} -
                                                 {{ $class->section }}
-                                                @if ($hasAdviser)
+                                                @if ($adviser)
                                                     ({{ $adviser->firstName }} {{ $adviser->lastName }})
                                                 @endif
                                             </option>
@@ -364,7 +364,7 @@
                                 <div class="col mb-3">
                                     <label for="advisory_class" class="form-label fw-bold">Advisory Class</label>
                                     <select name="advisory_class" id="advisory_class" class="form-select">
-                                        <option value=""> No advisory class </option>
+                                        <option value="">No advisory class</option>
                                         @foreach ($assignedClasses as $assignedClassId)
                                             @php
                                                 $class = $allClasses->firstWhere('id', $assignedClassId);
@@ -372,14 +372,14 @@
                                             @if ($class)
                                                 <option value="{{ $class->id }}"
                                                     {{ $class->id == $advisoryClass ? 'selected' : '' }}>
-                                                    {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                                                    {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }} -
+                                                    {{ $class->section }}
                                                 </option>
                                             @endif
                                         @endforeach
                                     </select>
                                     <small class="text-muted">Must be one of the assigned classes</small>
                                 </div>
-
                             </div>
 
                             <div class="row">
@@ -423,7 +423,7 @@
                                 <div class="col mb-3">
                                     <label for="email" class="form-label fw-bold">Email</label>
                                     <input type="email" name="email" id="email" class="form-control"
-                                        value="{{ $teacher->email }}" readonly />
+                                        value="{{ $teacher->email }}" />
                                 </div>
 
                                 <!-- Phone Field -->
@@ -702,4 +702,35 @@
             assignedSelect.addEventListener('change', updateAdvisoryOptions);
         });
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        new TomSelect('#assigned_classes', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Select classes...",
+        });
+    </script>
+@endpush
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+    <style>
+        .ts-control {
+            background-color: #e0f7fa;
+            border-color: #42a5f5;
+        }
+
+        .ts-control .item {
+            background-color: #4dd0e1;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 4px;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+    </style>
 @endpush

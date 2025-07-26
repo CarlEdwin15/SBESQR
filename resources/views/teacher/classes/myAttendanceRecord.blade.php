@@ -223,17 +223,17 @@
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                                        href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }})
                                     </a> /
                                 </span>
-                                Attendances
+                                Attendance Records
                             </h4>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between mb-3 align-items-center">
-                        <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
                             class="btn btn-danger mb-3">Back</a>
 
                         <button type="button" class="btn btn-success">Export</button>
@@ -255,6 +255,7 @@
                         }, 5000);
                     </script>
 
+                    <!-- Attendance Record Card -->
                     <div class="card p-4 shadow-sm">
                         <div class="d-flex justify-content-between mb-3 align-items-center">
                             <h3 class="fw-bold mb-0 text-primary">{{ $class->formatted_grade_level }} -
@@ -264,15 +265,23 @@
                             <form method="GET"
                                 action="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
                                 class="d-flex align-items-center">
-                                <label for="date" class="me-2 mb-0">Date:</label>
+
+                                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+
+                                <label for="month" class="me-2 mb-0">Date:</label>
+
                                 <input type="month" name="month" id="month" class="form-control me-2"
-                                    value="{{ request('month', $monthParam ?? now()->format('Y-m')) }}">
+                                    value="{{ $monthParam }}"
+                                    min="{{ \Carbon\Carbon::parse($selectedYearObj->start_date)->format('Y-m') }}"
+                                    max="{{ \Carbon\Carbon::parse($selectedYearObj->end_date)->format('Y-m') }}">
+
                                 <button type="submit" class="btn btn-primary me-2">Filter</button>
                             </form>
                         </div>
 
                         <div class="text-center mb-4">
-                            <h5 class="fw-bold text-info">Daily Attendance Reports of Learners</h5>
+                            <h5 class="fw-bold text-info">Daily Attendance Reports of Learners for School Year
+                                {{ $selectedYear }}</h5>
                             @if (empty($scheduleDays) || count($scheduleDays) === 0)
                                 <div class="alert alert-warning alert-dismissible fade show fw-bold mb-0" role="alert">
                                     You have no schedules yet for this class
@@ -325,7 +334,7 @@
                                             @endphp
                                             <th class="{{ implode(' ', $classes) }}">
                                                 @if ($isScheduled)
-                                                    <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section, 'date' => $carbonDate->format('Y-m-d')]) }}"
+                                                    <a href="{{ route('teacher.attendanceHistory', [$class->grade_level, $class->section]) }}?school_year={{ $selectedYear }}&date={{ $carbonDate->format('Y-m-d') }}"
                                                         style="text-decoration: none; color: inherit;">
                                                         {{ $carbonDate->format('M j') }}<br>
                                                         <small>{{ $day }}</small>
@@ -531,10 +540,9 @@
                             </table>
                         </div>
                         <!-- / Attendance Table -->
-
-
-
                     </div>
+                    <!-- / Attendance Record Card -->
+
                 </div>
                 <!-- / Content wrapper -->
 
@@ -549,9 +557,6 @@
 @endsection
 
 @push('scripts')
-    <!-- Include Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <script>
         // logout confirmation
         function confirmLogout() {
@@ -582,6 +587,7 @@
     </script>
 
     <script>
+        // Tooltip initialization
         document.addEventListener('DOMContentLoaded', function() {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function(tooltipTriggerEl) {

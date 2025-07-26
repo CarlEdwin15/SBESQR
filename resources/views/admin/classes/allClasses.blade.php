@@ -260,8 +260,6 @@
                         </span> All Classes
                     </h4>
 
-                    <!-- Filter Section -->
-
                     <h5 class="alert alert-primary alert-dismissible fade show mt-2 text-center text-primary fw-bold"
                         role="alert">Showing Grade Levels in <strong class="text-warning"> Section
                             {{ $section }}</strong> for
@@ -269,48 +267,48 @@
                     </h5>
 
                     {{-- Section and School Year Selection --}}
-                    <div class="row mb-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-end align-items-end flex-wrap mb-3 gap-2">
+
                         {{-- Section Selection --}}
-                        <div class="col-md-4">
-                            <form method="GET" action="{{ route('all.classes') }}">
-                                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
-                                <label for="section" class="form-label">Select Section</label>
-                                <select name="section" id="section" class="form-select" onchange="this.form.submit()">
-                                    @foreach ($sections as $s)
-                                        <option value="{{ $s }}" {{ $section == $s ? 'selected' : '' }}>
-                                            Section {{ $s }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
-                        </div>
+                        <form method="GET" action="{{ route('all.classes') }}" class="d-flex flex-column">
+                            <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+                            <label for="section" class="form-label mb-1">Select Section</label>
+                            <select name="section" id="section" class="form-select"
+                                onchange="this.form.submit()" style="min-width: 100px;">
+                                @foreach ($sections as $s)
+                                    <option value="{{ $s }}" {{ $section == $s ? 'selected' : '' }}>
+                                        Section {{ $s }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
 
                         {{-- School Year Selection --}}
-                        <div class="col-md-4">
-                            <form method="GET" action="{{ route('all.classes') }}">
-                                <input type="hidden" name="section" value="{{ $section }}">
-                                <label for="school_year" class="form-label me-2">School Year :</label>
-                                <select name="school_year" id="school_year" class="form-select"
-                                    onchange="this.form.submit()">
-                                    @foreach ($schoolYears as $year)
-                                        <option value="{{ $year }}"
-                                            {{ $year == $selectedYear ? 'selected' : '' }}>
-                                            {{ $year }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
+                        <form method="GET" action="{{ route('all.classes') }}" class="d-flex flex-column">
+                            <input type="hidden" name="section" value="{{ $section }}">
+                            <label for="school_year" class="form-label mb-1">School Year</label>
+                            <select name="school_year" id="school_year" class="form-select"
+                                onchange="this.form.submit()" style="min-width: 100px;">
+                                @foreach ($schoolYears as $year)
+                                    <option value="{{ $year }}" {{ $year == $selectedYear ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
 
-                            {{-- "Now" button --}}
-                            <form method="GET" action="{{ route('all.classes') }}">
-                                <input type="hidden" name="school_year"
-                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                <input type="hidden" name="section" value="{{ $section }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary ms-2">
-                                    Now
-                                </button>
-                            </form>
-                        </div>
+                        {{-- "Now" Button --}}
+                        <form method="GET" action="{{ route('all.classes') }}"
+                            class="d-flex flex-column align-items-start">
+                            <label class="form-label invisible mb-1">Now</label> {{-- Placeholder to align button vertically --}}
+                            <input type="hidden" name="school_year"
+                                value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                            <input type="hidden" name="section" value="{{ $section }}">
+                            <button type="submit" class="btn btn-primary">
+                                Now
+                            </button>
+                        </form>
+
                     </div>
                     {{-- / Section and School Year Selection --}}
 

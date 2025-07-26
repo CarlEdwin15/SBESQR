@@ -23,7 +23,7 @@ return new class extends Migration
             $table->time('end_time');
             $table->timestamps();
 
-            $table->unique(['teacher_id', 'class_id', 'day', 'start_time'], 'unique_schedule_per_slot');
+            $table->unique(['school_year_id', 'teacher_id', 'class_id', 'day', 'start_time'], 'unique_schedule_per_slot');
         });
 
         Schema::create('attendances', function (Blueprint $table) {
@@ -32,6 +32,7 @@ return new class extends Migration
             $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->foreignId('schedule_id')->constrained('schedules')->onDelete('cascade');
+            $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
             $table->date('date');
             $table->time('time_in')->nullable();
             $table->time('time_out')->nullable();
@@ -47,7 +48,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schedules');
         Schema::dropIfExists('attendances');
+        Schema::dropIfExists('schedules');
     }
 };
