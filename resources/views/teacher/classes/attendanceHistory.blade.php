@@ -241,6 +241,7 @@
                     <div class="d-flex justify-content-between align-items-end mb-3">
                         <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
                             class="btn btn-danger">Back</a>
+
                         {{-- Date Selection Form --}}
                         <form id="dateForm" method="GET">
                             <input type="hidden" name="school_year" value="{{ $selectedYear }}">
@@ -312,7 +313,6 @@
                                     aria-labelledby="{{ $headingId }}" data-bs-parent="#attendanceAccordion">
 
                                     @php
-                                        // Calculate schedule start and end for the selected date
                                         $scheduleStart = \Carbon\Carbon::parse($schedule->start_time)
                                             ->copy()
                                             ->setDateFrom(\Carbon\Carbon::parse($targetDate));
@@ -327,17 +327,15 @@
                                             style="padding: 0 20px;">
                                             <button class="btn btn-primary my-2"
                                                 onclick="chooseGracePeriod(
-                                                    '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}',
+                                                    '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}?mark_absent=true',
                                                     '{{ $schedule->start_time }}',
-                                                    '{{ $schedule->end_time }}'
-                                                )">
+                                                    '{{ $schedule->end_time }}')">
                                                 📷 Start QR Attendance
                                                 ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
                                                 {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
                                             </button>
                                         </div>
                                     @endif
-
 
                                     <h2 class="text-warning text-center fw-bold">{{ $schedule->subject_name }}</h2>
                                     <div class="accordion-body">

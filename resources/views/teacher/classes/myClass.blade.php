@@ -257,7 +257,7 @@
 
                             <!-- Attendance Today -->
                             <div class="col-md-4">
-                                <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}&date={{ now()->format('Y-m-d') }}"
                                     class="card card-hover border-0 shadow-sm h-100 bg-light">
                                     <div class="card-body text-center">
                                         <div class="card-title d-flex align-items-center justify-content-between">
@@ -323,7 +323,7 @@
                                 <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                                     class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
                                     <i class="bi bi-clipboard-check fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Attendances</div>
+                                    <div class="fw-semibold">Attendance Records</div>
                                 </a>
                             </div>
                             <div class="col-md-3">

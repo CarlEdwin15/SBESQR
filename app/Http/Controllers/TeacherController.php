@@ -538,8 +538,9 @@ class TeacherController extends Controller
             ->get();
 
         $now = now();
-        // ✅ Automatically mark students as absent if past class end time and not yet marked
-        if ($now->gt(Carbon::parse($schedule->end_time))) {
+
+        // ✅ Mark absent only if the time passed AND the teacher explicitly triggered it
+        if ($now->gt(Carbon::parse($schedule->end_time)) && $request->has('mark_absent')) {
             foreach ($students as $student) {
                 $existing = Attendance::where([
                     'student_id' => $student->id,
@@ -780,20 +781,6 @@ class TeacherController extends Controller
 
         return $start . '-' . ($start + 1);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

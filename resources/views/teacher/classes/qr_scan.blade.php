@@ -231,15 +231,26 @@
                         </div>
                     </div>
 
+                    @php
+                        $carbonDate = \Carbon\Carbon::parse($date);
+                        $day = $carbonDate->format('D'); // Mon, Tue, etc.
+                        $isToday = $carbonDate->isToday();
+                    @endphp
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 gap-3">
-                        <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
+                        <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}&date={{ $carbonDate->format('Y-m-d') }}"
                             class="btn btn-danger mb-2 mb-md-0">Back</a>
+
+                        @php
+                            $startTime = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
+                            $endTime = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
+                        @endphp
 
                         <!-- Time-Out Selector -->
                         <div class="d-flex align-items-center">
                             <label for="custom-timeout" class="fw-bold text-muted me-2 mb-0">Select Time-Out:</label>
                             <input type="time" id="custom-timeout" class="form-control me-2" style="width: 130px;"
-                                value="{{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}">
+                                value="{{ $endTime }}" data-start="{{ $startTime }}"
+                                data-end="{{ $endTime }}">
                             <button class="btn btn-primary" onclick="setCustomTimeout()">Apply</button>
                         </div>
                     </div>
@@ -676,6 +687,7 @@
         // Function to set custom timeout
         let customTimeout = document.getElementById('custom-timeout').value;
 
+        // Function to apply custom timeout
         function setCustomTimeout() {
             customTimeout = document.getElementById('custom-timeout').value;
 

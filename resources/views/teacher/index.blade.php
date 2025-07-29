@@ -226,20 +226,39 @@
                         use App\Models\Classes;
                         use App\Models\Attendance;
                         use App\Models\User;
+                        use App\Models\SchoolYear;
                         use Carbon\Carbon;
 
                         $teacher = Auth::user();
-                        $class = $teacher->advisoryClasses()->first() ?? $teacher->subjectClasses()->first();
+
+                        // Get current school year
+                        $currentSchoolYear = SchoolYear::where('start_date', '<=', now())
+                            ->where('end_date', '>=', now())
+                            ->first();
 
                         $studentCount = 0;
                         $newlyEnrolledStudents = 0;
                         $attendanceToday = 0;
+                        $schedule = null;
 
-                        if ($class) {
-                            $studentCount = $class->students()->count();
+                        $advisoryClass = $teacher
+                            ->advisoryClasses()
+                            ->wherePivot('school_year_id', $currentSchoolYear?->id)
+                            ->first();
 
-                            $newlyEnrolledStudents = $class
-                                ->students()
+                        $subjectClass = $teacher
+                            ->subjectClasses()
+                            ->wherePivot('school_year_id', $currentSchoolYear?->id)
+                            ->first();
+
+                        $class = $advisoryClass ?? $subjectClass;
+
+                        if ($class && $currentSchoolYear) {
+                            $studentsQuery = $class->students()->wherePivot('school_year_id', $currentSchoolYear->id);
+
+                            $studentCount = $studentsQuery->count();
+
+                            $newlyEnrolledStudents = $studentsQuery
                                 ->where('students.created_at', '>=', now()->subWeek())
                                 ->count();
 
@@ -250,12 +269,13 @@
                             $schedule = $class
                                 ->schedules()
                                 ->where('day', $todayDayName)
+                                ->where('school_year_id', $currentSchoolYear->id)
                                 ->orderBy('start_time')
                                 ->get()
                                 ->filter(function ($sched) use ($now) {
                                     return Carbon::parse($sched->end_time)->gt($now);
                                 })
-                                ->first(); // nearest ongoing or upcoming schedule
+                                ->first();
 
                             if ($schedule) {
                                 $presentCount = $schedule
@@ -269,10 +289,13 @@
                             }
                         }
 
-                        $totalTeachers = User::where('role', 'teacher')->count();
+                        $teacherClassesCount =
+                            $teacher
+                                ->advisoryClasses()
+                                ->wherePivot('school_year_id', $currentSchoolYear?->id)
+                                ->count() +
+                            $teacher->subjectClasses()->wherePivot('school_year_id', $currentSchoolYear?->id)->count();
                     @endphp
-
-
 
                     <div class="container-xxl container-p-y">
 
@@ -296,7 +319,7 @@
                                 </div>
                             </div>
 
-                            <!-- Teachers Card -->
+                            <!-- Teacher's Classes Card -->
                             <div class="col-6 col-md-3">
                                 <div class="card h-100 card-hover">
                                     <a class="card-body" href="{{ route('teacher.myClasses') }}">
@@ -308,7 +331,7 @@
                                         </div>
                                         <span class="fw-semibold d-block mb-1 text-primary">Classes</span>
                                         <h3 class="card-title mb-2">
-                                            {{ Auth::user()->advisoryClasses()->count() + Auth::user()->subjectClasses()->count() }}
+                                            {{ $teacherClassesCount }}
                                         </h3>
                                     </a>
                                 </div>
@@ -318,7 +341,7 @@
                             <div class="col-6 col-md-3">
                                 <div class="card h-100 card-hover">
                                     <a class="card-body"
-                                        href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                        href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year_id={{ $currentSchoolYear?->id }}&date={{ now()->format('Y-m-d') }}">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
                                                 <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
