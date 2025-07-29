@@ -318,6 +318,7 @@
 
                                 <!-- Right: Student List -->
                                 <div class="col-md-6">
+                                    <div id="qr-result" class="mb-2 text-success fw-bold"></div>
                                     <div class="card p-3">
                                         <h6 class="fw-bold">LIST OF STUDENTS</h6>
                                         <div class="table-responsive">
@@ -407,7 +408,6 @@
                                                 </tbody>
                                             </table>
                                         </div>
-                                        <div id="qr-result" class="mt-2 text-success fw-bold"></div>
                                     </div>
                                 </div>
                                 <!-- /Right: Student List -->
@@ -757,7 +757,8 @@
                                         date: date,
                                         schedule_id: scheduleId,
                                         custom_timeout: document.getElementById(
-                                            'custom-timeout')?.value ?? ''
+                                            'custom-timeout')?.value ?? '',
+                                        school_year: @json($selectedYear) // ✅ Add this line (Blade will render the actual year)
                                     })
                                 })
                                 .then(res => res.json())

@@ -712,6 +712,7 @@ class TeacherController extends Controller
     public function markManualAttendance(Request $request)
     {
         $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+
         $schoolYear = SchoolYear::where('school_year', $selectedYear)
             ->orWhere('id', $selectedYear)
             ->first();
@@ -720,14 +721,13 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'School year not found.']);
         }
 
-        // Validate required fields
         $studentId = $request->input('student_id');
         $status = $request->input('status');
         $date = $request->input('date') ?? now()->toDateString();
         $scheduleId = $request->input('schedule_id');
         $customTimeout = $request->input('custom_timeout');
 
-        // Validate timeout format
+        // ✅ Validate custom timeout format (HH:MM)
         if ($customTimeout && !preg_match('/^\d{2}:\d{2}$/', $customTimeout)) {
             return response()->json([
                 'success' => false,
@@ -745,69 +745,18 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Schedule not found']);
         }
 
-        // Check class validity
-        $class = Classes::where('id', $student->class_id)->first();
-        if (!$class) {
-            return response()->json(['success' => false, 'message' => 'Class not found.']);
-        }
-
-        $studentInClass = $class->students()
-            ->where('students.id', $student->id)
-            ->wherePivot('school_year_id', $schoolYear->id)
-            ->exists();
-
-        if (!$studentInClass) {
-            Log::warning('Manual attendance attempt for unenrolled student', [
-                'student_id' => $student->id,
-                'student_name' => $student->full_name,
-                'class_id' => $student->class_id,
-                'school_year' => $schoolYear->school_year,
-                'timestamp' => now()->toDateTimeString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => '⛔ Student is not enrolled in this class for the selected school year.'
-            ]);
-        }
-
-        // Check for existing attendance
-        $existing = Attendance::where([
-            'student_id' => $student->id,
-            'schedule_id' => $schedule->id,
-            'school_year_id' => $schoolYear->id,
-            'date' => $date
-        ])->first();
-
-        if ($existing && $existing->status === $status) {
-            return response()->json([
-                'success' => false,
-                'message' => '⚠️ Attendance already marked as ' . ucfirst($status) . '.'
-            ]);
-        }
-
-        // Debug log
-        Log::debug('Manual attendance', [
-            'student_id' => $student->id,
-            'status' => $status,
-            'schedule_id' => $schedule->id,
-            'teacher_id' => Auth::id(),
-            'time_in' => now()->format('H:i:s'),
-            'time_out' => $customTimeout ?? $schedule->end_time,
-        ]);
-
-        // Save or update attendance
-        Attendance::updateOrCreate(
+        // ✅ Ensure attendance is specific to school year
+        $attendance = Attendance::updateOrCreate(
             [
                 'student_id' => $student->id,
                 'schedule_id' => $schedule->id,
-                'school_year_id' => $schoolYear->id,
+                'school_year_id' => $schoolYear->id, // 🔄 Match QR attendance condition
                 'date' => $date
             ],
             [
                 'status' => $status,
                 'teacher_id' => Auth::id(),
-                'class_id' => $class->id,
+                'class_id' => $schedule->class_id,
                 'time_in' => now()->format('H:i:s'),
                 'time_out' => $customTimeout ?? $schedule->end_time,
             ]
@@ -820,7 +769,6 @@ class TeacherController extends Controller
             'status' => $status
         ]);
     }
-
 
     // Helper function to get the default school year (e.g., "2024-2025")
     private function getDefaultSchoolYear()
