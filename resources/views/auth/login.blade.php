@@ -119,7 +119,7 @@
 
                         {{-- Facebook Login --}}
                         <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
-                            <a href="{{ route('facebook.parent.login') }}" class="btn btn-light d-flex align-items-center"
+                            <a href="{{ route('facebook.login') }}" class="btn btn-light d-flex align-items-center"
                                 style="gap: 10px; padding: 8px 16px;">
                                 <img src="{{ asset('assetsDashboard/img/icons/brands/facebook1.png') }}" alt="Facebook"
                                     style="height: 20px; width: 20px;">
@@ -129,7 +129,7 @@
 
                         {{-- Facebook Login --}}
                         {{-- <div style="display: flex; justify-content: center; align-items: center;">
-                            <a href="{{ route('facebook.parent.login') }}" class="btn btn-primary">
+                            <a href="{{ route('facebook.login') }}" class="btn btn-primary">
                                 <i class="fab fa-facebook me-2"></i> Sign in with Facebook
                             </a>
                         </div> --}}

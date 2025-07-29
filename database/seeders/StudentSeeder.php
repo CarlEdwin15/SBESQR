@@ -68,10 +68,10 @@ class StudentSeeder extends Seeder
                     'mother_mName' => 'Santos',
                     'mother_lName' => 'Reyes',
                     'mother_phone' => '0918' . rand(1000000, 9999999),
-                    'emergCont_fName' => 'Pedro',
-                    'emergCont_mName' => 'Lopez',
-                    'emergCont_lName' => 'Gomez',
-                    'emergCont_phone' => '0920' . rand(1000000, 9999999),
+                    'emergcont_fName' => 'Pedro',
+                    'emergcont_mName' => 'Lopez',
+                    'emergcont_lName' => 'Gomez',
+                    'emergcont_phone' => '0920' . rand(1000000, 9999999),
                 ]);
 
                 $student = Student::create([

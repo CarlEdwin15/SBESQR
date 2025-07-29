@@ -58,6 +58,36 @@ class AttendanceController extends Controller
         return back()->with('success', 'Attendance recorded successfully!');
     }
 
+    public function getAttendanceExportData()
+    {
+        // Reuse the exact logic from myAttendanceRecord()
+        // but instead of returning a view, return the compacted variables
+
+        // Use current or request params if needed
+        $request = request();
+
+        $grade_level = $request->input('grade_level');
+        $section = $request->input('section');
+        $school_year = $request->input('school_year');
+        $month = $request->input('month');
+
+        // Mock Request object for function reuse
+        $mockRequest = new \Illuminate\Http\Request([
+            'school_year' => $school_year,
+            'month' => $month,
+            '__return_array__' => true,
+        ]);
+
+        return app()->call(
+            [app(\App\Http\Controllers\TeacherController::class), 'myAttendanceRecord'],
+            [
+                'request' => $mockRequest,
+                'grade_level' => $grade_level,
+                'section' => $section,
+            ]
+        );
+    }
+
     /**
      * Display the specified resource.
      */

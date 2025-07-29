@@ -223,8 +223,8 @@
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
-                                        href="{{ route('teacher.myClass', ['grade_level' => $grade, 'section' => $section]) }}">
-                                        {{ ucfirst($grade) }} - {{ $section }} </a> /
+                                        href="{{ route('teacher.myClass', ['grade_level' => $grade_level, 'section' => $section, 'school_year' => $selectedYear]) }}">
+                                        {{ ucfirst($grade_level) }} - {{ $section }} ({{ $selectedYear }}) </a> /
                                 </span>
                                 Scan Attendance
                             </h4>
@@ -232,7 +232,7 @@
                     </div>
 
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 gap-3">
-                        <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                        <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                             class="btn btn-danger mb-2 mb-md-0">Back</a>
 
                         <!-- Time-Out Selector -->
@@ -249,7 +249,7 @@
                         <div class="card-header">
                             <h4 class="fw-bold mb-0 text-center text-warning">{{ $schedule->subject_name }} <span
                                     class="text-muted">|</span>
-                                <span class="text-info">{{ ucfirst($grade) }} - {{ $section }} </span>
+                                <span class="text-info">{{ ucfirst($grade_level) }} - {{ $section }} </span>
                             </h4>
                         </div>
 
@@ -330,7 +330,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach ($students->sortBy('full_name') as $student)
+                                                    @foreach ($students->sortBy('full_name')->values() as $student)
                                                         @php
                                                             $att = $student->attendances->firstWhere('date', $date);
                                                             $status = $att->status ?? null;
@@ -441,7 +441,6 @@
                     </div>
 
 
-
                     <hr class="my-5" />
                 </div>
                 <!-- Content wrapper -->
@@ -492,7 +491,7 @@
     <script>
         // Initialize QR scanner
         const scheduleId = @json($schedule_id);
-        const grade = @json($grade);
+        const grade_level = @json($grade_level);
         const section = @json($section);
         const date = @json($date);
         const grace = {{ $gracePeriod ?? 60 }}; // Set default grace period to 60 minutes if not set
@@ -524,7 +523,7 @@
                         },
                         body: JSON.stringify({
                             student_id: data.student_id,
-                            grade: grade,
+                            grade_level: grade_level,
                             section: section,
                             date: date,
                             schedule_id: scheduleId,

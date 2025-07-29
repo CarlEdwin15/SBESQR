@@ -339,16 +339,18 @@
                                     </thead>
                                     <tbody>
                                         @forelse ($students->sortBy([
-                                                                        ['student_lName', 'asc'],
-                                                                        ['student_fName', 'asc'],
-                                                                        ['student_mName', 'asc'],
-                                                                        ['student_extName', 'asc'],
-                                                                        ]) as $student)
+                                                                                ['student_lName', 'asc'],
+                                                                                ['student_fName', 'asc'],
+                                                                                ['student_mName', 'asc'],
+                                                                                ['student_extName', 'asc'],
+                                                                                ]) as $student)
                                             <tr class="student-row"
                                                 data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                                 data-section="{{ strtolower(optional($student->class->first())->section) }}"
                                                 data-grade="{{ strtolower(optional($student->class->first())->formatted_grade_level) }}"
-                                                data-lrn="{{ strtolower($student->student_lrn) }}">
+                                                data-lrn="{{ strtolower($student->student_lrn) }}"
+                                                data-enrollment_status="{{ strtolower(optional($student->class->first())->pivot->enrollment_status ?? '') }}"
+                                                data-enrollment_type="{{ strtolower(optional($student->class->first())->pivot->enrollment_type ?? '') }}">
                                                 <td>{{ $student->student_lName }},
                                                     {{ $student->student_fName }}
                                                     {{ $student->student_mName }}
@@ -400,7 +402,7 @@
                                                         {{ strtoupper(str_replace('_', ' ', $type)) }}
                                                     </span>
                                                 </td>
-                                                <td>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</td>
+                                                <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="dropdown">
                                                         <button class="btn p-0 dropdown-toggle hide-arrow"
@@ -570,6 +572,8 @@
                         const grade = row.dataset.grade;
                         const section = row.dataset.section;
                         const lrn = row.dataset.lrn;
+                        const enrollment_status = row.dataset.enrollment_status;
+                        const enrollment_type = row.dataset.enrollment_type;
                         const gradeSection = `${grade} - ${section}`;
 
                         const isMatch =
@@ -578,6 +582,8 @@
                             grade.includes(query) ||
                             section.includes(query) ||
                             lrn.includes(query) ||
+                            enrollment_status.includes(query) ||
+                            enrollment_type.includes(query) ||
                             gradeSection.includes(query);
 
                         row.style.display = isMatch ? "table-row" : "none";

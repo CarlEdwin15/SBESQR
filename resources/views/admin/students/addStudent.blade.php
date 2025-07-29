@@ -634,38 +634,38 @@
                             <div class="row">
                                 <!-- Emergency Contact's Firt Name -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_emergContFName" class="form-label fw-bold">First
+                                    <label for="student_emergcontFName" class="form-label fw-bold">First
                                         Name</label>
-                                    <input type="text" name="student_emergContFName" id="student_emergContFName"
+                                    <input type="text" name="student_emergcontFName" id="student_emergcontFName"
                                         class="form-control" placeholder="Enter Emergency Contact's First Name"
-                                        value="{{ old('student_emergContFName') }}" />
+                                        value="{{ old('student_emergcontFName') }}" />
                                 </div>
 
                                 <!-- Emergency Contact's Middle Name -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_emergContMName" class="form-label fw-bold">Middle
+                                    <label for="student_emergcontMName" class="form-label fw-bold">Middle
                                         Name</label>
-                                    <input type="text" name="student_emergContMName" id="student_emergContMName"
+                                    <input type="text" name="student_emergcontMName" id="student_emergcontMName"
                                         class="form-control" placeholder="Enter Emergency Contact's Middle Name"
-                                        value="{{ old('student_emergContMName') }}" />
+                                        value="{{ old('student_emergcontMName') }}" />
                                 </div>
                             </div>
 
                             <div class="row">
                                 <!-- Emergency Contact's Last Name -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_emergContLName" class="form-label fw-bold">Last Name</label>
-                                    <input type="text" name="student_emergContLName" id="student_emergContLName"
+                                    <label for="student_emergcontLName" class="form-label fw-bold">Last Name</label>
+                                    <input type="text" name="student_emergcontLName" id="student_emergcontLName"
                                         class="form-control" placeholder="Enter Emergency Contact's Last Name"
-                                        value="{{ old('student_emergContLName') }}" />
+                                        value="{{ old('student_emergcontLName') }}" />
                                 </div>
 
                                 <!-- Emergency Contact's Phone No. -->
                                 <div class="col mb-2 mt-2">
-                                    <label for="student_emergContPhone" class="form-label fw-bold">Phone No.</label>
-                                    <input type="phone" name="student_emergContPhone" id="student_emergContPhone"
+                                    <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
+                                    <input type="phone" name="student_emergcontPhone" id="student_emergcontPhone"
                                         class="form-control" placeholder="Enter Emergency Contact's Phone Number"
-                                        value="{{ old('student_emergContPhone') }}" />
+                                        value="{{ old('student_emergcontPhone') }}" />
                                 </div>
                             </div>
 

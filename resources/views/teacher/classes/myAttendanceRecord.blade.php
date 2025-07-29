@@ -234,9 +234,19 @@
 
                     <div class="d-flex justify-content-between mb-3 align-items-center">
                         <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
-                            class="btn btn-danger mb-3">Back</a>
+                            class="btn btn-danger d-flex align-items-center"><i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
 
-                        <button type="button" class="btn btn-success">Export</button>
+                        <a href="{{ route('export.sf2', [
+                            'grade_level' => $class->grade_level,
+                            'section' => $class->section,
+                            'school_year' => $selectedYear,
+                            'month' => $monthParam,
+                        ]) }}"
+                            class="btn btn-success d-flex align-items-center">
+                            <i class='bx bx-printer me-2'></i><span class="d-none d-sm-block">Export</span>
+                        </a>
                     </div>
 
                     <div class="alert alert-primary alert-dismissible fade show fw-bold mb-4 text-center" role="alert"
@@ -275,7 +285,9 @@
                                     min="{{ \Carbon\Carbon::parse($selectedYearObj->start_date)->format('Y-m') }}"
                                     max="{{ \Carbon\Carbon::parse($selectedYearObj->end_date)->format('Y-m') }}">
 
-                                <button type="submit" class="btn btn-primary me-2">Filter</button>
+                                <button type="submit" class="btn btn-primary me-2 d-flex align-items-center">
+                                    <i class='bx bx-filter'></i><span class="d-none d-sm-block">Filter</span>
+                                </button>
                             </form>
                         </div>
 

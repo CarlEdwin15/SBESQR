@@ -267,23 +267,24 @@
                         </span> Generated Student ID
                     </h4>
 
-                    <a href="{{ route('show.students') }}" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
-                        class="btn btn-danger mt-3">Back</a>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <a href="{{ route('show.students') }}"
+                            style="margin: auto; margin-bottom: 10px; margin-left: 10px"
+                            class="btn btn-danger mt-3">Back</a>
 
-                    <!-- Generate ID Form -->
-                    <form action="{{ route('students.downloadID', $student->id) }}" method="GET">
-                        @csrf
-                        <button type="submit" class="btn btn-success"
-                            style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
-                    </form>
+                        <!-- Generate ID Form -->
+                        <form action="{{ route('students.downloadID', $student->id) }}" method="GET">
+                            @csrf
+                            <button type="submit" class="btn btn-success"
+                                style="margin: auto; margin-bottom: 10px; margin-left: 10px">Download ID</button>
+                        </form>
+                    </div>
 
                     <!-- Student's Details -->
                     <div class="card shadow">
                         <div class="card-body">
                             <div class="row">
-
-                                <div class="d-flex flex-wrap justify-content-center gap-5 mt-4">
-
+                                <div class="d-flex flex-wrap justify-content-center gap-4 mt-4">
                                     {{-- FRONT SIDE --}}
                                     <div class="card p-3 shadow"
                                         style="width: 320px; height: 510px; background-image: url('{{ asset('assetsDashboard/img/id_layout/front_bg_id.png') }}'); background-size: cover; background-repeat: no-repeat; background-position: center;">
@@ -306,11 +307,11 @@
                                             @if ($student->student_photo)
                                                 <img src="{{ asset('storage/' . $student->student_photo) }}"
                                                     alt="Student Photo" class="border"
-                                                    style="width: 2in; height: 2in; object-fit: cover; border: 6px solid #000; border-radius: 8px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);">
+                                                    style="width: 1.5in; height: 1.5in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
                                             @else
                                                 <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                     alt="Default Photo" class="border"
-                                                    style="width: 2in; height: 2in; object-fit: cover; border: 6px solid #000; border-radius: 8px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);">
+                                                    style="width: 1.5in; height: 1.5in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
                                             @endif
                                         </div>
 
@@ -339,8 +340,8 @@
 
                                         <div style="font-size: 11px;">
                                             <p class="mb-1">Name:
-                                                <strong>{{ $student->parentInfo->emergCont_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergCont_lName ?? '' }}</strong>
+                                                <strong>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergcont_lName ?? '' }}</strong>
                                             </p>
                                             <p class="mb-1">Address:
                                                 <strong>{{ $student->address->barangay ?? 'N/A' }},
@@ -348,7 +349,7 @@
                                                     {{ $student->address->province ?? 'N/A' }}</strong>
                                             </p>
                                             <p class="mb-1">Contact No.:
-                                                <strong>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</strong>
+                                                <strong>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</strong>
                                             </p>
                                         </div>
 
@@ -388,8 +389,6 @@
                                             {{ $student->student_lrn }}</p>
                                     </div>
                                 </div>
-
-
                             </div>
                         </div>
                     </div>

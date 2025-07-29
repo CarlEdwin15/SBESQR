@@ -4,23 +4,49 @@
 <head>
     <meta charset="utf-8">
     <title>Student ID</title>
+
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/core.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" />
+
     <style>
         @page {
-            size: 2.125in 3.375in;
-            margin: 0;
+            size: A4 portrait;
+            margin: 1cm;
         }
 
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
         }
 
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .a4-page {
+            width: 100%;
+            height: 100%;
+            padding: 1cm;
+            box-sizing: border-box;
         }
+
+        .id-row {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 1cm;
+    margin-top: 1rem;
+}
+
+/* FIXED: These were missing dots (.) */
+.d-flex {
+    display: flex;
+}
+.flex-wrap {
+    flex-wrap: wrap;
+}
+.justify-content-center {
+    justify-content: center;
+}
+
 
         .card {
             width: 2.125in;
@@ -29,32 +55,27 @@
             background-repeat: no-repeat;
             background-position: center;
             box-sizing: border-box;
-            position: relative;
             padding: 6px;
-        }
-
-        .text-center {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-align: center;
-        }
-
-        .fw-bold {
-            font-weight: bold;
-        }
-
-        .uppercase {
-            text-transform: uppercase;
+            margin-bottom: 10px;
+            border: 1px solid #abd8fe;
         }
 
         .school-logo {
-            width: 28px;
+            height: 70px;
+            width: 70px;
             margin: 0 auto 3px;
         }
 
         .id-img {
-            width: 1in;
-            height: 1.1in;
+            width: 1.5in;
+            height: 1.5in;
             object-fit: cover;
-            border: 1px solid #000;
+            border: 1px solid #0190d2;
             border-radius: 2px;
             margin: 4px auto;
         }
@@ -88,82 +109,115 @@
             font-size: 8px;
         }
 
+        .lrg-text {
+            font-size: 10px;
+        }
+
         .title {
-            font-size: 9px;
+            font-size: 12px;
             margin-bottom: 2px;
         }
+
+        .fw-bold {
+            font-weight: bold;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .mt {
+            margin-top: 1rem;
+        }
     </style>
+
 </head>
 
 <body>
-    <div class="container">
-        {{-- FRONT SIDE --}}
-        <div class="card text-center"
-            style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/front_bg_id.png') }}');">
+    <div class="a4-page">
+        <div class="id-row">
+            {{-- FRONT SIDE --}}
+            <div class="card"
+                style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/front_bg_id.png') }}');">
 
-            <img src="{{ public_path('assets/img/logo.png') }}" alt="Logo" class="school-logo">
+                <img src="{{ public_path('assets/img/logo.png') }}" alt="Logo" class="school-logo">
 
-            <div class="fw-bold uppercase title">Sta. Barbara Elementary School</div>
-            <div class="med-text">Sta. Barbara, Nabua, Camarines Sur</div>
+                <div class="fw-bold uppercase title">Sta. Barbara Elementary School</div>
+                <div class="med-text">Sta. Barbara, Nabua, Camarines Sur</div>
 
-            @php
-                $photoPath =
-                    $student->student_photo && file_exists(public_path('storage/' . $student->student_photo))
-                        ? public_path('storage/' . $student->student_photo)
-                        : public_path('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
-            @endphp
-            <img src="{{ $photoPath }}" alt="Student Photo" class="id-img">
+                @php
+                    $photoPath =
+                        $student->student_photo && file_exists(public_path('storage/' . $student->student_photo))
+                            ? public_path('storage/' . $student->student_photo)
+                            : public_path('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
+                @endphp
+                <img src="{{ $photoPath }}" alt="Student Photo" class="id-img">
 
-            <div class="fw-bold uppercase med-text">
-                {{ $student->student_fName }} {{ $student->student_mName }} {{ $student->student_lName }}
+                <div class="fw-bold uppercase med-text">
+                    {{ $student->student_fName }} {{ $student->student_mName }} {{ $student->student_lName }}
+                </div>
+
+                <div class="small-text">
+                    <p><strong>Date of Birth:</strong>
+                        {{ \Carbon\Carbon::parse($student->student_dob)->format('F j, Y') }}</p>
+                    <p><strong>Address:</strong> {{ $student->address->barangay }}</p>
+                </div>
             </div>
 
-            <div class="small-text">
-                <p><strong>DOB:</strong> {{ \Carbon\Carbon::parse($student->student_dob)->format('F j, Y') }}</p>
-                <p><strong>Address:</strong> Zone {{ $student->address->barangay }}, Sta. Barbara, Nabua, Cam. Sur</p>
-            </div>
-        </div>
+            {{-- BACK SIDE --}}
+            <div class="card"
+                style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/back_bg_id.png') }}');">
 
-        {{-- BACK SIDE --}}
-        <div class="card"
-            style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/back_bg_id.png') }}');">
+                <div class="fw-bold small-text">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
 
-            <div class="text-center fw-bold small-text">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
+                <div class="small-text">
+                    <p>Name: <strong>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
+                            {{ $student->parentInfo->emergcont_lName ?? '' }}</strong></p>
+                    <p>Address: <strong>{{ $student->parentInfo->barangay ?? 'N/A' }},
+                            {{ $student->parentInfo->municipality_city ?? 'N/A' }},
+                            {{ $student->parentInfo->province ?? 'N/A' }}</strong></p>
+                    <p>Contact No.: <strong>{{ $student->parentInfo->emergcontPhone ?? 'N/A' }}</strong></p>
+                </div>
 
-            <div class="small-text">
-                <p>Name: <strong>{{ $student->parentInfo->emergCont_fName ?? 'N/A' }}
-                        {{ $student->parentInfo->emergCont_lName ?? '' }}</strong></p>
-                <p>Address: <strong>{{ $student->address->barangay ?? 'N/A' }},
-                        {{ $student->address->municipality_city ?? 'N/A' }},
-                        {{ $student->address->province ?? 'N/A' }}</strong></p>
-                <p>Contact No.: <strong>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</strong></p>
-            </div>
-
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>School Year</th>
-                        <th>Signature</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for ($i = 0; $i < 6; $i++)
+                <table class="table mb-2">
+                    <thead>
                         <tr>
-                            <td></td>
-                            <td></td>
+                            <th>School Year</th>
+                            <th>Signature</th>
                         </tr>
-                    @endfor
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @for ($i = 0; $i < 7; $i++)
+                            <tr>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        @endfor
+                    </tbody>
+                </table>
 
-            <div class="qr">
-                <img src="data:image/svg+xml;base64,{{ $qrCode }}" style="width: 100%; height: auto;"
-                    alt="QR Code">
+                <div class="qr mt">
+                    <img src="data:image/svg+xml;base64,{{ $qrCode }}" style="width: 100%; height: auto;"
+                        alt="QR Code">
+                </div>
+
+                <p class="text-center med-text"><strong>LRN:</strong> {{ $student->student_lrn }}</p>
             </div>
-
-            <p class="text-center med-text"><strong>LRN:</strong> {{ $student->student_lrn }}</p>
         </div>
     </div>
 </body>
+
 
 </html>

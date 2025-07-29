@@ -399,14 +399,14 @@
                                             <tr>
                                                 <th class="text-primary">Emergency Contact's Info</th>
                                                 <td>
-                                                    {{ $student->parentInfo->emergCont_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergCont_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergCont_lName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergcont_mName ?? 'N/A' }}
+                                                    {{ $student->parentInfo->emergcont_lName ?? 'N/A' }}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Emergency Contact No.</th>
-                                                <td>{{ $student->parentInfo->emergCont_phone ?? 'N/A' }}</td>
+                                                <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
                                             </tr>
 
                                             <tr>

@@ -197,12 +197,26 @@ class TeacherController extends Controller
             ->orderBy('student_mName')
             ->get();
 
-        // ✅ Use school year start date as default instead of now()
-        $defaultMonth = Carbon::parse($schoolYear->start_date)->format('Y-m');
-        $monthParam = request('month', $defaultMonth);
+        $today = now();
+        $isCurrentSchoolYear = $schoolYear->start_date <= $today && $today <= $schoolYear->end_date;
+
+        if ($isCurrentSchoolYear) {
+            // Use now() if within current school year
+            $defaultMonth = $today->copy();
+            if ($defaultMonth->lt(Carbon::parse($schoolYear->start_date))) {
+                $defaultMonth = Carbon::parse($schoolYear->start_date);
+            } elseif ($defaultMonth->gt(Carbon::parse($schoolYear->end_date))) {
+                $defaultMonth = Carbon::parse($schoolYear->end_date);
+            }
+        } else {
+            // For past/future school years, use the start date of the school year
+            $defaultMonth = Carbon::parse($schoolYear->start_date);
+        }
+
+        $monthParam = request('month', $defaultMonth->format('Y-m'));
         $dateObj = Carbon::createFromFormat('Y-m', $monthParam);
 
-        // ✅ Clamp date within school year bounds
+        // Clamp date within school year bounds
         $schoolStart = Carbon::parse($schoolYear->start_date)->startOfMonth();
         $schoolEnd = Carbon::parse($schoolYear->end_date)->endOfMonth();
 
@@ -335,6 +349,29 @@ class TeacherController extends Controller
         $totalPresent = $maleTotalPresent + $femaleTotalPresent;
         $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
 
+        if ($request->has('__return_array__')) {
+            return compact(
+                'class',
+                'students',
+                'attendanceData',
+                'calendarDates',
+                'combinedTotals',
+                'maleTotals',
+                'femaleTotals',
+                'monthParam',
+                'maleTotalPresent',
+                'femaleTotalPresent',
+                'maleTotalAbsent',
+                'femaleTotalAbsent',
+                'totalAbsent',
+                'totalPresent',
+                'scheduleDays',
+                'schedules',
+                'selectedYear',
+                'schoolYear'
+            ) + ['selectedYearObj' => $schoolYear];
+        }
+
         return view('teacher.classes.myAttendanceRecord', compact(
             'class',
             'students',
@@ -464,31 +501,50 @@ class TeacherController extends Controller
         return back()->with('success', 'Attendance submitted successfully!');
     }
 
-    public function showScanner($grade, $section, $date = null, $schedule_id = null)
+    public function showScanner(Request $request, $grade_level, $section, $date = null, $schedule_id = null)
     {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
         $date = $date ?? now()->toDateString();
-        $class = Classes::where('grade_level', $grade)->where('section', $section)->firstOrFail();
+        $class = $this->getClass($grade_level, $section);
         $dayName = Carbon::parse($date)->format('l');
 
+        // ✅ Retrieve schedules for the class within the selected school year
         $schedules = Schedule::where('class_id', $class->id)
             ->where('teacher_id', Auth::id())
+            ->where('school_year_id', $schoolYear->id)
             ->where('day', $dayName)
+            ->orderBy('start_time')
             ->get();
 
-        $schedule = $schedule_id ? Schedule::find($schedule_id) : $schedules->first();
+        // ✅ If schedule_id is passed, validate it and ensure it's within the same class & year
+        $schedule = $schedule_id ? Schedule::where('id', $schedule_id)
+            ->where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->first() : $schedules->first();
+
         if (!$schedule) return back()->with('error', 'Schedule not found.');
 
-        $gracePeriod = (int) request()->query('grace', 60); // default 60 minutes
+        $gracePeriod = (int) $request->query('grace', 60); // default to 60 minutes
 
-        $students = Student::where('class_id', $class->id)->get();
+        // ✅ Filter students enrolled in this class and school year
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->orderBy('student_sex')
+            ->orderBy('student_lName')
+            ->orderBy('student_fName')
+            ->orderBy('student_mName')
+            ->get();
 
-        // ✅ Mark students who haven't scanned and class has ended as Absent
         $now = now();
+        // ✅ Automatically mark students as absent if past class end time and not yet marked
         if ($now->gt(Carbon::parse($schedule->end_time))) {
             foreach ($students as $student) {
                 $existing = Attendance::where([
                     'student_id' => $student->id,
                     'schedule_id' => $schedule->id,
+                    'school_year_id' => $schoolYear->id,
                     'date' => $date
                 ])->first();
 
@@ -496,6 +552,7 @@ class TeacherController extends Controller
                     Attendance::create([
                         'student_id' => $student->id,
                         'schedule_id' => $schedule->id,
+                        'school_year_id' => $schoolYear->id,
                         'date' => $date,
                         'status' => 'absent',
                         'teacher_id' => Auth::id(),
@@ -507,15 +564,22 @@ class TeacherController extends Controller
             }
         }
 
-        // Reload students with updated attendance
-        $students = Student::where('class_id', $class->id)
-            ->with(['attendances' => function ($q) use ($date, $schedule_id) {
-                $q->where('date', $date);
-                if ($schedule_id) $q->where('schedule_id', $schedule_id);
-            }])->get();
+        // ✅ Reload students with attendance on that date and schedule for this school year
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->with(['attendances' => function ($q) use ($date, $schedule, $schoolYear) {
+                $q->where('date', $date)
+                    ->where('schedule_id', $schedule->id)
+                    ->where('school_year_id', $schoolYear->id);
+            }])
+            ->orderBy('student_sex')
+            ->orderBy('student_lName')
+            ->orderBy('student_fName')
+            ->orderBy('student_mName')
+            ->get();
 
         return view('teacher.classes.qr_scan', compact(
-            'grade',
+            'grade_level',
             'section',
             'date',
             'students',
@@ -523,21 +587,27 @@ class TeacherController extends Controller
             'schedule',
             'schedules',
             'class',
-            'gracePeriod'
+            'gracePeriod',
+            'schoolYear',
+            'selectedYear'
         ));
     }
 
     public function markAttendanceFromQR(Request $request)
     {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        // Validate required fields
         $studentId = $request->input('student_id');
-        $grade = $request->input('grade');
+        $grade_level = $request->input('grade_level');
         $section = $request->input('section');
         $date = $request->input('date') ?? now()->toDateString();
         $scheduleId = $request->input('schedule_id');
-        $graceMinutes = (int) $request->input('grace', 60); // Set default grace period to 60 minutes
+        $graceMinutes = (int) $request->input('grace', 60);
         $customTimeout = $request->input('custom_timeout');
 
-        // ✅ Validate custom timeout format (HH:MM)
+        // Validate custom timeout format (HH:MM)
         if ($customTimeout && !preg_match('/^\d{2}:\d{2}$/', $customTimeout)) {
             return response()->json([
                 'success' => false,
@@ -550,7 +620,7 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Student not found']);
         }
 
-        $class = Classes::where('grade_level', $grade)
+        $class = Classes::where('grade_level', $grade_level)
             ->where('section', $section)
             ->first();
 
@@ -558,18 +628,24 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Class not found.']);
         }
 
-        if ($student->class_id !== $class->id) {
+        $studentInClass = $class->students()
+            ->where('students.id', $student->id)
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->exists();
+
+        if (!$studentInClass) {
+            // Log unauthorized scan attempt
             Log::warning('Unauthorized QR scan attempt', [
                 'student_id' => $student->id,
                 'student_name' => $student->full_name,
-                'scanned_class' => $grade . ' - ' . $section,
+                'scanned_class' => $grade_level . ' - ' . $section,
                 'actual_class_id' => $student->class_id,
                 'timestamp' => now()->toDateTimeString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => '⛔ QR Code does not belong to this class (' . $grade . ' - ' . $section . ').'
+                'message' => '⛔ QR Code does not belong to this class (' . $grade_level . ' - ' . $section . ').'
             ]);
         }
 
@@ -578,10 +654,20 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Schedule not found.']);
         }
 
+        // ✅ Resolve school year
+        $schoolYear = SchoolYear::where('school_year', $request->input('school_year', $this->getDefaultSchoolYear()))
+            ->orWhere('id', $request->input('school_year'))
+            ->first();
+
+        if (!$schoolYear) {
+            return response()->json(['success' => false, 'message' => 'School year not found.']);
+        }
+
         // ✅ Check if attendance already exists
         $existing = Attendance::where([
             'student_id' => $student->id,
             'schedule_id' => $schedule->id,
+            'school_year_id' => $schoolYear->id,
             'date' => $date
         ])->first();
 
@@ -594,29 +680,19 @@ class TeacherController extends Controller
 
         $now = now();
         $startTime = Carbon::parse($schedule->start_time);
-
-        if ($graceMinutes === -1) {
-            $graceLimit = Carbon::parse($schedule->end_time);
-        } else {
-            $graceLimit = Carbon::parse($schedule->start_time)->addMinutes($graceMinutes);
-        }
-
         $endTime = Carbon::parse($schedule->end_time);
-        if ($now->lte($graceLimit)) {
-            $status = 'present';
-        } elseif ($now->gt($endTime)) {
-            $status = 'absent';
-        } else {
-            $status = 'late';
-        }
+        $graceLimit = ($graceMinutes === -1) ? $endTime : $startTime->copy()->addMinutes($graceMinutes);
 
-        // 🔧 Debugging line
+        $status = $now->lte($graceLimit) ? 'present' : ($now->gt($endTime) ? 'absent' : 'late');
+
+        // 🔧 Debug
         Log::debug("Now: $now | Start: $startTime | End: $endTime | Grace: $graceLimit | Status: $status");
 
         // ✅ Mark new attendance
         Attendance::create([
             'student_id' => $student->id,
             'schedule_id' => $schedule->id,
+            'school_year_id' => $schoolYear->id,
             'date' => $date,
             'status' => $status,
             'teacher_id' => Auth::id(),
@@ -635,13 +711,23 @@ class TeacherController extends Controller
 
     public function markManualAttendance(Request $request)
     {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)
+            ->orWhere('id', $selectedYear)
+            ->first();
+
+        if (!$schoolYear) {
+            return response()->json(['success' => false, 'message' => 'School year not found.']);
+        }
+
+        // Validate required fields
         $studentId = $request->input('student_id');
         $status = $request->input('status');
         $date = $request->input('date') ?? now()->toDateString();
         $scheduleId = $request->input('schedule_id');
         $customTimeout = $request->input('custom_timeout');
 
-        // ✅ Validate custom timeout format (HH:MM)
+        // Validate timeout format
         if ($customTimeout && !preg_match('/^\d{2}:\d{2}$/', $customTimeout)) {
             return response()->json([
                 'success' => false,
@@ -659,16 +745,69 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Schedule not found']);
         }
 
-        $attendance = Attendance::updateOrCreate(
+        // Check class validity
+        $class = Classes::where('id', $student->class_id)->first();
+        if (!$class) {
+            return response()->json(['success' => false, 'message' => 'Class not found.']);
+        }
+
+        $studentInClass = $class->students()
+            ->where('students.id', $student->id)
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->exists();
+
+        if (!$studentInClass) {
+            Log::warning('Manual attendance attempt for unenrolled student', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'class_id' => $student->class_id,
+                'school_year' => $schoolYear->school_year,
+                'timestamp' => now()->toDateTimeString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => '⛔ Student is not enrolled in this class for the selected school year.'
+            ]);
+        }
+
+        // Check for existing attendance
+        $existing = Attendance::where([
+            'student_id' => $student->id,
+            'schedule_id' => $schedule->id,
+            'school_year_id' => $schoolYear->id,
+            'date' => $date
+        ])->first();
+
+        if ($existing && $existing->status === $status) {
+            return response()->json([
+                'success' => false,
+                'message' => '⚠️ Attendance already marked as ' . ucfirst($status) . '.'
+            ]);
+        }
+
+        // Debug log
+        Log::debug('Manual attendance', [
+            'student_id' => $student->id,
+            'status' => $status,
+            'schedule_id' => $schedule->id,
+            'teacher_id' => Auth::id(),
+            'time_in' => now()->format('H:i:s'),
+            'time_out' => $customTimeout ?? $schedule->end_time,
+        ]);
+
+        // Save or update attendance
+        Attendance::updateOrCreate(
             [
                 'student_id' => $student->id,
                 'schedule_id' => $schedule->id,
+                'school_year_id' => $schoolYear->id,
                 'date' => $date
             ],
             [
                 'status' => $status,
                 'teacher_id' => Auth::id(),
-                'class_id' => $student->class_id,
+                'class_id' => $class->id,
                 'time_in' => now()->format('H:i:s'),
                 'time_out' => $customTimeout ?? $schedule->end_time,
             ]
@@ -681,6 +820,7 @@ class TeacherController extends Controller
             'status' => $status
         ]);
     }
+
 
     // Helper function to get the default school year (e.g., "2024-2025")
     private function getDefaultSchoolYear()

@@ -28,13 +28,10 @@ class IdController extends Controller
                 ->generate(json_encode(['route' => 'student.info', 'id' => $student->id]))
         );
 
-        // 2.125in = 153.75pt, 3.375in = 243.75pt (width x height in portrait)
-        $customPaper = [0, 0, 153.75, 243.75];
-
         $pdf = Pdf::loadView('pdf.id_card', compact('student', 'qrCode'))
-            ->setPaper($customPaper, 'portrait');
+            ->setPaper('A4', 'portrait');
 
-        return $pdf->download($student->student_lName . '_ID.pdf');
+        return $pdf->download($student->student_fName . '_' . $student->student_lName . '_ID.pdf');
     }
 
     // public function downloadID($id)

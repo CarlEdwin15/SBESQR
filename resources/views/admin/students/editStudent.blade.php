@@ -622,35 +622,35 @@
                                 <div class="row">
                                     <!-- Emergency Contact's First Name Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_emergContFName" class="form-label fw-bold">First
+                                        <label for="student_emergcontFName" class="form-label fw-bold">First
                                             Name</label>
-                                        <input type="text" name="student_emergContFName" id="student_emergContFName"
-                                            class="form-control" value="{{ $student->parentInfo->emergCont_fName }}" />
+                                        <input type="text" name="student_emergcontFName" id="student_emergcontFName"
+                                            class="form-control" value="{{ $student->parentInfo->emergcont_fName }}" />
                                     </div>
 
                                     <!-- Emergency Contact's Middle Name Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_emergContMName" class="form-label fw-bold">Midlle
+                                        <label for="student_emergcontMName" class="form-label fw-bold">Midlle
                                             Name</label>
-                                        <input type="text" name="student_emergContMName" id="student_emergContMName"
-                                            class="form-control" value="{{ $student->parentInfo->emergCont_mName }}" />
+                                        <input type="text" name="student_emergcontMName" id="student_emergcontMName"
+                                            class="form-control" value="{{ $student->parentInfo->emergcont_mName }}" />
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <!-- Emergency Contact's Last Name Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_emergContLName" class="form-label fw-bold">Last
+                                        <label for="student_emergcontLName" class="form-label fw-bold">Last
                                             Name</label>
-                                        <input type="text" name="student_emergContLName" id="student_emergContLName"
-                                            class="form-control" value="{{ $student->parentInfo->emergCont_lName }}" />
+                                        <input type="text" name="student_emergcontLName" id="student_emergcontLName"
+                                            class="form-control" value="{{ $student->parentInfo->emergcont_lName }}" />
                                     </div>
 
                                     <!-- Emergency Contact's Phone No. Field -->
                                     <div class="col mb-2 mt-2">
-                                        <label for="student_emergContPhone" class="form-label fw-bold">Phone No.</label>
-                                        <input type="text" name="student_emergContPhone" id="student_emergContPhone"
-                                            class="form-control" value="{{ $student->parentInfo->emergCont_phone }}" />
+                                        <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
+                                        <input type="text" name="student_emergcontPhone" id="student_emergcontPhone"
+                                            class="form-control" value="{{ $student->parentInfo->emergcont_phone }}" />
                                     </div>
                                 </div>
 

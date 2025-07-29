@@ -7,13 +7,14 @@ use App\Http\Controllers\ParentController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\IdController;
 use App\Http\Controllers\HomeController;
-use Illuminate\Support\Facades\Route;
 use App\Exports\TeachersExport;
+use App\Exports\SF2Export;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AttendanceController;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,7 +31,7 @@ Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name(
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 // Facebook login
-Route::get('/auth/facebook', [FacebookController::class, 'redirectToFacebook'])->name('facebook.parent.login');
+Route::get('/auth/facebook', [FacebookController::class, 'redirectToFacebook'])->name('facebook.login');
 Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
 
 // User Account Settings (on ADMIN dashboard)
@@ -137,15 +138,20 @@ Route::get('attendanceHistory/{grade_level}/{section}/{date?}/{schedule_id?}', [
 
 Route::post('submitAttendance', [TeacherController::class, 'submitAttendance'])->name('teacher.submitAttendance');
 
-Route::get('/teacher/attendance/scan/{grade}/{section}/{date?}/{schedule_id?}', [TeacherController::class, 'showScanner'])
+Route::get('/teacher/attendance/{grade}/{section}/scan/{date?}/{schedule_id?}', [TeacherController::class, 'showScanner'])
     ->name('teacher.scanAttendance');
 
-Route::post('/teacher/attendance/mark', [TeacherController::class, 'markAttendanceFromQR'])
+Route::post('/teacher/attendance/qr-mark', [TeacherController::class, 'markAttendanceFromQR'])
     ->name('teacher.markAttendanceFromQR');
 
 Route::post('/teacher/manual-attendance', [TeacherController::class, 'markManualAttendance'])->name('teacher.markManualAttendance');
 
+Route::get('/teacher-export-attendance', function () {
+    $controller = app(AttendanceController::class);
+    $data = $controller->getAttendanceExportData(); // Custom method to return needed data
 
+    return Excel::download(new SF2Export($data), 'SF2.xlsx');
+})->name('export.sf2');
 
 //List of Student's Info (on teacher Dashboard)
 Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');

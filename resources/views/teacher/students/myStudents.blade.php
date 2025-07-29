@@ -276,7 +276,7 @@
                                                 </td>
                                                 <td>{{ ucfirst($student->class->grade_level) }} -
                                                     {{ strtoupper($student->class->section) }}</td>
-                                                <td>{{ $student->parentInfo->emergCont_phone }}</td>
+                                                <td>{{ $student->parentInfo->emergcont_phone }}</td>
                                                 <td>
                                                     <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
                                                         data-bs-toggle="dropdown">
