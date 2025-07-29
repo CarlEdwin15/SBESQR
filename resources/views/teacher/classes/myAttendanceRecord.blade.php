@@ -271,24 +271,7 @@
                             <h3 class="fw-bold mb-0 text-primary">{{ $class->formatted_grade_level }} -
                                 {{ $class->section }}</h3>
 
-                            <!-- Month Picker -->
-                            <form method="GET"
-                                action="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
-                                class="d-flex align-items-center">
 
-                                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
-
-                                <label for="month" class="me-2 mb-0">Date:</label>
-
-                                <input type="month" name="month" id="month" class="form-control me-2"
-                                    value="{{ $monthParam }}"
-                                    min="{{ \Carbon\Carbon::parse($selectedYearObj->start_date)->format('Y-m') }}"
-                                    max="{{ \Carbon\Carbon::parse($selectedYearObj->end_date)->format('Y-m') }}">
-
-                                <button type="submit" class="btn btn-primary me-2 d-flex align-items-center">
-                                    <i class='bx bx-filter'></i><span class="d-none d-sm-block">Filter</span>
-                                </button>
-                            </form>
                         </div>
 
                         <div class="text-center mb-4">
@@ -301,6 +284,29 @@
                                         aria-label="Close"></button>
                                 </div>
                             @endif
+                        </div>
+
+                        <div class="d-flex mb-3">
+                            <div class="ms-auto d-flex align-items-end">
+                                <!-- Month Picker -->
+                                <form method="GET"
+                                    action="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}"
+                                    class="d-flex align-items-end gap-2">
+
+                                    <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+
+                                    <label for="month" class="mb-0 d-none d-sm-block">Date:</label>
+
+                                    <input type="month" name="month" id="month" class="form-control"
+                                        value="{{ $monthParam }}"
+                                        min="{{ \Carbon\Carbon::parse($selectedYearObj->start_date)->format('Y-m') }}"
+                                        max="{{ \Carbon\Carbon::parse($selectedYearObj->end_date)->format('Y-m') }}">
+
+                                    <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
+                                        <i class='bx bx-filter'></i><span class="d-none d-sm-block">Filter</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                         <!-- Attendance Table -->

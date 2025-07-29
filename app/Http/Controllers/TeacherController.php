@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
 
 class TeacherController extends Controller
 {
@@ -629,6 +631,21 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Class not found.']);
         }
 
+        // Check if student is enrolled in the current school year (in any class)
+        $enrolledThisYear = DB::table('class_student')
+            ->where('student_id', $student->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('enrollment_status', 'enrolled')
+            ->exists();
+
+        if (!$enrolledThisYear) {
+            return response()->json([
+                'success' => false,
+                'message' => '⛔ Student is not yet enrolled for the current school year.'
+            ]);
+        }
+
+        // Then check if student is in the scanned class
         $studentInClass = $class->students()
             ->where('students.id', $student->id)
             ->wherePivot('school_year_id', $schoolYear->id)
@@ -636,7 +653,7 @@ class TeacherController extends Controller
 
         if (!$studentInClass) {
             // Log unauthorized scan attempt
-            Log::warning('Unauthorized QR scan attempt', [
+            Log::warning('Unauthorized QR scan attempt (Wrong class)', [
                 'student_id' => $student->id,
                 'student_name' => $student->full_name,
                 'scanned_class' => $grade_level . ' - ' . $section,
@@ -655,7 +672,7 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Schedule not found.']);
         }
 
-        // ✅ Resolve school year
+        // Resolve school year
         $schoolYear = SchoolYear::where('school_year', $request->input('school_year', $this->getDefaultSchoolYear()))
             ->orWhere('id', $request->input('school_year'))
             ->first();
@@ -664,7 +681,7 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'School year not found.']);
         }
 
-        // ✅ Check if attendance already exists
+        // Check if attendance already exists
         $existing = Attendance::where([
             'student_id' => $student->id,
             'schedule_id' => $schedule->id,
@@ -686,10 +703,10 @@ class TeacherController extends Controller
 
         $status = $now->lte($graceLimit) ? 'present' : ($now->gt($endTime) ? 'absent' : 'late');
 
-        // 🔧 Debug
+        // Debug
         Log::debug("Now: $now | Start: $startTime | End: $endTime | Grace: $graceLimit | Status: $status");
 
-        // ✅ Mark new attendance
+        // Mark new attendance
         Attendance::create([
             'student_id' => $student->id,
             'schedule_id' => $schedule->id,

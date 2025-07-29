@@ -359,7 +359,9 @@
                                             @endif
                                         </span>
 
-                                        <h3 class="card-title text-nowrap mb-2">{{ $attendanceToday }}%</h3>
+                                        <h3 class="card-title text-nowrap mb-2 {{ !isset($schedule) ? 'd-none' : '' }}">
+                                            {{ $attendanceToday }}%
+                                        </h3>
                                     </a>
                                 </div>
                             </div>

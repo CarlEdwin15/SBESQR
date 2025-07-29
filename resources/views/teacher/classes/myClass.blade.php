@@ -229,8 +229,13 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'school_year' => $selectedYear]) }}"
-                        class="btn btn-danger mb-3">Back</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'school_year' => $selectedYear]) }}"
+                            class="btn btn-danger mb-3 d-flex align-items-center">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
+                    </div>
 
                     <div class="card p-4 shadow-sm mb-4">
                         <h4 class="fw-bold text-warning text-center">Class Details &amp; Management</h4>

@@ -235,23 +235,30 @@
                         $carbonDate = \Carbon\Carbon::parse($date);
                         $day = $carbonDate->format('D'); // Mon, Tue, etc.
                         $isToday = $carbonDate->isToday();
+
+                        $startTime = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
+                        $endTime = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
                     @endphp
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 gap-3">
+
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <!-- Back Button -->
                         <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}&date={{ $carbonDate->format('Y-m-d') }}"
-                            class="btn btn-danger mb-2 mb-md-0">Back</a>
+                            class="btn btn-danger d-flex align-items-center gap-2">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
 
-                        @php
-                            $startTime = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
-                            $endTime = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
-                        @endphp
-
-                        <!-- Time-Out Selector -->
-                        <div class="d-flex align-items-center">
-                            <label for="custom-timeout" class="fw-bold text-muted me-2 mb-0">Select Time-Out:</label>
-                            <input type="time" id="custom-timeout" class="form-control me-2" style="width: 130px;"
+                        <!-- Time-Out Group -->
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <label for="custom-timeout" class="fw-bold text-muted mb-0 d-none d-sm-block">Select
+                                Time-Out:</label>
+                            <input type="time" id="custom-timeout" class="form-control" style="width: 130px;"
                                 value="{{ $endTime }}" data-start="{{ $startTime }}"
                                 data-end="{{ $endTime }}">
-                            <button class="btn btn-primary" onclick="setCustomTimeout()">Apply</button>
+                            <button class="btn btn-primary d-flex align-items-center gap-2" onclick="setCustomTimeout()">
+                                <i class='bx bx-list-check'></i>
+                                <span class="d-none d-sm-block">Apply</span>
+                            </button>
                         </div>
                     </div>
 
@@ -430,6 +437,9 @@
                                 <audio id="success-sound-2" src="{{ asset('sounds/attendance_present1.m4a') }}"
                                     preload="auto"></audio>
 
+                                <audio id="error-sound" src="{{ asset('sounds/attendance_invalid.m4a') }}"
+                                    preload="auto"></audio>
+
                             </div>
                         </div>
                     </div>
@@ -541,18 +551,15 @@
                             grace: grace,
                             custom_timeout: customTimeout
                         })
-
                     })
                     .then(res => res.json())
                     .then(res => {
                         if (res.success) {
-                            document.getElementById('success-sound-1').play(); // ✅ Play success sound
+                            document.getElementById('success-sound-1').play();
                             document.getElementById('success-sound-2').play();
 
-                            // ✅ Show floating popup
                             showPopup(res.student, res.status);
 
-                            // ✅ Update table as before
                             const row = document.querySelector(`tr[data-student-id="${res.student_id}"]`);
                             if (row) {
                                 row.classList.remove('table-success', 'table-warning', 'table-danger',
@@ -571,6 +578,9 @@
                                 qrResult.innerText = '';
                             }, 2500);
                         } else {
+                            document.getElementById('error-sound').play(); // 🔊 Play error sound
+                            flashErrorBorder(); // ✨ Optional visual feedback
+
                             qrResult.classList.remove('text-success');
                             qrResult.classList.add('text-danger');
                             qrResult.innerText = '❌ ' + res.message;
@@ -582,6 +592,9 @@
                         }
                     })
                     .catch(err => {
+                        document.getElementById('error-sound').play();
+                        flashErrorBorder();
+
                         qrResult.classList.remove('text-success');
                         qrResult.classList.add('text-danger');
                         qrResult.innerText = '❌ Network error.';
@@ -589,6 +602,9 @@
                     });
 
             } catch (e) {
+                document.getElementById('error-sound').play();
+                flashErrorBorder();
+
                 qrResult.classList.remove('text-success');
                 qrResult.classList.add('text-danger');
                 qrResult.innerText = '❌ Invalid QR code format.';
@@ -603,6 +619,15 @@
             console.error(e);
             alert('Camera error: ' + e);
         });
+
+        // Optional: Add a flash effect to video on error
+        function flashErrorBorder() {
+            const video = document.getElementById('preview');
+            video.classList.add('qr-error');
+            setTimeout(() => {
+                video.classList.remove('qr-error');
+            }, 600);
+        }
 
         function getStatusClass(status) {
             switch (status) {
@@ -672,12 +697,12 @@
             popup.classList.remove('d-none');
             popup.style.opacity = 1;
 
-            // 🔁 Clear any previous timeout so new notifications reset the timer
+            // Clear any previous timeout so new notifications reset the timer
             if (popupTimeout) {
                 clearTimeout(popupTimeout);
             }
 
-            // ⏲️ Set a new timeout to hide the popup after 3.5s of inactivity
+            // Set a new timeout to hide the popup after 3.5s of inactivity
             popupTimeout = setTimeout(() => {
                 popup.style.opacity = 0;
                 setTimeout(() => popup.classList.add('d-none'), 600);
@@ -818,4 +843,25 @@
             }
         });
     </script>
+@endpush
+
+@push('styles')
+    <style>
+        .qr-error {
+            border: 3px solid red;
+            animation: flash 0.7s ease-in-out 2;
+        }
+
+        @keyframes flash {
+
+            0%,
+            100% {
+                border-color: transparent;
+            }
+
+            50% {
+                border-color: red;
+            }
+        }
+    </style>
 @endpush

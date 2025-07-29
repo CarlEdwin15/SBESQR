@@ -233,25 +233,30 @@
                         </div>
                     </div>
 
-                    <h2 class="card-title mb-2 fw-bold text-primary text-center">
+                    <h2 class="card-title mb-5 fw-bold text-primary text-center">
                         Attendance History {{ ucfirst($class->grade_level) }} - {{ $class->section }}
                         ({{ $selectedYear }})
                     </h2>
 
-                    <div class="d-flex justify-content-between align-items-end mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
                         <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
-                            class="btn btn-danger">Back</a>
+                            class="btn btn-danger d-flex align-items-center gap-2">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
 
                         {{-- Date Selection Form --}}
                         <form id="dateForm" method="GET">
                             <input type="hidden" name="school_year" value="{{ $selectedYear }}">
                             <div class="d-flex gap-2 align-items-end">
                                 <div>
-                                    <label for="date">Date Selection:</label>
                                     <input type="date" id="date" name="date" class="form-control"
                                         value="{{ $targetDate }}">
                                 </div>
-                                <button class="btn btn-primary" type="submit">View</button>
+                                <button class="btn btn-primary me-2 d-flex align-items-center gap-2" type="submit">
+                                    <i class='bx bx-filter'></i>
+                                    <span class="d-none d-sm-block">Filter</span>
+                                </button>
                             </div>
                         </form>
                     </div>
