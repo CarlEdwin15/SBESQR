@@ -100,16 +100,15 @@ Route::get('/classes/{grade_level}/{section}/export-master-list', [ClassControll
 // Schedule Management (on ADMIN dashboard)
 Route::get('/classes/{grade_level}/{section}/schedule', [ScheduleController::class, 'displaySchedule'])->name('classes.schedule.index');
 
-Route::post('/classes/{grade_level}/{section}/addSchedule', [ScheduleController::class, 'addSchedule'])->name('classes.addSchedule');
+Route::post('/classes/{grade_level}/{section}/add-schedule', [ScheduleController::class, 'addSchedule'])->name('classes.addSchedule');
 
-Route::post('classes/{grade_level}/{section}/editSchedule', [ScheduleController::class, 'editSchedule'])->name('classes.editSchedule');
+Route::post('classes/{grade_level}/{section}/edit-schedule', [ScheduleController::class, 'editSchedule'])->name('classes.editSchedule');
 
-Route::delete('classes/{grade_level}/{section}/deleteSchedule/{subject}', [ScheduleController::class, 'deleteSchedule'])->name('classes.deleteSchedule');
+Route::delete('classes/{grade_level}/{section}/delete-schedule/{schedule_id}', [ScheduleController::class, 'deleteSchedule'])->name('classes.deleteSchedule');
 
 
 // Attendance Management (on ADMIN dashboard)
 Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController::class, 'attendance'])->name('classes.attendance');
-
 
 
 

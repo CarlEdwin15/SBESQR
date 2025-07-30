@@ -119,17 +119,16 @@ class ScheduleController extends Controller
         return back()->with('success', 'Schedule added successfully!');
     }
 
-
     public function editSchedule(Request $request, $grade_level, $section)
     {
         $request->validate([
+            'schedule_id' => 'required|exists:schedules,id',
             'subject_name' => 'required|string|max:255',
-            'original_subject_name' => 'required|string|max:255',
             'teacher_id' => 'required|exists:users,id',
             'days' => 'required|array',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
-            'school_year' => 'required|string'
+            'school_year' => 'required|string',
         ]);
 
         $schoolYear = SchoolYear::where('school_year', $request->school_year)->firstOrFail();
@@ -137,10 +136,15 @@ class ScheduleController extends Controller
             ->where('section', $section)
             ->firstOrFail();
 
+        $originalSchedule = Schedule::where('id', $request->schedule_id)
+            ->where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->firstOrFail();
+
         foreach ($request->days as $day) {
             $conflict = Schedule::where('teacher_id', $request->teacher_id)
                 ->where('day', $day)
-                ->where('class_id', '!=', $class->id)
+                ->where('id', '!=', $originalSchedule->id)
                 ->where('school_year_id', $schoolYear->id)
                 ->where(function ($query) use ($request) {
                     $query->whereBetween('start_time', [$request->start_time, $request->end_time])
@@ -155,36 +159,25 @@ class ScheduleController extends Controller
             if ($conflict) {
                 $formattedStart = \Carbon\Carbon::createFromFormat('H:i', $request->start_time)->format('g:i A');
                 $formattedEnd = \Carbon\Carbon::createFromFormat('H:i', $request->end_time)->format('g:i A');
-
                 return back()->withErrors([
                     'schedule_conflict' => "The selected teacher already has a schedule from {$formattedStart} - {$formattedEnd} on {$day}."
                 ])->withInput();
             }
         }
 
-        // Delete old schedule for that subject, class, and school year
-        Schedule::where('class_id', $class->id)
-            ->where('subject_name', $request->original_subject_name)
-            ->where('school_year_id', $schoolYear->id)
-            ->delete();
-
-        // Insert new schedule entries
-        foreach ($request->days as $day) {
-            Schedule::create([
-                'subject_name' => $request->subject_name,
-                'teacher_id' => $request->teacher_id,
-                'class_id' => $class->id,
-                'school_year_id' => $schoolYear->id,
-                'day' => $day,
-                'start_time' => $request->start_time,
-                'end_time' => $request->end_time,
-            ]);
-        }
+        // Update the existing schedule
+        $originalSchedule->update([
+            'subject_name' => $request->subject_name,
+            'teacher_id' => $request->teacher_id,
+            'day' => $request->days[0],
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+        ]);
 
         return back()->with('success', 'Schedule updated successfully!');
     }
 
-    public function deleteSchedule(Request $request, $grade_level, $section, $subject)
+    public function deleteSchedule(Request $request, $grade_level, $section, $schedule_id)
     {
         $request->validate([
             'school_year' => 'required|string'
@@ -195,10 +188,12 @@ class ScheduleController extends Controller
             ->where('section', $section)
             ->firstOrFail();
 
-        Schedule::where('class_id', $class->id)
-            ->where('subject_name', $subject)
+        $schedule = Schedule::where('id', $schedule_id)
+            ->where('class_id', $class->id)
             ->where('school_year_id', $schoolYear->id)
-            ->delete();
+            ->firstOrFail();
+
+        $schedule->delete();
 
         return back()->with('success', 'Schedule deleted successfully.');
     }

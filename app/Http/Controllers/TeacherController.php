@@ -236,6 +236,7 @@ class TeacherController extends Controller
             ->where('teacher_id', Auth::id())
             ->pluck('day')
             ->map(fn($day) => Carbon::parse($day)->format('D'))
+            ->unique()
             ->toArray();
 
         $schedules = Schedule::where('class_id', $class->id)

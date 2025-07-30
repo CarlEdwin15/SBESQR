@@ -43,7 +43,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Teacherss</div>
+                                    <div class="text-light">All Teachers</div>
                                 </a>
                             </li>
                         </ul>
@@ -58,7 +58,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">All Students</div>
+                                    <div class="text-warning">All Students</div>
                                 </a>
                             </li>
                             <li class="menu-item">
