@@ -23,7 +23,7 @@ class AdminSeeder extends Seeder
 
         User::create([
             'firstName' => 'Admin 2',
-            'email' => 'caconde@my.cspc.edu.ph',
+            'email' => 'conde@gmail.com',
             'password' => Hash::make('admin123'),
             'role' => 'admin',
         ]);
@@ -64,8 +64,8 @@ class AdminSeeder extends Seeder
             'firstName' => 'Jison',
             'middleName' => 'Santos',
             'lastName' => 'Titum',
-            'email' => 'titum@gmail.com',
-            'password' => Hash::make('@Titum123'),
+            'email' => 'piggypogi09@gmail.com',
+            'password' => Hash::make('@Pogi123'),
             'role' => 'teacher',
             'gender' => 'male',
             'phone' => '09179876543',

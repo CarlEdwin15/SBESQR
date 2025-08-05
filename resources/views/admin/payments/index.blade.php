@@ -1,7 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | ' . ucfirst(str_replace('_', ' ', $class->grade_level)) . ' - ' . $class->section)
-
+@section('title', 'Admin | Payments')
 
 
 @section('content')
@@ -76,15 +75,15 @@
                     </li>
 
                     {{-- Classes sidebar --}}
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left"></i>
-                            <div>Classes</div>
+                    <li class="menu-item">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                            <div class="text-light">Classes</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item active">
+                            <li class="menu-item">
                                 <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-warning">All Classes</div>
+                                    <div class="text-light">All Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -106,15 +105,15 @@
                     </li>
 
                     {{-- Payments sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                            <div class="text-light">Payments</div>
+                    <li class="menu-item active open">
+                        <a href="javascript:void(0);" class="menu-link menu-toggle">
+                            <i class="menu-icon tf-icons bx bx-wallet-alt"></i>
+                            <div>Payments</div>
                         </a>
                         <ul class="menu-sub">
-                            <li class="menu-item">
+                            <li class="menu-item active">
                                 <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Payments</div>
+                                    <div class="text-warning">All Payments</div>
                                 </a>
                             </li>
                         </ul>
@@ -255,106 +254,74 @@
 
                 <!-- Content wrapper -->
                 <div class="container-xxl flex-grow-1 container-p-y">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <div>
-                            <h4 class="fw-bold text-warning mb-0">
-                                <span class="text-muted fw-light">
-                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                                    <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
-                                </span>
-                                {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
-                            </h4>
+                    <h4 class="fw-bold text-warning mb-2">
+                        <span class="text-muted fw-light">
+                            <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                            <a class="text-muted fw-light" href="{{ route('all.classes') }}">Payments</a> /
+                        </span>
+                        All Payments
+                    </h4>
+
+
+                    {{-- Card --}}
+                    <div class="card">
+                        <div class="container">
+                            <h1>Payments</h1>
+                            <a href="{{ route('payments.create') }}" class="btn btn-primary mb-3">Add New Payment</a>
+
+                            @if (session('success'))
+                                <div class="alert alert-success">{{ session('success') }}</div>
+                            @endif
+
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Payment Name</th>
+                                        <th>Amount Due</th>
+                                        <th>Amount Paid</th>
+                                        <th>Status</th>
+                                        <th>Date Created</th>
+                                        <th>Due Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($payments as $payment)
+                                        <tr>
+                                            <td>{{ $payment->student->full_name ?? 'N/A' }}</td>
+                                            <td>{{ $payment->payment_name }}</td>
+                                            <td>{{ number_format($payment->amount_due, 2) }}</td>
+                                            <td>{{ number_format($payment->amount_paid, 2) }}</td>
+                                            <td>{{ ucfirst($payment->status) }}</td>
+                                            <td>{{ $payment->date_created }}</td>
+                                            <td>{{ $payment->due_date }}</td>
+                                            <td>
+                                                <a href="{{ route('payments.show', $payment) }}"
+                                                    class="btn btn-info btn-sm">View</a>
+                                                <a href="{{ route('payments.edit', $payment) }}"
+                                                    class="btn btn-warning btn-sm">Edit</a>
+                                                <form action="{{ route('payments.destroy', $payment) }}" method="POST"
+                                                    class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                                    @csrf @method('DELETE')
+                                                    <button class="btn btn-danger btn-sm">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+
+                            {{ $payments->links() }}
                         </div>
                     </div>
+                    {{-- /Card --}}
 
-                    <h2 class="text-center text-primary fw-bold">Class Details &amp; Management</h2>
 
-                    <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}" class="btn btn-danger mb-3">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
+                    <hr class="my-5" />
 
-                    <div class="card p-4 shadow-sm">
-                        <div class="row g-4 mb-4">
-                            <!-- Students -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-people-fill fs-1"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Students</h6>
-                                        <div class="display-6 fw-bold">{{ $studentCount }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Attendance Today -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-calendar3 fs-1"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Attendance Today</h6>
-                                        <div class="display-6 fw-bold">
-                                            {{ $attendanceToday ?? '0' }}%
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Teacher -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-person-badge fs-1"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Adviser</h6>
-                                        <div class="fw-bold text-primary">
-                                            {{ $class->adviser->firstName ?? 'N/A' }}
-                                            {{ $class->adviser->lastName ?? '' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Navigation Links -->
-                        <div class="row g-3 mb-5">
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.schedule.index', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
-                                    <i class="bi bi-clock-history fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Schedules</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.attendance.records', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
-                                    <i class="bi bi-clipboard-check fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Attendances</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.masterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
-                                    <i class="bi bi-list-ul fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Master's List</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="#"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-danger text-white h-100">
-                                    <i class="bi bi-trash fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Delete Class</div>
-                                </a>
-                            </div>
-                        </div>
-
-                        {{-- <hr class="my-5" /> --}}
-                    </div>
                 </div>
                 <!-- Content wrapper -->
-
 
             </div>
             <!-- / Layout page -->
@@ -366,30 +333,84 @@
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 
 
-
-
-
 @endsection
 
 @push('scripts')
     <script>
-        // search bar
-        document.getElementById('studentSearch').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#studentTable tbody .student-row');
+        // register alert
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('#backDropModal form');
+            const registerBtn = document.getElementById('registerTeacherBtn');
 
-            rows.forEach(row => {
-                const rowText = row.innerText.toLowerCase();
-                row.style.display = rowText.includes(searchValue) ? '' : 'none';
+            registerBtn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default form submission
+
+                // Manually check all required fields
+                const requiredFields = form.querySelectorAll('[required]');
+                let allFilled = true;
+
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        allFilled = false;
+                        field.classList.add('is-invalid'); // optional: Bootstrap red border
+                    } else {
+                        field.classList.remove('is-invalid');
+                    }
+                });
+
+                if (!allFilled) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Form',
+                        text: 'Please fill in all required fields before submitting.',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                // If all fields are filled, show confirmation alert
+                Swal.fire({
+                    title: "Add Schedule?",
+                    text: "Are you sure all the details are correct?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#06D001",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, Add",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: "Adding...",
+                            text: "Please wait while we process the adding of schedule.",
+                            icon: "info",
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            timer: 1200,
+                            customClass: {
+                                container: 'my-swal-container'
+                            },
+                            willClose: () => {
+                                form.submit();
+                            }
+                        });
+                    }
+                });
             });
         });
     </script>
 
     <script>
         // delete button alert
-        function confirmDelete(student_id, student_fName, student_lName) {
+        function confirmDelete(teacherId, firstName, lastName) {
             Swal.fire({
-                title: `Delete ${student_fName} ${student_lName}'s record?`,
+                title: `Delete ${firstName} ${lastName}'s record?`,
                 text: "This action cannot be undone.",
                 icon: "warning",
                 showCancelButton: true,
@@ -413,7 +434,7 @@
                         },
                         didOpen: () => {
                             setTimeout(() => {
-                                document.getElementById('delete-form-' + student_id).submit();
+                                document.getElementById('delete-form-' + teacherId).submit();
                             }, 1000);
                         }
                     });
@@ -448,7 +469,6 @@
                 confirmButtonColor: "#3085d6",
                 cancelButtonColor: "#d33",
                 confirmButtonText: "Yes, log out!",
-
                 customClass: {
                     container: 'my-swal-container'
                 }
@@ -457,39 +477,12 @@
                 if (result.isConfirmed) {
                     Swal.fire({
                         title: "Logged out Successfully!",
-                        icon: "success",
-                        customClass: {
-                            container: 'my-swal-container'
-                        }
+                        icon: "success"
                     });
                     document.getElementById('logout-form').submit();
                 }
             });
         }
-    </script>
-
-    <script>
-        // alert for upload and preview profile in registration
-        const uploadInput = document.getElementById('upload');
-        const previewImg = document.getElementById('photo-preview');
-        const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}";
-
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        resetBtn.addEventListener('click', function() {
-            uploadInput.value = '';
-            previewImg.src = defaultImage;
-        });
     </script>
 @endpush
 
@@ -503,14 +496,14 @@
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
-        .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .hoverable-schedule-cell {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
         }
 
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+        .hoverable-schedule-cell:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
     </style>
 @endpush

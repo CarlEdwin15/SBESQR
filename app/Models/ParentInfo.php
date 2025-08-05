@@ -21,6 +21,7 @@ class ParentInfo extends Model
         'emergcont_mName',
         'emergcont_lName',
         'emergcont_phone',
+        'parent_email',
     ];
 
     public function student()

@@ -94,7 +94,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">All Announcements</div>
                                 </a>
                             </li>
@@ -109,7 +109,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('payments.index') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">All Payments</div>
                                 </a>
                             </li>
@@ -196,9 +196,67 @@
                     </script>
 
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
-                            <!-- User -->
+
+                            <!-- Notification Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown"
+                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class='bx bx-bell fs-4'></i>
+                                    <span class="badge bg-danger rounded-pill badge-notifications">3</span>
+                                </a>
+
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0"
+                                    aria-labelledby="notificationDropdown"
+                                    style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+                                    <li class="px-3 pt-2">
+                                        <h6 class="mb-1 d-flex justify-content-between">
+                                            Notification
+                                            <span class="badge bg-light-primary text-primary fw-bold">3 New</span>
+                                        </h6>
+                                    </li>
+
+                                    <!-- Sample Notifications -->
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
+                                            <img src="{{ asset('assetsDashboard/img/avatars/1.png') }}" alt="avatar"
+                                                class="rounded-circle" width="36" height="36">
+                                            <div>
+                                                <strong>Congratulation Lettie 🎉</strong>
+                                                <div class="text-muted small">Won the monthly best seller badge</div>
+                                                <small class="text-muted">1h ago</small>
+                                            </div>
+                                            <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
+                                            <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
+                                                style="width:36px; height:36px;">CF</div>
+                                            <div>
+                                                <strong>Charles Franklin</strong>
+                                                <div class="text-muted small">Accepted your connection</div>
+                                                <small class="text-muted">12h ago</small>
+                                            </div>
+                                            <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <hr class="dropdown-divider my-0">
+                                    </li>
+
+                                    <li>
+                                        <a href="#" class="dropdown-item text-center text-primary fw-semibold py-2">
+                                            View all notifications
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!-- /Notification Dropdown -->
+
+                            <!-- User Dropdown -->
                             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
                                     data-bs-toggle="dropdown">
@@ -231,13 +289,6 @@
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar">
                                                     @auth
-                                                        @php
-                                                            $profilePhoto = Auth::user()->profile_photo
-                                                                ? asset('storage/' . Auth::user()->profile_photo)
-                                                                : asset(
-                                                                    'assetsDashboard/img/profile_pictures/admin_profile.png',
-                                                                );
-                                                        @endphp
                                                         <img src="{{ $profilePhoto }}" alt="Profile Photo"
                                                             class="w-px-40 h-auto rounded-circle" />
                                                     @else
@@ -250,19 +301,20 @@
                                                     <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
                                                 @endauth
                                             </div>
-
                                         </a>
                                     </li>
 
                                     <li>
                                         <div class="dropdown-divider"></div>
                                     </li>
+
                                     <li>
                                         <a class="dropdown-item" href="#">
                                             <i class="bx bx-user me-2"></i>
                                             <span class="align-middle">My Profile</span>
                                         </a>
                                     </li>
+
                                     <li>
                                         <a class="dropdown-item" href="{{ route('account.settings') }}">
                                             <i class="bx bx-cog me-2"></i>
@@ -273,6 +325,7 @@
                                     <li>
                                         <div class="dropdown-divider"></div>
                                     </li>
+
                                     <form id="logout-form" method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <x-dropdown-link class="dropdown-item" href="{{ route('logout') }}"
@@ -281,10 +334,10 @@
                                             {{ __('Log Out') }}
                                         </x-dropdown-link>
                                     </form>
-
                                 </ul>
                             </li>
-                            <!--/ User -->
+                            <!-- /User Dropdown -->
+
                         </ul>
                     </div>
                 </nav>

@@ -42,4 +42,9 @@ class SchoolYear extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class);
+    }
 }

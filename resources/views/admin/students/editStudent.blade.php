@@ -654,6 +654,17 @@
                                     </div>
                                 </div>
 
+                                <!-- Parent's Email -->
+                                <h5 class="fw-bold mb-3 mt-4 text-primary">Parent's Email</h5>
+                                <div class="row">
+                                    <!-- Parent's Email Field -->
+                                    <div class="col mb-2 mt-2">
+                                        <label for="student_parentEmail" class="form-label fw-bold">Parent's Email</label>
+                                        <input type="email" name="student_parentEmail" id="student_parentEmail"
+                                            class="form-control" value="{{ $student->parentInfo->parent_email }}" />
+                                    </div>
+                                </div>
+
                         </div>
                         <div class="modal-footer">
 

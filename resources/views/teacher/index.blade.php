@@ -37,7 +37,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('teacher.my.students') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">My Students</div>
                                 </a>
                             </li>
@@ -122,6 +122,65 @@
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
 
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
+
+                            <!-- Notification Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown"
+                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class='bx bx-bell fs-4'></i>
+                                    <span class="badge bg-danger rounded-pill badge-notifications">3</span>
+                                </a>
+
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0"
+                                    aria-labelledby="notificationDropdown"
+                                    style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+                                    <li class="px-3 pt-2">
+                                        <h6 class="mb-1 d-flex justify-content-between">
+                                            Notification
+                                            <span class="badge bg-light-primary text-primary fw-bold">3 New</span>
+                                        </h6>
+                                    </li>
+
+                                    <!-- Sample Notifications -->
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
+                                            <img src="{{ asset('assetsDashboard/img/avatars/1.png') }}" alt="avatar"
+                                                class="rounded-circle" width="36" height="36">
+                                            <div>
+                                                <strong>Congratulation Lettie 🎉</strong>
+                                                <div class="text-muted small">Won the monthly best seller badge</div>
+                                                <small class="text-muted">1h ago</small>
+                                            </div>
+                                            <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
+                                            <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
+                                                style="width:36px; height:36px;">CF</div>
+                                            <div>
+                                                <strong>Charles Franklin</strong>
+                                                <div class="text-muted small">Accepted your connection</div>
+                                                <small class="text-muted">12h ago</small>
+                                            </div>
+                                            <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <hr class="dropdown-divider my-0">
+                                    </li>
+
+                                    <li>
+                                        <a href="#" class="dropdown-item text-center text-primary fw-semibold py-2">
+                                            View all notifications
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!-- /Notification Dropdown -->
+
                             <!-- User -->
                             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
@@ -303,14 +362,11 @@
                             <!-- My Students Card -->
                             <div class="col-6 col-md-3">
                                 <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                    <a class="card-body" href="{{ route('teacher.my.students') }}">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded" />
-                                                @endif
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
+                                                    alt="Students" class="rounded" />
                                             </div>
                                         </div>
                                         <span class="fw-semibold d-block mb-1 text-primary">My Students</span>
@@ -338,45 +394,62 @@
                             </div>
 
                             <!-- Attendance Card -->
-                            <div class="col-6 col-md-3">
-                                <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year_id={{ $currentSchoolYear?->id }}&date={{ now()->format('Y-m-d') }}">
-                                        <div class="card-title d-flex align-items-start justify-content-between">
-                                            <div class="avatar flex-shrink-0">
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance" class="rounded" />
+                            @if ($class)
+                                <div class="col-6 col-md-3">
+                                    <div class="card h-100 card-hover">
+                                        <a class="card-body"
+                                            href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year_id={{ $currentSchoolYear?->id }}&date={{ now()->format('Y-m-d') }}">
+                                            <div class="card-title d-flex align-items-start justify-content-between">
+                                                <div class="avatar flex-shrink-0">
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
+                                                        alt="Attendance" class="rounded" />
+                                                </div>
                                             </div>
-                                        </div>
-                                        <span class="d-block mb-1 text-primary">
-                                            @if (isset($schedule))
-                                                {{ $schedule->subject_name ?? ($schedule->subject->name ?? 'Subject') }}
-                                                ({{ ucfirst($class->grade_level) }} - {{ ucfirst($class->section) }}) <br>
-                                                {{ Carbon::parse($schedule->start_time)->format('h:i A') }} -
-                                                {{ Carbon::parse($schedule->end_time)->format('h:i A') }}
-                                            @else
-                                                No Upcoming Schedule
-                                            @endif
-                                        </span>
+                                            <span class="d-block mb-1 text-primary">
+                                                @if (isset($schedule))
+                                                    {{ $schedule->subject_name ?? ($schedule->subject->name ?? 'Subject') }}
+                                                    ({{ ucfirst($class->grade_level) }} - {{ ucfirst($class->section) }})
+                                                    <br>
+                                                    {{ Carbon::parse($schedule->start_time)->format('h:i A') }} -
+                                                    {{ Carbon::parse($schedule->end_time)->format('h:i A') }}
+                                                @else
+                                                    No Upcoming Schedule
+                                                @endif
+                                            </span>
 
-                                        <h3 class="card-title text-nowrap mb-2 {{ !isset($schedule) ? 'd-none' : '' }}">
-                                            {{ $attendanceToday }}%
-                                        </h3>
-                                    </a>
+                                            <h3
+                                                class="card-title text-nowrap mb-2 {{ !isset($schedule) ? 'd-none' : '' }}">
+                                                {{ $attendanceToday }}%
+                                            </h3>
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
+                            @else
+                                <div class="col-6 col-md-3">
+                                    <div class="card h-100 card-hover">
+                                        <a class="card-body" href="">
+                                            <div class="card-title d-flex align-items-start justify-content-between">
+                                                <div class="avatar flex-shrink-0">
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
+                                                        alt="Attendance" class="rounded" />
+                                                </div>
+                                            </div>
+                                            <span class="d-block mb-1 text-warning">
+                                                You are not assigned as to a classes this school year.
+                                            </span>
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
 
                             <!-- Newly Enrolled Card -->
                             <div class="col-6 col-md-3">
                                 <div class="card h-100 card-hover">
-                                    <a class="card-body"
-                                        href="{{ route('teacher.myStudents', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}">
+                                    <a class="card-body" href="">
                                         <div class="card-title d-flex align-items-start justify-content-between">
                                             <div class="avatar flex-shrink-0">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                                        alt="Newly Enrolled" class="rounded" />
-                                                @endif
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
+                                                    alt="Newly Enrolled" class="rounded" />
                                             </div>
                                         </div>
                                         <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>

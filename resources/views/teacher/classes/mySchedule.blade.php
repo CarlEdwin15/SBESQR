@@ -227,7 +227,8 @@
                                     /
                                     <a class="text-muted fw-light"
                                         href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }}) </a> /
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }})
+                                    </a> /
                                 </span>
                                 Schedules
                             </h4>
@@ -239,110 +240,203 @@
                         <i class="bi bi-arrow-left"></i> Back
                     </a>
 
-                    {{-- Card --}}
+                    {{-- Teacher Schedule Grid Display --}}
                     <div class="card">
-                        <div class="card-header">
-                            <h4 class="fw-bold mb-4 text-center">Schedules for <span
-                                    class="text-info">{{ ucfirst($class->grade_level) }} - {{ $class->section }} </span>
-                            </h4>
+                        <div class="container my-4">
+                            <h3 class="text-center mb-4 fw-bold">
+                                Schedules for <span class="text-info">{{ ucfirst($class->grade_level) }} -
+                                    {{ $class->section }}</span>
+                            </h3>
 
-                            <div class="container-xxl flex-grow-1 container-p-y">
-                                <div class="row g-4 mb-4">
+                            <div class="table-responsive">
+                                <table class="table text-center table-bordered align-middle">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th style="width: 8%;">Time</th>
+                                            @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                                <th style="width: 10%;">{{ $day }}</th>
+                                            @endforeach
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php
+                                            use Carbon\Carbon;
+
+                                            $start = Carbon::createFromTime(7, 0);
+                                            $end = Carbon::createFromTime(18, 0);
+                                            $step = 30;
+                                            $rendered = [];
+                                            $todayName = Carbon::now()->format('l');
+                                        @endphp
+
+                                        @while ($start < $end)
+                                            @php
+                                                $slotStart = $start->copy();
+                                                $slotEnd = $start->copy()->addMinutes($step);
+                                                $showTime = $slotStart->minute == 0;
+                                                $isLunchStart =
+                                                    $slotStart->format('H:i') >= '12:00' &&
+                                                    $slotStart->format('H:i') < '13:00';
+                                            @endphp
+
+                                            <tr
+                                                style="height: 40px; @if ($isLunchStart) background-color: #944040; @endif">
+                                                @if ($showTime)
+                                                    <td class="fw-semibold text-nowrap @if ($isLunchStart) text-white @endif"
+                                                        rowspan="2">
+                                                        {{ $slotStart->format('g:i A') }} -
+                                                        {{ $slotStart->copy()->addHour()->format('g:i A') }}
+                                                    </td>
+                                                @endif
+
+                                                @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                                    @php
+                                                        $key = $day . '-' . $slotStart->format('H:i');
+                                                        if (!empty($rendered[$key])) {
+                                                            continue;
+                                                        }
+
+                                                        $cellContent = '';
+                                                        $rowspan = 1;
+
+                                                        foreach ($schedules as $sched) {
+                                                            $days = is_array($sched->day)
+                                                                ? $sched->day
+                                                                : json_decode($sched->day, true);
+                                                            $days = is_array($days) ? $days : [$sched->day];
+
+                                                            $schedStart = Carbon::parse($sched->start_time);
+                                                            $schedEnd = Carbon::parse($sched->end_time);
+
+                                                            if (
+                                                                in_array($day, $days) &&
+                                                                $schedStart < $slotEnd &&
+                                                                $schedEnd > $slotStart
+                                                            ) {
+                                                                $modalId = 'viewModal' . $sched->id;
+                                                                $rowspan = ceil(
+                                                                    $schedStart->diffInMinutes($schedEnd) / $step,
+                                                                );
+                                                                $bgColor = $day === $todayName ? '#6ec1e4' : '#ffab00';
+
+                                                                $cellContent =
+                                                                    '
+                                            <div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center text-white fw-semibold hoverable-schedule-cell"
+                                                style="background-color:' .
+                                                                    $bgColor .
+                                                                    '; padding: 10px 5px;"
+                                                data-bs-toggle="modal" data-bs-target="#' .
+                                                                    $modalId .
+                                                                    '">
+                                                <div style="font-size:25px; margin-bottom:50px">' .
+                                                                    $sched->subject_name .
+                                                                    '</div>
+                                                <div style="margin-bottom:5px">' .
+                                                                    ($sched->teacher
+                                                                        ? 'Teacher: ' .
+                                                                            $sched->teacher->firstName .
+                                                                            ' ' .
+                                                                            $sched->teacher->lastName
+                                                                        : 'Teacher: N/A') .
+                                                                    '</div>
+                                                                    <div>' .
+                                                                    \Carbon\Carbon::parse($sched->start_time)->format(
+                                                                        'g:i A',
+                                                                    ) .
+                                                                    ' - ' .
+                                                                    \Carbon\Carbon::parse($sched->end_time)->format(
+                                                                        'g:i A',
+                                                                    ) .
+                                                                    '
+                                                                        </div>
+                                            </div>';
+
+                                                                for ($i = 0; $i < $rowspan; $i++) {
+                                                                    $rendered[
+                                                                        $day .
+                                                                            '-' .
+                                                                            $slotStart
+                                                                                ->copy()
+                                                                                ->addMinutes($i * $step)
+                                                                                ->format('H:i')
+                                                                    ] = true;
+                                                                }
+
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        echo $cellContent
+                                                            ? '<td rowspan="' .
+                                                                $rowspan .
+                                                                '" class="align-middle p-0" style="height:' .
+                                                                $rowspan * 40 .
+                                                                'px;">' .
+                                                                $cellContent .
+                                                                '</td>'
+                                                            : '<td></td>';
+                                                    @endphp
+                                                @endforeach
+                                            </tr>
+
+                                            @php $start->addMinutes($step); @endphp
+                                        @endwhile
+                                    </tbody>
+                                </table>
+
+                                {{-- View-only modals for each schedule --}}
+                                @foreach ($schedules as $sched)
                                     @php
-                                        // Group schedules by subject, teacher, start_time, end_time
-                                        $grouped = [];
-                                        foreach ($schedules as $schedule) {
-                                            $key =
-                                                $schedule->subject_name .
-                                                '|' .
-                                                ($schedule->teacher ? $schedule->teacher->id : '0') .
-                                                '|' .
-                                                $schedule->start_time .
-                                                '|' .
-                                                $schedule->end_time;
-                                            if (!isset($grouped[$key])) {
-                                                $grouped[$key] = [
-                                                    'subject_name' => $schedule->subject_name,
-                                                    'teacher' => $schedule->teacher,
-                                                    'start_time' => $schedule->start_time,
-                                                    'end_time' => $schedule->end_time,
-                                                    'days' => [],
-                                                ];
-                                            }
-                                            // Handle day as array or string
-                                            if (is_array($schedule->day)) {
-                                                $grouped[$key]['days'] = array_merge(
-                                                    $grouped[$key]['days'],
-                                                    $schedule->day,
-                                                );
-                                            } elseif (is_string($schedule->day)) {
-                                                $decoded = json_decode($schedule->day, true);
-                                                if (is_array($decoded)) {
-                                                    $grouped[$key]['days'] = array_merge(
-                                                        $grouped[$key]['days'],
-                                                        $decoded,
-                                                    );
-                                                } else {
-                                                    $grouped[$key]['days'][] = $schedule->day;
-                                                }
-                                            }
-                                        }
-
-                                        $dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-
-                                        // Remove duplicate days and sort
-                                        foreach ($grouped as &$item) {
-                                            $item['days'] = array_unique($item['days']);
-
-                                            // Custom sort using array_intersect to preserve the correct order
-                                            $item['days'] = array_values(array_intersect($dayOrder, $item['days']));
-                                        }
-                                        unset($item);
+                                        $modalId = 'viewModal' . $sched->id;
+                                        $days = is_array($sched->day) ? $sched->day : json_decode($sched->day, true);
+                                        $days = is_array($days) ? $days : [$sched->day];
                                     @endphp
 
-                                    @forelse ($grouped as $group)
-                                        <div class="col-md-4">
-                                            <div class="card card-hover border-0 shadow-sm h-100"
-                                                style="background: linear-gradient(160deg, #d0e7ff 50%, #007bff 100%);">
-                                                <div class="card-body text-center">
-                                                    <div class="mb-2">
-                                                        <h4 class="fw-semibold mb-1 text-primary">
-                                                            {{ $group['subject_name'] }}</h4>
-                                                        <i class="bi bi-calendar3 fs-1"></i>
+                                    <div class="modal fade" id="{{ $modalId }}" tabindex="-1"
+                                        aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content rounded-4 shadow-lg">
+                                                <div class="modal-header bg-info text-auto rounded-top-4">
+                                                    <h5 class="modal-title fw-semibold" id="{{ $modalId }}Label">
+                                                        Schedule Details</h5>
+                                                    <button type="button" class="btn-close btn-close-white"
+                                                        data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body px-4 py-3">
+                                                    <h4 class="fw-bold text-primary text-center mb-3">
+                                                        {{ $sched->subject_name }}</h4>
+                                                    <div class="row mb-3">
+                                                        <div class="col-md-6">
+                                                            <h6 class="fw-semibold text-muted mb-1">Teacher:</h6>
+                                                            <p class="mb-0">
+                                                                {{ $sched->teacher ? $sched->teacher->firstName . ' ' . $sched->teacher->lastName : 'TBA' }}
+                                                            </p>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6 class="fw-semibold text-muted mb-1">Days:</h6>
+                                                            <p class="mb-0">{{ implode(', ', $days) }}</p>
+                                                        </div>
+                                                        <div class="col-md-12 mt-2">
+                                                            <h6 class="fw-semibold text-muted mb-1">Time:</h6>
+                                                            <p class="mb-0">
+                                                                {{ \Carbon\Carbon::parse($sched->start_time)->format('g:i A') }}
+                                                                -
+                                                                {{ \Carbon\Carbon::parse($sched->end_time)->format('g:i A') }}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <h6 class="fw-semibold mb-1 text-dark">
-                                                        Teacher:
-                                                        @if ($group['teacher'])
-                                                            {{ $group['teacher']->firstName }}
-                                                            {{ $group['teacher']->lastName }}
-                                                        @else
-                                                            <span class="text-muted">N/A</span>
-                                                        @endif
-                                                    </h6>
-                                                    <h6 class="fw-semibold mb-1">
-                                                        Schedule:
-                                                        {{ implode(', ', $group['days']) }}
-                                                    </h6>
-                                                    <div class="display-6 fw-bold text-dark">
-                                                        {{ \Carbon\Carbon::createFromFormat('H:i:s', $group['start_time'])->format('g:i A') }}
-                                                        -
-                                                        {{ \Carbon\Carbon::createFromFormat('H:i:s', $group['end_time'])->format('g:i A') }}
-                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light justify-content-end">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Close</button>
                                                 </div>
                                             </div>
                                         </div>
-                                    @empty
-                                        <div class="col-12">
-                                            <div class="alert alert-info text-center mb-0">
-                                                No schedules found for this class.
-                                            </div>
-                                        </div>
-                                    @endforelse
-                                </div>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
-                    {{-- /Card --}}
 
                     <hr class="my-5" />
                 </div>
@@ -402,14 +496,14 @@
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+        .hoverable-schedule-cell {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
         }
 
-        .card-hover {
-            transition: all 0.3s ease;
+        .hoverable-schedule-cell:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
     </style>
 @endpush

@@ -261,97 +261,248 @@
                                 <span class="text-muted fw-light">
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                                     <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}">
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
                                 </span>
-                                {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
+                                Attendance History
                             </h4>
                         </div>
                     </div>
 
-                    <h2 class="text-center text-primary fw-bold">Class Details &amp; Management</h2>
+                    <h2 class="card-title mb-5 fw-bold text-primary text-center">
+                        Attendance History {{ ucfirst($class->grade_level) }} - {{ $class->section }}
+                        ({{ $selectedYear }})
+                    </h2>
 
-                    <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}" class="btn btn-danger mb-3">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
+                    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+                        <a href="{{ route('classes.attendance.records', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
+                            class="btn btn-danger d-flex align-items-center gap-2">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
 
-                    <div class="card p-4 shadow-sm">
-                        <div class="row g-4 mb-4">
-                            <!-- Students -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-people-fill fs-1"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Students</h6>
-                                        <div class="display-6 fw-bold">{{ $studentCount }}</div>
-                                    </div>
+                        {{-- Date Selection Form --}}
+                        <form id="dateForm" method="GET">
+                            <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+                            <div class="d-flex gap-2 align-items-end">
+                                <div>
+                                    <input type="date" id="date" name="date" class="form-control"
+                                        value="{{ $targetDate }}">
                                 </div>
+                                <button class="btn btn-primary me-2 d-flex align-items-center gap-2" type="submit">
+                                    <i class='bx bx-filter'></i>
+                                    <span class="d-none d-sm-block">Filter</span>
+                                </button>
                             </div>
-                            <!-- Attendance Today -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-calendar3 fs-1"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Attendance Today</h6>
-                                        <div class="display-6 fw-bold">
-                                            {{ $attendanceToday ?? '0' }}%
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Teacher -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-person-badge fs-1"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Adviser</h6>
-                                        <div class="fw-bold text-primary">
-                                            {{ $class->adviser->firstName ?? 'N/A' }}
-                                            {{ $class->adviser->lastName ?? '' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Navigation Links -->
-                        <div class="row g-3 mb-5">
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.schedule.index', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
-                                    <i class="bi bi-clock-history fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Schedules</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.attendance.records', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
-                                    <i class="bi bi-clipboard-check fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Attendances</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.masterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
-                                    <i class="bi bi-list-ul fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Master's List</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="#"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-danger text-white h-100">
-                                    <i class="bi bi-trash fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Delete Class</div>
-                                </a>
-                            </div>
-                        </div>
-
-                        {{-- <hr class="my-5" /> --}}
+                        </form>
                     </div>
+
+                    <!-- Attendance History -->
+                    <div class="accordion mt-4" id="attendanceAccordion">
+                        @php
+                            // Find the nearest schedule to current time
+                            $now = \Carbon\Carbon::now();
+                            $nearestIndex = null;
+                            $minDiff = null;
+                            foreach ($schedules as $idx => $schedule) {
+                                $start = \Carbon\Carbon::parse($schedule->start_time);
+                                $end = \Carbon\Carbon::parse($schedule->end_time);
+
+                                // If today is not the same as $targetDate, use $targetDate for comparison
+                                $dateToUse = \Carbon\Carbon::parse($targetDate)->toDateString();
+                                $start = $start->copy()->setDateFrom(\Carbon\Carbon::parse($dateToUse));
+                                $end = $end->copy()->setDateFrom(\Carbon\Carbon::parse($dateToUse));
+                                // If now is between start and end, diff is 0
+                                if ($now->between($start, $end)) {
+                                    $nearestIndex = $idx;
+                                    break;
+                                }
+                                // Otherwise, find the minimum absolute diff
+                                $diff = min(
+                                    abs($now->diffInSeconds($start, false)),
+                                    abs($now->diffInSeconds($end, false)),
+                                );
+                                if (is_null($minDiff) || $diff < $minDiff) {
+                                    $minDiff = $diff;
+                                    $nearestIndex = $idx;
+                                }
+                            }
+                        @endphp
+                        @forelse ($schedules as $index => $schedule)
+                            @php
+                                $collapseId = 'scheduleCollapse' . $schedule->id;
+                                $headingId = 'heading' . $schedule->id;
+                                $isOpen = $index === $nearestIndex;
+                            @endphp
+
+                            <div class="accordion-item card mb-2">
+                                <h2 class="accordion-header" id="{{ $headingId }}">
+                                    <button class="accordion-button{{ $isOpen ? '' : ' collapsed' }}" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}"
+                                        aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
+                                        aria-controls="{{ $collapseId }}">
+                                        {{ $schedule->subject_name }} | {{ $schedule->day }}
+                                        ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
+                                        {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
+                                        -
+                                        {{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}
+                                    </button>
+                                </h2>
+
+                                <div id="{{ $collapseId }}"
+                                    class="accordion-collapse collapse{{ $isOpen ? ' show' : '' }}"
+                                    aria-labelledby="{{ $headingId }}" data-bs-parent="#attendanceAccordion">
+
+                                    <h2 class="text-warning text-center fw-bold">{{ $schedule->subject_name }}</h2>
+                                    <div class="accordion-body">
+
+                                        <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+                                        <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                                        <input type="hidden" name="class_id" value="{{ $class->id }}">
+                                        <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
+                                        <input type="hidden" name="date" value="{{ $targetDate }}">
+
+
+                                        {{-- MALE STUDENTS --}}
+                                        <div class="table-responsive mb-4">
+                                            <table class="table table-hover table-bordered align-middle">
+                                                <thead class="table-info">
+                                                    <tr class="text-center">
+                                                        <th style="width: 40px; text-align: center;">No.</th>
+                                                        <th style="text-align: center;">Male || Name</th>
+                                                        <th style="width: 160px; text-align: center;">Status</th>
+                                                        <th style="width: 120px; text-align: center;">Time In</th>
+                                                        <th style="width: 120px; text-align: center;">Time Out</th>
+                                                        <th style="width: 150px; text-align: center;">Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @php $maleIndex = 1; @endphp
+                                                    @foreach ($students->where('gender', 'Male')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
+                                                        @php
+                                                            $existing =
+                                                                $attendancesGrouped[$schedule->id][$student->id] ??
+                                                                null;
+                                                            $status = $existing->status ?? null;
+                                                            $badgeClass = match ($status) {
+                                                                'present' => 'bg-label-success',
+                                                                'late' => 'bg-label-warning',
+                                                                'absent' => 'bg-label-danger',
+                                                                'excused' => 'bg-label-dark',
+                                                                default => 'bg-label-secondary',
+                                                            };
+                                                            $badgeLabel = match ($status) {
+                                                                'present', 'late', 'absent', 'excused' => ucfirst(
+                                                                    $status,
+                                                                ),
+                                                                default => 'No record',
+                                                            };
+                                                        @endphp
+                                                        <tr>
+                                                            <td class="text-center">{{ $maleIndex++ }}</td>
+                                                            <td>{{ $student->student_lName }},
+                                                                {{ $student->student_fName }}
+                                                                {{ $student->student_mName }}
+                                                                {{ $student->student_extName }}</td>
+                                                            <td>
+                                                                <div
+                                                                    class="d-flex justify-content-center align-items-center gap-2">
+                                                                    <span
+                                                                        class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                {{ $existing?->time_in ? \Carbon\Carbon::parse($existing->time_in)->format('g:i A') : '-' }}
+                                                            </td>
+                                                            <td class="text-center">
+                                                                {{ $existing?->time_out ? \Carbon\Carbon::parse($existing->time_out)->format('g:i A') : '-' }}
+                                                            </td>
+
+                                                            <td class="text-center">
+                                                                {{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {{-- FEMALE STUDENTS --}}
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-bordered align-middle">
+                                                <thead class="table-danger">
+                                                    <tr class="text-center">
+                                                        <th style="width: 40px; text-align: center;">No.</th>
+                                                        <th style="text-align: center;">Female || Name</th>
+                                                        <th style="width: 160px; text-align: center;">Status</th>
+                                                        <th style="width: 120px; text-align: center;">Time In</th>
+                                                        <th style="width: 120px; text-align: center;">Time Out</th>
+                                                        <th style="width: 150px; text-align: center;">Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @php $femaleIndex = 1; @endphp
+                                                    @foreach ($students->where('gender', 'Female')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
+                                                        @php
+                                                            $existing =
+                                                                $attendancesGrouped[$schedule->id][$student->id] ??
+                                                                null;
+                                                            $status = $existing->status ?? null;
+                                                            $badgeClass = match ($status) {
+                                                                'present' => 'bg-label-success',
+                                                                'late' => 'bg-label-warning',
+                                                                'absent' => 'bg-label-danger',
+                                                                'excused' => 'bg-label-dark',
+                                                                default => 'bg-label-secondary',
+                                                            };
+                                                            $badgeLabel = match ($status) {
+                                                                'present', 'late', 'absent', 'excused' => ucfirst(
+                                                                    $status,
+                                                                ),
+                                                                default => 'No record',
+                                                            };
+                                                        @endphp
+                                                        <tr>
+                                                            <td class="text-center">{{ $femaleIndex++ }}</td>
+                                                            <td>{{ $student->student_lName }},
+                                                                {{ $student->student_fName }}
+                                                                {{ $student->student_mName }}</td>
+                                                            <td>
+                                                                <div
+                                                                    class="d-flex justify-content-center align-items-center gap-2">
+                                                                    <span
+                                                                        class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                {{ $existing?->time_in ? \Carbon\Carbon::parse($existing->time_in)->format('g:i A') : '-' }}
+                                                            </td>
+                                                            <td class="text-center">
+                                                                {{ $existing?->time_out ? \Carbon\Carbon::parse($existing->time_out)->format('g:i A') : '-' }}
+                                                            </td>
+                                                            <td class="text-center">
+                                                                {{ \Carbon\Carbon::parse($targetDate)->format('F j, Y') }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12">
+                                <div class="alert alert-info text-center mb-0">
+                                    No schedules for this date
+                                    ({{ \Carbon\Carbon::parse($targetDate)->format('l, F j, Y') }})
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                    <!-- /Attendance History -->
+
                 </div>
                 <!-- Content wrapper -->
 
@@ -364,9 +515,6 @@
 
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
-
-
-
 
 
 @endsection
@@ -491,6 +639,23 @@
             previewImg.src = defaultImage;
         });
     </script>
+
+    <script>
+        // Date selection form submission
+        document.getElementById('dateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const selectedDate = document.getElementById('date').value;
+            const schoolYear = document.querySelector('input[name="school_year"]').value;
+
+            const baseUrl = "{{ url('attendance-history/' . $class->grade_level . '/' . $class->section) }}";
+            const finalUrl = selectedDate ?
+                `${baseUrl}/${selectedDate}?school_year=${encodeURIComponent(schoolYear)}` :
+                `${baseUrl}?school_year=${encodeURIComponent(schoolYear)}`;
+
+            window.location.href = finalUrl;
+        });
+    </script>
 @endpush
 
 @push('styles')
@@ -501,16 +666,4 @@
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
-
-    <style>
-        .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-        }
-
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
-        }
-    </style>
 @endpush

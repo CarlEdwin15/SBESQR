@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('middleName')->nullable();
             $table->string('extName')->nullable();
             $table->string('email')->unique();
-            $table->enum('role', ['teacher', 'admin', 'parent'])->default('teacher');
+            $table->enum('role', ['teacher', 'admin'])->default('teacher');
             $table->enum('gender', ['male', 'female'])->nullable();
             $table->string('phone')->nullable();
 

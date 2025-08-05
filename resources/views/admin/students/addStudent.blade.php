@@ -663,9 +663,22 @@
                                 <!-- Emergency Contact's Phone No. -->
                                 <div class="col mb-2 mt-2">
                                     <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
-                                    <input type="phone" name="student_emergcontPhone" id="student_emergcontPhone"
-                                        class="form-control" placeholder="Enter Emergency Contact's Phone Number"
-                                        value="{{ old('student_emergcontPhone') }}" />
+                                    <input type="tel" name="student_emergcontPhone" id="student_emergcontPhone"
+                                        class="form-control" placeholder="e.g. +639123456789"
+                                        value="+639{{ old('student_emergcontPhone') }}" required />
+                                </div>
+                            </div>
+
+                            <!-- Parent's Email -->
+                            <h5 class="fw-bold mb-3 mt-4 text-primary">Parent's Email</h5>
+
+                            <div class="row">
+                                <!-- Parent's Email -->
+                                <div class="col mb-2 mt-2">
+                                    <label for="student_parentEmail" class="form-label fw-bold">Parent's Email</label>
+                                    <input type="email" name="student_parentEmail" id="student_parentEmail"
+                                        class="form-control" placeholder="Enter Parent's Email"
+                                        value="{{ old('student_parentEmail') }}" />
                                 </div>
                             </div>
 

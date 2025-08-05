@@ -735,6 +735,8 @@
                     </div>
                     <!--/ Modal Backdrop -->
 
+                    <h3 class="text-center text-info fw-bold mb-4">Teacher Management</h3>
+
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
                         <div class="d-flex gap-1 mb-2 mb-md-0">
                             <!-- Register Button trigger modal -->
@@ -782,8 +784,6 @@
                     {{-- Card --}}
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="text-center text-info fw-bold mb-4">Teacher Management</h3>
-
                             <div
                                 class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
                                 <!-- Search input -->
@@ -794,12 +794,12 @@
                                 </div>
 
                                 <!-- Export button -->
-                                <div class="ms-md-auto">
+                                {{-- <div class="ms-md-auto">
                                     <a href="{{ route('export.teachers') }}" class="btn btn-success"
                                         style="padding: 8px 12px;">
                                         <i class="bx bx-printer"></i> Export to Excel
                                     </a>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
 
@@ -845,7 +845,9 @@
                                                         @php
                                                             $role = $class->pivot->role ?? null;
                                                             $isAdvisory = $role === 'adviser';
-                                                            $badgeClass = $isAdvisory ? 'bg-warning text-black' : 'bg-secondary';
+                                                            $badgeClass = $isAdvisory
+                                                                ? 'bg-warning text-black'
+                                                                : 'bg-secondary';
                                                         @endphp
 
                                                         <span class="badge {{ $badgeClass }} text-auto mb-1">

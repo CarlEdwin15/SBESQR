@@ -3,31 +3,253 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Classes;
 use App\Models\Schedule;
+use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function attendanceRecords(Request $request, $grade_level, $section)
     {
-        $attendances = Attendance::with(['student', 'class'])->latest()->get();
-        return view('attendances.index', compact('attendances'));
-    }
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        $class = $this->getClass($grade_level, $section);
+
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->orderBy('student_sex')
+            ->orderBy('student_lName')
+            ->orderBy('student_fName')
+            ->orderBy('student_mName')
+            ->get();
+
+        $today = now();
+        $isCurrentSchoolYear = $schoolYear->start_date <= $today && $today <= $schoolYear->end_date;
+
+        if ($isCurrentSchoolYear) {
+            // Use now() if within current school year
+            $defaultMonth = $today->copy();
+            if ($defaultMonth->lt(Carbon::parse($schoolYear->start_date))) {
+                $defaultMonth = Carbon::parse($schoolYear->start_date);
+            } elseif ($defaultMonth->gt(Carbon::parse($schoolYear->end_date))) {
+                $defaultMonth = Carbon::parse($schoolYear->end_date);
+            }
+        } else {
+            // For past/future school years, use the start date of the school year
+            $defaultMonth = Carbon::parse($schoolYear->start_date);
+        }
+
+        $monthParam = $request->input('month', $defaultMonth->format('Y-m'));
+        $dateObj = Carbon::createFromFormat('Y-m', $monthParam);
+
+        $schoolStart = Carbon::parse($schoolYear->start_date)->startOfMonth();
+        $schoolEnd = Carbon::parse($schoolYear->end_date)->endOfMonth();
+
+        $dateObj = $dateObj->lt($schoolStart) ? $schoolStart : ($dateObj->gt($schoolEnd) ? $schoolEnd : $dateObj);
+
+        $year = $dateObj->year;
+        $month = $dateObj->month;
+
+        $scheduleDays = Schedule::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->pluck('day')
+            ->map(fn($day) => Carbon::parse($day)->format('D'))
+            ->unique()
+            ->toArray();
+
+        $schedules = Schedule::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->orderBy('start_time')
+            ->get();
+
+        $schedulesById = $schedules->keyBy('id');
+
+        $attendances = Attendance::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->get();
+
+        $calendarDates = [];
+        $startOfMonth = Carbon::create($year, $month, 1);
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
+
+        for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+            if (!in_array($date->format('D'), ['Sat', 'Sun'])) {
+                $calendarDates[] = $date->format('Y-m-d');
+            }
+        }
+
+        $attendanceData = [];
+        foreach ($students as $student) {
+            $attendanceData[$student->id] = [
+                'present' => 0,
+                'absent' => 0,
+                'by_date' => [],
+            ];
+        }
+
+        $combinedTotals = $maleTotals = $femaleTotals = [];
+        foreach ($calendarDates as $date) {
+            $combinedTotals[$date] = 0;
+            $maleTotals[$date] = 0;
+            $femaleTotals[$date] = 0;
+        }
+
+        foreach ($attendances as $attendance) {
+            $date = $attendance->date;
+            $symbol = match ($attendance->status) {
+                'present' => '✓',
+                'absent' => 'X',
+                'late' => 'L',
+                'excused' => 'E',
+                default => '-',
+            };
+
+            $schedule = $schedulesById->get($attendance->schedule_id);
+            if (!$schedule) continue;
+
+            $attendanceData[$attendance->student_id]['by_date'][$date][] = [
+                'status' => $symbol,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+                'subject_name' => $schedule->subject_name ?? 'N/A',
+                'schedule_order' => $schedule->start_time,
+            ];
+
+            if (in_array($attendance->status, ['present', 'late'])) {
+                $attendanceData[$attendance->student_id]['present']++;
+            } else {
+                $attendanceData[$attendance->student_id]['absent']++;
+            }
+
+            $student = $students->firstWhere('id', $attendance->student_id);
+            if ($student && in_array($symbol, ['✓', 'L'])) {
+                $combinedTotals[$date]++;
+                if ($student->gender === 'Male') {
+                    $maleTotals[$date]++;
+                } else {
+                    $femaleTotals[$date]++;
+                }
+            }
+        }
+
+        foreach ($attendanceData as &$studentAttendance) {
+            foreach ($studentAttendance['by_date'] as &$entries) {
+                usort($entries, fn($a, $b) => strcmp($a['schedule_order'], $b['schedule_order']));
+            }
+        }
+
+        $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
+        foreach ($students as $student) {
+            if ($student->gender === 'Male') {
+                $maleTotalPresent += $attendanceData[$student->id]['present'];
+                $maleTotalAbsent += $attendanceData[$student->id]['absent'];
+            } else {
+                $femaleTotalPresent += $attendanceData[$student->id]['present'];
+                $femaleTotalAbsent += $attendanceData[$student->id]['absent'];
+            }
+        }
+
+        $totalPresent = $maleTotalPresent + $femaleTotalPresent;
+        $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
+
+        return view('admin.classes.attendances.index', compact(
+            'class',
+            'students',
+            'attendanceData',
+            'calendarDates',
+            'combinedTotals',
+            'maleTotals',
+            'femaleTotals',
+            'monthParam',
+            'maleTotalPresent',
+            'femaleTotalPresent',
+            'maleTotalAbsent',
+            'femaleTotalAbsent',
+            'totalAbsent',
+            'totalPresent',
+            'scheduleDays',
+            'schedules',
+            'selectedYear',
+            'schoolYear'
+        ))->with('selectedYearObj', $schoolYear);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function attendanceHistory(Request $request, $grade_level, $section, $date = null)
+    {
+        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        $class = $this->getClass($grade_level, $section);
+
+        $defaultDate = Carbon::parse($schoolYear->start_date)->toDateString();
+        $targetDate = $date ?? $request->input('date', $defaultDate);
+        $dateObj = Carbon::parse($targetDate);
+
+        // Clamp within school year
+        $dateObj = $dateObj->lt($schoolYear->start_date) ? Carbon::parse($schoolYear->start_date)
+            : ($dateObj->gt($schoolYear->end_date) ? Carbon::parse($schoolYear->end_date) : $dateObj);
+
+        $targetDate = $dateObj->toDateString();
+
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->orderBy('student_sex')
+            ->orderBy('student_lName')
+            ->orderBy('student_fName')
+            ->orderBy('student_mName')
+            ->get();
+
+        $schedules = Schedule::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('day', ucfirst($dateObj->format('l')))
+            ->orderBy('start_time')
+            ->get();
+
+        $attendanceData = Attendance::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->whereDate('date', $targetDate)
+            ->get();
+
+        $attendancesGrouped = [];
+        foreach ($attendanceData as $attendance) {
+            $attendancesGrouped[$attendance->schedule_id][$attendance->student_id] = $attendance;
+        }
+
+        return view('admin.classes.attendances.attendance_history', compact(
+            'class',
+            'students',
+            'schedules',
+            'attendancesGrouped',
+            'targetDate',
+            'selectedYear',
+            'schoolYear'
+        ));
+    }
+
+    // Helper function to get the default school year (e.g., "2024-2025")
+    private function getDefaultSchoolYear()
+    {
+        $now = now();
+        $year = $now->year;
+        $cutoff = now()->copy()->setMonth(6)->setDay(1);
+        $start = $now->lt($cutoff) ? $year - 1 : $year;
+
+        return $start . '-' . ($start + 1);
+    }
+
+    // Helper function to get the class (e.g., "Grade 1 - Section A")
+    private function getClass($grade_level, $section)
+    {
+        return Classes::where('grade_level', $grade_level)
+            ->where('section', $section)
+            ->firstOrFail();
+    }
+
     public function takeAttendance(Request $request)
     {
         $request->validate([
@@ -86,37 +308,5 @@ class AttendanceController extends Controller
                 'section' => $section,
             ]
         );
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Attendance $attendance)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Attendance $attendance)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Attendance $attendance)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Attendance $attendance)
-    {
-        //
     }
 }

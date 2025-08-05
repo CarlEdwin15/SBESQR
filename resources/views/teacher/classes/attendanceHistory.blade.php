@@ -768,7 +768,7 @@
         }
 
         function openScanner(scanUrlBase, startTime, endTime, grace) {
-            const scanUrl = `${scanUrlBase}?grace=${grace}`;
+            const scanUrl = scanUrlBase + (scanUrlBase.includes('?') ? '&' : '?') + `grace=${grace}`;
             Swal.fire({
                 toast: true,
                 icon: 'success',

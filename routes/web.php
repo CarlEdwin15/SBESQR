@@ -9,10 +9,12 @@ use App\Http\Controllers\IdController;
 use App\Http\Controllers\HomeController;
 use App\Exports\TeachersExport;
 use App\Exports\SF2Export;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\PaymentController;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 
@@ -108,10 +110,25 @@ Route::delete('classes/{grade_level}/{section}/delete-schedule/{schedule_id}', [
 
 
 // Attendance Management (on ADMIN dashboard)
-Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController::class, 'attendance'])->name('classes.attendance');
+Route::get('attendance-records/{grade_level}/{section}', [AttendanceController::class, 'attendanceRecords'])->name('classes.attendance.records');
+
+Route::get('attendance-history/{grade_level}/{section}/{date?}/{schedule_id?}', [AttendanceController::class, 'attendanceHistory'])->name('classes.attendance.history');
 
 
+// Announcement Management (on ADMIN Dashboard)
+Route::prefix('announcements')->name('announcements.')->group(function () {
+    Route::get('/', [AnnouncementController::class, 'index'])->name('index');
+    Route::get('/create', [AnnouncementController::class, 'create'])->name('create');
+    Route::post('/', [AnnouncementController::class, 'store'])->name('store');
+    Route::get('/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('edit');
+    Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('update');
+    Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
+});
 
+
+// Payment Management (on ADMIN Dashboard)
+Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+Route::resource('payments', PaymentController::class);
 
 
 
@@ -119,7 +136,7 @@ Route::get('/classes/{grade_level}/{section}/attendance', [AttendanceController:
 // TEACHER DASHBOARD ROUTES
 
 //List of Teacher's Students (on teacher Dashboard)
-Route::get('/myStudents/{grade_level}/{section}', [TeacherController::class, 'myStudents'])->name('teacher.myStudents');
+Route::get('myStudents', [TeacherController::class, 'myStudents'])->name('teacher.my.students');
 
 Route::get('myClasses', [TeacherController::class, 'myClasses'])->name('teacher.myClasses');
 

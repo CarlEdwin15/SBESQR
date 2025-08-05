@@ -803,18 +803,92 @@ class TeacherController extends Controller
 
 
 
-    public function myStudents($grade_level, $section)
+    public function myStudents(Request $request)
     {
         $teacher = Auth::user();
 
-        $class = $this->getClass($grade_level, $section);
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
 
-        // Fetch students in the class
-        $students = Student::where('class_id', $class->id)->get();
-        // Fetch teachers in the class
-        $teachers = User::where('class_id', $class->id)->get();
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
 
-        return view('teacher.students.index', compact('class', 'students'));
+        // Fetch school years
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
+        $savedStartYears = array_map(fn($sy) => (int)substr($sy, 0, 4), $savedYears);
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+
+        $schoolYears[] = $nextSchoolYear;
+        usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
+
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+        $selectedSection = $request->query('section');
+
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
+        $schoolYearId = optional($schoolYear)->id;
+
+        $students = collect();
+        $sections = [];
+        $assignedGrades = [];
+
+        if ($schoolYear) {
+            // Get class IDs and grade levels assigned to this teacher in this school year
+            $teacherClasses = $teacher->classes()
+                ->where('school_year_id', $schoolYearId)
+                ->get();
+
+            $teacherClassIds = $teacherClasses->pluck('id');
+            $assignedGrades = $teacherClasses->pluck('formatted_grade_level')->unique()->values()->all();
+
+            $sections = Classes::whereIn('id', $teacherClassIds)
+                ->pluck('section')->unique()->sort()->values()->all();
+
+            // Fetch students enrolled in teacher's classes
+            $students = Student::whereHas('class', function ($query) use ($teacherClassIds, $schoolYearId, $selectedSection) {
+                $query->whereIn('classes.id', $teacherClassIds)
+                    ->where('class_student.school_year_id', $schoolYearId);
+
+                if (!empty($selectedSection)) {
+                    $query->where('section', $selectedSection);
+                }
+            })->with([
+                'address',
+                'parentInfo',
+                'class' => function ($query) use ($schoolYearId) {
+                    $query->where('class_student.school_year_id', $schoolYearId);
+                }
+            ])->get();
+        }
+
+        // Filter only assigned grades
+        $groupedStudents = collect();
+        foreach ($assignedGrades as $grade) {
+            $groupedStudents[$grade] = $students->filter(function ($student) use ($grade, $schoolYearId) {
+                $classForYear = $student->class->firstWhere('pivot.school_year_id', $schoolYearId);
+                return optional($classForYear)->formatted_grade_level === $grade;
+            });
+        }
+
+        return view('teacher.students.myStudents', compact(
+            'groupedStudents',
+            'schoolYears',
+            'selectedYear',
+            'sections',
+            'selectedSection',
+            'currentYear',
+            'schoolYearId'
+        ));
     }
 
     public function studentInfo($student_id)

@@ -47,10 +47,10 @@ class User extends Authenticatable
     ];
 
     public function classes()
-{
-    return $this->belongsToMany(Classes::class, 'class_user', 'user_id', 'class_id')
-        ->withPivot('role', 'school_year_id');
-}
+    {
+        return $this->belongsToMany(Classes::class, 'class_user', 'user_id', 'class_id')
+            ->withPivot('role', 'school_year_id');
+    }
 
     public function advisoryClasses()
     {
@@ -67,5 +67,10 @@ class User extends Authenticatable
         return $this->belongsToMany(Student::class, 'class_user')
             ->withPivot('school_year_id')
             ->withTimestamps();
+    }
+
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class);
     }
 }

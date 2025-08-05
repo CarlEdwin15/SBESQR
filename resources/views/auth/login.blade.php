@@ -89,15 +89,7 @@
                         </div>
 
 
-                        <p class="text-center text-warning fw-bold mb-3">Or sign as Parent:</p>
-
-                        {{-- Google Login --}}
-                        {{-- <div class="mb-3" style="display: flex; justify-content: center; align-items: center;">
-                            <a href="{{ route('google.parent.login') }}">
-                                <img src="https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png"
-                                    alt="Login with Google">
-                            </a>
-                        </div> --}}
+                        <p class="text-center text-info fw-bold mb-3">Or sign in with Google</p>
 
                         {{-- Google Login --}}
                         <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
@@ -105,32 +97,17 @@
                                 style="gap: 10px; padding: 8px 16px;">
                                 <img src="{{ asset('assetsDashboard/img/icons/brands/google.png') }}" alt="Google"
                                     style="height: 20px; width: 20px;">
-                                <span>Sign in with Google</span>
+                                <span class="fw-bold">Sign in with Google</span>
                             </a>
                         </div>
-                        {{-- <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
-                            <a href="{{ route('google.parent.login') }}"
-                                class="btn btn-light d-flex align-items-center mb-1" style="gap: 10px; padding: 8px 16px;">
-                                <img src="{{ asset('assetsDashboard/img/icons/brands/google.png') }}" alt="Google"
-                                    style="height: 20px; width: 20px;">
-                                <span>Sign in with Google</span>
-                            </a>
-                        </div> --}}
 
                         {{-- Facebook Login --}}
-                        <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
+                        {{-- <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
                             <a href="{{ route('facebook.login') }}" class="btn btn-light d-flex align-items-center"
                                 style="gap: 10px; padding: 8px 16px;">
                                 <img src="{{ asset('assetsDashboard/img/icons/brands/facebook1.png') }}" alt="Facebook"
                                     style="height: 20px; width: 20px;">
                                 <span>Sign in with Facebook</span>
-                            </a>
-                        </div>
-
-                        {{-- Facebook Login --}}
-                        {{-- <div style="display: flex; justify-content: center; align-items: center;">
-                            <a href="{{ route('facebook.login') }}" class="btn btn-primary">
-                                <i class="fab fa-facebook me-2"></i> Sign in with Facebook
                             </a>
                         </div> --}}
 

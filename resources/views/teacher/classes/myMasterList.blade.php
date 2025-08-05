@@ -260,7 +260,7 @@
                         <div class="row">
                             <!-- Male Table -->
                             <div class="col-md-6">
-                                <table class="table table-bordered text-center" id="studentTable">
+                                <table class="table table-bordered" id="studentTable">
                                     <thead class="table-info">
                                         <tr>
                                             <th>NO.</th>

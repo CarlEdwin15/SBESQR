@@ -503,23 +503,37 @@
                                                                 }
 
                                                                 $cellContent =
-                                                                    '<div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center text-white fw-semibold hoverable-schedule-cell" style="background-color:' .
+                                                                    '
+                                                                    <div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center text-white fw-semibold hoverable-schedule-cell"
+                                                                        style="background-color:' .
                                                                     $bgColor .
-                                                                    '; padding: 10px 5px;" data-bs-toggle="modal" data-bs-target="#viewModal' .
+                                                                    '; padding: 10px 5px;"
+                                                                        data-bs-toggle="modal" data-bs-target="#viewModal' .
                                                                     $sched->id .
                                                                     '">
-    <div style="font-size:20px">' .
+                                                                        <div style="font-size:25px; margin-bottom:50px">' .
                                                                     $sched->subject_name .
                                                                     '</div>
-    <div>' .
+                                                                        <div style="margin-bottom:5px">' .
                                                                     ($sched->teacher
                                                                         ? $roleLabel .
                                                                             $sched->teacher->firstName .
                                                                             ' ' .
                                                                             $sched->teacher->lastName
                                                                         : '<span class="text-muted">Teacher: N/A</span>') .
-                                                                    '</div>
-    </div>';
+                                                                    '
+                                                                        </div>
+                                                                        <div>' .
+                                                                    \Carbon\Carbon::parse($sched->start_time)->format(
+                                                                        'g:i A',
+                                                                    ) .
+                                                                    ' - ' .
+                                                                    \Carbon\Carbon::parse($sched->end_time)->format(
+                                                                        'g:i A',
+                                                                    ) .
+                                                                    '
+                                                                        </div>
+                                                                    </div>';
 
                                                                 for ($i = 0; $i < $rowspan; $i++) {
                                                                     $rendered[

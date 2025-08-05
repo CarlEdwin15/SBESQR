@@ -7,6 +7,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\User;
+use App\Models\ParentInfo;
 
 class GoogleController extends Controller
 {
@@ -24,31 +25,30 @@ class GoogleController extends Controller
         $lastName = $googleUser->user['family_name'] ?? '';
         $avatar = $googleUser->getAvatar() ?? "https://ui-avatars.com/api/?name=" . urlencode("$firstName $lastName");
 
-        // Check if the email is already registered
-        $user = User::where('email', $email)->first();
+        // 1. Check if user is a teacher or admin in users table
+        $user = User::where('email', $email)
+            ->whereIn('role', ['teacher', 'admin'])
+            ->first();
 
         if ($user) {
-            // If user exists, log in and redirect by role
             Auth::login($user);
-
             return match ($user->role) {
                 'teacher' => view('teacher.index'),
                 'admin' => view('admin.index'),
-                default => view('parent.index'),
             };
-        } else {
-            // Not registered → create a new parent account
-            $newUser = User::create([
-                'email' => $email,
-                'firstName' => $firstName,
-                'lastName' => $lastName,
-                'role' => 'parent',
-                'profile_photo' => $avatar,
-                'password' => bcrypt(Str::random(16)), // random password
-            ]);
+        }
 
-            Auth::login($newUser);
+        // 2. Check if email exists in parent_info
+        $parentInfo = ParentInfo::where('parent_email', $email)->first();
+
+        if ($parentInfo) {
+            // Optional: store session or auth flag to indicate parent is logged in
+            session(['parent_email' => $email]);
+
             return view('parent.index');
         }
+
+        // 3. If not found anywhere → Not authorized
+        return response()->view('auth.not_authorized', [], 403);
     }
 }

@@ -215,6 +215,7 @@ class StudentController extends Controller
             'student_emergcontMName' => 'nullable|string|max:255',
             'student_emergcontLName' => 'nullable|string|max:255',
             'student_emergcontPhone' => 'nullable|string|max:255',
+            'student_parentEmail' => 'nullable|string|max:255',
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
@@ -253,6 +254,7 @@ class StudentController extends Controller
             'emergcont_mName' => $request->student_emergcontMName,
             'emergcont_lName' => $request->student_emergcontLName,
             'emergcont_phone' => $request->student_emergcontPhone,
+            'parent_email' => $request->student_parentEmail,
         ]);
 
         // Retrieve or create the class for the given year
@@ -371,6 +373,7 @@ class StudentController extends Controller
             'student_emergcontMName' => 'nullable|string|max:255',
             'student_emergcontLName' => 'nullable|string|max:255',
             'student_emergcontPhone' => 'nullable|string|max:255',
+            'student_parentEmail' => 'nullable|string|max:255',
 
             // Profile photo
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
@@ -412,6 +415,7 @@ class StudentController extends Controller
             'emergcont_mName' => $request->student_emergcontMName,
             'emergcont_lName' => $request->student_emergcontLName,
             'emergcont_phone' => $request->student_emergcontPhone,
+            'parent_email' => $request->student_parentEmail,
         ]);
 
         // Retrieve or create the class for the selected school year
