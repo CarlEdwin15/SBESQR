@@ -30,7 +30,6 @@ class AttendanceController extends Controller
         $isCurrentSchoolYear = $schoolYear->start_date <= $today && $today <= $schoolYear->end_date;
 
         if ($isCurrentSchoolYear) {
-            // Use now() if within current school year
             $defaultMonth = $today->copy();
             if ($defaultMonth->lt(Carbon::parse($schoolYear->start_date))) {
                 $defaultMonth = Carbon::parse($schoolYear->start_date);
@@ -38,7 +37,6 @@ class AttendanceController extends Controller
                 $defaultMonth = Carbon::parse($schoolYear->end_date);
             }
         } else {
-            // For past/future school years, use the start date of the school year
             $defaultMonth = Carbon::parse($schoolYear->start_date);
         }
 
@@ -112,6 +110,15 @@ class AttendanceController extends Controller
             $schedule = $schedulesById->get($attendance->schedule_id);
             if (!$schedule) continue;
 
+            // Ensure student's slot exists
+            if (!isset($attendanceData[$attendance->student_id])) {
+                $attendanceData[$attendance->student_id] = [
+                    'present' => 0,
+                    'absent' => 0,
+                    'by_date' => [],
+                ];
+            }
+
             $attendanceData[$attendance->student_id]['by_date'][$date][] = [
                 'status' => $symbol,
                 'start_time' => $schedule->start_time,
@@ -142,9 +149,14 @@ class AttendanceController extends Controller
                 usort($entries, fn($a, $b) => strcmp($a['schedule_order'], $b['schedule_order']));
             }
         }
+        unset($studentAttendance);
 
         $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
         foreach ($students as $student) {
+            if (!isset($attendanceData[$student->id])) {
+                continue;
+            }
+
             if ($student->gender === 'Male') {
                 $maleTotalPresent += $attendanceData[$student->id]['present'];
                 $maleTotalAbsent += $attendanceData[$student->id]['absent'];
@@ -156,6 +168,30 @@ class AttendanceController extends Controller
 
         $totalPresent = $maleTotalPresent + $femaleTotalPresent;
         $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
+
+        // <-- NEW: support returning array (used by SF2Export) just like teacher method
+        if ($request->has('__return_array__')) {
+            return compact(
+                'class',
+                'students',
+                'attendanceData',
+                'calendarDates',
+                'combinedTotals',
+                'maleTotals',
+                'femaleTotals',
+                'monthParam',
+                'maleTotalPresent',
+                'femaleTotalPresent',
+                'maleTotalAbsent',
+                'femaleTotalAbsent',
+                'totalAbsent',
+                'totalPresent',
+                'scheduleDays',
+                'schedules',
+                'selectedYear',
+                'schoolYear'
+            ) + ['selectedYearObj' => $schoolYear];
+        }
 
         return view('admin.classes.attendances.index', compact(
             'class',
