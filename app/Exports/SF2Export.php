@@ -584,9 +584,21 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
     // Helper method to display week dates
     private function getDisplayWeekDates(): array
     {
-        // Start from the Monday of the week that contains the 1st of the selected month
         $monthStart = \Carbon\Carbon::createFromFormat('Y-m', $this->monthParam)->startOfMonth();
-        $startMonday = $monthStart->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
+
+        // Find the first weekday (Mon–Fri) inside the month
+        $firstWeekday = $monthStart->copy();
+        while (!$firstWeekday->isWeekday()) {
+            $firstWeekday->addDay();
+        }
+
+        // If the first weekday inside the month is Monday, start from that Monday.
+        if ($firstWeekday->dayOfWeek === \Carbon\Carbon::MONDAY) {
+            $startMonday = $firstWeekday->copy();
+        } else {
+            // Otherwise keep the original behaviour (start from the Monday of the week that contains the 1st).
+            $startMonday = $monthStart->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
+        }
 
         $displayDates = [];
         for ($week = 0; $week < 5; $week++) {
