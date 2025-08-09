@@ -7,6 +7,7 @@ use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Events\AnnouncementBroadcasted;
 
 class AnnouncementController extends Controller
 {
@@ -80,8 +81,8 @@ class AnnouncementController extends Controller
             $validated['school_year_id'] = $defaultSchoolYear?->id;
         }
 
-        $validated['user_id'] = Auth::id();          // the one posting it
-        $validated['created_by'] = Auth::id();       // assuming current user is admin
+        $validated['user_id'] = Auth::id();
+        $validated['created_by'] = Auth::id();
         $validated['date_published'] = now();
 
         // Determine status
@@ -96,6 +97,11 @@ class AnnouncementController extends Controller
         }
 
         Announcement::create($validated);
+
+        $announcement = Announcement::create($validated);
+
+        // Fire event
+        event(new AnnouncementBroadcasted($announcement, $validated['recipients']));
 
         return redirect()->route('announcements.index')->with('success', 'Announcement posted successfully.');
     }
@@ -154,5 +160,9 @@ class AnnouncementController extends Controller
         $start = $now->lt($cutoff) ? $year - 1 : $year;
 
         return $start . '-' . ($start + 1);
+    }
+
+    public function pusher(){
+        return view('teacher.pusher');
     }
 }

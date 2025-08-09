@@ -19,6 +19,10 @@ class Announcement extends Model
         'status',
     ];
 
+    protected $casts = [
+        'date_published' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

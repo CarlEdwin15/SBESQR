@@ -826,18 +826,26 @@
                                 <tbody class="table-border-bottom-0">
                                     @forelse ($teachers as $teacher)
                                         <tr class="teacher-row">
-                                            <td>{{ $teacher->firstName }} {{ $teacher->middleName }}
-                                                {{ $teacher->lastName }} {{ $teacher->extName }}</td>
                                             <td>
-                                                @if ($teacher->profile_photo)
-                                                    <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
-                                                        alt="Profile Photo" width="55" height="55"
-                                                        style="object-fit: cover; border-radius: 50%;">
-                                                @else
-                                                    <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                        alt="no profile" width="55" height="55"
-                                                        style="object-fit: cover; border-radius: 50%">
-                                                @endif
+                                                <a class="text-primary"
+                                                    href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">{{ $teacher->firstName }}
+                                                    {{ $teacher->middleName }}
+                                                    {{ $teacher->lastName }} {{ $teacher->extName }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <a class="text-primary"
+                                                    href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
+                                                    @if ($teacher->profile_photo)
+                                                        <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
+                                                            alt="Profile Photo" width="55" height="55"
+                                                            style="object-fit: cover; border-radius: 50%;">
+                                                    @else
+                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                                                            alt="no profile" width="55" height="55"
+                                                            style="object-fit: cover; border-radius: 50%">
+                                                    @endif
+                                                </a>
                                             </td>
                                             <td>
                                                 @if ($teacher->classes && count($teacher->classes))

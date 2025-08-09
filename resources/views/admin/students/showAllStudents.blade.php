@@ -339,11 +339,11 @@
                                     </thead>
                                     <tbody>
                                         @forelse ($students->sortBy([
-                                                                                ['student_lName', 'asc'],
-                                                                                ['student_fName', 'asc'],
-                                                                                ['student_mName', 'asc'],
-                                                                                ['student_extName', 'asc'],
-                                                                                ]) as $student)
+                                                                                                ['student_lName', 'asc'],
+                                                                                                ['student_fName', 'asc'],
+                                                                                                ['student_mName', 'asc'],
+                                                                                                ['student_extName', 'asc'],
+                                                                                                ]) as $student)
                                             <tr class="student-row"
                                                 data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                                 data-section="{{ strtolower(optional($student->class->first())->section) }}"
@@ -351,20 +351,24 @@
                                                 data-lrn="{{ strtolower($student->student_lrn) }}"
                                                 data-enrollment_status="{{ strtolower(optional($student->class->first())->pivot->enrollment_status ?? '') }}"
                                                 data-enrollment_type="{{ strtolower(optional($student->class->first())->pivot->enrollment_type ?? '') }}">
-                                                <td>{{ $student->student_lName }},
-                                                    {{ $student->student_fName }}
-                                                    {{ $student->student_mName }}
-                                                    {{ $student->student_extName }}</td>
-                                                <td>
-                                                    @if ($student->student_photo)
-                                                        <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                            alt="Profile Photo" width="30" height="30"
-                                                            style="object-fit: cover; border-radius: 50%;">
-                                                    @else
-                                                        <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                            alt="No Profile" width="30" height="30"
-                                                            style="object-fit: cover; border-radius: 50%;">
-                                                    @endif
+                                                <td><a class="text-primary"
+                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                        {{ $student->student_lName }},
+                                                        {{ $student->student_fName }}
+                                                        {{ $student->student_mName }}
+                                                        {{ $student->student_extName }}</a></td>
+                                                <td><a class="text-primary"
+                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                        @if ($student->student_photo)
+                                                            <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                                alt="Profile Photo" width="30" height="30"
+                                                                style="object-fit: cover; border-radius: 50%;">
+                                                        @else
+                                                            <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                                alt="No Profile" width="30" height="30"
+                                                                style="object-fit: cover; border-radius: 50%;">
+                                                        @endif
+                                                    </a>
                                                 </td>
                                                 <td>{{ $student->student_lrn }}</td>
                                                 <td>{{ optional($student->class->first())->formatted_grade_level }}
@@ -466,10 +470,6 @@
 
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
-
-
-
-
 
 @endsection
 

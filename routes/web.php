@@ -15,6 +15,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\PaymentController;
+use Illuminate\Support\Facades\Broadcast;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 
@@ -130,8 +131,7 @@ Route::prefix('announcements')->name('announcements.')->group(function () {
 Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
 Route::resource('payments', PaymentController::class);
 
-
-
+Route::get('/pusher', [AnnouncementController::class, 'pusher']);
 
 // TEACHER DASHBOARD ROUTES
 
@@ -164,7 +164,7 @@ Route::post('/teacher/manual-attendance', [TeacherController::class, 'markManual
 
 Route::get('/teacher-export-attendance', function () {
     $controller = app(AttendanceController::class);
-    $data = $controller->getAttendanceExportData(); // Custom method to return needed data
+    $data = $controller->getAttendanceExportData();
 
     return Excel::download(new SF2Export($data), 'SF2.xlsx');
 })->name('export.sf2');
