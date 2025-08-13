@@ -509,8 +509,8 @@
 
                                         <!-- Gender Totals -->
                                         <tr class="fw-bold {{ $rowClass }}">
-                                            <td>{{ $genderCounts[$gender] }}</td> {{-- This aligns with NO. --}}
-                                            <td>{{ $gender }} | Total Per Day</td> {{-- This aligns with NAME --}}
+                                            <td>{{ $genderCounts[$gender] }}</td>
+                                            <td>{{ $gender }} | Total Per Day</td>
                                             @foreach ($gender === 'Male' ? $maleTotals : $femaleTotals as $i => $total)
                                                 @php
                                                     $cellClass = '';

@@ -318,8 +318,6 @@ class AttendanceController extends Controller
 
     public function getAttendanceExportData()
     {
-        // Reuse the exact logic from myAttendanceRecord()
-        // but instead of returning a view, return the compacted variables
 
         // Use current or request params if needed
         $request = request();

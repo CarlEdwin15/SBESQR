@@ -170,7 +170,7 @@ Route::get('/teacher-export-attendance', function () {
     $gradeLevel = $data['class']->formatted_grade_level ?? 'UnknownGrade';
     $section = $data['class']->section ?? 'UnknownSection';
 
-    $fileName = "SF2_{$schoolYear}_{$gradeLevel} - {$section}.xlsx";
+    $fileName = "SBESQR_SF2_{$schoolYear}_{$gradeLevel} - {$section}.xlsx";
 
     return Excel::download(new SF2Export($data), $fileName);
 })->name('export.sf2');
