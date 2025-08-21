@@ -7,7 +7,15 @@ use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log; // ✅ Import Log
 use App\Events\AnnouncementBroadcasted;
+use App\Models\User;
+use App\Notifications\AnnouncementNotification;
+use App\Services\WebPushService;
+use Minishlink\WebPush\WebPush; // ✅ Import WebPush
+use Minishlink\WebPush\Subscription; // ✅ Import Subscription
+use Illuminate\Support\Facades\Notification;
+use NotificationChannels\WebPush\PushSubscription;
 
 class AnnouncementController extends Controller
 {
@@ -45,12 +53,19 @@ class AnnouncementController extends Controller
         $defaultYear = $this->getDefaultSchoolYear();
         $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
 
+        // 🔔 Get notifications for the dropdown
+        $role = Auth::user()->role ?? 'parent';
+        $notifications = Announcement::orderBy('date_published', 'desc')
+            ->take(99)
+            ->get();
+
         return view('admin.announcements.index', compact(
             'announcements',
             'schoolYears',
             'defaultSchoolYear',
             'search',
-            'schoolYearId'
+            'schoolYearId',
+            'notifications' // ✅ Pass this
         ));
     }
 
@@ -69,7 +84,6 @@ class AnnouncementController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
-            'recipients' => 'required|in:teacher,parent,all',
             'effective_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:effective_date',
             'school_year_id' => 'nullable|exists:school_years,id',
@@ -82,28 +96,27 @@ class AnnouncementController extends Controller
         }
 
         $validated['user_id'] = Auth::id();
-        $validated['created_by'] = Auth::id();
         $validated['date_published'] = now();
-
-        // Determine status
         $now = now();
-        if (
-            !empty($validated['effective_date']) && !empty($validated['end_date']) &&
-            $now->between($validated['effective_date'], $validated['end_date'])
-        ) {
-            $validated['status'] = 'active';
-        } else {
-            $validated['status'] = 'inactive';
-        }
 
-        Announcement::create($validated);
+        $validated['status'] = (!empty($validated['effective_date']) &&
+            $now->gte($validated['effective_date']) &&
+            (empty($validated['end_date']) || $now->lte($validated['end_date'])))
+            ? 'active' : 'inactive';
 
         $announcement = Announcement::create($validated);
 
-        // Fire event
-        event(new AnnouncementBroadcasted($announcement, $validated['recipients']));
+        // 🔔 Send push to all subscribers
+        app(WebPushService::class)->broadcast([
+            'title' => '📢 New Announcement',
+            'body'  => $announcement->title,
+            'url'   => route('announcements.index'), // or a detail page if you have one
+            'tag'   => 'announcement-' . $announcement->id,
+            'id'    => $announcement->id,
+        ]);
 
-        return redirect()->route('announcements.index')->with('success', 'Announcement posted successfully.');
+        return redirect()->route('announcements.index')
+            ->with('success', 'Announcement posted successfully.');
     }
 
     public function edit(Announcement $announcement)
@@ -122,7 +135,6 @@ class AnnouncementController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
-            'recipients' => 'required|in:teacher,parent,all',
             'effective_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:effective_date',
             'school_year_id' => 'nullable|exists:school_years,id',
@@ -162,7 +174,8 @@ class AnnouncementController extends Controller
         return $start . '-' . ($start + 1);
     }
 
-    public function pusher(){
+    public function pusher()
+    {
         return view('teacher.pusher');
     }
 }

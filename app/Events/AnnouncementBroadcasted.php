@@ -3,14 +3,15 @@
 namespace App\Events;
 
 use App\Models\Announcement;
-use Carbon\Carbon;
-use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Broadcasting\InteractsWithSockets;
 
 class AnnouncementBroadcasted implements ShouldBroadcast
 {
-    use SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $announcement;
     public $recipients;
@@ -21,17 +22,23 @@ class AnnouncementBroadcasted implements ShouldBroadcast
         $this->recipients = $recipients;
     }
 
+    // Broadcast on recipient-specific channels
     public function broadcastOn()
     {
-        return new PrivateChannel('announcements.' . $this->recipients);
+        if ($this->recipients === 'all') {
+            return [
+                new Channel('announcements.teacher'),
+                new Channel('announcements.parent'),
+                new Channel('announcements.admin'),
+            ];
+        }
+
+        return new Channel('announcements.' . $this->recipients);
     }
 
-    public function broadcastWith()
+
+    public function broadcastAs()
     {
-        return [
-            'title' => $this->announcement->title,
-            'body' => strip_tags($this->announcement->body),
-            'date' => Carbon::parse($this->announcement->date_published)->format('M d, Y | h:i A'),
-        ];
+        return 'new-announcement';
     }
 }

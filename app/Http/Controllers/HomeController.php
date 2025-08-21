@@ -8,40 +8,47 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\SchoolYear;
 use App\Models\Classes;
+use App\Models\Announcement;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-            $role = $user->role;
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
 
-            if ($role == 'teacher') {
-                $currentSchoolYear = SchoolYear::where('start_date', '<=', now())
-                    ->where('end_date', '>=', now())
+        $user = Auth::user();
+        $role = $user->role ?? 'parent';
+
+        // Get recent announcements for dropdown
+        $notifications = Announcement::orderBy('date_published', 'desc')
+            ->take(99)
+            ->get();
+
+        if ($role == 'teacher') {
+            $currentSchoolYear = SchoolYear::where('start_date', '<=', now())
+                ->where('end_date', '>=', now())
+                ->first();
+
+            $class = null;
+
+            if ($currentSchoolYear) {
+                $class = $user->classes()
+                    ->wherePivot('school_year_id', $currentSchoolYear->id)
+                    ->wherePivot('role', 'adviser') // or subject_teacher, depending
                     ->first();
-
-                $class = null;
-
-                if ($currentSchoolYear) {
-                    $class = $user->classes()
-                        ->wherePivot('school_year_id', $currentSchoolYear->id)
-                        ->wherePivot('role', 'adviser') // or subject_teacher, depending
-                        ->first();
-                }
-
-                return view('teacher.index', compact('class', 'currentSchoolYear'));
             }
 
-            // Other roles
-            if ($role == 'admin') {
-                return view('admin.index');
-            }
+            return view('teacher.index', compact('class', 'currentSchoolYear', 'notifications'));
+        }
 
-            if ($role == 'parent') {
-                return view('parent.index');
-            }
+        if ($role == 'admin') {
+            return view('admin.index', compact('notifications'));
+        }
+
+        if ($role == 'parent') {
+            return view('parent.index', compact('notifications'));
         }
 
         return redirect()->route('login');

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\FacebookController;
@@ -15,9 +16,11 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\PaymentController;
+use App\Models\ParentInfo;
 use Illuminate\Support\Facades\Broadcast;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PushSubscriptionController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -26,7 +29,7 @@ Route::get('/', function () {
 
 // ADMIN DASHBOARD ROUTES
 
-// Teachers management (on ADMIN dashboard)
+// HOME
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Google login
@@ -56,9 +59,6 @@ Route::get('/teacherInfo/{id}', [AdminController::class, 'teacherInfo'])->name('
 
 Route::post('/teacher_reassignment', [AdminController::class, 'reassignment'])->name('teacher.reassignment');
 
-Route::get('/export-teachers', function () {
-    return Excel::download(new TeachersExport, 'List of teachers.xlsx');
-})->name('export.teachers');
 
 
 // Students Management (on ADMIN dashboard)
@@ -126,12 +126,19 @@ Route::prefix('announcements')->name('announcements.')->group(function () {
     Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
 });
 
+Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])
+    ->name('push.subscribe')->middleware('auth');
+
+Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])
+    ->name('push.unsubscribe')->middleware('auth');
+
+
+Route::get('/pusher', [AnnouncementController::class, 'pusher']);
 
 // Payment Management (on ADMIN Dashboard)
 Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
 Route::resource('payments', PaymentController::class);
 
-Route::get('/pusher', [AnnouncementController::class, 'pusher']);
 
 // TEACHER DASHBOARD ROUTES
 

@@ -198,58 +198,140 @@
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
 
+                            <button id="enablePush" class="btn btn-outline-primary">Enable browser notifications</button>
+
+                            <script>
+                                document.getElementById('enablePush')?.addEventListener('click', async () => {
+                                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                                        alert("Your browser does not support push notifications.");
+                                        return;
+                                    }
+
+                                    try {
+                                        // 1. Register the service worker
+                                        const reg = await navigator.serviceWorker.register('/sw.js');
+                                        console.log('Service Worker registered:', reg);
+
+                                        // 2. Ask for notification permission
+                                        const permission = await Notification.requestPermission();
+                                        if (permission !== 'granted') {
+                                            alert("You must allow notifications to enable push.");
+                                            return;
+                                        }
+
+                                        // 3. Unsubscribe old subscription if it exists
+                                        const existing = await reg.pushManager.getSubscription();
+                                        if (existing) {
+                                            console.log("Unsubscribing old push subscription...");
+                                            await existing.unsubscribe();
+                                        }
+
+                                        // 4. Subscribe with VAPID key
+                                        const sub = await reg.pushManager.subscribe({
+                                            userVisibleOnly: true,
+                                            applicationServerKey: urlBase64ToUint8Array("{{ env('VAPID_PUBLIC_KEY') }}"),
+                                        });
+
+                                        console.log('New subscription object:', sub);
+
+                                        // 5. Send subscription to backend (flatten keys)
+                                        const res = await fetch("{{ route('push.subscribe') }}", {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                            },
+                                            body: JSON.stringify({
+                                                endpoint: sub.endpoint,
+                                                expirationTime: sub.expirationTime,
+                                                keys: sub.toJSON().keys
+                                            }),
+                                        });
+
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            alert("✅ Notifications enabled successfully!");
+                                            console.log("Saved subscription:", data);
+                                        } else {
+                                            alert("❌ Failed to save subscription: " + JSON.stringify(data));
+                                        }
+                                    } catch (err) {
+                                        console.error("Push registration failed:", err);
+                                        alert("❌ Push registration failed. Check console.");
+                                    }
+                                });
+
+                                // Helper: convert VAPID key from base64 to Uint8Array
+                                function urlBase64ToUint8Array(base64String) {
+                                    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+                                    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                                    const rawData = atob(base64);
+                                    const outputArray = new Uint8Array(rawData.length);
+                                    for (let i = 0; i < rawData.length; ++i) {
+                                        outputArray[i] = rawData.charCodeAt(i);
+                                    }
+                                    return outputArray;
+                                }
+                            </script>
+
                             <!-- Notification Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown"
                                     role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class='bx bx-bell fs-4'></i>
-                                    <span class="badge bg-danger rounded-pill badge-notifications">3</span>
+                                    @if ($notifications->count())
+                                        <span class="badge bg-danger rounded-pill badge-notifications">
+                                            {{ $notifications->count() }}
+                                        </span>
+                                    @endif
                                 </a>
 
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0"
                                     aria-labelledby="notificationDropdown"
                                     style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+
                                     <li class="px-3 pt-2">
                                         <h6 class="mb-1 d-flex justify-content-between">
-                                            Notification
-                                            <span class="badge bg-light-primary text-primary fw-bold">3 New</span>
+                                            Notifications
+                                            <span class="badge bg-light-primary text-primary fw-bold">
+                                                {{ $notifications->count() }} New
+                                            </span>
                                         </h6>
                                     </li>
 
-                                    <!-- Sample Notifications -->
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
-                                            <img src="{{ asset('assetsDashboard/img/avatars/1.png') }}" alt="avatar"
-                                                class="rounded-circle" width="36" height="36">
-                                            <div>
-                                                <strong>Congratulation Lettie 🎉</strong>
-                                                <div class="text-muted small">Won the monthly best seller badge</div>
-                                                <small class="text-muted">1h ago</small>
+                                    @forelse($notifications as $notif)
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
+                                                <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                                                    style="width:36px; height:36px;">
+                                                    📢
+                                                </div>
+                                                <div>
+                                                    <strong>{{ $notif->title }}</strong>
+                                                    <div class="text-muted small">{!! Str::limit(strip_tags($notif->body), 40) !!}</div>
+                                                    <small
+                                                        class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+                                                </div>
+                                                <span class="ms-auto text-primary mt-1">
+                                                    <i class="bx bxs-circle"></i>
+                                                </span>
+                                            </a>
+                                        </li>
+                                    @empty
+                                        <li>
+                                            <div class="dropdown-item text-center text-muted py-3">
+                                                No notifications
                                             </div>
-                                            <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
-                                            <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
-                                                style="width:36px; height:36px;">CF</div>
-                                            <div>
-                                                <strong>Charles Franklin</strong>
-                                                <div class="text-muted small">Accepted your connection</div>
-                                                <small class="text-muted">12h ago</small>
-                                            </div>
-                                            <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
-                                        </a>
-                                    </li>
+                                        </li>
+                                    @endforelse
 
                                     <li>
                                         <hr class="dropdown-divider my-0">
                                     </li>
-
                                     <li>
-                                        <a href="#" class="dropdown-item text-center text-primary fw-semibold py-2">
-                                            View all notifications
+                                        <a href="{{ route('announcements.index') }}"
+                                            class="dropdown-item text-center text-primary fw-semibold py-2">
+                                            View all announcements
                                         </a>
                                     </li>
                                 </ul>
@@ -549,6 +631,62 @@
 @endsection
 
 @push('scripts')
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script>
+        Pusher.logToConsole = true;
+
+        var pusher = new Pusher("{{ env('VITE_PUSHER_APP_KEY') }}", {
+            cluster: "{{ env('VITE_PUSHER_APP_CLUSTER') }}"
+        });
+
+        var userRole = "{{ Auth::user()->role ?? 'parent' }}"; // fallback for parents
+        var channel = pusher.subscribe('announcements.' + userRole);
+
+        channel.bind('new-announcement', function(data) {
+            // Show browser notification
+            if (Notification.permission === "granted") {
+                new Notification("📢 New Announcement", {
+                    body: data.announcement.title
+                });
+            }
+
+            // Update badge count in real-time
+            let badge = document.querySelector(".badge-notifications");
+            if (badge) {
+                let current = parseInt(badge.textContent.trim()) || 0;
+                badge.textContent = current + 1;
+                badge.style.display = "inline-block";
+            }
+
+            // Prepend new notification into dropdown
+            let dropdown = document.querySelector("#notificationDropdown")
+                .nextElementSibling; // ul.dropdown-menu
+
+            if (dropdown) {
+                let newItem = `
+                <li>
+                    <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
+                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                            style="width:36px; height:36px;">📢</div>
+                        <div>
+                            <strong>${data.announcement.title}</strong>
+                            <div class="text-muted small">${data.announcement.body.replace(/(<([^>]+)>)/gi, "").substring(0,40)}...</div>
+                            <small class="text-muted">just now</small>
+                        </div>
+                        <span class="ms-auto text-primary mt-1"><i class="bx bxs-circle"></i></span>
+                    </a>
+                </li>
+            `;
+                // insert after header (second child of ul)
+                dropdown.insertAdjacentHTML("afterbegin", newItem);
+            }
+        });
+
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+    </script>
+
     <!-- Include Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 

@@ -1,19 +1,60 @@
-import axios from 'axios';
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js'; // ✅ explicitly import if using Vite
+import axios from "axios";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
 
+// ----------------------
+// Axios setup
+// ----------------------
 window.axios = axios;
+window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
+
+const token = document.head.querySelector('meta[name="csrf-token"]');
+if (token) {
+    window.axios.defaults.headers.common["X-CSRF-TOKEN"] = token.content;
+}
+
+// ----------------------
+// Pusher setup
+// ----------------------
 window.Pusher = Pusher;
+window.Pusher.logToConsole = true; // optional for debugging
 
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
+// ----------------------
+// Laravel Echo setup
+// ----------------------
 window.Echo = new Echo({
-    broadcaster: 'pusher',
+    broadcaster: "pusher",
     key: import.meta.env.VITE_PUSHER_APP_KEY,
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
-    wsHost: import.meta.env.VITE_PUSHER_HOST ?? `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
-    wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
-    wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
+    forceTLS: true,
+    authEndpoint: "/broadcasting/auth",
+    auth: {
+        headers: {
+            "X-CSRF-TOKEN": document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute("content"),
+        },
+    },
 });
+
+// ----------------------
+// Pusher connection events
+// ----------------------
+const pusherConnection = window.Echo.connector.pusher.connection;
+
+pusherConnection.bind("connected", () => {
+    console.log("✅ Pusher connected");
+});
+
+pusherConnection.bind("error", (err) => {
+    console.error("❌ Pusher error", err);
+});
+
+pusherConnection.bind("state_change", (states) => {
+    console.log("ℹ️ Pusher state change", states);
+});
+
+// ----------------------
+// Load custom Echo listeners
+// ----------------------
+import "./echo-listeners";

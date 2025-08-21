@@ -86,7 +86,9 @@ return new class extends Migration
             $table->string('emergcont_mName')->nullable();
             $table->string('emergcont_lName')->nullable();
             $table->string('emergcont_phone')->nullable();
-            $table->string('parent_email')->nullable();
+
+            $table->string('parent_email')->unique();
+
             $table->timestamps();
         });
 
@@ -102,8 +104,9 @@ return new class extends Migration
             $table->enum('student_sex', ['male', 'female']);
             $table->string('qr_code')->nullable()->unique();
             $table->string('student_photo', 2048)->nullable();
-            $table->foreignId('address_id')->unique()->constrained('addresses')->onDelete('cascade');
-            $table->foreignId('parent_id')->unique()->constrained('parent_info')->onDelete('cascade');
+            $table->foreignId('address_id')->constrained('addresses')->onDelete('cascade');
+            $table->foreignId('parent_id')->constrained('parent_info')->onDelete('cascade');
+
             $table->timestamps();
         });
 

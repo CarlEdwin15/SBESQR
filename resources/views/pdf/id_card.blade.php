@@ -29,23 +29,25 @@
         }
 
         .id-row {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: 1cm;
-    margin-top: 1rem;
-}
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: center;
+            gap: 5cm;
+            margin-top: 1rem;
+        }
 
-/* FIXED: These were missing dots (.) */
-.d-flex {
-    display: flex;
-}
-.flex-wrap {
-    flex-wrap: wrap;
-}
-.justify-content-center {
-    justify-content: center;
-}
+        /* FIXED: These were missing dots (.) */
+        .d-flex {
+            display: flex;
+        }
+
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+
+        .justify-content-center {
+            justify-content: center;
+        }
 
 
         .card {
@@ -54,15 +56,21 @@
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
+            justify-content: center;
             box-sizing: border-box;
             padding: 6px;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            display: inline-block;
+            /* flex-direction: column; */
             align-items: center;
             text-align: center;
+            margin: auto;
             margin-bottom: 10px;
             border: 1px solid #abd8fe;
+        }
+
+        .card-name {
+            text-align: start;
         }
 
         .school-logo {
@@ -83,7 +91,7 @@
         .qr {
             width: 1.1in;
             height: 1.1in;
-            margin: 4px auto;
+            margin: auto;
         }
 
         .table {
@@ -130,16 +138,24 @@
             text-align: center;
         }
 
+        .text-start {
+            text-align: start;
+        }
+
         .mb-2 {
             margin-bottom: 0.5rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 1rem;
         }
 
         .gap-4 {
             gap: 1rem;
         }
 
-        .mt {
-            margin-top: 1rem;
+        .mt-1 {
+            margin-top: 0.5rem;
         }
     </style>
 
@@ -180,9 +196,9 @@
             <div class="card"
                 style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/back_bg_id.png') }}');">
 
-                <div class="fw-bold small-text">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
+                <div class="fw-bold" style="font-size: 9px">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
 
-                <div class="small-text">
+                <div class="card-name med-text text-start">
                     <p>Name: <strong>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
                             {{ $student->parentInfo->emergcont_lName ?? '' }}</strong></p>
                     <p>Address: <strong>{{ $student->parentInfo->barangay ?? 'N/A' }},
@@ -191,7 +207,7 @@
                     <p>Contact No.: <strong>{{ $student->parentInfo->emergcontPhone ?? 'N/A' }}</strong></p>
                 </div>
 
-                <table class="table mb-2">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>School Year</th>
@@ -208,12 +224,12 @@
                     </tbody>
                 </table>
 
-                <div class="qr mt">
-                    <img src="data:image/svg+xml;base64,{{ $qrCode }}" style="width: 100%; height: auto;"
+                <div class="qr mt-1 mb-3">
+                    <img src="data:image/svg+xml;base64,{{ $qrCode }}" style="width: 100%; height: auto; border: 1px solid #000; padding: 5px"
                         alt="QR Code">
                 </div>
 
-                <p class="text-center med-text"><strong>LRN:</strong> {{ $student->student_lrn }}</p>
+                <p class="text-center med-text mt-1">LRN:<strong> {{ $student->student_lrn }}</strong></p>
             </div>
         </div>
     </div>

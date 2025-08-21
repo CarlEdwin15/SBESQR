@@ -16,8 +16,6 @@ return new class extends Migration
 
             $table->string('title');
             $table->text('body');
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->enum('recipients', ['teacher', 'parent', 'all'])->default('all');
             $table->dateTime('date_published')->nullable();
             $table->date('effective_date')->nullable();
             $table->date('end_date')->nullable();

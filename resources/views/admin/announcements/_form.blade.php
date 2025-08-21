@@ -7,6 +7,7 @@
     @enderror
 </div>
 
+{{-- Body --}}
 <div class="mb-3">
     <label for="body">Body</label>
 
@@ -26,23 +27,6 @@
 </div>
 
 <div class="mb-3 row">
-    <div class="col">
-        <label class="form-label">Recipients</label>
-        <div>
-            @foreach (['teacher' => 'Teachers', 'parent' => 'Parents', 'all' => 'All'] as $value => $label)
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="recipients" id="recipients_{{ $value }}"
-                        value="{{ $value }}"
-                        {{ old('recipients', $announcement->recipients ?? 'all') === $value ? 'checked' : '' }}>
-                    <label class="form-check-label" for="recipients_{{ $value }}">{{ $label }}</label>
-                </div>
-            @endforeach
-        </div>
-        @error('recipients')
-            <div class="text-danger">{{ $message }}</div>
-        @enderror
-    </div>
-
     <div class="col">
         <label for="school_year_id">School Year</label>
         <select name="school_year_id" class="form-select">
@@ -66,6 +50,7 @@
     </div>
 </div>
 
+{{-- Effective Form --}}
 <div class="mb-3 row">
     <div class="col">
         <label for="effective_date">Effective From</label>
@@ -87,7 +72,6 @@
         @enderror
     </div>
 </div>
-
 
 
 @push('scripts')

@@ -72,6 +72,7 @@ class StudentSeeder extends Seeder
                     'emergcont_mName' => 'Lopez',
                     'emergcont_lName' => 'Gomez',
                     'emergcont_phone' => '0920' . rand(1000000, 9999999),
+                    'parent_email' => 'parent' . $i . '@example.com',
                 ]);
 
                 $student = Student::create([

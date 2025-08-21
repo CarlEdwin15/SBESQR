@@ -8,10 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasProfilePhoto, Notifiable, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, HasProfilePhoto, Notifiable, TwoFactorAuthenticatable, HasPushSubscriptions;
 
     protected $fillable = [
         'firstName',
@@ -71,6 +72,11 @@ class User extends Authenticatable
 
     public function announcements()
     {
-        return $this->hasMany(Announcement::class);
+        return $this->hasMany(Announcement::class, 'user_id');
+    }
+
+    public function pushSubscriptions()
+    {
+        return $this->hasMany(\App\Models\PushSubscription::class);
     }
 }
