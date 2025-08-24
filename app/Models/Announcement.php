@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Announcement extends Model
 {
@@ -19,6 +20,8 @@ class Announcement extends Model
 
     protected $casts = [
         'date_published' => 'datetime',
+        'effective_date' => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     public function user()
@@ -29,5 +32,30 @@ class Announcement extends Model
     public function schoolYear()
     {
         return $this->belongsTo(SchoolYear::class);
+    }
+
+    // ✅ New method to calculate status dynamically
+    public function getStatus(): string
+    {
+        $now = now();
+
+        if ($this->effective_date && $this->end_date) {
+            $start = $this->effective_date->isToday() ? $now : $this->effective_date;
+            $end = $this->end_date->endOfDay();
+
+            if ($now->between($start, $end)) {
+                return 'active';
+            } elseif ($now->gt($end)) {
+                return 'archive';
+            } else {
+                return 'inactive';
+            }
+        }
+
+        if ($this->effective_date) {
+            return $now->gte($this->effective_date) ? 'active' : 'inactive';
+        }
+
+        return 'inactive';
     }
 }

@@ -9,13 +9,14 @@ self.addEventListener("push", (event) => {
         console.error("Push event data error:", e);
     }
 
-    const title = data.title || "📢 New Announcement";
+    const title = data.title || "NEW ANNOUNCEMENT";
     const options = {
         body: data.body || "",
         tag: data.tag || "announcement",
         renotify: true,
-        badge: data.badge || "/assetsDashboard/img/icons/badge.png",
-        icon: data.icon || "/assetsDashboard/img/icons/announcement.png",
+        badge: "assetsDashboard/img/icons/badge.png",
+        vibrate: data.vibrate || [100, 50, 100],
+        icon: data.icon || "assetsDashboard/img/icons/announcement.png",
         data: {
             url: data.url || "/",
             id: data.id || null,

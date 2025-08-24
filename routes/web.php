@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PushSubscriptionController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return view('welcome');
@@ -117,14 +118,16 @@ Route::get('attendance-history/{grade_level}/{section}/{date?}/{schedule_id?}', 
 
 
 // Announcement Management (on ADMIN Dashboard)
-Route::prefix('announcements')->name('announcements.')->group(function () {
+Route::middleware('auth')->prefix('announcements')->name('announcements.')->group(function () {
     Route::get('/', [AnnouncementController::class, 'index'])->name('index');
     Route::get('/create', [AnnouncementController::class, 'create'])->name('create');
     Route::post('/', [AnnouncementController::class, 'store'])->name('store');
     Route::get('/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('edit');
     Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('update');
     Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
+    Route::post('upload-image', [AnnouncementController::class, 'uploadImage'])->name('uploadImage');
 });
+
 
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])
     ->name('push.subscribe')->middleware('auth');
@@ -178,6 +181,8 @@ Route::get('/teacher-export-attendance', function () {
     $section = $data['class']->section ?? 'UnknownSection';
 
     $fileName = "SBESQR_SF2_{$schoolYear}_{$gradeLevel} - {$section}.xlsx";
+
+    $data['adviserName'] = Auth::user()->full_name;
 
     return Excel::download(new SF2Export($data), $fileName);
 })->name('export.sf2');

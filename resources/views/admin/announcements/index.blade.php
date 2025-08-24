@@ -192,9 +192,10 @@
                                     @forelse($notifications as $notif)
                                         <li>
                                             <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
-                                                <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-                                                    style="width:36px; height:36px;">
-                                                    📢
+                                                <div class="rounded-circle d-flex justify-content-center align-items-center overflow-hidden"
+                                                    style="width:36px; height:36px; background-color:#f8f9fa;">
+                                                    <img src="assets/img/logo.png" alt="Logo" class="img-fluid"
+                                                        style="width:100%; height:100%; object-fit:contain;">
                                                 </div>
                                                 <div>
                                                     <strong>{{ $notif->title }}</strong>
@@ -390,7 +391,8 @@
                     {{-- Card Content --}}
                     <div class="accordion" id="announcementAccordion">
                         @forelse($announcements as $announcement)
-                            <div class="accordion-item mb-2 announcement-item"
+                            <div class="accordion-item mb-2 announcement-item
+                                @if ($announcement->computed_status == 'active') active-announcement @endif"
                                 data-title="{{ strtolower($announcement->title) }}"
                                 data-body="{{ strtolower(strip_tags($announcement->body)) }}">
 
@@ -398,25 +400,24 @@
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                         data-bs-target="#collapse{{ $announcement->id }}" aria-expanded="false"
                                         aria-controls="collapse{{ $announcement->id }}">
-                                        {{ $announcement->date_published ? \Carbon\Carbon::parse($announcement->date_published)->format('M d, Y') : 'Draft' }}
-                                        | 📢 {{ $announcement->title }} —
+                                        {{ $announcement->formatted_published }}
+                                        | 📢 {{ $announcement->title }}
                                         <span
                                             class="ms-2 badge
-                            @if ($announcement->status == 'active') bg-success
-                            @elseif ($announcement->status == 'inactive') bg-secondary
-                            @else bg-dark @endif">
-                                            {{ ucfirst($announcement->status) }}
+                                            @if ($announcement->computed_status == 'active') bg-success
+                                            @elseif ($announcement->computed_status == 'inactive') bg-secondary
+                                            @else bg-warning @endif">
+                                            {{ ucfirst($announcement->computed_status) }}
                                         </span>
                                     </button>
                                 </h2>
+
                                 <div id="collapse{{ $announcement->id }}" class="accordion-collapse collapse"
                                     aria-labelledby="heading{{ $announcement->id }}"
                                     data-bs-parent="#announcementAccordion">
 
                                     <div class="accordion-body" style="font-family: sans-serif;">
-                                        <h2 class="text-center text-warning fw-bold mb-4">{{ $announcement->title }}</h2>
 
-                                        <!-- Buttons -->
                                         <div class="mt-3 mb-3 text-end">
                                             <button class="btn btn-warning" data-bs-toggle="modal"
                                                 data-bs-target="#editAnnouncementModal"
@@ -438,39 +439,30 @@
                                             </form>
                                         </div>
 
+                                        <h2 class="text-center text-warning fw-bold mb-4">{{ $announcement->title }}</h2>
+
                                         <div class="row">
-                                            <!-- Left / Center Column (Body + Recipients + Published) -->
                                             <div class="col-md-8 border-end">
-                                                <!-- Description -->
                                                 <div class="mb-4">
-                                                    <div class="border rounded p-3 bg-light"
-                                                        style="white-space: pre-wrap;">
+                                                    <div class="border rounded p-3 bg-light quill-content">
                                                         {!! $announcement->body !!}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Right Column (Dates & School Year) -->
                                             <div class="col-md-4">
                                                 <div class="border rounded p-3 bg-light">
-                                                    <p><strong>Recipients:</strong>
-                                                        {{ ucfirst($announcement->recipients) }}
+                                                    <p><strong>Author:</strong> {{ $announcement->author_name }}</p>
+                                                    <p><strong>Published:</strong> {{ $announcement->formatted_published }}
                                                     </p>
-                                                    <p><strong>Published:</strong>
-                                                        {{ $announcement->date_published ? \Carbon\Carbon::parse($announcement->date_published)->format('M d, Y | h:i:A') : 'Draft' }}
-                                                    </p>
-
                                                     <p><strong>School Year:</strong>
                                                         {{ $announcement->schoolYear->school_year ?? 'N/A' }}</p>
                                                     <p><strong>Effective Date:</strong>
-                                                        {{ $announcement->effective_date ? \Carbon\Carbon::parse($announcement->effective_date)->format('M d, Y') : 'N/A' }}
-                                                        -
-                                                        {{ $announcement->end_date ? \Carbon\Carbon::parse($announcement->end_date)->format('M d, Y') : 'N/A' }}
-                                                    </p>
+                                                        {{ $announcement->formatted_effective }} -
+                                                        {{ $announcement->formatted_end }}</p>
                                                 </div>
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -481,6 +473,7 @@
                             </div>
                         @endforelse
                     </div>
+                    {{-- /Card Content --}}
 
                     {{-- Create Modal --}}
                     <div class="modal fade" id="createAnnouncementModal" tabindex="-1"
@@ -727,28 +720,87 @@
 
             const quill = new Quill('#edit-quill-editor', {
                 theme: 'snow',
-                placeholder: 'Edit your announcement...',
+                placeholder: 'Write your announcement here...',
                 modules: {
-                    toolbar: [
-                        [{
-                            'font': Font.whitelist
-                        }],
-                        [{
-                            'size': ['small', false, 'large', 'huge']
-                        }],
-                        ['bold', 'italic', 'underline'],
-                        [{
-                            'color': []
-                        }],
-                        [{
-                            'list': 'ordered'
-                        }, {
-                            'list': 'bullet'
-                        }],
-                        ['clean']
-                    ]
+                    toolbar: {
+                        container: [
+                            [{
+                                'font': Font.whitelist
+                            }],
+                            [{
+                                'size': ['small', false, 'large', 'huge']
+                            }],
+                            ['bold', 'italic', 'underline'],
+                            [{
+                                'color': []
+                            }, {
+                                'background': []
+                            }],
+                            [{
+                                'align': []
+                            }],
+                            [{
+                                'list': 'ordered'
+                            }, {
+                                'list': 'bullet'
+                            }],
+                            ['link', 'image'], // ✅ keep image button
+                            ['clean']
+                        ],
+                        handlers: {
+                            image: function() {
+                                const input = document.createElement('input');
+                                input.setAttribute('type', 'file');
+                                input.setAttribute('accept', 'image/*');
+                                input.click();
+
+                                input.onchange = () => {
+                                    const file = input.files[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('image', file);
+
+                                        fetch("{{ route('announcements.uploadImage') }}", {
+                                                method: 'POST',
+                                                headers: {
+                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                                },
+                                                body: formData
+                                            })
+                                            .then(res => {
+                                                if (!res.ok) throw res;
+                                                return res.json();
+                                            })
+                                            .then(data => {
+                                                if (data.url) {
+                                                    const range = quill.getSelection();
+                                                    quill.insertEmbed(range.index, 'image', data.url);
+                                                } else {
+                                                    alert('Image upload failed');
+                                                }
+                                            })
+                                            .catch(async (err) => {
+                                                let msg = 'Image upload failed';
+                                                if (err.json) {
+                                                    const errorData = await err.json();
+                                                    if (errorData.errors && errorData.errors
+                                                        .image) {
+                                                        msg = errorData.errors.image.join(', ');
+                                                    }
+                                                }
+                                                alert(msg);
+                                            });
+                                    }
+                                };
+                            }
+                        }
+                    }
                 },
-                formats: ['font', 'size', 'bold', 'italic', 'underline', 'list', 'color']
+                formats: [
+                    'font', 'size', 'bold', 'italic', 'underline',
+                    'list', 'color', 'background',
+                    'align', 'link', 'image'
+                ]
             });
 
             const editForm = document.getElementById('editAnnouncementForm');
@@ -796,7 +848,6 @@
             });
         });
     </script>
-
 
     <!-- jQuery (only once) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -883,6 +934,11 @@
 
         .ql-font-monospace {
             font-family: monospace;
+        }
+
+        .active-announcement {
+            border-left: 4px solid #198754;
+            /* green for active */
         }
     </style>
 @endpush

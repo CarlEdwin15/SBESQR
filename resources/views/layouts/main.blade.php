@@ -45,6 +45,47 @@
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    @push('styles')
+        <style>
+            .my-swal-container {
+                /* For Log out sweet alert*/
+                z-index: 10000;
+                /* Or a sufficiently high value */
+            }
+        </style>
+
+        <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+        <style>
+            /* Ensure announcement content respects Quill styling */
+            .quill-content {
+                font-family: sans-serif;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+
+            /* Quill alignment fixes */
+            .quill-content .ql-align-center {
+                text-align: center;
+            }
+
+            .quill-content .ql-align-right {
+                text-align: right;
+            }
+
+            .quill-content .ql-align-justify {
+                text-align: justify;
+            }
+
+            /* Responsive images inside announcements */
+            .quill-content img {
+                max-width: 100%;
+                height: auto;
+                display: block;
+                margin: 10px auto;
+            }
+        </style>
+    @endpush
+
     <!-- Additional custom styles can be stacked from views -->
     @stack('styles')
 </head>
@@ -76,88 +117,116 @@
 
     <script src="https://kit.fontawesome.com/ab677fe211.js" crossorigin="anonymous"></script>
 
-    {{-- <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(function(registration) {
-                    console.log('✅ ServiceWorker registered:', registration);
+    <script>
+        // Create a SweetAlert mixin so we don’t repeat customClass everywhere
+        const MySwal = Swal.mixin({
+            customClass: {
+                container: 'my-swal-container'
+            }
+        });
 
-                    // Verify service worker is active
-                    if (registration.active) {
-                        console.log('✅ ServiceWorker is active and running.');
-                    }
-
-                    // Ask permission for push
-                    Notification.requestPermission().then(function(permission) {
-                        if (permission === "granted") {
-                            subscribeUserToPush(registration);
-                        } else {
-                            console.log('❌ Push notification permission denied.');
-                        }
-                    });
-                })
-                .catch(function(error) {
-                    console.error('❌ ServiceWorker registration failed:', error);
+        document.getElementById('enablePush')?.addEventListener('click', async () => {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                MySwal.fire({
+                    title: "Unsupported",
+                    text: "🚫 Your browser does not support push notifications.",
+                    icon: "error"
                 });
-        }
+                return;
+            }
 
-        // Convert base64 public key to Uint8Array
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
-        }
+            try {
+                // 1. Register service worker
+                const reg = await navigator.serviceWorker.register('/sw.js');
 
-        // Subscribe user to push
-        function subscribeUserToPush(registration) {
-            const applicationServerKey = urlBase64ToUint8Array("{{ env('VAPID_PUBLIC_KEY') }}");
+                // 2. Check current permission
+                if (Notification.permission === "denied") {
+                    MySwal.fire({
+                        title: "Notifications Blocked",
+                        html: "🚫 You have blocked notifications.<br><br>To enable push, please allow notifications in your browser's site settings.",
+                        icon: "warning"
+                    });
+                    return;
+                }
 
-            registration.pushManager.getSubscription().then(function(existingSubscription) {
-                    if (existingSubscription) {
-                        // If the existing subscription uses a different key, unsubscribe first
-                        return existingSubscription.unsubscribe().then(function(success) {
-                            console.log("🔄 Old subscription removed:", success);
-                            return null;
+                if (Notification.permission !== "granted") {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== "granted") {
+                        MySwal.fire({
+                            title: "Permission Needed",
+                            html: "❌ You must allow notifications in the popup to enable push.<br><br>If you don’t see the popup, check your browser's site settings.",
+                            icon: "error"
                         });
+                        return;
                     }
-                    return null;
-                }).then(function() {
-                    // Create a fresh subscription
-                    return registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: applicationServerKey
-                    });
-                }).then(function(subscription) {
-                    console.log('📡 Push subscription:', subscription);
+                }
 
-                    // Send subscription details to backend
-                    return fetch("{{ route('push.subscribe') }}", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                        },
-                        body: JSON.stringify({
-                            endpoint: subscription.endpoint,
-                            keys: subscription.toJSON().keys,
-                            contentEncoding: (PushManager.supportedContentEncodings || ['aesgcm'])[0]
-                        })
-                    });
-                }).then(response => response.json())
-                .then(data => {
-                    console.log('✅ Subscription saved:', data);
-                })
-                .catch(error => {
-                    console.error("❌ Push subscription failed:", error);
+                // 3. Unsubscribe old subscription if it exists
+                const existing = await reg.pushManager.getSubscription();
+                if (existing) await existing.unsubscribe();
+
+                // 4. Subscribe with VAPID key
+                const sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array("{{ env('VAPID_PUBLIC_KEY') }}"),
                 });
+
+                // 5. Send subscription to backend
+                const res = await fetch("{{ route('push.subscribe') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        endpoint: sub.endpoint,
+                        expirationTime: sub.expirationTime,
+                        keys: sub.toJSON().keys
+                    }),
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    MySwal.fire({
+                        title: "Success!",
+                        text: "✅ Notifications enabled successfully!",
+                        icon: "success"
+                    });
+                } else {
+                    MySwal.fire({
+                        title: "Error",
+                        text: "❌ Failed to save subscription: " + JSON.stringify(data),
+                        icon: "error"
+                    });
+                }
+            } catch (err) {
+                console.error("Push registration failed:", err);
+                MySwal.fire({
+                    title: "Error",
+                    text: "❌ Push registration failed. Check console for details.",
+                    icon: "error"
+                });
+            }
+        });
+
+        // Helper: convert VAPID key from base64 to Uint8Array
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
         }
-    </script> --}}
+    </script>
 
     {{-- <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script> --}}
 
     <!-- Additional scripts can be stacked from views -->
     @stack('scripts')
+
 </body>
 
 </html>

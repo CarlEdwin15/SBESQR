@@ -11,7 +11,7 @@
     <label for="body">Body</label>
 
     <!-- Quill Visible Editor -->
-    <div id="edit-quill-editor" style="height: 200px;">{!! old('body', $announcement->body ?? '') !!}</div>
+    <div class="border rounded p-3 bg-light quill-content" id="edit-quill-editor">{!! old('body', $announcement->body ?? '') !!}</div>
 
     <!-- Hidden input to store HTML content -->
     <input type="hidden" name="body" id="edit-body">
@@ -21,24 +21,6 @@
 
     <!-- Server-side error display -->
     @error('body')
-        <div class="text-danger">{{ $message }}</div>
-    @enderror
-</div>
-
-
-<div class="mb-3">
-    <label class="form-label">Recipients</label>
-    <div>
-        @foreach (['teacher' => 'Teachers', 'parent' => 'Parents', 'all' => 'All'] as $value => $label)
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="recipients" id="recipients_{{ $value }}"
-                    value="{{ $value }}"
-                    {{ old('recipients', $announcement->recipients ?? 'all') === $value ? 'checked' : '' }}>
-                <label class="form-check-label" for="recipients_{{ $value }}">{{ $label }}</label>
-            </div>
-        @endforeach
-    </div>
-    @error('recipients')
         <div class="text-danger">{{ $message }}</div>
     @enderror
 </div>
@@ -65,54 +47,120 @@
     @enderror
 </div>
 
-<div class="mb-3">
-    <label for="effective_date">Effective From</label>
-    <input type="date" name="effective_date"
-        value="{{ old('effective_date', isset($announcement->effective_date) ? \Carbon\Carbon::parse($announcement->effective_date)->format('Y-m-d') : '') }}"
-        class="form-control" min="{{ now()->format('Y-m-d') }}">
-    @error('effective_date')
-        <div class="text-danger">{{ $message }}</div>
-    @enderror
-</div>
+<div class="mb-3 row">
+    <div class="col">
+        <label for="effective_date">Effective From</label>
+        <input type="date" name="effective_date"
+            value="{{ old('effective_date', isset($announcement->effective_date) ? \Carbon\Carbon::parse($announcement->effective_date)->format('Y-m-d') : '') }}"
+            class="form-control" min="{{ now()->format('Y-m-d') }}">
+        @error('effective_date')
+            <div class="text-danger">{{ $message }}</div>
+        @enderror
+    </div>
 
-<div class="mb-3">
-    <label for="end_date">End Date</label>
-    <input type="date" name="end_date"
-        value="{{ old('end_date', isset($announcement->end_date) ? \Carbon\Carbon::parse($announcement->end_date)->format('Y-m-d') : '') }}"
-        class="form-control" min="{{ now()->format('Y-m-d') }}">
-    @error('end_date')
-        <div class="text-danger">{{ $message }}</div>
-    @enderror
+    <div class="col">
+        <label for="end_date">End Date</label>
+        <input type="date" name="end_date"
+            value="{{ old('end_date', isset($announcement->end_date) ? \Carbon\Carbon::parse($announcement->end_date)->format('Y-m-d') : '') }}"
+            class="form-control" min="{{ now()->format('Y-m-d') }}">
+        @error('end_date')
+            <div class="text-danger">{{ $message }}</div>
+        @enderror
+    </div>
 </div>
 
 @push('scripts')
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const Font = Quill.import('formats/font');
+            Font.whitelist = ['sans-serif', 'serif', 'monospace'];
+            Quill.register(Font, true);
+
             const editQuill = new Quill('#edit-quill-editor', {
                 theme: 'snow',
-                placeholder: 'Edit your announcement...',
+                placeholder: 'Write your announcement here...',
                 modules: {
-                    toolbar: [
-                        [{
-                            'font': Font.whitelist
-                        }],
-                        [{
-                            'size': ['small', false, 'large', 'huge']
-                        }],
-                        ['bold', 'italic', 'underline'],
-                        [{
-                            'color': []
-                        }],
-                        [{
-                            'list': 'ordered'
-                        }, {
-                            'list': 'bullet'
-                        }],
-                        ['clean']
-                    ]
+                    toolbar: {
+                        container: [
+                            [{
+                                'font': Font.whitelist
+                            }],
+                            [{
+                                'size': ['small', false, 'large', 'huge']
+                            }],
+                            ['bold', 'italic', 'underline'],
+                            [{
+                                'color': []
+                            }, {
+                                'background': []
+                            }],
+                            [{
+                                'align': []
+                            }],
+                            [{
+                                'list': 'ordered'
+                            }, {
+                                'list': 'bullet'
+                            }],
+                            ['link', 'image'],
+                            ['clean']
+                        ],
+                        handlers: {
+                            image: function() {
+                                const input = document.createElement('input');
+                                input.setAttribute('type', 'file');
+                                input.setAttribute('accept', 'image/*');
+                                input.click();
+
+                                input.onchange = () => {
+                                    const file = input.files[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('image', file);
+
+                                        fetch("{{ route('announcements.uploadImage') }}", {
+                                                method: 'POST',
+                                                headers: {
+                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                                },
+                                                body: formData
+                                            })
+                                            .then(res => {
+                                                if (!res.ok) throw res;
+                                                return res.json();
+                                            })
+                                            .then(data => {
+                                                if (data.url) {
+                                                    const range = editQuill.getSelection();
+                                                    editQuill.insertEmbed(range.index, 'image',
+                                                        data.url);
+                                                } else {
+                                                    alert('Image upload failed');
+                                                }
+                                            })
+                                            .catch(async (err) => {
+                                                let msg = 'Image upload failed';
+                                                if (err.json) {
+                                                    const errorData = await err.json();
+                                                    if (errorData.errors?.image) {
+                                                        msg = errorData.errors.image.join(
+                                                            ', ');
+                                                    }
+                                                }
+                                                alert(msg);
+                                            });
+                                    }
+                                };
+                            }
+                        }
+                    }
                 },
-                formats: ['font', 'size', 'bold', 'italic', 'underline', 'list', 'color']
+                formats: [
+                    'font', 'size', 'bold', 'italic', 'underline',
+                    'list', 'color', 'background',
+                    'align', 'link', 'image'
+                ]
             });
 
             const editForm = document.getElementById('editAnnouncementForm');

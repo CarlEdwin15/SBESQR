@@ -47,11 +47,12 @@ class AnnouncementNotification extends Notification
         return (new WebPushMessage)
             ->title("📢 " . $this->announcement->title)
             ->body($this->announcement->body)
-            ->icon('/assetsDashboard/img/icons/announcement.png')
-            ->badge('/assetsDashboard/img/icons/badge.png')
+            ->icon(asset('assetsDashboard/img/icons/announcement.png'))
+            ->badge(asset('assetsDashboard/img/icons/badge.png'))
+            ->vibrate([100, 50, 100])
             ->tag('announcement-' . $this->announcement->id) // ensures grouping
             ->data([
-                'url' => url('/announcements/' . $this->announcement->id),
+                'url' => url('/' . $this->announcement->id),
                 'id'  => $this->announcement->id,
             ])
             ->action('open', 'View Announcement');

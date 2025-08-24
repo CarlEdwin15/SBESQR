@@ -12,6 +12,7 @@ use App\Events\AnnouncementBroadcasted;
 use App\Models\User;
 use App\Notifications\AnnouncementNotification;
 use App\Services\WebPushService;
+use Carbon\Carbon;
 use Minishlink\WebPush\WebPush; // ✅ Import WebPush
 use Minishlink\WebPush\Subscription; // ✅ Import Subscription
 use Illuminate\Support\Facades\Notification;
@@ -19,12 +20,12 @@ use NotificationChannels\WebPush\PushSubscription;
 
 class AnnouncementController extends Controller
 {
+
     public function index(Request $request)
     {
         $search = $request->input('search');
         $schoolYearId = $request->input('school_year');
 
-        // Query builder
         $query = Announcement::with('schoolYear', 'user')->orderByDesc('created_at');
 
         if ($search) {
@@ -38,9 +39,37 @@ class AnnouncementController extends Controller
             $query->where('school_year_id', $schoolYearId);
         }
 
-        $announcements = $query->get();
+        $announcements = $query->get()->map(function ($announcement) {
+            $now = now();
+            $effective = $announcement->effective_date ? \Carbon\Carbon::parse($announcement->effective_date) : null;
+            $end = $announcement->end_date ? \Carbon\Carbon::parse($announcement->end_date)->endOfDay() : null;
 
-        // 🟡 Only get school years that have announcements
+            if ($effective && $end) {
+                if ($now->between($effective, $end)) {
+                    $status = 'active';
+                } elseif ($now->gt($end)) {
+                    $status = 'archive';
+                } else {
+                    $status = 'inactive';
+                }
+            } elseif ($effective) {
+                $status = $now->gte($effective) ? 'active' : 'inactive';
+            } elseif ($end && $now->gt($end)) {
+                $status = 'archive';
+            } else {
+                $status = 'inactive';
+            }
+
+            // Add computed properties
+            $announcement->computed_status = $status;
+            $announcement->formatted_published = $announcement->date_published ? \Carbon\Carbon::parse($announcement->date_published)->format('M d, Y | l | h:i A') : 'Draft';
+            $announcement->formatted_effective = $effective?->format('M d, Y | l') ?? 'N/A';
+            $announcement->formatted_end = $end?->format('M d, Y | l') ?? 'N/A';
+            $announcement->author_name = $announcement->user?->firstName ?? 'Unknown';
+
+            return $announcement;
+        });
+
         $schoolYearIdsWithAnnouncements = Announcement::select('school_year_id')
             ->distinct()
             ->pluck('school_year_id');
@@ -49,15 +78,10 @@ class AnnouncementController extends Controller
             ->orderByDesc('school_year')
             ->get();
 
-        // Get default school year
         $defaultYear = $this->getDefaultSchoolYear();
         $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
 
-        // 🔔 Get notifications for the dropdown
-        $role = Auth::user()->role ?? 'parent';
-        $notifications = Announcement::orderBy('date_published', 'desc')
-            ->take(99)
-            ->get();
+        $notifications = Announcement::orderByDesc('date_published')->take(99)->get();
 
         return view('admin.announcements.index', compact(
             'announcements',
@@ -65,18 +89,8 @@ class AnnouncementController extends Controller
             'defaultSchoolYear',
             'search',
             'schoolYearId',
-            'notifications' // ✅ Pass this
+            'notifications'
         ));
-    }
-
-    public function create()
-    {
-        $schoolYears = SchoolYear::orderByDesc('school_year')->get();
-
-        $defaultYear = $this->getDefaultSchoolYear();
-        $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
-
-        return view('admin.announcements.create', compact('schoolYears', 'defaultSchoolYear'));
     }
 
     public function store(Request $request)
@@ -97,23 +111,38 @@ class AnnouncementController extends Controller
 
         $validated['user_id'] = Auth::id();
         $validated['date_published'] = now();
-        $now = now();
 
-        $validated['status'] = (!empty($validated['effective_date']) &&
-            $now->gte($validated['effective_date']) &&
-            (empty($validated['end_date']) || $now->lte($validated['end_date'])))
-            ? 'active' : 'inactive';
+        $now = now();
+        $effective = !empty($validated['effective_date']) ? Carbon::parse($validated['effective_date'])->setTimeFrom($now) : null;
+        $end = !empty($validated['end_date']) ? Carbon::parse($validated['end_date'])->endOfDay() : null;
+
+        if ($effective && $now->lt($effective)) {
+            $validated['status'] = 'inactive';
+        } elseif ($end && $now->gt($end)) {
+            $validated['status'] = 'archive';
+        } else {
+            $validated['status'] = 'active';
+        }
+
+        $validated['effective_date'] = $effective;
+        $validated['end_date'] = $end;
 
         $announcement = Announcement::create($validated);
 
-        // 🔔 Send push to all subscribers
-        app(WebPushService::class)->broadcast([
-            'title' => '📢 New Announcement',
-            'body'  => $announcement->title,
-            'url'   => route('announcements.index'), // or a detail page if you have one
-            'tag'   => 'announcement-' . $announcement->id,
-            'id'    => $announcement->id,
-        ]);
+        if ($announcement->status === 'active') {
+            app(WebPushService::class)->broadcast([
+                'title' => '📢 New Announcement',
+                'body' => $announcement->title,
+                'url'   => route('announcements.index'),
+                'tag'   => 'announcement-' . $announcement->id,
+                'id'    => $announcement->id,
+            ]);
+        }
+
+        Announcement::where('status', '!=', 'archive')
+            ->whereNotNull('end_date')
+            ->where('end_date', '<', now())
+            ->update(['status' => 'archive']);
 
         return redirect()->route('announcements.index')
             ->with('success', 'Announcement posted successfully.');
@@ -123,44 +152,107 @@ class AnnouncementController extends Controller
     {
         $schoolYears = SchoolYear::orderByDesc('school_year')->get();
 
+        // If editing via AJAX modal (from index)
         if (request()->ajax()) {
-            return view('admin.announcements._form', compact('announcement', 'schoolYears'));
+            return view('admin.announcements.edit', compact('announcement', 'schoolYears'));
         }
 
+        // Full page edit fallback
         return view('admin.announcements.edit', compact('announcement', 'schoolYears'));
     }
 
     public function update(Request $request, Announcement $announcement)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'body' => 'required|string',
+            'title'          => 'required|string|max:255',
+            'body'           => 'required|string',
             'effective_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:effective_date',
+            'end_date'       => 'nullable|date|after_or_equal:effective_date',
             'school_year_id' => 'nullable|exists:school_years,id',
         ]);
 
-        // Status logic
-        $now = now();
-        if (
-            !empty($validated['effective_date']) && !empty($validated['end_date']) &&
-            $now->between($validated['effective_date'], $validated['end_date'])
-        ) {
-            $validated['status'] = 'active';
-        } else {
-            $validated['status'] = 'inactive';
+        // Ensure a school year (fallback to default if missing)
+        if (empty($validated['school_year_id'])) {
+            $defaultYear = $this->getDefaultSchoolYear();
+            $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
+            $validated['school_year_id'] = $defaultSchoolYear?->id;
         }
+
+        // Parse effective & end dates like in store()
+        $now = now();
+        $effective = !empty($validated['effective_date'])
+            ? Carbon::parse($validated['effective_date'])->setTimeFrom($now)
+            : null;
+        $end = !empty($validated['end_date'])
+            ? Carbon::parse($validated['end_date'])->endOfDay()
+            : null;
+
+        // Status logic consistent with store()
+        if ($effective && $now->lt($effective)) {
+            $validated['status'] = 'inactive';
+        } elseif ($end && $now->gt($end)) {
+            $validated['status'] = 'archive';
+        } else {
+            $validated['status'] = 'active';
+        }
+
+        $validated['effective_date'] = $effective;
+        $validated['end_date'] = $end;
 
         $announcement->update($validated);
 
-        return redirect()->route('announcements.index')->with('success', 'Announcement updated successfully.');
+        // Re-broadcast if the updated announcement is active
+        // if ($announcement->status === 'active') {
+        //     app(WebPushService::class)->broadcast([
+        //         'title' => '📢 Updated Announcement',
+        //         'body'  => $announcement->title,
+        //         'url'   => route('announcements.index'),
+        //         'tag'   => 'announcement-' . $announcement->id,
+        //         'id'    => $announcement->id,
+        //     ]);
+        // }
+
+        // Cleanup expired announcements → archive
+        Announcement::where('status', '!=', 'archive')
+            ->whereNotNull('end_date')
+            ->where('end_date', '<', now())
+            ->update(['status' => 'archive']);
+
+        return redirect()->route('announcements.index')
+            ->with('success', 'Announcement updated successfully.');
     }
 
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
 
-        return redirect()->route('announcements.index')->with('success', 'Announcement deleted.');
+        // Optionally broadcast deletion (so clients can remove it from UI)
+        // app(WebPushService::class)->broadcast([
+        //     'title' => '🗑️ Announcement Deleted',
+        //     'body'  => $announcement->title,
+        //     'url'   => route('announcements.index'),
+        //     'tag'   => 'announcement-' . $announcement->id,
+        //     'id'    => $announcement->id,
+        // ]);
+
+        return redirect()->route('announcements.index')
+            ->with('success', 'Announcement deleted successfully.');
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('announcements', 'public');
+            $url = asset('storage/' . $path);
+
+            return response()->json(['url' => $url]);
+        }
+
+        return response()->json(['error' => 'No image uploaded'], 400);
     }
 
     // Helper function to get the default school year (e.g., "2024-2025")

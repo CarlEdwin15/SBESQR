@@ -37,7 +37,7 @@ function addNotification(e) {
     li.innerHTML = `
         <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
             <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-                 style="width:36px; height:36px;">📢</div>
+                 style="width:36px; height:36px;"><img src="assets/img/logo.png"/></div>
             <div>
                 <strong>${e.title}</strong>
                 <div class="text-muted small">${e.body}</div>

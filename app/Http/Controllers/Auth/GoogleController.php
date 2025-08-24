@@ -32,20 +32,29 @@ class GoogleController extends Controller
 
         if ($user) {
             Auth::login($user);
-            return match ($user->role) {
-                'teacher' => view('teacher.index'),
-                'admin' => view('admin.index'),
-            };
+
+            // Redirect to home route which handles preparing notifications
+            return redirect()->route('home');
         }
 
         // 2. Check if email exists in parent_info
         $parentInfo = ParentInfo::where('parent_email', $email)->first();
 
         if ($parentInfo) {
-            // Optional: store session or auth flag to indicate parent is logged in
-            session(['parent_email' => $email]);
+            // Create or fetch a user record for parent
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => trim($firstName . ' ' . $lastName),
+                    'role' => 'parent',
+                    'password' => bcrypt(Str::random(16)), // random password since login is via Google
+                ]
+            );
 
-            return view('parent.index');
+            // Log them in
+            Auth::login($user);
+
+            return redirect()->route('home');
         }
 
         // 3. If not found anywhere → Not authorized

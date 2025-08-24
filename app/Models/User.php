@@ -47,6 +47,14 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function getFullNameAttribute()
+    {
+        $middle = $this->middleName ? " {$this->middleName}" : '';
+        $ext    = $this->extName ? " {$this->extName}" : '';
+
+        return "{$this->firstName}{$middle} {$this->lastName}{$ext}";
+    }
+
     public function classes()
     {
         return $this->belongsToMany(Classes::class, 'class_user', 'user_id', 'class_id')

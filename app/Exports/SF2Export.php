@@ -23,6 +23,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
     protected $class;
     protected $selectedYear;
     protected $monthParam;
+    protected $adviserName;
 
     public function __construct($data)
     {
@@ -32,6 +33,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $this->class = $data['class'];
         $this->selectedYear = $data['selectedYear'];
         $this->monthParam = $data['monthParam'];
+        $this->adviserName = $data['adviserName'];
     }
 
     public function title(): string
@@ -362,7 +364,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             'font' => [
                 'bold' => true,
                 'name' => 'Aptos Display',
-                'size' => 10
+                'size' => 9
             ],
             'alignment' => [
                 'wrapText'   => true,
@@ -422,25 +424,51 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
 
+        $sheet->getStyle("A{$startRow}:A{$endRow}")
+            ->getFont()
+            ->setSize(9);
+
         $sheet->getStyle("B{$startRow}:B{$endRow}")
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_LEFT)
             ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("B{$startRow}:B{$endRow}")
+            ->getFont()
+            ->setSize(9);
 
         $sheet->getStyle("{$firstDateCol}{$startRow}:{$lastDateCol}{$endRow}")
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("{$firstDateCol}{$startRow}:{$lastDateCol}{$endRow}")
+            ->getFont()
+            ->setSize(9);
 
         $sheet->getStyle("{$absentCol}{$startRow}:{$absentCol}{$endRow}")
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("{$absentCol}{$startRow}:{$absentCol}{$endRow}")
+            ->getFont()
+            ->setSize(9);
 
         $sheet->getStyle("{$presentCol}{$startRow}:{$presentCol}{$endRow}")
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("{$presentCol}{$startRow}:{$presentCol}{$endRow}")
+            ->getFont()
+            ->setSize(9);
+
+        $sheet->getStyle("AD{$startRow}:AH{$endRow}")
+            ->getFont()
+            ->setSize(9);
+
+        $sheet->getStyle("AD{$startRow}:AH{$endRow}")
+            ->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setWrapText(true);
 
         $sheet->getStyle("A5:{$lastColumn}{$endRow}")->applyFromArray([
             'borders' => [
@@ -494,12 +522,14 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
         // ===== GUIDELINES & SUMMARY BLOCK =====
         $guidelinesRow = $sheet->getHighestRow() + 2;
-        $leftEndRow = $guidelinesRow + 24;
+        $leftEndRow = $guidelinesRow + 28;
 
         // LEFT BLOCK GUIDELINES
         $sheet->mergeCells("A{$guidelinesRow}:Q{$guidelinesRow}");
         $sheet->setCellValue("A{$guidelinesRow}", "GUIDELINES");
-        $sheet->getStyle("A{$guidelinesRow}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$guidelinesRow}")->getFont()
+            ->setSize(9)
+            ->setBold(true);
         $sheet->getStyle("A{$guidelinesRow}")
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_LEFT)
@@ -513,6 +543,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->mergeCells("A" . ($guidelinesRow + 1) . ":Q" . ($guidelinesRow + 3));
         $sheet->setCellValue("A" . ($guidelinesRow + 1), $cell1Text);
         $sheet->getStyle("A" . ($guidelinesRow + 1) . ":Q" . ($guidelinesRow + 3))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("A" . ($guidelinesRow + 1) . ":Q" . ($guidelinesRow + 3))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -521,19 +553,37 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->mergeCells("B" . ($guidelinesRow + 4) . ":D" . ($guidelinesRow + 5));
         $sheet->setCellValue("B" . ($guidelinesRow + 4), "a. Percentage of Enrolment =");
         $sheet->getStyle("B" . ($guidelinesRow + 4) . ":D" . ($guidelinesRow + 5))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("B" . ($guidelinesRow + 4) . ":D" . ($guidelinesRow + 5))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
-        // Registered Learners as of end of the month
-        $sheet->mergeCells("E" . ($guidelinesRow + 4) . ":N" . ($guidelinesRow + 4));
+        // Registered Learners as of end of month
+        $cellA = "E" . ($guidelinesRow + 4) . ":N" . ($guidelinesRow + 4);
+
+        $sheet->mergeCells($cellA);
         $sheet->setCellValue("E" . ($guidelinesRow + 4), "Registered Learners as of end of the month");
-        $sheet->getStyle("E" . ($guidelinesRow + 4) . ":N" . ($guidelinesRow + 4))
+        $sheet->getStyle($cellA)
+            ->getFont()->setSize(9);
+        $sheet->getStyle($cellA)
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ✅ Add bottom border
+        $sheet->getStyle($cellA)->applyFromArray([
+            'borders' => [
+                'bottom' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'FF000000'], // black
+                ],
+            ],
+        ]);
 
         // Enrolment as of 1st Friday...
         $sheet->mergeCells("E" . ($guidelinesRow + 5) . ":N" . ($guidelinesRow + 5));
         $sheet->setCellValue("E" . ($guidelinesRow + 5), "Enrolment as of 1st Friday of the school year");
+        $sheet->getStyle("E" . ($guidelinesRow + 5) . ":N" . ($guidelinesRow + 5))
+            ->getFont()->setSize(9);
         $sheet->getStyle("E" . ($guidelinesRow + 5) . ":N" . ($guidelinesRow + 5))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -542,6 +592,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->mergeCells("O" . ($guidelinesRow + 4) . ":P" . ($guidelinesRow + 5));
         $sheet->setCellValue("O" . ($guidelinesRow + 4), "x 100");
         $sheet->getStyle("O" . ($guidelinesRow + 4) . ":P" . ($guidelinesRow + 5))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("O" . ($guidelinesRow + 4) . ":P" . ($guidelinesRow + 5))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -549,41 +601,76 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->mergeCells("B" . ($guidelinesRow + 6) . ":D" . ($guidelinesRow + 7));
         $sheet->setCellValue("B" . ($guidelinesRow + 6), "b. Average Daily Attendance =");
         $sheet->getStyle("B" . ($guidelinesRow + 6) . ":D" . ($guidelinesRow + 7))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("B" . ($guidelinesRow + 6) . ":D" . ($guidelinesRow + 7))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
         // Total Daily Attendance
-        $sheet->mergeCells("E" . ($guidelinesRow + 6) . ":N" . ($guidelinesRow + 6));
+        $cellB = "E" . ($guidelinesRow + 6) . ":N" . ($guidelinesRow + 6);
+
+        $sheet->mergeCells($cellB);
         $sheet->setCellValue("E" . ($guidelinesRow + 6), "Total Daily Attendance");
-        $sheet->getStyle("E" . ($guidelinesRow + 6) . ":N" . ($guidelinesRow + 6))
+        $sheet->getStyle($cellB)
+            ->getFont()->setSize(9);
+        $sheet->getStyle($cellB)
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ✅ Add bottom border
+        $sheet->getStyle($cellB)->applyFromArray([
+            'borders' => [
+                'bottom' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'FF000000'], // black
+                ],
+            ],
+        ]);
 
         // Number of School Days...
         $sheet->mergeCells("E" . ($guidelinesRow + 7) . ":N" . ($guidelinesRow + 7));
         $sheet->setCellValue("E" . ($guidelinesRow + 7), "Number of School Days in reporting month");
         $sheet->getStyle("E" . ($guidelinesRow + 7) . ":N" . ($guidelinesRow + 7))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("E" . ($guidelinesRow + 7) . ":N" . ($guidelinesRow + 7))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
 
         // c. Percentage of Attendance =
         $sheet->mergeCells("B" . ($guidelinesRow + 8) . ":D" . ($guidelinesRow + 9));
         $sheet->setCellValue("B" . ($guidelinesRow + 8), "c. Percentage of Attendance for the month =");
         $sheet->getStyle("B" . ($guidelinesRow + 8) . ":D" . ($guidelinesRow + 9))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("B" . ($guidelinesRow + 8) . ":D" . ($guidelinesRow + 9))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
         // Average Daily Attendance
-        $sheet->mergeCells("E" . ($guidelinesRow + 8) . ":N" . ($guidelinesRow + 8));
+        $cellC = "E" . ($guidelinesRow + 8) . ":N" . ($guidelinesRow + 8);
+
+        $sheet->mergeCells($cellC);
         $sheet->setCellValue("E" . ($guidelinesRow + 8), "Average Daily Attendance");
-        $sheet->getStyle("E" . ($guidelinesRow + 8) . ":N" . ($guidelinesRow + 8))
+        $sheet->getStyle($cellC)
+            ->getFont()->setSize(9);
+        $sheet->getStyle($cellC)
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ✅ Add bottom border
+        $sheet->getStyle($cellC)->applyFromArray([
+            'borders' => [
+                'bottom' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'FF000000'], // black
+                ],
+            ],
+        ]);
 
         // Registered Learners as of end of month
         $sheet->mergeCells("E" . ($guidelinesRow + 9) . ":N" . ($guidelinesRow + 9));
         $sheet->setCellValue("E" . ($guidelinesRow + 9), "Registered Learners as of end of the month");
+        $sheet->getStyle("E" . ($guidelinesRow + 9) . ":N" . ($guidelinesRow + 9))
+            ->getFont()->setSize(9);
         $sheet->getStyle("E" . ($guidelinesRow + 9) . ":N" . ($guidelinesRow + 9))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -591,6 +678,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // x 100
         $sheet->mergeCells("O" . ($guidelinesRow + 8) . ":P" . ($guidelinesRow + 9));
         $sheet->setCellValue("O" . ($guidelinesRow + 8), "x 100");
+        $sheet->getStyle("O" . ($guidelinesRow + 8) . ":P" . ($guidelinesRow + 9))
+            ->getFont()->setSize(9);
         $sheet->getStyle("O" . ($guidelinesRow + 8) . ":P" . ($guidelinesRow + 9))
             ->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -604,6 +693,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             "                   *Beginning of School Year cut-off report is every 1st Friday of the School Year";
         $sheet->mergeCells("A" . ($guidelinesRow + 10) . ":Q" . ($guidelinesRow + 15));
         $sheet->setCellValue("A" . ($guidelinesRow + 10), $cell5Text);
+        $sheet->getStyle("A" . ($guidelinesRow + 10) . ":Q" . ($guidelinesRow + 15))
+            ->getFont()->setSize(9);
         $sheet->getStyle("A" . ($guidelinesRow + 10) . ":Q" . ($guidelinesRow + 15))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
@@ -619,6 +710,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
         // Style merged P-Q cells
         $sheet->getStyle("Q" . ($guidelinesRow + 4) . ":Q" . ($guidelinesRow + 9))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("Q" . ($guidelinesRow + 4) . ":Q" . ($guidelinesRow + 9))
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
@@ -626,7 +719,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // MID-BLOCK
         $sheet->mergeCells("R{$guidelinesRow}:Z{$guidelinesRow}");
         $sheet->setCellValue("R{$guidelinesRow}", "1. CODES FOR CHECKING ATTENDANCE");
-        $sheet->getStyle("R{$guidelinesRow}")->getFont()->setBold(true);
+        $sheet->getStyle("R{$guidelinesRow}")->getFont()->setBold(true)->setSize(9);
         $sheet->getStyle("R{$guidelinesRow}")
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
@@ -635,9 +728,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // midCell1Text
         $midCell1Text =
             "(blank) - Present; (x)- Absent; Tardy (half shaded= Upper for Late Commer, Lower for Cutting Classes)";
-        $sheet->mergeCells("R" . ($guidelinesRow + 1) . ":Z" . ($guidelinesRow + 3));
+        $sheet->mergeCells("R" . ($guidelinesRow + 1) . ":Z" . ($guidelinesRow + 2));
         $sheet->setCellValue("R" . ($guidelinesRow + 1), $midCell1Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 1) . ":Z" . ($guidelinesRow + 3))
+        $sheet->getStyle("R" . ($guidelinesRow + 1) . ":Z" . ($guidelinesRow + 2))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("R" . ($guidelinesRow + 1) . ":Z" . ($guidelinesRow + 2))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -645,10 +740,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // midCell2Text
         $midCell2Text =
             "2. REASONS/CAUSES FOR NLS";
-        $sheet->getStyle("R" . ($guidelinesRow + 4) . ":Z" . ($guidelinesRow + 4))->getFont()->setBold(true);
-        $sheet->mergeCells("R" . ($guidelinesRow + 4) . ":Z" . ($guidelinesRow + 4));
-        $sheet->setCellValue("R" . ($guidelinesRow + 4), $midCell2Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 4) . ":Z" . ($guidelinesRow + 4))
+        $sheet->getStyle("R" . ($guidelinesRow + 3) . ":Z" . ($guidelinesRow + 3))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 3) . ":Z" . ($guidelinesRow + 3));
+        $sheet->setCellValue("R" . ($guidelinesRow + 3), $midCell2Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 3) . ":Z" . ($guidelinesRow + 3))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -656,10 +751,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // midCell3Text
         $midCell3Text =
             "a. Domestic-Related Factors";
-        $sheet->getStyle("R" . ($guidelinesRow + 5) . ":Z" . ($guidelinesRow + 5))->getFont()->setBold(true);
-        $sheet->mergeCells("R" . ($guidelinesRow + 5) . ":Z" . ($guidelinesRow + 5));
-        $sheet->setCellValue("R" . ($guidelinesRow + 5), $midCell3Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 5) . ":Z" . ($guidelinesRow + 5))
+        $sheet->getStyle("R" . ($guidelinesRow + 4) . ":Z" . ($guidelinesRow + 4))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 4) . ":Z" . ($guidelinesRow + 4));
+        $sheet->setCellValue("R" . ($guidelinesRow + 4), $midCell3Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 4) . ":Z" . ($guidelinesRow + 4))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -670,9 +765,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             "a.2. Early marriage/pregnancy\n" .
             "a.3. Parents' attitude toward schooling\n" .
             "a.4. Family problems";
-        $sheet->mergeCells("R" . ($guidelinesRow + 6) . ":Z" . ($guidelinesRow + 9));
-        $sheet->setCellValue("R" . ($guidelinesRow + 6), $midCell4Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 6) . ":Z" . ($guidelinesRow + 9))
+        $sheet->mergeCells("R" . ($guidelinesRow + 5) . ":Z" . ($guidelinesRow + 8));
+        $sheet->setCellValue("R" . ($guidelinesRow + 5), $midCell4Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 5) . ":Z" . ($guidelinesRow + 8))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("R" . ($guidelinesRow + 5) . ":Z" . ($guidelinesRow + 8))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -680,10 +777,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // midCell5Text
         $midCell5Text =
             "b. Individual-Related Factors";
-        $sheet->getStyle("R" . ($guidelinesRow + 10) . ":Z" . ($guidelinesRow + 10))->getFont()->setBold(true);
-        $sheet->mergeCells("R" . ($guidelinesRow + 10) . ":Z" . ($guidelinesRow + 10));
-        $sheet->setCellValue("R" . ($guidelinesRow + 10), $midCell5Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 10) . ":Z" . ($guidelinesRow + 10))
+        $sheet->getStyle("R" . ($guidelinesRow + 9) . ":Z" . ($guidelinesRow + 9))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 9) . ":Z" . ($guidelinesRow + 9));
+        $sheet->setCellValue("R" . ($guidelinesRow + 9), $midCell5Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 9) . ":Z" . ($guidelinesRow + 9))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -697,9 +794,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             "b.5. Poor academic performance\n" .
             "b.6. Lack of interest/Distractions\n" .
             "b.7. Hunger/Malnutrition";
-        $sheet->mergeCells("R" . ($guidelinesRow + 11) . ":Z" . ($guidelinesRow + 15));
-        $sheet->setCellValue("R" . ($guidelinesRow + 11), $midCell6Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 11) . ":Z" . ($guidelinesRow + 15))
+        $sheet->mergeCells("R" . ($guidelinesRow + 10) . ":Z" . ($guidelinesRow + 14));
+        $sheet->setCellValue("R" . ($guidelinesRow + 10), $midCell6Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 10) . ":Z" . ($guidelinesRow + 14))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("R" . ($guidelinesRow + 10) . ":Z" . ($guidelinesRow + 14))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -707,10 +806,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // midCell7Text
         $midCell7Text =
             "c. School-Related Factors";
-        $sheet->getStyle("R" . ($guidelinesRow + 16) . ":Z" . ($guidelinesRow + 16))->getFont()->setBold(true);
-        $sheet->mergeCells("R" . ($guidelinesRow + 16) . ":Z" . ($guidelinesRow + 16));
-        $sheet->setCellValue("R" . ($guidelinesRow + 16), $midCell7Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 16) . ":Z" . ($guidelinesRow + 16))
+        $sheet->getStyle("R" . ($guidelinesRow + 15) . ":Z" . ($guidelinesRow + 15))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 15) . ":Z" . ($guidelinesRow + 15));
+        $sheet->setCellValue("R" . ($guidelinesRow + 15), $midCell7Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 15) . ":Z" . ($guidelinesRow + 15))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -720,44 +819,105 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             "c.1. Teacher Factor\n" .
             "c.2. Physical condition of classroom\n" .
             "c.3. Peer influence";
-        $sheet->mergeCells("R" . ($guidelinesRow + 17) . ":Z" . ($guidelinesRow + 20));
-        $sheet->setCellValue("R" . ($guidelinesRow + 17), $midCell8Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 17) . ":Z" . ($guidelinesRow + 20))
+        $sheet->mergeCells("R" . ($guidelinesRow + 16) . ":Z" . ($guidelinesRow + 19));
+        $sheet->setCellValue("R" . ($guidelinesRow + 16), $midCell8Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 16) . ":Z" . ($guidelinesRow + 19))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("R" . ($guidelinesRow + 16) . ":Z" . ($guidelinesRow + 19))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
         // midCell9Text
         $midCell9Text =
-            "e. Financial-Related";
-        $sheet->getStyle("R" . ($guidelinesRow + 21) . ":Z" . ($guidelinesRow + 21))->getFont()->setBold(true);
-        $sheet->mergeCells("R" . ($guidelinesRow + 21) . ":Z" . ($guidelinesRow + 21));
-        $sheet->setCellValue("R" . ($guidelinesRow + 21), $midCell9Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 21) . ":Z" . ($guidelinesRow + 21))
+            "d. Geographic/Environmental";
+        $sheet->getStyle("R" . ($guidelinesRow + 20) . ":Z" . ($guidelinesRow + 20))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 20) . ":Z" . ($guidelinesRow + 20));
+        $sheet->setCellValue("R" . ($guidelinesRow + 20), $midCell9Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 20) . ":Z" . ($guidelinesRow + 20))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
         // midCell10Text
         $midCell10Text =
-            "e.1. Child labor, work";
-        $sheet->mergeCells("R" . ($guidelinesRow + 22) . ":Z" . ($guidelinesRow + 22));
-        $sheet->setCellValue("R" . ($guidelinesRow + 22), $midCell10Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 22) . ":Z" . ($guidelinesRow + 22))
+            "d.1. Distance between home and school\n" .
+            "d.2. Armed conflict (incl. Tribal wars & clanfeuds)\n" .
+            "d.3. Calamities/Disasters";
+        $sheet->mergeCells("R" . ($guidelinesRow + 21) . ":Z" . ($guidelinesRow + 24));
+        $sheet->setCellValue("R" . ($guidelinesRow + 21), $midCell10Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 21) . ":Z" . ($guidelinesRow + 24))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("R" . ($guidelinesRow + 21) . ":Z" . ($guidelinesRow + 24))
             ->getAlignment()->setWrapText(true)
-            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
         // midCell11Text
         $midCell11Text =
+            "e. Financial-Related";
+        $sheet->getStyle("R" . ($guidelinesRow + 25) . ":Z" . ($guidelinesRow + 25))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 25) . ":Z" . ($guidelinesRow + 25));
+        $sheet->setCellValue("R" . ($guidelinesRow + 25), $midCell11Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 25) . ":Z" . ($guidelinesRow + 25))
+            ->getAlignment()->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+        // midCell12Text
+        $midCell12Text =
+            "e.1. Child labor, work";
+        $sheet->mergeCells("R" . ($guidelinesRow + 26) . ":Z" . ($guidelinesRow + 26));
+        $sheet->setCellValue("R" . ($guidelinesRow + 26), $midCell12Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 26) . ":Z" . ($guidelinesRow + 26))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("R" . ($guidelinesRow + 26) . ":Z" . ($guidelinesRow + 26))
+            ->getAlignment()->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+        // midCell13Text
+        $midCell13Text =
             "f. Others (Specify)";
-        $sheet->getStyle("R" . ($guidelinesRow + 23) . ":Z" . ($guidelinesRow + 24))->getFont()->setBold(true);
-        $sheet->mergeCells("R" . ($guidelinesRow + 23) . ":Z" . ($guidelinesRow + 24));
-        $sheet->setCellValue("R" . ($guidelinesRow + 23), $midCell11Text);
-        $sheet->getStyle("R" . ($guidelinesRow + 23) . ":Z" . ($guidelinesRow + 24))
+        $sheet->getStyle("R" . ($guidelinesRow + 27) . ":Z" . ($guidelinesRow + 28))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 27) . ":Z" . ($guidelinesRow + 28));
+        $sheet->setCellValue("R" . ($guidelinesRow + 27), $midCell13Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 27) . ":Z" . ($guidelinesRow + 28))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_TOP)
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+        // midCell14Text
+        $midCell14Text =
+            "";
+        $sheet->getStyle("R" . ($guidelinesRow + 31) . ":Z" . ($guidelinesRow + 31))->getFont()->setBold(true)->setSize(9);
+        $sheet->mergeCells("R" . ($guidelinesRow + 31) . ":Z" . ($guidelinesRow + 31));
+        $sheet->setCellValue("R" . ($guidelinesRow + 31), $midCell14Text);
+        $sheet->getStyle("R" . ($guidelinesRow + 31) . ":Z" . ($guidelinesRow + 31))
+            ->getAlignment()->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_BOTTOM)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // midCell15Text
+        $midCell15Text = "Generated thru SBESQR";
+        $cellRange = "R" . ($guidelinesRow + 32) . ":Z" . ($guidelinesRow + 32);
+        $sheet->getStyle($cellRange)->getFont()->setBold(false)->setSize(10);
+        $sheet->mergeCells($cellRange);
+        $sheet->setCellValue("R" . ($guidelinesRow + 32), $midCell15Text);
+        $sheet->getStyle($cellRange)
+            ->getAlignment()->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_TOP)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ✅ Add a top border in "Generated thru SBESQR"
+        $sheet->getStyle($cellRange)->applyFromArray([
+            'borders' => [
+                'top' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_MEDIUM, // or BORDER_MEDIUM, etc.
+                    'color' => ['argb' => 'FF000000'], // black
+                ],
+            ],
+        ]);
 
         $sheet->getStyle("R{$guidelinesRow}:Z{$leftEndRow}")
             ->getBorders()->getAllBorders()
@@ -767,7 +927,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // Month
         $rightCell1Text =
             "Month:";
-        $sheet->getStyle("AB" . ($guidelinesRow) . ":AC" . ($guidelinesRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("AB" . ($guidelinesRow) . ":AC" . ($guidelinesRow + 1))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AB" . ($guidelinesRow) . ":AC" . ($guidelinesRow + 1));
         $sheet->setCellValue("AB" . ($guidelinesRow), $rightCell1Text);
         $sheet->getStyle("AB" . ($guidelinesRow) . ":AC" . ($guidelinesRow + 1))
@@ -778,7 +938,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // No. of Days of Classes
         $rightCell2Text =
             "No. of Days of Classes:";
-        $sheet->getStyle("AD" . ($guidelinesRow) . ":AE" . ($guidelinesRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("AD" . ($guidelinesRow) . ":AE" . ($guidelinesRow + 1))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AD" . ($guidelinesRow) . ":AE" . ($guidelinesRow + 1));
         $sheet->setCellValue("AD" . ($guidelinesRow), $rightCell2Text);
         $sheet->getStyle("AD" . ($guidelinesRow) . ":AE" . ($guidelinesRow + 1))
@@ -789,7 +949,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // Summary
         $rightCell3Text =
             "Summary";
-        $sheet->getStyle("AF" . ($guidelinesRow) . ":AH" . ($guidelinesRow))->getFont()->setBold(true);
+        $sheet->getStyle("AF" . ($guidelinesRow) . ":AH" . ($guidelinesRow))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow) . ":AH" . ($guidelinesRow));
         $sheet->setCellValue("AF" . ($guidelinesRow), $rightCell3Text);
         $sheet->getStyle("AF" . ($guidelinesRow) . ":AH" . ($guidelinesRow))
@@ -800,7 +960,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // rightCell3Text "Male"(M)
         $rightCell3Text =
             "M";
-        $sheet->getStyle("AF" . ($guidelinesRow + 1) . ":AF" . ($guidelinesRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("AF" . ($guidelinesRow + 1) . ":AF" . ($guidelinesRow + 1))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 1) . ":AF" . ($guidelinesRow + 1));
         $sheet->setCellValue("AF" . ($guidelinesRow + 1), $rightCell3Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 1) . ":AF" . ($guidelinesRow + 1))
@@ -811,7 +971,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // rightCell3Text "Female"(F)
         $rightCell3Text =
             "F";
-        $sheet->getStyle("AG" . ($guidelinesRow + 1) . ":AG" . ($guidelinesRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("AG" . ($guidelinesRow + 1) . ":AG" . ($guidelinesRow + 1))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 1) . ":AG" . ($guidelinesRow + 1));
         $sheet->setCellValue("AG" . ($guidelinesRow + 1), $rightCell3Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 1) . ":AG" . ($guidelinesRow + 1))
@@ -822,7 +982,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // rightCell3Text (Total)
         $rightCell3Text =
             "Total";
-        $sheet->getStyle("AH" . ($guidelinesRow + 1) . ":AH" . ($guidelinesRow + 1))->getFont()->setBold(true);
+        $sheet->getStyle("AH" . ($guidelinesRow + 1) . ":AH" . ($guidelinesRow + 1))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AH" . ($guidelinesRow + 1) . ":AH" . ($guidelinesRow + 1));
         $sheet->setCellValue("AH" . ($guidelinesRow + 1), $rightCell3Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 1) . ":AH" . ($guidelinesRow + 1))
@@ -835,7 +995,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rowIndex = $guidelinesRow + 2;
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
-            ->getFont();
+            ->getFont()->setSize(9);
         $sheet->getRowDimension($rowIndex)->setRowHeight(20);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell4Text);
@@ -855,6 +1015,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->mergeCells("AF" . ($guidelinesRow + 2) . ":AF" . ($guidelinesRow + 2));
         $sheet->setCellValue("AF" . ($guidelinesRow + 2), $maleCount);
         $sheet->getStyle("AF" . ($guidelinesRow + 2) . ":AF" . ($guidelinesRow + 2))
+            ->getFont()->setSize(9);
+        $sheet->getStyle("AF" . ($guidelinesRow + 2) . ":AF" . ($guidelinesRow + 2))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -862,6 +1024,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // FEMALE RESULT
         $sheet->mergeCells("AG" . ($guidelinesRow + 2) . ":AG" . ($guidelinesRow + 2));
         $sheet->setCellValue("AG" . ($guidelinesRow + 2), $femaleCount);
+        $sheet->getStyle("AG" . ($guidelinesRow + 2) . ":AG" . ($guidelinesRow + 2))
+            ->getFont()->setSize(9);
         $sheet->getStyle("AG" . ($guidelinesRow + 2) . ":AG" . ($guidelinesRow + 2))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
@@ -871,7 +1035,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->mergeCells("AH" . ($guidelinesRow + 2) . ":AH" . ($guidelinesRow + 2));
         $sheet->setCellValue("AH" . ($guidelinesRow + 2), $totalCount);
         $sheet->getStyle("AH" . ($guidelinesRow + 2) . ":AH" . ($guidelinesRow + 2))
-            ->getFont()->setBold(true);
+            ->getFont()->setBold(true)->setSize(9);
         $sheet->getStyle("AH" . ($guidelinesRow + 2) . ":AH" . ($guidelinesRow + 2))
             ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
@@ -882,18 +1046,20 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // Right cell 6 text
         // Late Enrolment during the month (beyond cut-off)"
         $part1 = $richText->createTextRun("Late Enrolment ");
-        $part1->getFont()->setItalic(true)->setName('Aptos Display')->setSize('9'); // italic only
+        $part1->getFont()->setItalic(true)->setName('Aptos Display')->setSize(9); // italic only
         $part2 = $richText->createTextRun("during the month");
-        $part2->getFont()->setBold(true)->setItalic(true)->setName('Aptos Display')->setSize('9'); // bold + italic
+        $part2->getFont()->setBold(true)->setItalic(true)->setName('Aptos Display')->setSize(9); // bold + italic
         $richText->createText("\n");
         $part3 = $richText->createTextRun("(beyond cut-off)");
-        $part3->getFont()->setItalic(true)->setName('Aptos Display')->setSize('9'); // italic only
+        $part3->getFont()->setItalic(true)->setName('Aptos Display')->setSize(9); // italic only
 
         // Merge cells and set rich text
         $sheet->mergeCells("AB" . ($guidelinesRow + 3) . ":AE" . ($guidelinesRow + 4));
         $sheet->setCellValue("AB" . ($guidelinesRow + 3), $richText);
 
         // Alignment
+        $sheet->getStyle("AB" . ($guidelinesRow + 3) . ":AE" . ($guidelinesRow + 4))
+            ->getFont()->setSize(9);
         $sheet->getStyle("AB" . ($guidelinesRow + 3) . ":AE" . ($guidelinesRow + 4))
             ->getAlignment()
             ->setWrapText(true)
@@ -903,141 +1069,132 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // MALE RESULT for Late Enrolment during the month
         $rightCell5Text =
             "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 3) . ":AF" . ($guidelinesRow + 4));
+        $sheet->getStyle("AF" . ($guidelinesRow + 3) . ":AF" . ($guidelinesRow + 4))->getFont()->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 3) . ":AF" . ($guidelinesRow + 4));
         $sheet->setCellValue("AF" . ($guidelinesRow + 3), $rightCell5Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 3) . ":AF" . ($guidelinesRow + 4))
-            ->getAlignment()
-            ->setWrapText(true)
+            ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // FEMALE RESULT for Late Enrolment during the month
         $rightCell5Text =
             "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 3) . ":AG" . ($guidelinesRow + 4));
+        $sheet->getStyle("AG" . ($guidelinesRow + 3) . ":AG" . ($guidelinesRow + 4))->getFont()->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 3) . ":AG" . ($guidelinesRow + 4));
         $sheet->setCellValue("AG" . ($guidelinesRow + 3), $rightCell5Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 3) . ":AG" . ($guidelinesRow + 4))
-            ->getAlignment()
-            ->setWrapText(true)
+            ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // TOTAL RESULT for Late Enrolment during the month
         $rightCell5Text =
             "";
-        $sheet->getStyle("AH" . ($guidelinesRow + 3) . ":AH" . ($guidelinesRow + 4))
-            ->getFont()
-            ->setBold(true);
+        $sheet->getStyle("AH" . ($guidelinesRow + 3) . ":AH" . ($guidelinesRow + 4))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AH" . ($guidelinesRow + 3) . ":AH" . ($guidelinesRow + 4));
         $sheet->setCellValue("AH" . ($guidelinesRow + 3), $rightCell5Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 3) . ":AH" . ($guidelinesRow + 4))
+            ->getAlignment()->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Create rich text object
+        $richText1 = new RichText();
+
+        // First line: "Registered Learners as of"
+        $part1 = $richText1->createTextRun("Registered Learners as of ");
+        $part1->getFont()
+            ->setItalic(true)
+            ->setName('Aptos Display')
+            ->setSize(9); // italic, size 9
+
+        // Line break
+        $richText1->createText("\n");
+
+        // Second line: "end of month"
+        $part2 = $richText1->createTextRun("end of month");
+        $part2->getFont()
+            ->setBold(true)
+            ->setItalic(true)
+            ->setName('Aptos Display')
+            ->setSize(9); // bold + italic, size 9
+
+        // Apply rich text to merged cell
+        $sheet->mergeCells("AB" . ($guidelinesRow + 5) . ":AE" . ($guidelinesRow + 6));
+        $sheet->setCellValue("AB" . ($guidelinesRow + 5), $richText1);
+        $sheet->getStyle("AB" . ($guidelinesRow + 5) . ":AE" . ($guidelinesRow + 6))
             ->getAlignment()
             ->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Registered Learners as of
-        $rightCell7Text =
-            "Registered Learners as of";
-        $sheet->getStyle("AB" . ($guidelinesRow + 5) . ":AE" . ($guidelinesRow + 5))
-            ->getFont()
-            ->setItalic(true); // <-- Added italic
-        $sheet->mergeCells("AB" . ($guidelinesRow + 5) . ":AE" . ($guidelinesRow + 5));
-        $sheet->setCellValue("AB" . ($guidelinesRow + 5), $rightCell7Text);
-        $sheet->getStyle("AB" . ($guidelinesRow + 5) . ":AE" . ($guidelinesRow + 5))
-            ->getAlignment()
-            ->setWrapText(true)
-            ->setVertical(Alignment::VERTICAL_BOTTOM)
-            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        // end of month
-        $rightCell8Text =
-            "end of month";
-        $sheet->getStyle("AB" . ($guidelinesRow + 6) . ":AE" . ($guidelinesRow + 6))
-            ->getFont()
-            ->setBold(true)
-            ->setItalic(true); // <-- Added italic
-        $sheet->mergeCells("AB" . ($guidelinesRow + 6) . ":AE" . ($guidelinesRow + 6));
-        $sheet->setCellValue("AB" . ($guidelinesRow + 6), $rightCell8Text);
-        $sheet->getStyle("AB" . ($guidelinesRow + 6) . ":AE" . ($guidelinesRow + 6))
-            ->getAlignment()
-            ->setWrapText(true)
-            ->setVertical(Alignment::VERTICAL_TOP)
-            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
         // MALE RESULT for Registered Learners as of end of month
         $rightCell7Text =
             "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 5) . ":AF" . ($guidelinesRow + 6));
+        $sheet->getStyle("AF" . ($guidelinesRow + 5) . ":AF" . ($guidelinesRow + 6))->getFont()->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 5) . ":AF" . ($guidelinesRow + 6));
         $sheet->setCellValue("AF" . ($guidelinesRow + 5), $rightCell7Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 5) . ":AF" . ($guidelinesRow + 6))
-            ->getAlignment()
-            ->setWrapText(true)
+            ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // FEMALE RESULT for Registered Learners as of end of month
         $rightCell7Text =
             "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 5) . ":AG" . ($guidelinesRow + 6));
+        $sheet->getStyle("AG" . ($guidelinesRow + 5) . ":AG" . ($guidelinesRow + 6))->getFont()->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 5) . ":AG" . ($guidelinesRow + 6));
         $sheet->setCellValue("AG" . ($guidelinesRow + 5), $rightCell7Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 5) . ":AG" . ($guidelinesRow + 6))
-            ->getAlignment()
-            ->setWrapText(true)
+            ->getAlignment()->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // TOTAL RESULT for Registered Learners as of end of month
         $rightCell7Text =
             "";
-        $sheet->getStyle("AH" . ($guidelinesRow + 5) . ":AH" . ($guidelinesRow + 6))
-            ->getFont()
-            ->setBold(true);
+        $sheet->getStyle("AH" . ($guidelinesRow + 5) . ":AH" . ($guidelinesRow + 6))->getFont()->setBold(true)->setSize(9);
         $sheet->mergeCells("AH" . ($guidelinesRow + 5) . ":AH" . ($guidelinesRow + 6));
         $sheet->setCellValue("AH" . ($guidelinesRow + 5), $rightCell7Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 5) . ":AH" . ($guidelinesRow + 6))
+            ->getAlignment()->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // First line: "Percentage of Enrolment as of"
+        $richText2 = new RichText();
+        $part1 = $richText2->createTextRun("Percentage of Enrolment as of ");
+        $part1->getFont()
+            ->setItalic(true)
+            ->setName('Aptos Display')
+            ->setSize(9); // italic, size 9
+
+        // Line break
+        $richText2->createText("\n");
+
+        // Second line: "end of month"
+        $part2 = $richText2->createTextRun("end of month");
+        $part2->getFont()
+            ->setBold(true)
+            ->setItalic(true)
+            ->setName('Aptos Display')
+            ->setSize(9); // bold + italic, size 9
+
+        // Apply rich text to merged cell
+        $sheet->mergeCells("AB" . ($guidelinesRow + 7) . ":AE" . ($guidelinesRow + 8));
+        $sheet->setCellValue("AB" . ($guidelinesRow + 7), $richText2);
+        $sheet->getStyle("AB" . ($guidelinesRow + 7) . ":AE" . ($guidelinesRow + 8))
             ->getAlignment()
             ->setWrapText(true)
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Percentage of Enrolment as of
-        $rightCell9Text =
-            "Percentage of Enrolment as of";
-        $sheet->getStyle("AB" . ($guidelinesRow + 7) . ":AE" . ($guidelinesRow + 7))
-            ->getFont()
-            ->setItalic(true); // <-- Added italic
-        $sheet->mergeCells("AB" . ($guidelinesRow + 7) . ":AE" . ($guidelinesRow + 7));
-        $sheet->setCellValue("AB" . ($guidelinesRow + 7), $rightCell9Text);
-        $sheet->getStyle("AB" . ($guidelinesRow + 7) . ":AE" . ($guidelinesRow + 7))
-            ->getAlignment()
-            ->setWrapText(true)
-            ->setVertical(Alignment::VERTICAL_BOTTOM)
-            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        // end of month
-        $rightCell10Text =
-            "end of month";
-        $sheet->getStyle("AB" . ($guidelinesRow + 8) . ":AE" . ($guidelinesRow + 8))
-            ->getFont()
-            ->setBold(true)
-            ->setItalic(true); // <-- Added italic
-        $sheet->mergeCells("AB" . ($guidelinesRow + 8) . ":AE" . ($guidelinesRow + 8));
-        $sheet->setCellValue("AB" . ($guidelinesRow + 8), $rightCell10Text);
-        $sheet->getStyle("AB" . ($guidelinesRow + 8) . ":AE" . ($guidelinesRow + 8))
-            ->getAlignment()
-            ->setWrapText(true)
-            ->setVertical(Alignment::VERTICAL_TOP)
-            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
         // MALE RESULT for Percentage of Enrolment as of end of month
         $rightCell10Text =
             "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 7) . ":AF" . ($guidelinesRow + 8));
+        $sheet->getStyle("AF" . ($guidelinesRow + 7) . ":AF" . ($guidelinesRow + 8))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 7) . ":AF" . ($guidelinesRow + 8));
         $sheet->setCellValue("AF" . ($guidelinesRow + 7), $rightCell10Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 7) . ":AF" . ($guidelinesRow + 8))
@@ -1049,7 +1206,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // FEMALE RESULT for Percentage of Enrolment as of end of month
         $rightCell10Text =
             "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 7) . ":AG" . ($guidelinesRow + 8));
+        $sheet->getStyle("AG" . ($guidelinesRow + 7) . ":AG" . ($guidelinesRow + 8))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 7) . ":AG" . ($guidelinesRow + 8));
         $sheet->setCellValue("AG" . ($guidelinesRow + 7), $rightCell10Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 7) . ":AG" . ($guidelinesRow + 8))
@@ -1062,8 +1220,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rightCell10Text =
             "";
         $sheet->getStyle("AH" . ($guidelinesRow + 7) . ":AH" . ($guidelinesRow + 8))
-            ->getFont()
-            ->setBold(true);
+            ->getFont()->setSize(9)->setBold(true);
         $sheet->mergeCells("AH" . ($guidelinesRow + 7) . ":AH" . ($guidelinesRow + 8));
         $sheet->setCellValue("AH" . ($guidelinesRow + 7), $rightCell10Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 7) . ":AH" . ($guidelinesRow + 8))
@@ -1077,8 +1234,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rowIndex = $guidelinesRow + 9;
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
-            ->getFont()
-            ->setItalic(true);
+            ->getFont()->setSize(9)->setItalic(true);
         $sheet->getRowDimension($rowIndex)->setRowHeight(20);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell11Text);
@@ -1092,7 +1248,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // MALE RESULT for Average Daily Attendance
         $rightCell11Text =
             "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 9) . ":AF" . ($guidelinesRow + 9));
+        $sheet->getStyle("AF" . ($guidelinesRow + 9) . ":AF" . ($guidelinesRow + 9))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 9) . ":AF" . ($guidelinesRow + 9));
         $sheet->setCellValue("AF" . ($guidelinesRow + 9), $rightCell11Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 9) . ":AF" . ($guidelinesRow + 9))
@@ -1104,7 +1261,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // FEMALE RESULT for Average Daily Attendance
         $rightCell11Text =
             "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 9) . ":AG" . ($guidelinesRow + 9));
+        $sheet->getStyle("AG" . ($guidelinesRow + 9) . ":AG" . ($guidelinesRow + 9))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 9) . ":AG" . ($guidelinesRow + 9));
         $sheet->setCellValue("AG" . ($guidelinesRow + 9), $rightCell11Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 9) . ":AG" . ($guidelinesRow + 9))
@@ -1117,8 +1275,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rightCell11Text =
             "";
         $sheet->getStyle("AH" . ($guidelinesRow + 9) . ":AH" . ($guidelinesRow + 9))
-            ->getFont()
-            ->setBold(true);
+            ->getFont()->setSize(9)->setBold(true);
         $sheet->mergeCells("AH" . ($guidelinesRow + 9) . ":AH" . ($guidelinesRow + 9));
         $sheet->setCellValue("AH" . ($guidelinesRow + 9), $rightCell11Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 9) . ":AH" . ($guidelinesRow + 9))
@@ -1132,8 +1289,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rowIndex = $guidelinesRow + 10;
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
-            ->getFont()
-            ->setItalic(true);
+            ->getFont()->setSize(9)->setItalic(true);
         $sheet->getRowDimension($rowIndex)->setRowHeight(20);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell12Text);
@@ -1147,7 +1303,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // MALE RESULT for Percentage of Attendance for the month
         $rightCell12Text =
             "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 10) . ":AF" . ($guidelinesRow + 10));
+        $sheet->getStyle("AF" . ($guidelinesRow + 10) . ":AF" . ($guidelinesRow + 10))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 10) . ":AF" . ($guidelinesRow + 10));
         $sheet->setCellValue("AF" . ($guidelinesRow + 10), $rightCell12Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 10) . ":AF" . ($guidelinesRow + 10))
@@ -1159,7 +1316,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // FEMALE RESULT for Percentage of Attendance for the month
         $rightCell12Text =
             "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 10) . ":AG" . ($guidelinesRow + 10));
+        $sheet->getStyle("AG" . ($guidelinesRow + 10) . ":AG" . ($guidelinesRow + 10))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 10) . ":AG" . ($guidelinesRow + 10));
         $sheet->setCellValue("AG" . ($guidelinesRow + 10), $rightCell12Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 10) . ":AG" . ($guidelinesRow + 10))
@@ -1172,8 +1330,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rightCell12Text =
             "";
         $sheet->getStyle("AH" . ($guidelinesRow + 10) . ":AH" . ($guidelinesRow + 10))
-            ->getFont()
-            ->setBold(true);
+            ->getFont()->setSize(9)->setBold(true);
         $sheet->mergeCells("AH" . ($guidelinesRow + 10) . ":AH" . ($guidelinesRow + 10));
         $sheet->setCellValue("AH" . ($guidelinesRow + 10), $rightCell12Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 10) . ":AH" . ($guidelinesRow + 10))
@@ -1187,8 +1344,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rowIndex = $guidelinesRow + 11;
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
-            ->getFont()
-            ->setItalic(true);
+            ->getFont()->setSize(9)->setItalic(true);
         $sheet->getRowDimension($rowIndex)->setRowHeight(30);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell13Text);
@@ -1207,7 +1363,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // MALE RESULT for Number of students absent for 5 consecutive days
         $rightCell13Text =
             "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 11) . ":AF" . ($guidelinesRow + 11));
+        $sheet->getStyle("AF" . ($guidelinesRow + 11) . ":AF" . ($guidelinesRow + 11))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AF" . ($guidelinesRow + 11) . ":AF" . ($guidelinesRow + 11));
         $sheet->setCellValue("AF" . ($guidelinesRow + 11), $rightCell13Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 11) . ":AF" . ($guidelinesRow + 11))
@@ -1219,7 +1376,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         // FEMALE RESULT for Number of students absent for 5 consecutive days
         $rightCell13Text =
             "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 11) . ":AG" . ($guidelinesRow + 11));
+        $sheet->getStyle("AG" . ($guidelinesRow + 11) . ":AG" . ($guidelinesRow + 11))
+            ->getFont()->setSize(9);
         $sheet->mergeCells("AG" . ($guidelinesRow + 11) . ":AG" . ($guidelinesRow + 11));
         $sheet->setCellValue("AG" . ($guidelinesRow + 11), $rightCell13Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 11) . ":AG" . ($guidelinesRow + 11))
@@ -1232,8 +1390,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $rightCell13Text =
             "";
         $sheet->getStyle("AH" . ($guidelinesRow + 11) . ":AH" . ($guidelinesRow + 11))
-            ->getFont()
-            ->setBold(true);
+            ->getFont()->setSize(9)->setBold(true);
         $sheet->mergeCells("AH" . ($guidelinesRow + 11) . ":AH" . ($guidelinesRow + 11));
         $sheet->setCellValue("AH" . ($guidelinesRow + 11), $rightCell13Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 11) . ":AH" . ($guidelinesRow + 11))
@@ -1248,7 +1405,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
             ->getFont()
-            ->setBold(true);
+            ->setBold(true)
+            ->setSize(9); // Set font size to 9
         $sheet->getRowDimension($rowIndex)->setRowHeight(20);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell14Text);
@@ -1260,9 +1418,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // MALE RESULT for NLS
-        $rightCell14Text =
-            "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 12) . ":AF" . ($guidelinesRow + 12));
+        $rightCell14Text = "";
+        $sheet->getStyle("AF" . ($guidelinesRow + 12) . ":AF" . ($guidelinesRow + 12))
+            ->getFont()
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AF" . ($guidelinesRow + 12) . ":AF" . ($guidelinesRow + 12));
         $sheet->setCellValue("AF" . ($guidelinesRow + 12), $rightCell14Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 12) . ":AF" . ($guidelinesRow + 12))
@@ -1272,9 +1431,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // FEMALE RESULT for NLS
-        $rightCell14Text =
-            "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 12) . ":AG" . ($guidelinesRow + 12));
+        $rightCell14Text = "";
+        $sheet->getStyle("AG" . ($guidelinesRow + 12) . ":AG" . ($guidelinesRow + 12))
+            ->getFont()
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AG" . ($guidelinesRow + 12) . ":AG" . ($guidelinesRow + 12));
         $sheet->setCellValue("AG" . ($guidelinesRow + 12), $rightCell14Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 12) . ":AG" . ($guidelinesRow + 12))
@@ -1284,11 +1444,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // TOTAL RESULT for NLS
-        $rightCell14Text =
-            "";
+        $rightCell14Text = "";
         $sheet->getStyle("AH" . ($guidelinesRow + 12) . ":AH" . ($guidelinesRow + 12))
             ->getFont()
-            ->setBold(true);
+            ->setBold(true)
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AH" . ($guidelinesRow + 12) . ":AH" . ($guidelinesRow + 12));
         $sheet->setCellValue("AH" . ($guidelinesRow + 12), $rightCell14Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 12) . ":AH" . ($guidelinesRow + 12))
@@ -1303,7 +1463,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
             ->getFont()
-            ->setBold(true);
+            ->setBold(true)
+            ->setSize(9); // Set font size to 9
         $sheet->getRowDimension($rowIndex)->setRowHeight(20);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell15Text);
@@ -1315,9 +1476,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // MALE RESULT for Transfered Out
-        $rightCell15Text =
-            "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 13) . ":AF" . ($guidelinesRow + 13));
+        $rightCell15Text = "";
+        $sheet->getStyle("AF" . ($guidelinesRow + 13) . ":AF" . ($guidelinesRow + 13))
+            ->getFont()
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AF" . ($guidelinesRow + 13) . ":AF" . ($guidelinesRow + 13));
         $sheet->setCellValue("AF" . ($guidelinesRow + 13), $rightCell15Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 13) . ":AF" . ($guidelinesRow + 13))
@@ -1327,9 +1489,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // FEMALE RESULT for Transfered Out
-        $rightCell15Text =
-            "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 13) . ":AG" . ($guidelinesRow + 13));
+        $rightCell15Text = "";
+        $sheet->getStyle("AG" . ($guidelinesRow + 13) . ":AG" . ($guidelinesRow + 13))
+            ->getFont()
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AG" . ($guidelinesRow + 13) . ":AG" . ($guidelinesRow + 13));
         $sheet->setCellValue("AG" . ($guidelinesRow + 13), $rightCell15Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 13) . ":AG" . ($guidelinesRow + 13))
@@ -1339,11 +1502,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // TOTAL RESULT for Transfered Out
-        $rightCell15Text =
-            "";
+        $rightCell15Text = "";
         $sheet->getStyle("AH" . ($guidelinesRow + 13) . ":AH" . ($guidelinesRow + 13))
             ->getFont()
-            ->setBold(true);
+            ->setBold(true)
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AH" . ($guidelinesRow + 13) . ":AH" . ($guidelinesRow + 13));
         $sheet->setCellValue("AH" . ($guidelinesRow + 13), $rightCell15Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 13) . ":AH" . ($guidelinesRow + 13))
@@ -1358,7 +1521,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
         $sheet->getStyle("AB{$rowIndex}:AE{$rowIndex}")
             ->getFont()
-            ->setBold(true);
+            ->setBold(true)
+            ->setSize(9); // Set font size to 9
         $sheet->getRowDimension($rowIndex)->setRowHeight(20);
         $sheet->mergeCells("AB{$rowIndex}:AE{$rowIndex}");
         $sheet->setCellValue("AB{$rowIndex}", $rightCell16Text);
@@ -1369,10 +1533,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // MALE RESULT for Transfered Out
-        $rightCell16Text =
-            "";
-        $sheet->getStyle("AF" . ($guidelinesRow + 14) . ":AF" . ($guidelinesRow + 14));
+        // MALE RESULT for Transfered In
+        $rightCell16Text = "";
+        $sheet->getStyle("AF" . ($guidelinesRow + 14) . ":AF" . ($guidelinesRow + 14))
+            ->getFont()
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AF" . ($guidelinesRow + 14) . ":AF" . ($guidelinesRow + 14));
         $sheet->setCellValue("AF" . ($guidelinesRow + 14), $rightCell16Text);
         $sheet->getStyle("AF" . ($guidelinesRow + 14) . ":AF" . ($guidelinesRow + 14))
@@ -1381,10 +1546,11 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // FEMALE RESULT for Transfered Out
-        $rightCell16Text =
-            "";
-        $sheet->getStyle("AG" . ($guidelinesRow + 14) . ":AG" . ($guidelinesRow + 14));
+        // FEMALE RESULT for Transfered In
+        $rightCell16Text = "";
+        $sheet->getStyle("AG" . ($guidelinesRow + 14) . ":AG" . ($guidelinesRow + 14))
+            ->getFont()
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AG" . ($guidelinesRow + 14) . ":AG" . ($guidelinesRow + 14));
         $sheet->setCellValue("AG" . ($guidelinesRow + 14), $rightCell16Text);
         $sheet->getStyle("AG" . ($guidelinesRow + 14) . ":AG" . ($guidelinesRow + 14))
@@ -1393,12 +1559,12 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // TOTAL RESULT for Transfered Out
-        $rightCell16Text =
-            "";
+        // TOTAL RESULT for Transfered In
+        $rightCell16Text = "";
         $sheet->getStyle("AH" . ($guidelinesRow + 14) . ":AH" . ($guidelinesRow + 14))
             ->getFont()
-            ->setBold(true);
+            ->setBold(true)
+            ->setSize(9); // Set font size to 9
         $sheet->mergeCells("AH" . ($guidelinesRow + 14) . ":AH" . ($guidelinesRow + 14));
         $sheet->setCellValue("AH" . ($guidelinesRow + 14), $rightCell16Text);
         $sheet->getStyle("AH" . ($guidelinesRow + 14) . ":AH" . ($guidelinesRow + 14))
@@ -1420,6 +1586,119 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $sheet->getStyle("AB{$guidelinesRow}:AH{$rightEndRow}")
             ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
+
+        // Certification Section
+        $certifyRow = $rightEndRow + 6; // row after Transfered In + 1 blank row
+
+        // I certify that this is a true and correct report.
+        $certifyText = "I certify that this is a true and correct report.";
+        $sheet->getStyle("AB{$certifyRow}:AH" . ($certifyRow + 1))
+            ->getFont()
+            ->setSize(12)
+            ->setItalic(true)
+            ->setBold(false);
+        $sheet->mergeCells("AB{$certifyRow}:AH" . ($certifyRow + 1));
+        $sheet->setCellValue("AB{$certifyRow}", $certifyText);
+        $sheet->getStyle("AB{$certifyRow}:AH" . ($certifyRow + 1))
+            ->getAlignment()
+            ->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_BOTTOM)
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+        // JOHANN ALEX REGALADO DAZA
+        $certifyText1 = strtoupper($this->adviserName);
+        $sheet->mergeCells("AB" . ($certifyRow + 2) . ":AH" . ($certifyRow + 4));
+        $sheet->setCellValue("AB" . ($certifyRow + 2), $certifyText1);
+        $sheet->getStyle("AB" . ($certifyRow + 2) . ":AH" . ($certifyRow + 4))
+            ->getFont()
+            ->setSize(14)
+            ->setBold(true);
+        $sheet->getStyle("AB" . ($certifyRow + 2) . ":AH" . ($certifyRow + 4))
+            ->getAlignment()
+            ->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_BOTTOM)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // (Signature of Adviser over Printed Name)
+        $certifyText1 = "(Signature of Adviser over Printed Name)";
+        $cellRange5 = "AB" . ($certifyRow + 5) . ":AH" . ($certifyRow + 6);
+        $sheet->mergeCells($cellRange5);
+        $sheet->setCellValue("AB" . ($certifyRow + 5), $certifyText1);
+        $sheet->getStyle($cellRange5)
+            ->getFont()
+            ->setSize(10)
+            ->setBold(false);
+        $sheet->getStyle($cellRange5)
+            ->getAlignment()
+            ->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_TOP)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ✅ Add a top border
+        $sheet->getStyle($cellRange5)->applyFromArray([
+            'borders' => [
+                'top' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_MEDIUM,
+                    'color' => ['argb' => 'FF000000'], // black
+                ],
+            ],
+        ]);
+
+        // Attested by:
+        $certifyText1 = "Attested by:";
+        $sheet->mergeCells("AB" . ($certifyRow + 7) . ":AH" . ($certifyRow + 8));
+        $sheet->setCellValue("AB" . ($certifyRow + 7), $certifyText1);
+        $sheet->getStyle("AB" . ($certifyRow + 7) . ":AH" . ($certifyRow + 8))
+            ->getFont()
+            ->setItalic(true)
+            ->setSize(12)
+            ->setBold(false);
+        $sheet->getStyle("AB" . ($certifyRow + 7) . ":AH" . ($certifyRow + 8))
+            ->getAlignment()
+            ->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_BOTTOM)
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+        // School Head/Principal Name
+        $certifyText1 = "";
+        $sheet->mergeCells("AB" . ($certifyRow + 9) . ":AH" . ($certifyRow + 11));
+        $sheet->setCellValue("AB" . ($certifyRow + 9), $certifyText1);
+        $sheet->getStyle("AB" . ($certifyRow + 9) . ":AH" . ($certifyRow + 11))
+            ->getFont()
+            ->setSize(14)
+            ->setBold(true);
+        $sheet->getStyle("AB" . ($certifyRow + 9) . ":AH" . ($certifyRow + 11))
+            ->getAlignment()
+            ->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_BOTTOM)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // (Signature of School Head over Printed Name)
+        $certifyText1 = "(Signature of School Head over Printed Name)";
+        $signatureOverPrintedName = "AB" . ($certifyRow + 12) . ":AH" . ($certifyRow + 12);
+
+        $sheet->mergeCells($signatureOverPrintedName);
+        $sheet->setCellValue("AB" . ($certifyRow + 12), $certifyText1);
+        $sheet->getStyle($signatureOverPrintedName)
+            ->getFont()
+            ->setSize(10)
+            ->setBold(false);
+        $sheet->getStyle($signatureOverPrintedName)
+            ->getAlignment()
+            ->setWrapText(true)
+            ->setVertical(Alignment::VERTICAL_TOP)
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ✅ Add a top border
+        $sheet->getStyle($signatureOverPrintedName)->applyFromArray([
+            'borders' => [
+                'top' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_MEDIUM, // or MEDIUM/THICK
+                    'color' => ['argb' => 'FF000000'], // black
+                ],
+            ],
+        ]);
+
         return [];
     }
 
@@ -1431,7 +1710,12 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
                 // Global font (default for all cells)
                 $sheet->getStyle($sheet->calculateWorksheetDimension())
-                    ->getFont()->setName('Aptos Display')->setSize(9);
+                    ->getFont()->setName('Aptos Display');
+                // ->setSize(9);
+
+                // $sheet->getParent()->getDefaultStyle()->getFont()
+                //     ->setName('Aptos Display')
+                //     ->setSize(9);
 
                 // Page setup
                 $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_A4);
@@ -1451,6 +1735,10 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
                 // Align "No." column
                 $sheet->getStyle("A6:A" . (count($this->students) + 8))
                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                // Set font size to 9
+                $sheet->getStyle("A6:A" . (count($this->students) + 8))
+                    ->getFont()->setSize(9);
 
                 // Row index setup
                 $startRow = 8;
@@ -1508,7 +1796,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
                     }
                 }
 
-                // Name column (B) → font size 8
+                // Name column (B) → font size 9
                 $sheet->getStyle("B{$startRow}:B{$endRow}")->getFont()->setSize(9);
 
                 // Wrap & center vertically for names
@@ -1520,7 +1808,7 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
                 // Title (A1) → font size 16
                 $sheet->getStyle("A1")->getFont()->setSize(16);
 
-                // Row 2 (A2) → font size 16
+                // Row 2 (A2) → font size 6
                 $sheet->getStyle("A2")->getFont()->setSize(6);
 
                 // Add borders to heading cells

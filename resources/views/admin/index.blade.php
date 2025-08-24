@@ -200,80 +200,6 @@
 
                             <button id="enablePush" class="btn btn-outline-primary">Enable browser notifications</button>
 
-                            <script>
-                                document.getElementById('enablePush')?.addEventListener('click', async () => {
-                                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                                        alert("Your browser does not support push notifications.");
-                                        return;
-                                    }
-
-                                    try {
-                                        // 1. Register the service worker
-                                        const reg = await navigator.serviceWorker.register('/sw.js');
-                                        console.log('Service Worker registered:', reg);
-
-                                        // 2. Ask for notification permission
-                                        const permission = await Notification.requestPermission();
-                                        if (permission !== 'granted') {
-                                            alert("You must allow notifications to enable push.");
-                                            return;
-                                        }
-
-                                        // 3. Unsubscribe old subscription if it exists
-                                        const existing = await reg.pushManager.getSubscription();
-                                        if (existing) {
-                                            console.log("Unsubscribing old push subscription...");
-                                            await existing.unsubscribe();
-                                        }
-
-                                        // 4. Subscribe with VAPID key
-                                        const sub = await reg.pushManager.subscribe({
-                                            userVisibleOnly: true,
-                                            applicationServerKey: urlBase64ToUint8Array("{{ env('VAPID_PUBLIC_KEY') }}"),
-                                        });
-
-                                        console.log('New subscription object:', sub);
-
-                                        // 5. Send subscription to backend (flatten keys)
-                                        const res = await fetch("{{ route('push.subscribe') }}", {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                            },
-                                            body: JSON.stringify({
-                                                endpoint: sub.endpoint,
-                                                expirationTime: sub.expirationTime,
-                                                keys: sub.toJSON().keys
-                                            }),
-                                        });
-
-                                        const data = await res.json();
-                                        if (res.ok) {
-                                            alert("✅ Notifications enabled successfully!");
-                                            console.log("Saved subscription:", data);
-                                        } else {
-                                            alert("❌ Failed to save subscription: " + JSON.stringify(data));
-                                        }
-                                    } catch (err) {
-                                        console.error("Push registration failed:", err);
-                                        alert("❌ Push registration failed. Check console.");
-                                    }
-                                });
-
-                                // Helper: convert VAPID key from base64 to Uint8Array
-                                function urlBase64ToUint8Array(base64String) {
-                                    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-                                    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                                    const rawData = atob(base64);
-                                    const outputArray = new Uint8Array(rawData.length);
-                                    for (let i = 0; i < rawData.length; ++i) {
-                                        outputArray[i] = rawData.charCodeAt(i);
-                                    }
-                                    return outputArray;
-                                }
-                            </script>
-
                             <!-- Notification Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown"
@@ -302,9 +228,10 @@
                                     @forelse($notifications as $notif)
                                         <li>
                                             <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
-                                                <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-                                                    style="width:36px; height:36px;">
-                                                    📢
+                                                <div class="rounded-circle d-flex justify-content-center align-items-center overflow-hidden"
+                                                    style="width:36px; height:36px; background-color:#f8f9fa;">
+                                                    <img src="assets/img/logo.png" alt="Logo" class="img-fluid"
+                                                        style="width:100%; height:100%; object-fit:contain;">
                                                 </div>
                                                 <div>
                                                     <strong>{{ $notif->title }}</strong>

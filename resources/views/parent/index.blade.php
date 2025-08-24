@@ -123,6 +123,8 @@
 
                         <ul class="navbar-nav flex-row align-items-center ms-auto">
 
+                            <button id="enablePush" class="btn btn-outline-primary">Enable browser notifications</button>
+
                             <!-- Notification Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown"
@@ -151,9 +153,10 @@
                                     @forelse($notifications as $notif)
                                         <li>
                                             <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
-                                                <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-                                                    style="width:36px; height:36px;">
-                                                    📢
+                                                <div class="rounded-circle d-flex justify-content-center align-items-center overflow-hidden"
+                                                    style="width:36px; height:36px; background-color:#f8f9fa;">
+                                                    <img src="assets/img/logo.png" alt="Logo" class="img-fluid"
+                                                        style="width:100%; height:100%; object-fit:contain;">
                                                 </div>
                                                 <div>
                                                     <strong>{{ $notif->title }}</strong>

@@ -318,7 +318,6 @@ class AttendanceController extends Controller
 
     public function getAttendanceExportData()
     {
-
         // Use current or request params if needed
         $request = request();
 
