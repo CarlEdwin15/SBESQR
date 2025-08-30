@@ -9,12 +9,12 @@ return new class extends Migration {
     {
         Schema::create('push_subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('endpoint')->unique();
-            $table->string('public_key');      // p256dh
-            $table->string('auth_token');      // auth
-            $table->string('content_encoding')->nullable();
-            $table->timestamp('expiration_time')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->text('endpoint')->unique();
+            $table->longText('public_key');
+            $table->string('auth_token');
+            $table->string('content_encoding')->default('aes128gcm');
+            $table->bigInteger('expiration_time')->nullable();
             $table->timestamps();
         });
     }

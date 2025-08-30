@@ -47,4 +47,9 @@ class SchoolYear extends Model
     {
         return $this->hasMany(Announcement::class);
     }
+
+    public function subjects()
+    {
+        return $this->hasMany(Subject::class, 'school_year_id');
+    }
 }

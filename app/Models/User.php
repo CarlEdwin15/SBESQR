@@ -47,6 +47,7 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /** 🔑 Full name accessor */
     public function getFullNameAttribute()
     {
         $middle = $this->middleName ? " {$this->middleName}" : '';
@@ -55,25 +56,51 @@ class User extends Authenticatable
         return "{$this->firstName}{$middle} {$this->lastName}{$ext}";
     }
 
+    /** 🔑 Classes the teacher is assigned to (via class_user pivot) */
     public function classes()
     {
         return $this->belongsToMany(Classes::class, 'class_user', 'user_id', 'class_id')
-            ->withPivot('role', 'school_year_id');
+            ->withPivot('role', 'school_year_id')
+            ->withTimestamps();
     }
 
+    /** 🔑 Advisory role */
     public function advisoryClasses()
     {
-        return $this->classes()->wherePivotIn('role', ['adviser']);
+        return $this->classes()->wherePivot('role', 'adviser');
     }
 
+    /** 🔑 Subject teaching role */
     public function subjectClasses()
     {
-        return $this->classes()->wherePivotIn('role', ['subject_teacher']);
+        return $this->classes()->wherePivot('role', 'subject_teacher');
     }
 
+    /** 🔑 School years where teacher is active */
     public function schoolYears()
     {
-        return $this->belongsToMany(Student::class, 'class_user')
+        return $this->belongsToMany(SchoolYear::class, 'class_user', 'user_id', 'school_year_id')
+            ->withPivot('class_id', 'role')
+            ->withTimestamps();
+    }
+
+    /** 🔑 Subjects taught by this teacher through class_subject */
+    public function classSubjects()
+    {
+        return $this->hasManyThrough(
+            ClassSubject::class,
+            Classes::class,
+            'id',            // Classes PK
+            'class_id',      // ClassSubject FK
+            'id',            // User PK
+            'id'             // Classes PK
+        );
+    }
+
+    /** 🔑 Shortcut: subjects taught by this teacher */
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
             ->withPivot('school_year_id')
             ->withTimestamps();
     }

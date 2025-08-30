@@ -145,8 +145,8 @@
 
             <!-- Layout container -->
             <div class="layout-page">
-                <!-- Navbar -->
 
+                <!-- Navbar -->
                 <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
                     id="layout-navbar">
                     <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
@@ -314,7 +314,6 @@
                         </ul>
                     </div>
                 </nav>
-
                 <!-- / Navbar -->
 
                 <!-- Content wrapper -->
@@ -559,6 +558,8 @@
 @push('scripts')
 
     <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+
+    <!-- Pusher JS for Real-time Notifications -->
     <script>
         Pusher.logToConsole = true;
 
@@ -614,6 +615,7 @@
         }
     </script>
 
+    <!-- Sweet Alert for Delete -->
     <script>
         function confirmDelete(announcementId, title) {
             Swal.fire({
@@ -651,6 +653,7 @@
         }
     </script>
 
+    <!-- Sweet Alert for Logout -->
     <script>
         // alert for logout
         function confirmLogout() {
@@ -681,6 +684,7 @@
         }
     </script>
 
+    <!-- Quill JS -->
     <script>
         function loadEditModal(id) {
             const modalBody = document.getElementById('editModalBody');
@@ -708,6 +712,7 @@
         }
     </script>
 
+    <!-- Quill Editor Initialization for Edit Form -->
     <script>
         function initEditQuillEditor() {
             const editorContainer = document.querySelector('#edit-quill-editor');
@@ -823,6 +828,7 @@
         }
     </script>
 
+    <!-- Search Functionality -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const searchInput = document.getElementById("announcementSearch");
@@ -855,6 +861,7 @@
     <!-- Toastr JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
 
+    <!-- Toastr Notification for Success Messages -->
     @if (session('success'))
         <script>
             $(document).ready(function() {

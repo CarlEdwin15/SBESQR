@@ -280,21 +280,32 @@
 
                         {{-- School Year Selection --}}
                         <div class="col-md-6 d-flex justify-content-end">
-                            <form method="GET" action="{{ route('show.students') }}"
-                                class="d-flex align-items-center w-100" style="max-width: 350px;">
-                                <label for="school_year" class="form-label mb-0 me-2">School Year:</label>
-                                <select name="school_year" id="school_year" class="form-select me-2"
-                                    onchange="this.form.submit()">
+                            <!-- School Year Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-info text-white dropdown-toggle w-100 text-start"
+                                    type="button" id="yearDropdownStudents" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    {{ $selectedYear }}
+                                </button>
+                                <ul class="dropdown-menu w-100" aria-labelledby="yearDropdownStudents">
                                     @foreach ($schoolYears as $year)
-                                        <option value="{{ $year }}"
-                                            {{ $year == $selectedYear ? 'selected' : '' }}>
-                                            {{ $year }}
-                                        </option>
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route(
+                                                    'show.students',
+                                                    array_filter([
+                                                        'school_year' => $year,
+                                                        'section' => $selectedSection ?? null,
+                                                    ]),
+                                                ) }}">
+                                                {{ $year }}
+                                            </a>
+                                        </li>
                                     @endforeach
-                                </select>
-                            </form>
+                                </ul>
+                            </div>
 
-                            {{-- "Now" button --}}
+                            <!-- "Now" button -->
                             <form method="GET" action="{{ route('show.students') }}">
                                 <input type="hidden" name="school_year"
                                     value="{{ $currentYear . '-' . ($currentYear + 1) }}">
@@ -339,11 +350,11 @@
                                     </thead>
                                     <tbody>
                                         @forelse ($students->sortBy([
-                                                                                                ['student_lName', 'asc'],
-                                                                                                ['student_fName', 'asc'],
-                                                                                                ['student_mName', 'asc'],
-                                                                                                ['student_extName', 'asc'],
-                                                                                                ]) as $student)
+                                                                                                    ['student_lName', 'asc'],
+                                                                                                    ['student_fName', 'asc'],
+                                                                                                    ['student_mName', 'asc'],
+                                                                                                    ['student_extName', 'asc'],
+                                                                                                    ]) as $student)
                                             <tr class="student-row"
                                                 data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                                 data-section="{{ strtolower(optional($student->class->first())->section) }}"

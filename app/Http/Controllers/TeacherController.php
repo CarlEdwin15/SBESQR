@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Models\Classes;
 use App\Models\Student;
 use App\Models\Attendance;
+use App\Models\ClassSubject;
 use App\Models\Schedule;
 use App\Models\SchoolYear;
+use App\Models\Subject;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -787,6 +789,79 @@ class TeacherController extends Controller
             'student' => $student->full_name,
             'status' => $status
         ]);
+    }
+
+    public function myClassSubject(Request $request, $grade_level, $section)
+    {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        $class = $this->getClass($grade_level, $section);
+        $teacherId = Auth::id();
+
+        // ✅ Fetch subjects for this class + year, created by this teacher
+        $subjects = ClassSubject::with(['subject', 'quarters', 'teacher'])
+            ->where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('teacher_id', $teacherId)
+            ->get();
+
+        // ✅ Attach adviser info
+        $class->adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('role', 'adviser')
+            ->first();
+
+        return view('teacher.classes.myClassSubject', [
+            'class'        => $class,
+            'classSubjects' => $subjects,
+            'selectedYear' => $selectedYear,
+            'schoolYear'   => $schoolYear
+        ]);
+    }
+
+    public function createSubject(Request $request, $grade_level, $section)
+    {
+        $request->validate([
+            'name'        => 'required|string|max:255',
+            'custom_name' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        $subjectName = $request->name === "Others" ? $request->custom_name : $request->name;
+
+        $class = Classes::where('grade_level', $grade_level)
+            ->where('section', $section)
+            ->firstOrFail();
+
+        $schoolYear = SchoolYear::where('school_year', $request->selected_school_year)
+            ->firstOrFail();
+
+        // ✅ Ensure subject exists in master list (no description here)
+        $subject = Subject::firstOrCreate(['name' => $subjectName]);
+
+        // ✅ Prevent duplicate class_subject entry
+        $exists = ClassSubject::where('class_id', $class->id)
+            ->where('subject_id', $subject->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors([
+                'name' => 'This subject already exists for this class and school year.'
+            ])->withInput();
+        }
+
+        // ✅ Create pivot with teacher’s custom description
+        ClassSubject::create([
+            'class_id'       => $class->id,
+            'subject_id'     => $subject->id,
+            'school_year_id' => $schoolYear->id,
+            'teacher_id'     => Auth::id(),
+            'description'    => $request->description, // 🔑 moved here
+        ]);
+
+        return redirect()->back()->with('success', 'Subject created successfully!');
     }
 
     // Helper function to get the default school year (e.g., "2024-2025")

@@ -259,10 +259,19 @@
 
                 <!-- Content wrapper -->
                 <div class="container-xxl flex-grow-1 container-p-y">
-                    <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
+                    <h4 class="fw-bold py-3 mb-4 text-warning">
+                        <span class="text-muted fw-light">
                             <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
                             <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
-                        </span> Student Infromation
+                        </span> Student Information
+                    </h4>
+
+                    <h5 class="text-center text-success mt-2">
+                        School Year: {{ $schoolYear->school_year ?? 'N/A' }}
+                    </h5>
+                    <h4 class="mt-2 text-primary text-center fw-semibold">
+                        Student Profile:<br>
+                        {{ $student->student_fName }} {{ $student->student_lName }}
                     </h4>
 
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -270,31 +279,48 @@
                             style="margin: auto; margin-bottom: 10px; margin-left: 10px"
                             class="btn btn-danger mt-3">Back</a>
 
+                        <a href="{{ route('edit.student', ['id' => $student->id]) }}"
+                            class="btn btn-warning mt-2 mb-2 me-2">Edit</a>
+
                         <!-- Generate ID Form -->
                         <form action="{{ route('students.generateID', $student->id) }}" method="GET">
                             @csrf
-                            <button type="submit" class="btn btn-success"
-                                style="margin: auto; margin-bottom: 10px; margin-left: 10px">Generate ID</button>
+                            <button type="submit" class="btn btn-success">Generate ID</button>
                         </form>
                     </div>
 
-                    <!-- Student's Details -->
+                    <ul class="nav nav-pills mb-3 nav-fill" role="tablist">
+                        <li class="nav-item">
+                            <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#profile-tab" aria-controls="profile-tab" aria-selected="true">
+                                <i class="tf-icons bx bx-user"></i> Profile
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#parents-tab" aria-controls="parents-tab" aria-selected="false">
+                                <i class="tf-icons bx bx-group"></i> Parents
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#emergency-tab" aria-controls="emergency-tab" aria-selected="false">
+                                <i class="tf-icons bx bx-phone"></i> Emergency
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#qr-tab" aria-controls="qr-tab" aria-selected="false">
+                                <i class="tf-icons bx bx-qr"></i> QR Code
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Student Details with Filled Pills -->
                     <div class="card shadow">
                         <div class="card-body">
                             <div class="row">
-                                <div class="d-flex justify-content-end">
-                                    <a href="{{ route('edit.student', ['id' => $student->id]) }}"
-                                        class="btn btn-warning mt-2 mb-2 me-2">Edit</a>
-                                </div>
-
-                                <h5 class="text-center text-success mt-2">
-                                    School Year: {{ $schoolYear->school_year ?? 'N/A' }}
-                                </h5>
-                                <h4 class="mt-2 text-primary text-center" style="font-weight: 600;">Student Profile:
-                                    <br>{{ $student->student_fName }} {{ $student->student_lName }}
-                                </h4>
-
-                                {{-- Student Photo --}}
+                                <!-- Student Photo -->
                                 <div class="col-md-4 mt-3 mb-3 text-center d-flex flex-column align-items-center">
                                     @if ($student->student_photo)
                                         <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
@@ -307,132 +333,136 @@
                                     @endif
                                 </div>
 
-                                {{-- Student Details --}}
+                                <!-- Student Info Tabs -->
                                 <div class="col-md-8 mt-3 mb-3">
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <th class="text-primary">LRN</th>
-                                                <td>{{ $student->student_lrn }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Full Name</th>
-                                                <td>{{ $student->student_fName }} {{ $student->student_mName }}
-                                                    {{ $student->student_lName }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Grade Level</th>
-                                                <td>
-                                                    @if ($class)
-                                                        {{ $class->formatted_grade_level }} - {{ $class->section }}
-                                                    @else
-                                                        <span class="text-danger">Not enrolled in selected school
-                                                            year</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">School Year</th>
-                                                <td>
-                                                    {{ $schoolYear->school_year ?? 'N/A' }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Date of Birth</th>
-                                                <td>{{ Carbon::parse($student->student_dob)->format('F j, Y') }}
-                                                </td>
-                                            </tr>
+                                    <div class="nav-align-top mb-4">
 
-                                            <tr>
-                                                <th class="text-primary">Sex</th>
-                                                <td>{{ ucfirst($student->student_sex) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Age</th>
-                                                <td>
-                                                    {{ Carbon::parse($student->student_dob)->age }} years old
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Place of Birth</th>
-                                                <td>{{ $student->address->pob }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Address</th>
-                                                <td>
-                                                    {{ $student->address->house_no ?? 'N/A' }},
-                                                    {{ $student->address->street_name ?? 'N/A' }},
-                                                    {{ $student->address->barangay ?? 'N/A' }},
-                                                    {{ $student->address->municipality_city ?? 'N/A' }},
-                                                    {{ $student->address->province ?? 'N/A' }},
-                                                    {{ $student->address->zip_code ?? 'N/A' }}
-                                                </td>
+                                        <div class="tab-content">
+                                            <!-- Profile Tab -->
+                                            <div class="tab-pane fade show active" id="profile-tab" role="tabpanel">
+                                                <table class="table table-bordered">
+                                                    <tbody>
+                                                        <h5 class="text-info fw-bold">Student Information</h5>
+                                                        <tr>
+                                                            <th class="text-primary">LRN</th>
+                                                            <td>{{ $student->student_lrn }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Full Name</th>
+                                                            <td>{{ $student->student_fName }}
+                                                                {{ $student->student_mName }}
+                                                                {{ $student->student_lName }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Grade Level</th>
+                                                            <td>
+                                                                @if ($class)
+                                                                    {{ $class->formatted_grade_level }} -
+                                                                    {{ $class->section }}
+                                                                @else
+                                                                    <span class="text-danger">Not enrolled in selected
+                                                                        school year</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">School Year</th>
+                                                            <td>{{ $schoolYear->school_year ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Date of Birth</th>
+                                                            <td>{{ Carbon::parse($student->student_dob)->format('F j, Y') }}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Sex</th>
+                                                            <td>{{ ucfirst($student->student_sex) }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Age</th>
+                                                            <td>{{ Carbon::parse($student->student_dob)->age }} years old
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Place of Birth</th>
+                                                            <td>{{ $student->address->pob }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Complete Address</th>
+                                                            <td>
+                                                                {{ $student->address->house_no ?? 'N/A' }},
+                                                                {{ $student->address->street_name ?? 'N/A' }},
+                                                                {{ $student->address->barangay ?? 'N/A' }},
+                                                                {{ $student->address->municipality_city ?? 'N/A' }},
+                                                                {{ $student->address->province ?? 'N/A' }},
+                                                                {{ $student->address->zip_code ?? 'N/A' }}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
 
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Father's Name</th>
-                                                <td>
-                                                    {{ $student->parentInfo->father_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->father_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->father_lName ?? 'N/A' }}
-                                                </td>
+                                            <!-- Parents Tab -->
+                                            <div class="tab-pane fade" id="parents-tab" role="tabpanel">
+                                                <table class="table table-bordered">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th class="text-primary">Father's Name</th>
+                                                            <td>{{ $student->parentInfo->father_fName ?? 'N/A' }}
+                                                                {{ $student->parentInfo->father_mName ?? 'N/A' }}
+                                                                {{ $student->parentInfo->father_lName ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Father's Contact No.</th>
+                                                            <td>{{ $student->parentInfo->father_phone ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Mother's Name</th>
+                                                            <td>{{ $student->parentInfo->mother_fName ?? 'N/A' }}
+                                                                {{ $student->parentInfo->mother_mName ?? 'N/A' }}
+                                                                {{ $student->parentInfo->mother_lName ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Mother's Contact No.</th>
+                                                            <td>{{ $student->parentInfo->mother_phone ?? 'N/A' }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
 
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Father's Contact No.</th>
-                                                <td>{{ $student->parentInfo->father_phone ?? 'N/A' }}</td>
-                                            </tr>
+                                            <!-- Emergency Tab -->
+                                            <div class="tab-pane fade" id="emergency-tab" role="tabpanel">
+                                                <table class="table table-bordered">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th class="text-primary">Emergency Contact</th>
+                                                            <td>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
+                                                                {{ $student->parentInfo->emergcont_mName ?? 'N/A' }}
+                                                                {{ $student->parentInfo->emergcont_lName ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-primary">Emergency Contact No.</th>
+                                                            <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
 
-                                            <tr>
-                                                <th class="text-primary">Mother's Name</th>
-                                                <td>
-                                                    {{ $student->parentInfo->mother_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->mother_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->mother_lName ?? 'N/A' }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Mother's Contact No.</th>
-                                                <td>{{ $student->parentInfo->mother_phone ?? 'N/A' }}</td>
-                                            </tr>
-
-                                            <tr>
-                                                <th class="text-primary">Emergency Contact's Info</th>
-                                                <td>
-                                                    {{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergcont_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergcont_lName ?? 'N/A' }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Emergency Contact No.</th>
-                                                <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
-                                            </tr>
-
-                                            <tr>
-                                                <th class="text-primary">QR Code</th>
-                                                <td>
-                                                    {!! QrCode::size(150)->generate(
-                                                        json_encode([
-                                                            'student_id' => $student->id,
-                                                        ]),
-                                                    ) !!}
-                                                </td>
-                                            </tr>
-
-                                        </tbody>
-                                    </table>
+                                            <!-- QR Code Tab -->
+                                            <div class="tab-pane fade" id="qr-tab" role="tabpanel">
+                                                {!! QrCode::size(200)->generate(json_encode(['student_id' => $student->id])) !!}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                {{-- / Student Details --}}
+                                <!-- / Student Info Tabs -->
                             </div>
                         </div>
                     </div>
-                    <!-- / Student's Details -->
 
                     <hr class="my-5" />
-
                 </div>
-                <!-- Content wrapper -->
+                <!-- / Content wrapper -->
 
             </div>
             <!-- / Layout page -->

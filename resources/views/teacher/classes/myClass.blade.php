@@ -340,10 +340,10 @@
                             </div>
 
                             <div class="col-md-3">
-                                <a href=""
+                                <a href="{{ route('teacher.myClassSubject', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                                     class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
-                                    <i class="bx bx-message-check fs-2 mb-4"></i>
-                                    <div class="fw-semibold">SMS Logs</div>
+                                    <i class="bx bx-book fs-2 mb-4"></i>
+                                    <div class="fw-semibold">Subjects</div>
                                 </a>
                             </div>
                         </div>

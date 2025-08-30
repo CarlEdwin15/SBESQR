@@ -22,6 +22,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://fontawesome.com/icons">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/fonts/boxicons.css') }}" />
@@ -83,6 +84,14 @@
                 display: block;
                 margin: 10px auto;
             }
+
+            .t-row {
+                cursor: pointer;
+            }
+
+            .t-row:hover {
+                background-color: #f1f1f1;
+            }
         </style>
     @endpush
 
@@ -92,6 +101,36 @@
 
 <body>
     @yield('content')
+
+    @if ($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    title: 'Error!',
+                    html: `<ul style="text-align: left;">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>`,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                });
+            });
+        </script>
+    @endif
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll(".t-row").forEach(row => {
+                row.addEventListener("click", function() {
+                    window.location = this.dataset.href;
+                });
+            });
+        });
+    </script>
 
     <!-- Core JS -->
     <!-- build:assetsDashboard/vendor/js/core.js -->
@@ -161,15 +200,15 @@
                     }
                 }
 
-                // 3. Unsubscribe old subscription if it exists
-                const existing = await reg.pushManager.getSubscription();
-                if (existing) await existing.unsubscribe();
-
-                // 4. Subscribe with VAPID key
-                const sub = await reg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array("{{ env('VAPID_PUBLIC_KEY') }}"),
-                });
+                // 3. Get or create subscription
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(
+                            "{{ trim(env('VAPID_PUBLIC_KEY')) }}"),
+                    });
+                }
 
                 // 5. Send subscription to backend
                 const res = await fetch("{{ route('push.subscribe') }}", {
@@ -187,11 +226,27 @@
 
                 const data = await res.json();
                 if (res.ok) {
+                    // Save flag so we remember across reloads
+                    localStorage.setItem("notificationsEnabled", "true");
+
                     MySwal.fire({
                         title: "Success!",
                         text: "✅ Notifications enabled successfully!",
                         icon: "success"
                     });
+
+                    // display the announcement section
+                    const section = document.getElementById('announcement-section');
+                    if (section) {
+                        section.style.display = 'block';
+                    }
+
+                    // display the announcement nav item
+                    const navItem = document.getElementById('announcement-nav');
+                    if (navItem) {
+                        navItem.style.display = 'inline-block';
+                    }
+
                 } else {
                     MySwal.fire({
                         title: "Error",
@@ -220,6 +275,21 @@
             }
             return outputArray;
         }
+
+        // Show announcement section if user already subscribed before
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem("notificationsEnabled") === "true") {
+                const section = document.getElementById('announcement-section');
+                if (section) {
+                    section.style.display = 'block';
+                }
+
+                const navItem = document.getElementById('announcement-nav');
+                if (navItem) {
+                    navItem.style.display = 'inline-block';
+                }
+            }
+        });
     </script>
 
     {{-- <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script> --}}

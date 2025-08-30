@@ -235,10 +235,13 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
-                        class="btn btn-danger mb-3">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
+                            class="btn btn-danger mb-3 d-flex align-items-center">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
+                    </div>
 
                     {{-- Teacher Schedule Grid Display --}}
                     <div class="card">

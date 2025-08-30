@@ -50,23 +50,25 @@
     </div>
 </div>
 
-{{-- Effective Form --}}
+
 <div class="mb-3 row">
+    {{-- Effective Form --}}
     <div class="col">
         <label for="effective_date">Effective From</label>
         <input type="date" name="effective_date"
             value="{{ old('effective_date', isset($announcement->effective_date) ? \Carbon\Carbon::parse($announcement->effective_date)->format('Y-m-d') : '') }}"
-            class="form-control" min="{{ now()->format('Y-m-d') }}">
+            class="form-control" min="{{ now()->format('Y-m-d') }}" required>
         @error('effective_date')
             <div class="text-danger">{{ $message }}</div>
         @enderror
     </div>
 
+    {{-- End Date --}}
     <div class="col">
         <label for="end_date">End Date</label>
         <input type="date" name="end_date"
             value="{{ old('end_date', isset($announcement->end_date) ? \Carbon\Carbon::parse($announcement->end_date)->format('Y-m-d') : '') }}"
-            class="form-control" min="{{ now()->format('Y-m-d') }}">
+            class="form-control" min="{{ now()->format('Y-m-d') }}" required>
         @error('end_date')
             <div class="text-danger">{{ $message }}</div>
         @enderror

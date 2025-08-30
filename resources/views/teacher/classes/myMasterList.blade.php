@@ -224,29 +224,34 @@
                                     <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
                                     <a class="text-muted fw-light"
                                         href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
-                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }}) </a> /
+                                        {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }})
+                                    </a> /
                                 </span>
                                 Master List
                             </h4>
                         </div>
                     </div>
 
-                    <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
-                        class="btn btn-danger mb-3">Back</a>
+                    <h3 class="mb-1 text-center fw-bold text-info">Class Master List ({{ $selectedYear }})</h3><br>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
+                            class="btn btn-danger mb-3 d-flex align-items-center">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
+                    </div>
 
                     <div class="card p-4 shadow-sm">
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <h3 class="fw-bold mb-2 text-primary">{{ $class->formatted_grade_level }} -
                                 {{ $class->section }}</h3>
 
-                            <!-- Export List Form -->
-                            <form action="" method="GET">
-                                @csrf
-                                <button type="submit" class="btn btn-success ms-md-auto">Export List</button>
-                            </form>
+                            <a href="" class="btn btn-success d-flex align-items-center">
+                                <i class='bx bx-printer me-2'></i><span class="d-none d-sm-block">Export</span>
+                            </a>
                         </div>
 
-                        <h4 class="mb-4 text-center fw-bold text-warning">Class Master List ({{ $selectedYear }})</h4><br>
                         <h5 class="text-center">Adviser:</h5>
 
                         @if ($class->adviser)
@@ -260,10 +265,11 @@
                         <div class="row">
                             <!-- Male Table -->
                             <div class="col-md-6">
-                                <table class="table table-bordered" id="studentTable">
+                                <table class="table table-hover table-bordered" id="studentTable">
                                     <thead class="table-info">
-                                        <tr>
-                                            <th>NO.</th>
+                                        <tr class="text-center">
+                                            <th style="width: 5%;">NO.</th>
+                                            <th style="width: 10%;">PHOTO</th>
                                             <th>MALE</th>
                                         </tr>
                                     </thead>
@@ -272,8 +278,14 @@
                                         @foreach ($students->where('student_sex', 'male')->sortBy(function ($student) {
             return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
         }) as $student)
-                                            <tr class="student-row">
-                                                <td>{{ $maleCount++ }}</td>
+                                            <tr class="t-row"
+                                                data-href="">
+                                                <td class="text-center">{{ $maleCount++ }}</td>
+                                                <td class="text-center">
+                                                    <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                        alt="Student Photo" class="rounded-circle me-2 student-photo"
+                                                        style="width: 40px; height: 40px;">
+                                                </td>
                                                 <td>
                                                     {{ $student->student_lName }}, {{ $student->student_fName }}
                                                     {{ $student->student_extName }}
@@ -285,19 +297,21 @@
                                         @endforeach
                                         @if ($maleCount === 1)
                                             <tr>
-                                                <td colspan="2">No male students enrolled.</td>
+                                                <td colspan="3" class="text-center">No male students enrolled.</td>
                                             </tr>
                                         @endif
                                     </tbody>
                                 </table>
                             </div>
+                            <!-- /Male Table -->
 
                             <!-- Female Table -->
                             <div class="col-md-6">
-                                <table class="table table-bordered text-center" id="studentTable">
+                                <table class="table table-bordered" id="studentTable">
                                     <thead class="table-danger">
-                                        <tr>
-                                            <th>NO.</th>
+                                        <tr class="text-center">
+                                            <th style="width: 5%;">NO.</th>
+                                            <th style="width: 10%;">PHOTO</th>
                                             <th>FEMALE</th>
                                         </tr>
                                     </thead>
@@ -306,8 +320,15 @@
                                         @foreach ($students->where('student_sex', 'female')->sortBy(function ($student) {
             return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
         }) as $student)
-                                            <tr class="student-row">
-                                                <td>{{ $femaleCount++ }}</td>
+                                            <tr class="t-row" data-href="">
+                                                <td class="text-center">{{ $femaleCount++ }}</td>
+                                                <td class="text-center">
+                                                    <a href="">
+                                                        <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                            alt="Student Photo" class="rounded-circle me-2 student-photo"
+                                                            style="width: 40px; height: 40px;">
+                                                    </a>
+                                                </td>
                                                 <td>
                                                     {{ $student->student_lName }}, {{ $student->student_fName }}
                                                     {{ $student->student_extName }}
@@ -319,12 +340,13 @@
                                         @endforeach
                                         @if ($femaleCount === 1)
                                             <tr>
-                                                <td colspan="2">No female students enrolled.</td>
+                                                <td colspan="2" class="text-center">No female students enrolled.</td>
                                             </tr>
                                         @endif
                                     </tbody>
                                 </table>
                             </div>
+                            <!-- /Female Table -->
                         </div>
                     </div>
                 </div>
@@ -385,14 +407,16 @@
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+        .student-photo {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .card-hover {
-            transition: all 0.3s ease;
+        .student-photo:hover {
+            transform: scale(1.1);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
         }
     </style>
 @endpush

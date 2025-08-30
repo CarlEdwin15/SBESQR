@@ -143,8 +143,8 @@
 
             <!-- Layout container -->
             <div class="layout-page">
-                <!-- Navbar -->
 
+                <!-- Navbar -->
                 <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
                     id="layout-navbar">
                     <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
@@ -350,9 +350,7 @@
                         </ul>
                     </div>
                 </nav>
-
                 <!-- / Navbar -->
-
 
                 <!-- Content wrapper -->
                 <div class="content-wrapper">
@@ -466,11 +464,13 @@
                                                 <button class="btn btn-sm btn-info text-white dropdown-toggle"
                                                     type="button" id="yearDropdown" data-bs-toggle="dropdown"
                                                     aria-expanded="false">
-                                                    2025
+                                                    2025-2026
                                                 </button>
                                                 <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                                    <li><a class="dropdown-item" href="#">2024</a></li>
-                                                    <li><a class="dropdown-item" href="#">2023</a></li>
+                                                    <li><a class="dropdown-item" href="#">(Previous School
+                                                            Year(2024))</a></li>
+                                                    <li><a class="dropdown-item" href="#">(Previous School
+                                                            Year(2023))</a></li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -483,10 +483,22 @@
                             <!-- Gender Distribution Card -->
                             <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-4">
                                 <div class="card h-100">
-                                    <div class="card-header d-flex align-items-center justify-content-between pb-0">
+                                    <div class="card-header d-flex justify-content-between align-items-center mb-2">
                                         <div class="card-title mb-0">
                                             <h5 class="m-0 me-2">Student Gender Ratio</h5>
                                             <small class="text-muted">Total: 2,000 Students</small>
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-info text-white dropdown-toggle" type="button"
+                                                id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                2025-2026
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="yearDropdown">
+                                                <li><a class="dropdown-item" href="#">(Previous School
+                                                        Year(2024))</a></li>
+                                                <li><a class="dropdown-item" href="#">(Previous School
+                                                        Year(2023))</a></li>
+                                            </ul>
                                         </div>
                                     </div>
                                     <div class="card-body">
@@ -535,7 +547,6 @@
                                 </div>
                             </div>
                             <!-- Gender Distribution Card -->
-
                         </div>
                         <!-- / Enrollees and Gender Chart Section (Compact) -->
 
@@ -621,6 +632,7 @@
     <script>
         // Enrollees Chart
         const ctx1 = document.getElementById('enrolleesChart').getContext('2d');
+
         new Chart(ctx1, {
             type: 'bar',
             data: {

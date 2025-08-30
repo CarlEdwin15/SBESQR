@@ -21,11 +21,19 @@ use Illuminate\Support\Facades\Broadcast;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Models\Announcement;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
-    return view('welcome');
-});
+    $announcements = Announcement::orderBy('date_published', 'desc')
+        ->take(99)
+        ->get()
+        ->filter(function ($announcement) {
+            return $announcement->getStatus() === 'active'; // ✅ only active
+        });
+
+    return view('welcome', compact('announcements'));
+})->name('welcome');
 
 
 // ADMIN DASHBOARD ROUTES
@@ -179,13 +187,22 @@ Route::get('/teacher-export-attendance', function () {
     $schoolYear = $data['selectedYear'] ?? 'UnknownYear';
     $gradeLevel = $data['class']->formatted_grade_level ?? 'UnknownGrade';
     $section = $data['class']->section ?? 'UnknownSection';
-
-    $fileName = "SBESQR_SF2_{$schoolYear}_{$gradeLevel} - {$section}.xlsx";
-
     $data['adviserName'] = Auth::user()->full_name;
+    $fileName = "SBESQR_SF2_{$schoolYear}_{$gradeLevel} - {$section}.xlsx";
 
     return Excel::download(new SF2Export($data), $fileName);
 })->name('export.sf2');
+
+Route::get('/teacher/subjects/{grade_level}/{section}', [TeacherController::class, 'myClassSubject'])->name('teacher.myClassSubject');
+
+Route::post('/teacher/class/{grade_level}/{section}/subjects/create', [TeacherController::class, 'createSubject'])
+    ->name('teacher.subjects.create');
+
+Route::get('/teacher/class/{grade_level}/{section}/subjects/store', [TeacherController::class, 'storeSubject'])
+    ->name('teacher.subjects.store');
+
+
+
 
 //List of Student's Info (on teacher Dashboard)
 Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');

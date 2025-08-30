@@ -756,27 +756,30 @@
 
                         <!-- Filter Form -->
                         <div class="d-flex align-items-center gap-2">
-                            <form method="GET" action="" class="d-flex align-items-center">
-                                <span class="d-none d-sm-block form-label me-2 mb-0">School Year</span>
-                                <select name="school_year" id="school_year" class="form-select"
-                                    onchange="this.form.submit()">
+                            <!-- School Year Dropdown -->
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-info text-white dropdown-toggle d-flex align-items-center" type="button"
+                                    id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    {{ $selectedYear }}
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
                                     @foreach ($schoolYears as $year)
-                                        <option value="{{ $year }}"
-                                            {{ $year == $selectedYear ? 'selected' : '' }}>
-                                            {{ $year }}
-                                        </option>
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ request()->fullUrlWithQuery(['school_year' => $year]) }}">
+                                                {{ $year }}
+                                            </a>
+                                        </li>
                                     @endforeach
-                                </select>
-                            </form>
+                                </ul>
+                            </div>
 
                             <!-- "Now" button -->
                             <form method="GET" action="{{ route('show.teachers') }}"
                                 class="d-flex align-items-center">
                                 <input type="hidden" name="school_year"
                                     value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    Now
-                                </button>
+                                <button type="submit" class="btn btn-primary">Now</button>
                             </form>
                         </div>
                     </div>

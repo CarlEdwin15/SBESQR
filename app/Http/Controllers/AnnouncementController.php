@@ -133,7 +133,7 @@ class AnnouncementController extends Controller
             app(WebPushService::class)->broadcast([
                 'title' => '📢 New Announcement',
                 'body' => $announcement->title,
-                'url'   => route('announcements.index'),
+                'url'   => route('home') . '#announcement-section',
                 'tag'   => 'announcement-' . $announcement->id,
                 'id'    => $announcement->id,
             ]);

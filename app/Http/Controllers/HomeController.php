@@ -15,7 +15,7 @@ class HomeController extends Controller
     public function index()
     {
         if (!Auth::check()) {
-            return redirect()->route('login');
+            return redirect()->route('welcome');
         }
 
         $user = Auth::user();
@@ -44,13 +44,48 @@ class HomeController extends Controller
         }
 
         if ($role == 'admin') {
-            return view('admin.index', compact('notifications'));
+            // 🔹 All school years for dropdown
+            $schoolYears = SchoolYear::orderBy('start_date', 'desc')->get();
+
+            // 🔹 Selected school year (via ?school_year_id= or current active)
+            $selectedSchoolYear = request()->get('school_year_id')
+                ? SchoolYear::find(request()->get('school_year_id'))
+                : SchoolYear::where('start_date', '<=', now())
+                ->where('end_date', '>=', now())
+                ->first();
+
+            // 🔹 Default empty collection
+            $enrolleesByGrade = collect();
+
+            if ($selectedSchoolYear) {
+                $enrolleesByGrade = Classes::withCount([
+                    'students as total_enrolled' => function ($q) use ($selectedSchoolYear) {
+                        $q->where('class_student.school_year_id', $selectedSchoolYear->id)
+                            ->where('class_student.enrollment_status', 'enrolled'); // adjust if status differs
+                    }
+                ])
+                    ->orderBy('grade_level')
+                    ->get()
+                    ->map(function ($class) {
+                        return [
+                            'grade_level' => $class->formatted_grade_level,
+                            'total' => $class->total_enrolled,
+                        ];
+                    });
+            }
+
+            return view('admin.index', compact(
+                'notifications',
+                'schoolYears',
+                'selectedSchoolYear',
+                'enrolleesByGrade'
+            ));
         }
 
         if ($role == 'parent') {
             return view('parent.index', compact('notifications'));
         }
 
-        return redirect()->route('login');
+        return redirect()->route('welcome');
     }
 }

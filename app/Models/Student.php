@@ -37,7 +37,6 @@ class Student extends Model
             ->withTimestamps();
     }
 
-
     public function attendances()
     {
         return $this->hasMany(Attendance::class, 'student_id');
@@ -45,8 +44,25 @@ class Student extends Model
 
     public function schoolYears()
     {
-        return $this->belongsToMany(SchoolYear::class, 'class_student', 'class_id', 'student_id')
+        return $this->belongsToMany(SchoolYear::class, 'class_student', 'student_id', 'class_id')
             ->withPivot('school_year_id', 'enrollment_status', 'enrollment_type')
+            ->withTimestamps();
+    }
+
+    public function studentGrades()
+    {
+        return $this->hasMany(StudentGrade::class);
+    }
+
+    public function finalSubjectGrades()
+    {
+        return $this->hasMany(FinalSubjectGrade::class);
+    }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
+            ->withPivot('school_year_id')
             ->withTimestamps();
     }
 

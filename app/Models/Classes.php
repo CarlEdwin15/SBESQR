@@ -50,4 +50,19 @@ class Classes extends Model
     {
         return $this->belongsTo(SchoolYear::class, 'school_year_id');
     }
+
+    /** ✅ Correct: class → class_subject pivot */
+    public function classSubjects()
+    {
+        return $this->hasMany(ClassSubject::class, 'class_id');
+    }
+
+    /** ✅ Get subjects via pivot */
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
+            ->withPivot('school_year_id')
+            ->withTimestamps();
+    }
+
 }
