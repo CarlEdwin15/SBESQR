@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Master List')
+@section('title', 'Teacher | My Schedules')
 
 @section('content')
     <!-- Layout wrapper -->
@@ -37,7 +37,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('teacher.my.students') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">My Students</div>
                                 </a>
                             </li>
@@ -53,7 +53,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">My Classes</div>
+                                    <div class="text-warning">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -109,8 +109,8 @@
 
             <!-- Layout container -->
             <div class="layout-page">
-
                 <!-- Navbar -->
+
                 <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
                     id="layout-navbar">
                     <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
@@ -212,27 +212,28 @@
                         </ul>
                     </div>
                 </nav>
+
                 <!-- / Navbar -->
 
                 <!-- Content wrapper -->
                 <div class="container-xxl flex-grow-1 container-p-y">
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <div>
-                            <h4 class="fw-bold text-warning mb-0">
+                            <h4 class="fw-bold text-warning mb-2">
                                 <span class="text-muted fw-light">
                                     <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                                    <a class="text-muted fw-light" href="{{ route('teacher.myClasses') }}">Classes</a> /
+                                    <a class="text-muted fw-light"
+                                        href="{{ route('teacher.myClasses', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">Classes</a>
+                                    /
                                     <a class="text-muted fw-light"
                                         href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
                                         {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }})
                                     </a> /
                                 </span>
-                                Master List
+                                Schedules
                             </h4>
                         </div>
                     </div>
-
-                    <h3 class="mb-1 text-center fw-bold text-info">Class Master List ({{ $selectedYear }})</h3><br>
 
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}"
@@ -242,115 +243,207 @@
                         </a>
                     </div>
 
-                    <div class="card p-4 shadow-sm">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h3 class="fw-bold mb-2 text-primary">{{ $class->formatted_grade_level }} -
-                                {{ $class->section }}</h3>
+                    {{-- Teacher Schedule Grid Display --}}
+                    <div class="card">
+                        <div class="container my-4">
+                            <h3 class="text-center mb-4 fw-bold">
+                                Schedules for <span class="text-info">{{ ucfirst($class->grade_level) }} -
+                                    {{ $class->section }}</span>
+                            </h3>
 
-                            <a href="" class="btn btn-success d-flex align-items-center">
-                                <i class='bx bx-printer me-2'></i><span class="d-none d-sm-block">Export</span>
-                            </a>
-                        </div>
-
-                        <h5 class="text-center">Adviser:</h5>
-
-                        @if ($class->adviser)
-                            <h5 class="text-info text-center mb-4 fw-bold">
-                                {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
-                            </h5>
-                        @else
-                            <h6 class="text-danger text-center mb-4">No teacher assigned</h6>
-                        @endif
-
-                        <div class="row">
-                            <!-- Male Table -->
-                            <div class="col-md-6">
-                                <table class="table table-hover table-bordered" id="studentTable">
-                                    <thead class="table-info">
-                                        <tr class="text-center">
-                                            <th style="width: 5%;">NO.</th>
-                                            <th style="width: 10%;">PHOTO</th>
-                                            <th>MALE</th>
+                            <div class="table-responsive">
+                                <table class="table text-center table-bordered align-middle">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th style="width: 8%;">Time</th>
+                                            @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                                <th style="width: 10%;">{{ $day }}</th>
+                                            @endforeach
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @php $maleCount = 1; @endphp
-                                        @foreach ($students->where('student_sex', 'male')->sortBy(function ($student) {
-            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
-        }) as $student)
-                                            <tr class="t-row"
-                                                data-href="">
-                                                <td class="text-center">{{ $maleCount++ }}</td>
-                                                <td class="text-center">
-                                                    <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                        alt="Student Photo" class="rounded-circle me-2 student-photo"
-                                                        style="width: 40px; height: 40px;">
-                                                </td>
-                                                <td>
-                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_extName }}
-                                                    @if (!empty($student->student_mName))
-                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                        @if ($maleCount === 1)
-                                            <tr>
-                                                <td colspan="3" class="text-center">No male students enrolled.</td>
-                                            </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /Male Table -->
+                                        @php
+                                            use Carbon\Carbon;
 
-                            <!-- Female Table -->
-                            <div class="col-md-6">
-                                <table class="table table-bordered" id="studentTable">
-                                    <thead class="table-danger">
-                                        <tr class="text-center">
-                                            <th style="width: 5%;">NO.</th>
-                                            <th style="width: 10%;">PHOTO</th>
-                                            <th>FEMALE</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php $femaleCount = 1; @endphp
-                                        @foreach ($students->where('student_sex', 'female')->sortBy(function ($student) {
-            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
-        }) as $student)
-                                            <tr class="t-row" data-href="">
-                                                <td class="text-center">{{ $femaleCount++ }}</td>
-                                                <td class="text-center">
-                                                    <a href="">
-                                                        <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                            alt="Student Photo" class="rounded-circle me-2 student-photo"
-                                                            style="width: 40px; height: 40px;">
-                                                    </a>
-                                                </td>
-                                                <td>
-                                                    {{ $student->student_lName }}, {{ $student->student_fName }}
-                                                    {{ $student->student_extName }}
-                                                    @if (!empty($student->student_mName))
-                                                        {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
-                                                    @endif
-                                                </td>
+                                            $start = Carbon::createFromTime(7, 0);
+                                            $end = Carbon::createFromTime(18, 0);
+                                            $step = 30;
+                                            $rendered = [];
+                                            $todayName = Carbon::now()->format('l');
+                                        @endphp
+
+                                        @while ($start < $end)
+                                            @php
+                                                $slotStart = $start->copy();
+                                                $slotEnd = $start->copy()->addMinutes($step);
+                                                $showTime = $slotStart->minute == 0;
+                                                $isLunchStart =
+                                                    $slotStart->format('H:i') >= '12:00' &&
+                                                    $slotStart->format('H:i') < '13:00';
+                                            @endphp
+
+                                            <tr
+                                                style="height: 40px; @if ($isLunchStart) background-color: #944040; @endif">
+                                                @if ($showTime)
+                                                    <td class="fw-semibold text-nowrap @if ($isLunchStart) text-white @endif"
+                                                        rowspan="2">
+                                                        {{ $slotStart->format('g:i A') }} -
+                                                        {{ $slotStart->copy()->addHour()->format('g:i A') }}
+                                                    </td>
+                                                @endif
+
+                                                @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                                    @php
+                                                        $key = $day . '-' . $slotStart->format('H:i');
+                                                        if (!empty($rendered[$key])) {
+                                                            continue;
+                                                        }
+
+                                                        $cellContent = '';
+                                                        $rowspan = 1;
+
+                                                        foreach ($schedules as $sched) {
+                                                            $days = is_array($sched->day)
+                                                                ? $sched->day
+                                                                : json_decode($sched->day, true);
+                                                            $days = is_array($days) ? $days : [$sched->day];
+
+                                                            $schedStart = Carbon::parse($sched->start_time);
+                                                            $schedEnd = Carbon::parse($sched->end_time);
+
+                                                            if (
+                                                                in_array($day, $days) &&
+                                                                $schedStart < $slotEnd &&
+                                                                $schedEnd > $slotStart
+                                                            ) {
+                                                                $modalId = 'viewModal' . $sched->id;
+                                                                $rowspan = ceil(
+                                                                    $schedStart->diffInMinutes($schedEnd) / $step,
+                                                                );
+                                                                $bgColor = $day === $todayName ? '#6ec1e4' : '#ffab00';
+
+                                                                $cellContent =
+                                                                    '
+                                            <div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center text-white fw-semibold hoverable-schedule-cell"
+                                                style="background-color:' .
+                                                                    $bgColor .
+                                                                    '; padding: 10px 5px;"
+                                                data-bs-toggle="modal" data-bs-target="#' .
+                                                                    $modalId .
+                                                                    '">
+                                                <div style="font-size:25px; margin-bottom:50px">' .
+                                                                    $sched->subject_name .
+                                                                    '</div>
+                                                <div style="margin-bottom:5px">' .
+                                                                    ($sched->teacher
+                                                                        ? 'Teacher: ' .
+                                                                            $sched->teacher->firstName .
+                                                                            ' ' .
+                                                                            $sched->teacher->lastName
+                                                                        : 'Teacher: N/A') .
+                                                                    '</div>
+                                                                    <div>' .
+                                                                    \Carbon\Carbon::parse($sched->start_time)->format(
+                                                                        'g:i A',
+                                                                    ) .
+                                                                    ' - ' .
+                                                                    \Carbon\Carbon::parse($sched->end_time)->format(
+                                                                        'g:i A',
+                                                                    ) .
+                                                                    '
+                                                                        </div>
+                                            </div>';
+
+                                                                for ($i = 0; $i < $rowspan; $i++) {
+                                                                    $rendered[
+                                                                        $day .
+                                                                            '-' .
+                                                                            $slotStart
+                                                                                ->copy()
+                                                                                ->addMinutes($i * $step)
+                                                                                ->format('H:i')
+                                                                    ] = true;
+                                                                }
+
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        echo $cellContent
+                                                            ? '<td rowspan="' .
+                                                                $rowspan .
+                                                                '" class="align-middle p-0" style="height:' .
+                                                                $rowspan * 40 .
+                                                                'px;">' .
+                                                                $cellContent .
+                                                                '</td>'
+                                                            : '<td></td>';
+                                                    @endphp
+                                                @endforeach
                                             </tr>
-                                        @endforeach
-                                        @if ($femaleCount === 1)
-                                            <tr>
-                                                <td colspan="2" class="text-center">No female students enrolled.</td>
-                                            </tr>
-                                        @endif
+
+                                            @php $start->addMinutes($step); @endphp
+                                        @endwhile
                                     </tbody>
                                 </table>
+
+                                {{-- View-only modals for each schedule --}}
+                                @foreach ($schedules as $sched)
+                                    @php
+                                        $modalId = 'viewModal' . $sched->id;
+                                        $days = is_array($sched->day) ? $sched->day : json_decode($sched->day, true);
+                                        $days = is_array($days) ? $days : [$sched->day];
+                                    @endphp
+
+                                    <div class="modal fade" id="{{ $modalId }}" tabindex="-1"
+                                        aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content rounded-4 shadow-lg">
+                                                <div class="modal-header bg-info text-auto rounded-top-4">
+                                                    <h5 class="modal-title fw-semibold" id="{{ $modalId }}Label">
+                                                        Schedule Details</h5>
+                                                    <button type="button" class="btn-close btn-close-white"
+                                                        data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body px-4 py-3">
+                                                    <h4 class="fw-bold text-primary text-center mb-3">
+                                                        {{ $sched->subject_name }}</h4>
+                                                    <div class="row mb-3">
+                                                        <div class="col-md-6">
+                                                            <h6 class="fw-semibold text-muted mb-1">Teacher:</h6>
+                                                            <p class="mb-0">
+                                                                {{ $sched->teacher ? $sched->teacher->firstName . ' ' . $sched->teacher->lastName : 'TBA' }}
+                                                            </p>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6 class="fw-semibold text-muted mb-1">Days:</h6>
+                                                            <p class="mb-0">{{ implode(', ', $days) }}</p>
+                                                        </div>
+                                                        <div class="col-md-12 mt-2">
+                                                            <h6 class="fw-semibold text-muted mb-1">Time:</h6>
+                                                            <p class="mb-0">
+                                                                {{ \Carbon\Carbon::parse($sched->start_time)->format('g:i A') }}
+                                                                -
+                                                                {{ \Carbon\Carbon::parse($sched->end_time)->format('g:i A') }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light justify-content-end">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
                             </div>
-                            <!-- /Female Table -->
                         </div>
                     </div>
+
+                    <hr class="my-5" />
                 </div>
-                <!-- End Content wrapper -->
+                <!-- Content wrapper -->
 
 
             </div>
@@ -401,22 +494,19 @@
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
     <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
-    <link href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" rel="stylesheet" />
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
-        .student-photo {
-            width: 45px;
-            height: 45px;
-            object-fit: cover;
+        .hoverable-schedule-cell {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
         }
 
-        .student-photo:hover {
-            transform: scale(1.1);
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+        .hoverable-schedule-cell:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
     </style>
 @endpush

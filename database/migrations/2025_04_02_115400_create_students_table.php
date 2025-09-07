@@ -87,7 +87,7 @@ return new class extends Migration
             $table->string('emergcont_lName')->nullable();
             $table->string('emergcont_phone')->nullable();
 
-            $table->string('parent_email')->unique();
+            $table->string('parent_email')->nullable();
 
             $table->timestamps();
         });

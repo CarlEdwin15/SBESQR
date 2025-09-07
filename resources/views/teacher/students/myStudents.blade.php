@@ -38,7 +38,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('teacher.my.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">My Students</div>
+                                    <div class="text-warning">My Students</div>
                                 </a>
                             </li>
                         </ul>
@@ -52,28 +52,23 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">My Class</div>
                                 </a>
                             </li>
                         </ul>
                     </li>
 
-                    {{-- Reports sidebar --}}
+                    {{-- Payments sidebar --}}
                     <li class="menu-item">
-                        <a class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-detail text-light"></i>
-                            <div class="text-light">Reports</div>
+                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                            <div class="text-light">Payments</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Overall Attendance</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Class Master List</div>
+                                    <div class="text-light">All Payments</div>
                                 </a>
                             </li>
                         </ul>
@@ -171,8 +166,7 @@
                                                             class="w-px-40 h-auto rounded-circle" />
                                                     @else
                                                         <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                            alt="Default Profile Photo"
-                                                            class="w-px-40 h-auto rounded-circle" />
+                                                            alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
                                                     @endauth
                                                 </div>
                                                 @auth
@@ -238,42 +232,46 @@
                     </div>
 
                     <div class="row mb-3 align-items-center">
-                        {{-- Search Bar --}}
-                        <div class="col-md-6 d-flex justify-content-start">
-                            <div class="d-flex align-items-center w-100" style="max-width: 400px;">
-                                <i class="bx bx-search fs-4 lh-0 me-2"></i>
+
+                        <div class="d-flex justify-content-between flex-wrap align-items-center">
+                            {{-- Search Bar --}}
+                            <div class="d-flex gap-1 mb-2 mb-md-0 d-flex align-items-center">
+                                <i class="bx bx-search fs-4 lh-0 me-2 d-none d-sm-block"></i>
                                 <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
                                     placeholder="Search..." aria-label="Search..." />
                             </div>
-                        </div>
 
-                        {{-- School Year Selection --}}
-                        <div class="col-md-6 d-flex justify-content-end">
-                            <form method="GET" action="{{ route('teacher.my.students') }}"
-                                class="d-flex align-items-center w-100" style="max-width: 350px;">
-                                <label for="school_year" class="form-label mb-0 me-2">School Year:</label>
-                                <select name="school_year" id="school_year" class="form-select me-2"
-                                    onchange="this.form.submit()">
-                                    @foreach ($schoolYears as $year)
-                                        <option value="{{ $year }}"
-                                            {{ $year == $selectedYear ? 'selected' : '' }}>
-                                            {{ $year }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
+                            {{-- School Year Selection --}}
+                            <div class="d-flex align-items-center">
+                                <form method="GET" action="{{ route('teacher.my.students') }}"
+                                    class="d-flex align-items-center">
+                                    <label for="school_year" class="form-label d-none d-sm-block mb-0 me-2">School
+                                        Year:</label>
+                                    <select name="school_year" id="school_year" class="form-select me-2"
+                                        onchange="this.form.submit()">
+                                        @foreach ($schoolYears as $year)
+                                            <option value="{{ $year }}"
+                                                {{ $year == $selectedYear ? 'selected' : '' }}>
+                                                {{ $year }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </form>
 
-                            {{-- "Now" button --}}
-                            <form method="GET" action="{{ route('teacher.my.students') }}">
-                                <input type="hidden" name="school_year"
-                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                @if ($selectedSection)
-                                    <input type="hidden" name="section" value="{{ $selectedSection }}">
-                                @endif
-                                <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
-                                    Now
-                                </button>
-                            </form>
+
+                                {{-- "Now" button --}}
+                                <form class="d-flex align-items-center" method="GET"
+                                    action="{{ route('teacher.my.students') }}">
+                                    <input type="hidden" name="school_year"
+                                        value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                                    @if ($selectedSection)
+                                        <input type="hidden" name="section" value="{{ $selectedSection }}">
+                                    @endif
+                                    <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
+                                        Now
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
@@ -308,12 +306,12 @@
                                     </thead>
                                     <tbody>
                                         @forelse ($students->sortBy([
-                                                                                        ['student_lName', 'asc'],
-                                                                                        ['student_fName', 'asc'],
-                                                                                        ['student_mName', 'asc'],
-                                                                                        ['student_extName', 'asc'],
-                                                                                        ]) as $student)
-                                            <tr class="student-row"
+                                                                                                                ['student_lName', 'asc'],
+                                                                                                                ['student_fName', 'asc'],
+                                                                                                                ['student_mName', 'asc'],
+                                                                                                                ['student_extName', 'asc'],
+                                                                                                                ]) as $student)
+                                            <tr class="student-row t-row" data-href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}"
                                                 data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                                 data-section="{{ strtolower(optional($student->class->first())->section) }}"
                                                 data-grade="{{ strtolower(optional($student->class->first())->formatted_grade_level) }}"
@@ -380,7 +378,7 @@
                                                         </button>
                                                         <div class="dropdown-menu">
                                                             <a class="dropdown-item text-info"
-                                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                                href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
                                                                 <i class="bx bxs-user-badge me-1"></i> View Profile
                                                             </a>
                                                             @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))

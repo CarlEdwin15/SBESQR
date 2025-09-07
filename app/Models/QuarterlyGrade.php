@@ -5,16 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class StudentGrade extends Model
+class QuarterlyGrade extends Model
 {
     use HasFactory;
+
+    protected $table = 'quarterly_grades';
 
     protected $fillable = [
         'student_id',
         'quarter_id',
-        'written_work',
-        'performance_task',
-        'quarterly_exam',
         'final_grade',
     ];
 

@@ -102,7 +102,7 @@
 <body>
     @yield('content')
 
-    @if ($errors->any())
+    {{-- @if ($errors->any())
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
@@ -120,7 +120,7 @@
                 });
             });
         </script>
-    @endif
+    @endif --}}
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {

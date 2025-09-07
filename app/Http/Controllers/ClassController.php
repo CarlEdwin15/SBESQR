@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
 use App\Models\Classes;
 use App\Models\User;
 use App\Models\SchoolYear;
@@ -86,15 +87,44 @@ class ClassController extends Controller
 
         $class = $this->getClass($grade_level, $section);
 
-        $studentCount = $class->students()->wherePivot('school_year_id', $schoolYear->id)
+        $studentCount = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
             ->count();
 
         $class->adviser = $class->teachers()
             ->wherePivot('school_year_id', $schoolYear->id)
-            ->wherePivotIn('role', ['adviser'])
+            ->wherePivot('role', 'adviser')
             ->first();
 
-        return view('admin.classes.showClass', compact('class', 'studentCount', 'selectedYear'));
+        // ✅ Attendance Today (same as myClass)
+        $today = now()->format('Y-m-d');
+        $dayName = now()->format('l');
+
+        $schedulesToday = $class->schedules()
+            ->where('day', $dayName)
+            ->where('school_year_id', $schoolYear->id)
+            ->get();
+
+        $scheduleCount = $schedulesToday->count();
+        $totalPossibleAttendance = $studentCount * $scheduleCount;
+
+        $presentCount = Attendance::whereIn('schedule_id', $schedulesToday->pluck('id'))
+            ->whereDate('date', $today)
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+
+        $attendanceToday = $totalPossibleAttendance > 0
+            ? min(100, round(($presentCount / $totalPossibleAttendance) * 100))
+            : 0;
+
+        return view('admin.classes.showClass', compact(
+            'class',
+            'studentCount',
+            'presentCount',
+            'totalPossibleAttendance',
+            'attendanceToday',
+            'selectedYear'
+        ));
     }
 
     // Master list of students in the class

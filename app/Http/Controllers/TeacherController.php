@@ -7,14 +7,17 @@ use App\Models\Classes;
 use App\Models\Student;
 use App\Models\Attendance;
 use App\Models\ClassSubject;
+use App\Models\FinalSubjectGrade;
 use App\Models\Schedule;
 use App\Models\SchoolYear;
+use App\Models\QuarterlyGrade;
 use App\Models\Subject;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf; // make sure barryvdh/laravel-dompdf is installed
 
 
 class TeacherController extends Controller
@@ -145,21 +148,64 @@ class TeacherController extends Controller
 
     public function myClassMasterList(Request $request, $grade_level, $section)
     {
-        $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
-        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
 
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
+
+        // Fetch school years
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
+        $savedStartYears = array_map(fn($sy) => (int)substr($sy, 0, 4), $savedYears);
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+
+        $schoolYears[] = $nextSchoolYear;
+        usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
+
+        // Get selected year from query, default to current
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+
+        // Find the SchoolYear model + ID
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
+        $schoolYearId = optional($schoolYear)->id;
+
+        if (!$schoolYear) {
+            abort(404, 'School year not found');
+        }
+
+        // Fetch the class
         $class = $this->getClass($grade_level, $section);
 
+        // Fetch students for that class in the given school year
         $students = $class->students()
-            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('school_year_id', $schoolYearId)
             ->get();
 
+        // Fetch adviser for that class in the given school year
         $class->adviser = $class->teachers()
-            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('school_year_id', $schoolYearId)
             ->wherePivot('role', 'adviser')
             ->first();
 
-        return view('teacher.classes.myMasterList', compact('class', 'students', 'selectedYear'));
+        return view('teacher.classes.masterlists.myMasterList', compact(
+            'class',
+            'students',
+            'schoolYears',
+            'selectedYear',
+            'schoolYearId',
+            'currentYear'
+        ));
     }
 
     public function mySchedule(Request $request, $grade_level, $section)
@@ -183,7 +229,7 @@ class TeacherController extends Controller
             ->wherePivotIn('role', ['adviser', 'subject_teacher'])
             ->get();
 
-        return view('teacher.classes.mySchedule', compact('class', 'schedules', 'teachers', 'selectedYear'));
+        return view('teacher.classes.schedules.mySchedule', compact('class', 'schedules', 'teachers', 'selectedYear'));
     }
 
     public function myAttendanceRecord(Request $request, $grade_level, $section)
@@ -377,7 +423,7 @@ class TeacherController extends Controller
             ) + ['selectedYearObj' => $schoolYear];
         }
 
-        return view('teacher.classes.myAttendanceRecord', compact(
+        return view('teacher.classes.attendances.myAttendanceRecord', compact(
             'class',
             'students',
             'attendanceData',
@@ -449,7 +495,7 @@ class TeacherController extends Controller
             $attendancesGrouped[$attendance->schedule_id][$attendance->student_id] = $attendance;
         }
 
-        return view('teacher.classes.attendanceHistory', compact(
+        return view('teacher.classes.attendances.attendanceHistory', compact(
             'class',
             'students',
             'schedules',
@@ -515,7 +561,7 @@ class TeacherController extends Controller
         $class = $this->getClass($grade_level, $section);
         $dayName = Carbon::parse($date)->format('l');
 
-        // ✅ Retrieve schedules for the class within the selected school year
+        // Retrieve schedules for the class within the selected school year
         $schedules = Schedule::where('class_id', $class->id)
             ->where('teacher_id', Auth::id())
             ->where('school_year_id', $schoolYear->id)
@@ -523,7 +569,7 @@ class TeacherController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        // ✅ If schedule_id is passed, validate it and ensure it's within the same class & year
+        // If schedule_id is passed, validate it and ensure it's within the same class & year
         $schedule = $schedule_id ? Schedule::where('id', $schedule_id)
             ->where('class_id', $class->id)
             ->where('school_year_id', $schoolYear->id)
@@ -533,7 +579,7 @@ class TeacherController extends Controller
 
         $gracePeriod = (int) $request->query('grace', 60); // default to 60 minutes
 
-        // ✅ Filter students enrolled in this class and school year
+        // Filter students enrolled in this class and school year
         $students = $class->students()
             ->wherePivot('school_year_id', $schoolYear->id)
             ->orderBy('student_sex')
@@ -544,7 +590,7 @@ class TeacherController extends Controller
 
         $now = now();
 
-        // ✅ Mark absent only if the time passed AND the teacher explicitly triggered it
+        // Mark absent only if the time passed AND the teacher explicitly triggered it
         if ($now->gt(Carbon::parse($schedule->end_time)) && $request->has('mark_absent')) {
             foreach ($students as $student) {
                 $existing = Attendance::where([
@@ -570,7 +616,7 @@ class TeacherController extends Controller
             }
         }
 
-        // ✅ Reload students with attendance on that date and schedule for this school year
+        // Reload students with attendance on that date and schedule for this school year
         $students = $class->students()
             ->wherePivot('school_year_id', $schoolYear->id)
             ->with(['attendances' => function ($q) use ($date, $schedule, $schoolYear) {
@@ -584,7 +630,7 @@ class TeacherController extends Controller
             ->orderBy('student_mName')
             ->get();
 
-        return view('teacher.classes.qr_scan', compact(
+        return view('teacher.classes.attendances.qr_scan', compact(
             'grade_level',
             'section',
             'date',
@@ -748,7 +794,7 @@ class TeacherController extends Controller
         $scheduleId = $request->input('schedule_id');
         $customTimeout = $request->input('custom_timeout');
 
-        // ✅ Validate custom timeout format (HH:MM)
+        // Validate custom timeout format (HH:MM)
         if ($customTimeout && !preg_match('/^\d{2}:\d{2}$/', $customTimeout)) {
             return response()->json([
                 'success' => false,
@@ -766,7 +812,7 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Schedule not found']);
         }
 
-        // ✅ Ensure attendance is specific to school year
+        // Ensure attendance is specific to school year
         $attendance = Attendance::updateOrCreate(
             [
                 'student_id' => $student->id,
@@ -799,24 +845,35 @@ class TeacherController extends Controller
         $class = $this->getClass($grade_level, $section);
         $teacherId = Auth::id();
 
-        // ✅ Fetch subjects for this class + year, created by this teacher
-        $subjects = ClassSubject::with(['subject', 'quarters', 'teacher'])
-            ->where('class_id', $class->id)
-            ->where('school_year_id', $schoolYear->id)
-            ->where('teacher_id', $teacherId)
-            ->get();
-
-        // ✅ Attach adviser info
-        $class->adviser = $class->teachers()
+        // Check if the current teacher is the adviser of this class in this school year
+        $adviser = $class->teachers()
             ->wherePivot('school_year_id', $schoolYear->id)
             ->wherePivot('role', 'adviser')
             ->first();
 
-        return view('teacher.classes.myClassSubject', [
-            'class'        => $class,
+        if ($adviser && $adviser->id == $teacherId) {
+            // Adviser: fetch ALL subjects in this class for this school year
+            $subjects = ClassSubject::with(['subject', 'quarters', 'teacher'])
+                ->where('class_id', $class->id)
+                ->where('school_year_id', $schoolYear->id)
+                ->get();
+        } else {
+            // Subject Teacher: fetch ONLY their assigned subjects
+            $subjects = ClassSubject::with(['subject', 'quarters', 'teacher'])
+                ->where('class_id', $class->id)
+                ->where('school_year_id', $schoolYear->id)
+                ->where('teacher_id', $teacherId)
+                ->get();
+        }
+
+        // Attach adviser info
+        $class->adviser = $adviser;
+
+        return view('teacher.classes.subject_grades.myClassSubject', [
+            'class'         => $class,
             'classSubjects' => $subjects,
-            'selectedYear' => $selectedYear,
-            'schoolYear'   => $schoolYear
+            'selectedYear'  => $selectedYear,
+            'schoolYear'    => $schoolYear
         ]);
     }
 
@@ -837,10 +894,10 @@ class TeacherController extends Controller
         $schoolYear = SchoolYear::where('school_year', $request->selected_school_year)
             ->firstOrFail();
 
-        // ✅ Ensure subject exists in master list (no description here)
+        // Ensure subject exists in master list (no description here)
         $subject = Subject::firstOrCreate(['name' => $subjectName]);
 
-        // ✅ Prevent duplicate class_subject entry
+        // Prevent duplicate class_subject entry
         $exists = ClassSubject::where('class_id', $class->id)
             ->where('subject_id', $subject->id)
             ->where('school_year_id', $schoolYear->id)
@@ -852,7 +909,7 @@ class TeacherController extends Controller
             ])->withInput();
         }
 
-        // ✅ Create pivot with teacher’s custom description
+        // Create pivot with teacher’s custom description
         ClassSubject::create([
             'class_id'       => $class->id,
             'subject_id'     => $subject->id,
@@ -862,6 +919,212 @@ class TeacherController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Subject created successfully!');
+    }
+
+    public function viewSubject(Request $request, $grade_level, $section, $subject_id)
+    {
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
+
+        // Fetch school years from DB
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
+        $savedStartYears = array_map(fn($sy) => (int)substr($sy, 0, 4), $savedYears);
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+
+        $schoolYears[] = $nextSchoolYear;
+        usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
+
+        // Selected year
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+        $schoolYearId = $schoolYear->id;
+
+        // Fetch class
+        $class = $this->getClass($grade_level, $section);
+        $teacherId = Auth::id();
+
+        // Get adviser
+        $adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->wherePivot('role', 'adviser')
+            ->first();
+
+        // Get classSubject
+        if ($adviser && $adviser->id == $teacherId) {
+            // Adviser can open ANY subject of this class/year
+            $classSubject = ClassSubject::with(['subject', 'quarters', 'teacher'])
+                ->where('class_id', $class->id)
+                ->where('school_year_id', $schoolYearId)
+                ->where('id', $subject_id)
+                ->firstOrFail();
+        } else {
+            // Subject teacher can only open their own subject
+            $classSubject = ClassSubject::with(['subject', 'quarters', 'teacher'])
+                ->where('class_id', $class->id)
+                ->where('school_year_id', $schoolYearId)
+                ->where('teacher_id', $teacherId)
+                ->where('id', $subject_id)
+                ->firstOrFail();
+        }
+
+        $class->adviser = $adviser;
+
+        // Fetch students
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->wherePivot('enrollment_status', 'enrolled')
+            ->with([
+                'quarterlyGrades.quarter' => function ($q) use ($classSubject) {
+                    $q->where('class_subject_id', $classSubject->id);
+                },
+                'finalSubjectGrades' => function ($q) use ($classSubject) {
+                    $q->where('class_subject_id', $classSubject->id);
+                }
+            ])
+            ->get();
+
+        // Flag: is this teacher allowed to edit grades?
+        $canEdit = $classSubject->teacher_id == $teacherId;
+
+        return view('teacher.classes.subject_grades.viewSubject', [
+            'class'        => $class,
+            'classSubject' => $classSubject,
+            'selectedYear' => $selectedYear,
+            'schoolYear'   => $schoolYear,
+            'schoolYearId' => $schoolYearId,
+            'students'     => $students,
+            'schoolYears'  => $schoolYears,
+            'currentYear'  => $currentYear,
+            'canEdit'      => $canEdit,
+        ]);
+    }
+
+    public function saveGrades(Request $request, $grade_level, $section, $subject_id)
+    {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        $class = $this->getClass($grade_level, $section);
+        $teacherId = Auth::id();
+
+        $classSubject = ClassSubject::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('teacher_id', $teacherId)
+            ->where('id', $subject_id)
+            ->firstOrFail();
+
+        $quarters = $classSubject->quarters()->pluck('id', 'quarter'); // [quarter => id]
+
+        foreach ($request->input('grades', []) as $studentId => $gradeData) {
+            $quarterGrades = [];
+
+            // Loop quarters 1–4
+            foreach ([1, 2, 3, 4] as $q) {
+                if (isset($gradeData["q$q"])) {
+                    $grade = $gradeData["q$q"];
+
+                    QuarterlyGrade::updateOrCreate(
+                        [
+                            'student_id' => $studentId,
+                            'quarter_id' => $quarters[$q] ?? null,
+                        ],
+                        [
+                            'final_grade' => $grade,
+                        ]
+                    );
+
+                    $quarterGrades[] = $grade;
+                }
+            }
+
+            // Auto-compute final average
+            if (count($quarterGrades) > 0) {
+                $finalAverage = round(array_sum($quarterGrades) / count($quarterGrades), 2);
+
+                FinalSubjectGrade::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'class_subject_id' => $classSubject->id,
+                    ],
+                    [
+                        'final_grade' => $finalAverage,
+                        'remarks' => $finalAverage >= 75 ? 'passed' : 'failed',
+                    ]
+                );
+            }
+        }
+
+        return back()->with('success', 'Grades saved successfully!');
+    }
+
+    public function exportGrades(Request $request, $grade_level, $section, $subject_id)
+    {
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+
+        // Fetch school year
+        $schoolYear = SchoolYear::where('school_year', $currentSchoolYear)->firstOrFail();
+        $schoolYearId = $schoolYear->id;
+
+        // Fetch class
+        $class = $this->getClass($grade_level, $section);
+        $teacherId = Auth::id();
+
+        // Class subject
+        $classSubject = ClassSubject::with(['subject', 'quarters', 'teacher'])
+            ->where('class_id', $class->id)
+            ->where('school_year_id', $schoolYearId)
+            ->where('teacher_id', $teacherId)
+            ->where('id', $subject_id)
+            ->firstOrFail();
+
+        // Adviser
+        $class->adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->wherePivot('role', 'adviser')
+            ->first();
+
+        // Students
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->wherePivot('enrollment_status', 'enrolled')
+            ->with([
+                'quarterlyGrades.quarter' => function ($q) use ($classSubject) {
+                    $q->where('class_subject_id', $classSubject->id);
+                },
+                'finalSubjectGrades' => function ($q) use ($classSubject) {
+                    $q->where('class_subject_id', $classSubject->id);
+                }
+            ])
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.quarterly_grade', [
+            'class'        => $class,
+            'classSubject' => $classSubject,
+            'schoolYear'   => $schoolYear,
+            'students'     => $students,
+        ])->setPaper('A4', 'portrait');
+
+        return $pdf->download('Quarterly_Grades.pdf');
     }
 
     // Helper function to get the default school year (e.g., "2024-2025")
@@ -966,11 +1229,123 @@ class TeacherController extends Controller
         ));
     }
 
-    public function studentInfo($student_id)
-    {
-        $student = Student::findOrFail($student_id);
-        return view('teacher.students.studentInfo', compact('student'));
+    public function studentInfo($student_id, Request $request)
+{
+    $schoolYearId = $request->query('school_year');
+
+    if (!$schoolYearId) {
+        $schoolYearId = SchoolYear::latest('start_date')->value('id');
     }
+
+    $student = Student::with([
+        'address',
+        'parentInfo',
+        'class' => function ($query) {
+            $query->with('schoolYear');
+        },
+        'schoolYears'
+    ])->findOrFail($student_id);
+
+    $class = $student->class()
+        ->wherePivot('school_year_id', $schoolYearId)
+        ->first();
+
+    $schoolYear = SchoolYear::find($schoolYearId);
+
+    $classHistory = $student->class()
+        ->with(['schoolYear', 'advisers' => function ($q) {
+            $q->wherePivot('role', 'adviser');
+        }])
+        ->orderBy('school_year_id', 'asc')
+        ->get();
+
+    // 🔹 Prepare storage
+    $gradesByClass = [];
+    $generalAverages = [];
+
+    foreach ($classHistory as $classItem) {
+        $classSubjects = $classItem->classSubjects()
+            ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
+                $q->where('student_id', $student->id);
+            }])
+            ->where('school_year_id', $classItem->pivot->school_year_id)
+            ->get();
+
+        $subjectsWithGrades = [];
+        $finalGrades = [];
+
+        foreach ($classSubjects as $classSubject) {
+            // Collect quarters
+            $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
+                return [
+                    'quarter' => $quarter->quarter,
+                    'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
+                ];
+            });
+
+            // Check if all 4 quarters are present
+            $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
+
+            $finalAverage = null;
+            $remarks = null;
+
+            if ($allQuartersHaveGrades) {
+                $grades = $quarters->pluck('grade')->all();
+                $finalAverage = round(array_sum($grades) / 4, 2);
+                $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
+                $finalGrades[] = $finalAverage;
+            }
+
+            $subjectsWithGrades[] = [
+                'subject' => $classSubject->subject->name,
+                'quarters' => $quarters,
+                'final_average' => $finalAverage,
+                'remarks' => $remarks,
+            ];
+        }
+
+        $gradesByClass[$classItem->id] = $subjectsWithGrades;
+
+        // 🔹 General Average: only if ALL subjects have final grades
+        $totalSubjects = count($classSubjects);
+        $completedSubjects = count($finalGrades);
+
+        if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
+            $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+            $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
+
+            // Save or update in DB
+            \App\Models\GeneralAverage::updateOrCreate(
+                [
+                    'student_id' => $student->id,
+                    'school_year_id' => $classItem->pivot->school_year_id,
+                ],
+                [
+                    'general_average' => $generalAverage,
+                    'remarks' => $remarks,
+                ]
+            );
+
+            $generalAverages[$classItem->id] = [
+                'general_average' => $generalAverage,
+                'remarks' => $remarks,
+            ];
+        } else {
+            $generalAverages[$classItem->id] = null;
+        }
+    }
+
+    return view('teacher.students.myStudentInfo', compact(
+        'student',
+        'class',
+        'schoolYear',
+        'schoolYearId',
+        'classHistory',
+        'gradesByClass',
+        'generalAverages'
+    ));
+}
+
 
     public function editStudentInfo($student_id)
     {
@@ -980,7 +1355,7 @@ class TeacherController extends Controller
 
     public function updateStudentInfo(Request $request, $student_id)
     {
-        $student = Student::findOrFail($student_id);
+        $student = Student::with(['address', 'parentInfo'])->findOrFail($student_id);
 
         $messages = [
             'student_lrn.regex' => 'The LRN must start with "112828" and be exactly 12 digits long.',
@@ -992,7 +1367,7 @@ class TeacherController extends Controller
                 'string',
                 'max:12',
                 'regex:/^112828[0-9]{6}$/',
-                'unique:students,student_lrn,' . $student->student_id . ',student_id',
+                'unique:students,student_lrn,' . $student->id . ',id',
             ],
             'student_grade_level' => 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6',
             'student_section' => 'required|in:A,B,C,D,E,F',
@@ -1002,29 +1377,74 @@ class TeacherController extends Controller
             'student_extName' => 'nullable|string|max:45',
             'student_dob' => 'nullable|date',
             'student_sex' => 'required|in:male,female',
-            'student_age' => 'nullable|integer',
             'student_pob' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
 
+            // Address
+            'house_no' => 'nullable|string|max:255',
+            'street_name' => 'nullable|string|max:255',
+            'barangay' => 'nullable|string|max:255',
+            'municipality_city' => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:255',
+            'zip_code' => 'nullable|string|max:255',
+
+            // Parents
             'student_fatherFName' => 'nullable|string|max:255',
             'student_fatherMName' => 'nullable|string|max:255',
             'student_fatherLName' => 'nullable|string|max:255',
-
+            'student_fatherPhone' => 'nullable|string|max:255',
             'student_motherFName' => 'nullable|string|max:255',
             'student_motherMName' => 'nullable|string|max:255',
             'student_motherLName' => 'nullable|string|max:255',
+            'student_motherPhone' => 'nullable|string|max:255',
+            'student_emergcontFName' => 'nullable|string|max:255',
+            'student_emergcontMName' => 'nullable|string|max:255',
+            'student_emergcontLName' => 'nullable|string|max:255',
+            'student_emergcontPhone' => 'nullable|string|max:255',
+            'student_parentEmail' => 'nullable|string|max:255',
 
-            'student_parentPhone' => 'nullable|string|max:255',
+            // Profile
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
-        // Handle photo upload
+        // Profile photo
         if ($request->hasFile('student_profile_photo')) {
+            if ($student->student_photo && Storage::disk('public')->exists($student->student_photo)) {
+                Storage::disk('public')->delete($student->student_photo);
+            }
             $profilePhotoPath = $request->file('student_profile_photo')->store('student_profile_photos', 'public');
             $student->student_photo = $profilePhotoPath;
         }
 
-        // Update fields
+        // Update address relation
+        $student->address()->updateOrCreate([], [
+            'house_no' => $request->house_no,
+            'street_name' => $request->street_name,
+            'barangay' => $request->barangay,
+            'municipality_city' => $request->municipality_city,
+            'province' => $request->province,
+            'zip_code' => $request->zip_code,
+            'country' => 'Philippines',
+            'pob' => $request->student_pob,
+        ]);
+
+        // Update parent info
+        $student->parentInfo()->updateOrCreate([], [
+            'father_fName' => $request->student_fatherFName,
+            'father_mName' => $request->student_fatherMName,
+            'father_lName' => $request->student_fatherLName,
+            'father_phone' => $request->student_fatherPhone,
+            'mother_fName' => $request->student_motherFName,
+            'mother_mName' => $request->student_motherMName,
+            'mother_lName' => $request->student_motherLName,
+            'mother_phone' => $request->student_motherPhone,
+            'emergcont_fName' => $request->student_emergcontFName,
+            'emergcont_mName' => $request->student_emergcontMName,
+            'emergcont_lName' => $request->student_emergcontLName,
+            'emergcont_phone' => $request->student_emergcontPhone,
+            'parent_email' => $request->student_parentEmail,
+        ]);
+
+        // Update main student fields
         $student->update([
             'student_lrn' => $validatedData['student_lrn'],
             'student_grade_level' => $validatedData['student_grade_level'],
@@ -1035,21 +1455,12 @@ class TeacherController extends Controller
             'student_extName' => $validatedData['student_extName'] ?? null,
             'student_dob' => $validatedData['student_dob'] ?? null,
             'student_sex' => ucfirst($validatedData['student_sex']),
-            'student_age' => $validatedData['student_age'] ?? null,
-            'student_pob' => $validatedData['student_pob'],
-            'student_address' => $validatedData['address'],
-            'student_fatherFName' => $validatedData['student_fatherFName'] ?? null,
-            'student_fatherMName' => $validatedData['student_fatherMName'] ?? null,
-            'student_fatherLName' => $validatedData['student_fatherLName'] ?? null,
-            'student_motherFName' => $validatedData['student_motherFName'] ?? null,
-            'student_motherMName' => $validatedData['student_motherMName'] ?? null,
-            'student_motherLName' => $validatedData['student_motherLName'] ?? null,
-            'student_parentPhone' => $validatedData['student_parentPhone'] ?? null,
         ]);
 
         $student->save();
 
-        return redirect()->route('teacher.my.students')->with('success', 'Student updated successfully!');
+        return redirect()->route('teacher.my.students')
+            ->with('success', 'Student updated successfully!');
     }
 
     private function getClass($grade_level, $section)

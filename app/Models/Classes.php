@@ -41,6 +41,14 @@ class Classes extends Model
             ->withTimestamps();
     }
 
+    public function advisers()
+    {
+        return $this->belongsToMany(User::class, 'class_user', 'class_id', 'user_id')
+            ->wherePivot('role', 'adviser')
+            ->withPivot('school_year_id', 'status')
+            ->withTimestamps();
+    }
+
     public function schedules()
     {
         return $this->hasMany(Schedule::class, 'class_id');
@@ -64,5 +72,4 @@ class Classes extends Model
             ->withPivot('school_year_id')
             ->withTimestamps();
     }
-
 }

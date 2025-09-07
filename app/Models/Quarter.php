@@ -22,8 +22,8 @@ class Quarter extends Model
         return $this->belongsTo(ClassSubject::class);
     }
 
-    public function studentGrades()
+    public function quarterlyGrades()
     {
-        return $this->hasMany(StudentGrade::class);
+        return $this->hasMany(QuarterlyGrade::class);
     }
 }

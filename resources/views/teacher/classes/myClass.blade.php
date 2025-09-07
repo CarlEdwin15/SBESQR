@@ -37,7 +37,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('teacher.my.students') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">My Students</div>
                                 </a>
                             </li>
@@ -53,7 +53,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">My Classes</div>
+                                    <div class="text-warning">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -243,18 +243,17 @@
                             <!-- Students -->
                             <div class="col-md-4">
                                 <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="card-title d-flex align-items-center justify-content-between">
-                                            <div class="avatar">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                        alt="Students" class="rounded"
-                                                        style="width:110px; height:110px;" />
-                                                @endif
-                                            </div>
-                                            <h5 class="fw-semibold mb-1">Students</h5>
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3 flex-shrink-0">
+                                            @if ($class)
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
+                                                    alt="Students" class="rounded" style="width:90px; height:90px;" />
+                                            @endif
                                         </div>
-                                        <div class="display-6 fw-bold">{{ $studentCount }}</div>
+                                        <div>
+                                            <h5 class="fw-semibold mb-2">Students</h5>
+                                            <div class="display-6 fw-bold text-primary">{{ $studentCount }}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -262,57 +261,61 @@
 
                             <!-- Attendance Today -->
                             <div class="col-md-4">
-                                <a href="{{ route('teacher.attendanceHistory', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}&date={{ now()->format('Y-m-d') }}"
-                                    class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="card-title d-flex align-items-center justify-content-between">
-                                            <div class="avatar">
-                                                @if ($class)
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                        alt="Students" class="rounded"
-                                                        style="width:110px; height:110px;" />
-                                                @endif
-                                            </div>
+                                <a href="{{ route('teacher.attendanceHistory', [
+                                    'grade_level' => $class->grade_level,
+                                    'section' => $class->section,
+                                ]) }}?school_year={{ $selectedYear }}&date={{ now()->format('Y-m-d') }}"
+                                    class="card card-hover border-0 shadow-sm h-100 bg-light text-decoration-none text-dark">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3 flex-shrink-0">
+                                            @if ($class)
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
+                                                    alt="Attendance Today" class="rounded"
+                                                    style="width:90px; height:90px;" />
+                                            @endif
                                         </div>
-                                        <h5 class="fw-semibold mb-1">Attendance Today</h5>
-                                        <div class="display-6 fw-bold">
-                                            {{ $attendanceToday }}%
+                                        <div>
+                                            <h5 class="fw-semibold mb-2">Attendance Today</h5>
+                                            <div class="display-6 fw-bold text-success">{{ $attendanceToday }}%</div>
                                         </div>
                                     </div>
                                 </a>
                             </div>
-                            <!-- / Attendance Today -->
+                            <!-- /Attendance Today -->
 
                             <!-- Teacher -->
                             <div class="col-md-4">
                                 <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="card-title d-flex align-items-center justify-content-between">
-                                            <div class="avatar">
-                                                @if (isset($class->adviser) && $class->adviser)
-                                                    @if ($class->adviser->gender === 'male')
-                                                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/adviser.png') }}"
-                                                            alt="Adviser (Male)" class="rounded"
-                                                            style="width:110px; height:110px;" />
-                                                    @elseif($class->adviser->gender === 'female')
-                                                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
-                                                            alt="Adviser (Female)" class="rounded"
-                                                            style="width:110px; height:110px;" />
-                                                    @endif
-                                                @else
-                                                    <p>No adviser assigned.</p>
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3 flex-shrink-0">
+                                            @if (isset($class->adviser) && $class->adviser)
+                                                @if ($class->adviser->gender === 'male')
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/adviser.png') }}"
+                                                        alt="Adviser (Male)" class="rounded"
+                                                        style="width:90px; height:90px;" />
+                                                @elseif($class->adviser->gender === 'female')
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                                        alt="Adviser (Female)" class="rounded"
+                                                        style="width:90px; height:90px;" />
                                                 @endif
-                                            </div>
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                                    alt="No Adviser" class="rounded"
+                                                    style="width:90px; height:90px; opacity:0.5;" />
+                                            @endif
                                         </div>
-                                        <h5 class="fw-semibold mb-1">Adviser</h5>
-                                        <div class="fw-bold text-primary">
-                                            {{ $class->adviser->firstName ?? 'N/A' }}
-                                            {{ $class->adviser->lastName ?? '' }}
+                                        <div>
+                                            <h5 class="fw-semibold mb-2">Adviser</h5>
+                                            <div class="fw-bold text-primary">
+                                                {{ $class->adviser->firstName ?? 'N/A' }}
+                                                {{ $class->adviser->lastName ?? '' }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <!-- / Teacher -->
+                            <!-- /Teacher -->
+
                         </div>
 
                         <!-- Card Links -->
@@ -343,7 +346,7 @@
                                 <a href="{{ route('teacher.myClassSubject', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                                     class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
                                     <i class="bx bx-book fs-2 mb-4"></i>
-                                    <div class="fw-semibold">Subjects</div>
+                                    <div class="fw-semibold">Subjects & Grades</div>
                                 </a>
                             </div>
                         </div>
@@ -404,14 +407,21 @@
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        .card-hover {
             transition: all 0.3s ease;
         }
 
-        .card-hover {
-            transition: all 0.3s ease;
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-body img {
+            transition: transform 0.2s ease;
+        }
+
+        .card-body img:hover {
+            transform: scale(1.08);
         }
     </style>
 @endpush

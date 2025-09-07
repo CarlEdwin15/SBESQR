@@ -26,7 +26,7 @@ class ParentInfo extends Model
 
     public function student()
     {
-        return $this->hasOne(Student::class, 'parent_id');
+        return $this->hasMany(Student::class, 'parent_id');
     }
 
     public function announcements()

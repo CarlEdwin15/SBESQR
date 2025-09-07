@@ -53,7 +53,7 @@
                     <li class="menu-item active open">
                         <a href="javascript:void(0);" class="menu-link menu-toggle">
                             <i class="menu-icon tf-icons bx bxs-graduation"></i>
-                            <div class="text-danger">Students</div>
+                            <div class="text-info">Students</div>
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
@@ -98,7 +98,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">All Announcements</div>
                                 </a>
                             </li>

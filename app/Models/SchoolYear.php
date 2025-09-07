@@ -14,9 +14,7 @@ class SchoolYear extends Model
 
     public function classes()
     {
-        return $this->belongsToMany(Classes::class, 'class_student', 'student_id', 'class_id')
-            ->withPivot('enrollement_status', 'enrollment_type', 'school_year_id')
-            ->withTimestamps();
+        return $this->hasMany(Classes::class, 'school_year_id');
     }
 
     public function teachers()

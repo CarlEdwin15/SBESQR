@@ -98,7 +98,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">All Announcements</div>
                                 </a>
                             </li>
@@ -267,9 +267,10 @@
                         </div>
                     </div>
 
-                    <h2 class="text-center text-primary fw-bold">Class Details &amp; Management</h2>
+                    <h2 class="text-center text-primary fw-bold">Class Management</h2>
 
-                    <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}" class="btn btn-danger mb-3">
+                    <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}"
+                        class="btn btn-danger mb-3">
                         <i class="bi bi-arrow-left"></i> Back
                     </a>
 
@@ -278,44 +279,75 @@
                             <!-- Students -->
                             <div class="col-md-4">
                                 <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-people-fill fs-1"></i>
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3 flex-shrink-0">
+                                            @if ($class)
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
+                                                    alt="Students" class="rounded" style="width:90px; height:90px;" />
+                                            @endif
                                         </div>
-                                        <h6 class="fw-semibold mb-1">Students</h6>
-                                        <div class="display-6 fw-bold">{{ $studentCount }}</div>
+                                        <div>
+                                            <h5 class="fw-semibold mb-2">Students</h5>
+                                            <div class="display-6 fw-bold text-primary">{{ $studentCount }}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <!-- /Students -->
+
                             <!-- Attendance Today -->
                             <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-calendar3 fs-1"></i>
+                                <a href=""
+                                    class="card card-hover border-0 shadow-sm h-100 bg-light text-decoration-none text-dark">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3 flex-shrink-0">
+                                            @if ($class)
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
+                                                    alt="Attendance Today" class="rounded"
+                                                    style="width:90px; height:90px;" />
+                                            @endif
                                         </div>
-                                        <h6 class="fw-semibold mb-1">Attendance Today</h6>
-                                        <div class="display-6 fw-bold">
-                                            {{ $attendanceToday ?? '0' }}%
+                                        <div>
+                                            <h5 class="fw-semibold mb-2">Attendance Today</h5>
+                                            <div class="display-6 fw-bold text-success">{{ $attendanceToday }}%</div>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
+                            <!-- /Attendance Today -->
+
                             <!-- Teacher -->
                             <div class="col-md-4">
                                 <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <div class="mb-2">
-                                            <i class="bi bi-person-badge fs-1"></i>
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3 flex-shrink-0">
+                                            @if (isset($class->adviser) && $class->adviser)
+                                                @if ($class->adviser->gender === 'male')
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/adviser.png') }}"
+                                                        alt="Adviser (Male)" class="rounded"
+                                                        style="width:90px; height:90px;" />
+                                                @elseif($class->adviser->gender === 'female')
+                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                                        alt="Adviser (Female)" class="rounded"
+                                                        style="width:90px; height:90px;" />
+                                                @endif
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                                    alt="No Adviser" class="rounded"
+                                                    style="width:90px; height:90px; opacity:0.5;" />
+                                            @endif
                                         </div>
-                                        <h6 class="fw-semibold mb-1">Adviser</h6>
-                                        <div class="fw-bold text-primary">
-                                            {{ $class->adviser->firstName ?? 'N/A' }}
-                                            {{ $class->adviser->lastName ?? '' }}
+                                        <div>
+                                            <h5 class="fw-semibold mb-2">Adviser</h5>
+                                            <div class="fw-bold text-primary">
+                                                {{ $class->adviser->firstName ?? 'N/A' }}
+                                                {{ $class->adviser->lastName ?? '' }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <!-- /Teacher -->
                         </div>
 
                         <!-- Navigation Links -->
@@ -504,13 +536,20 @@
 
     <style>
         .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
         .card-hover:hover {
             transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-body img {
+            transition: transform 0.2s ease;
+        }
+
+        .card-body img:hover {
+            transform: scale(1.08);
         }
     </style>
 @endpush

@@ -37,7 +37,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('teacher.my.students') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">My Students</div>
                                 </a>
                             </li>
@@ -53,7 +53,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">My Classes</div>
+                                    <div class="text-warning">My Classes</div>
                                 </a>
                             </li>
                         </ul>
@@ -256,8 +256,8 @@
                         </div>
                     </div>
 
+                    <!-- Card Subject Lists -->
                     <div class="card p-4 shadow-sm">
-                        <!-- Subject List -->
                         <div class="card-body">
                             @if ($classSubjects->isEmpty())
                                 <div class="text-center py-5">
@@ -269,87 +269,89 @@
                                 <div class="row g-4">
                                     @foreach ($classSubjects as $classSubject)
                                         <div class="col-md-4 col-sm-6">
-                                            <div
-                                                class="card subject-card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                                            <a
+                                                href="{{ route('teacher.subjects.view', [
+                                                    'grade_level' => $class->grade_level,
+                                                    'section' => $class->section,
+                                                    'subject_id' => $classSubject->id,
+                                                    'school_year' => $selectedYear,
+                                                ]) }}">
+                                                <div
+                                                    class="card subject-card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                                                    @php
+                                                        $bgIndex = rand(1, 3);
+                                                        $color1 = '#' . substr(md5($classSubject->subject->name), 0, 6);
+                                                        $color2 =
+                                                            '#' .
+                                                            substr(md5(strrev($classSubject->subject->name)), 0, 6);
+                                                    @endphp
 
-                                                @php
-                                                    // Generate random background index (1 to 3)
-                                                    $bgIndex = rand(1, 3);
-
-                                                    // Pick random gradient colors based on subject name (same as before)
-                                                    $color1 = '#' . substr(md5($classSubject->subject->name), 0, 6);
-                                                    $color2 =
-                                                        '#' . substr(md5(strrev($classSubject->subject->name)), 0, 6);
-                                                @endphp
-
-                                                <!-- Card Header -->
-                                                <div class="card-header text-white border-0 position-relative p-4"
-                                                    style="
-                                                        background:
-                                                            linear-gradient(135deg, {{ $color1 }}cc, {{ $color2 }}cc),
-                                                            url('{{ asset("assetsDashboard/img/subject-card-bg/bg$bgIndex.jpg") }}');
-                                                        background-size: cover;
-                                                        background-position: center;
-                                                        height: 140px;
-                                                    ">
-                                                    <h4 class="card-title text-white fw-bold mb-1">
-                                                        {{ $classSubject->subject->name }}
-                                                    </h4>
-                                                    <p class="subject-desc text-auto small mb-0">
-                                                        {{ $classSubject->description }}
-                                                    </p>
-
-                                                    <!-- Avatar -->
-                                                    <div class="avatar-wrapper position-absolute"
-                                                        style="bottom: -20px; right: 20px;">
-                                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($classSubject->subject->name) }}&background=random"
-                                                            class="rounded-circle border border-3 border-white shadow-sm"
-                                                            width="60" height="60" alt="Subject Avatar">
+                                                    <!-- Card Header -->
+                                                    <div class="card-header text-white border-0 position-relative p-4"
+                                                        style="
+                                        background:
+                                            linear-gradient(135deg, {{ $color1 }}cc, {{ $color2 }}cc),
+                                            url('{{ asset("assetsDashboard/img/subject-card-bg/bg$bgIndex.jpg") }}');
+                                        background-size: cover;
+                                        background-position: center;
+                                        height: 140px;
+                                    ">
+                                                        <h4 class="card-title text-white fw-bold mb-1">
+                                                            {{ $classSubject->subject->name }}
+                                                        </h4>
+                                                        <p class="subject-desc text-auto small mb-0">
+                                                            {{ $classSubject->description }}
+                                                        </p>
+                                                        <div class="avatar-wrapper position-absolute"
+                                                            style="bottom: -20px; right: 20px;">
+                                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($classSubject->subject->name) }}&background=random"
+                                                                class="rounded-circle border border-3 border-white shadow-sm"
+                                                                width="60" height="60" alt="Subject Avatar">
+                                                        </div>
                                                     </div>
-                                                </div>
 
-
-                                                <!-- Card Body -->
-                                                <div class="card-body pt-2">
-                                                    <div class="d-flex align-items-center">
+                                                    <!-- Card Body -->
+                                                    <div class="card-body pt-2">
                                                         <div class="d-flex align-items-center">
                                                             <img src="{{ $classSubject->teacher->profile_photo ? asset('storage/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
                                                                 alt="Teacher Profile" class="rounded-circle me-2"
                                                                 width="30" height="30">
                                                             <small class="text-muted">
-                                                                <span
-                                                                    class="fw-semibold">{{ $classSubject->teacher->firstName ?? 'Unknown' }}
-                                                                    {{ $classSubject->teacher->lastName ?? '' }}</span>
+                                                                <span class="fw-semibold">
+                                                                    {{ $classSubject->teacher->firstName ?? 'Unknown' }}
+                                                                    {{ $classSubject->teacher->lastName ?? '' }}
+                                                                </span>
                                                             </small>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <!-- Card Footer -->
-                                                <div
-                                                    class="card-footer bg-white border-0 d-flex justify-content-end align-items-center">
-                                                    <div class="dropdown">
-                                                        <button class="btn btn-sm btn-outline-secondary rounded-circle"
-                                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <i class="bi bi-three-dots-vertical"></i>
-                                                        </button>
-                                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
-                                                            <li><a class="dropdown-item text-warning" href="#"><i
-                                                                        class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                            <li><a class="dropdown-item text-danger" href="#"><i
-                                                                        class="bi bi-trash me-2"></i>Delete</a></li>
-                                                        </ul>
+                                                    <!-- Card Footer -->
+                                                    <div
+                                                        class="card-footer bg-white border-0 d-flex justify-content-end align-items-center">
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-sm btn-outline-secondary rounded-circle"
+                                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="bi bi-three-dots-vertical"></i>
+                                                            </button>
+                                                            <ul
+                                                                class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
+                                                                <li><a class="dropdown-item text-warning"
+                                                                        href="#"><i
+                                                                            class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                                <li><a class="dropdown-item text-danger" href="#"><i
+                                                                            class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            </ul>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </a>
                                         </div>
                                     @endforeach
                                 </div>
                             @endif
                         </div>
-                        <!-- /Subject List -->
-
                     </div>
+                    <!-- /Card Subject Lists -->
 
                     <!-- Add Subject Modal -->
                     <div class="modal fade" id="addSubjectModal" data-bs-backdrop="static" tabindex="-1">

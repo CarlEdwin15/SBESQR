@@ -33,7 +33,6 @@ return new class extends Migration
             $table->unique(['class_id', 'subject_id', 'school_year_id'], 'unique_subject_per_class_sy');
         });
 
-
         Schema::create('quarters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_subject_id')->constrained('class_subject')->onDelete('cascade');
@@ -46,30 +45,36 @@ return new class extends Migration
             $table->unique(['class_subject_id', 'quarter'], 'unique_quarter_per_class_subject');
         });
 
-
-        Schema::create('student_grades', function (Blueprint $table) {
+        Schema::create('quarterly_grades', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('quarter_id')->constrained('quarters')->onDelete('cascade');
-            $table->decimal('written_work', 5, 2)->nullable();
-            $table->decimal('performance_task', 5, 2)->nullable();
-            $table->decimal('quarterly_exam', 5, 2)->nullable();
             $table->decimal('final_grade', 5, 2)->nullable();
             $table->timestamps();
 
             $table->unique(['student_id', 'quarter_id'], 'unique_student_per_quarter');
         });
 
-
         Schema::create('final_subject_grades', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('class_subject_id')->constrained('class_subject')->onDelete('cascade');
-            $table->decimal('final_average', 5, 2)->nullable();
+            $table->decimal('final_grade', 5, 2)->nullable();
             $table->enum('remarks', ['passed', 'failed'])->nullable();
             $table->timestamps();
 
             $table->unique(['student_id', 'class_subject_id'], 'unique_final_subject_grade');
+        });
+
+        Schema::create('general_averages', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
+            $table->decimal('general_average', 5, 2)->nullable();
+            $table->enum('remarks', ['passed', 'failed'])->nullable();
+            $table->timestamps();
+
+            $table->unique(['student_id', 'school_year_id'], 'unique_general_average_per_sy');
         });
     }
 
@@ -78,8 +83,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('general_averages');
         Schema::dropIfExists('final_subject_grades');
-        Schema::dropIfExists('student_grades');
+        Schema::dropIfExists('quarterly_grades');
         Schema::dropIfExists('quarters');
         Schema::dropIfExists('class_subject');
         Schema::dropIfExists('subjects');

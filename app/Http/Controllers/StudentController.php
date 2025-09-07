@@ -240,22 +240,37 @@ class StudentController extends Controller
             'pob' => $request->student_pob,
         ]);
 
-        // Save parent information and get the parent ID
-        $parent = ParentInfo::create([
-            'father_fName' => $request->student_fatherFName,
-            'father_mName' => $request->student_fatherMName,
-            'father_lName' => $request->student_fatherLName,
-            'father_phone' => $request->student_fatherPhone,
-            'mother_fName' => $request->student_motherFName,
-            'mother_mName' => $request->student_motherMName,
-            'mother_lName' => $request->student_motherLName,
-            'mother_phone' => $request->student_motherPhone,
-            'emergcont_fName' => $request->student_emergcontFName,
-            'emergcont_mName' => $request->student_emergcontMName,
-            'emergcont_lName' => $request->student_emergcontLName,
-            'emergcont_phone' => $request->student_emergcontPhone,
-            'parent_email' => $request->student_parentEmail,
-        ]);
+        // Find existing parent by email (preferred unique identifier)
+        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
+
+        if (!$parent) {
+            // If no email, fallback to checking names (optional)
+            $parent = ParentInfo::where('father_fName', $request->student_fatherFName)
+                ->where('father_lName', $request->student_fatherLName)
+                ->orWhere(function ($query) use ($request) {
+                    $query->where('mother_fName', $request->student_motherFName)
+                        ->where('mother_lName', $request->student_motherLName);
+                })->first();
+        }
+
+        if (!$parent) {
+            // Create new parent if no match found
+            $parent = ParentInfo::create([
+                'father_fName'    => $request->student_fatherFName,
+                'father_mName'    => $request->student_fatherMName,
+                'father_lName'    => $request->student_fatherLName,
+                'father_phone'    => $request->student_fatherPhone,
+                'mother_fName'    => $request->student_motherFName,
+                'mother_mName'    => $request->student_motherMName,
+                'mother_lName'    => $request->student_motherLName,
+                'mother_phone'    => $request->student_motherPhone,
+                'emergcont_fName' => $request->student_emergcontFName,
+                'emergcont_mName' => $request->student_emergcontMName,
+                'emergcont_lName' => $request->student_emergcontLName,
+                'emergcont_phone' => $request->student_emergcontPhone,
+                'parent_email'    => $request->student_parentEmail,
+            ]);
+        }
 
         // Retrieve or create the class for the given year
         $class = Classes::firstOrCreate([
@@ -401,22 +416,39 @@ class StudentController extends Controller
             'pob' => $request->student_pob,
         ]);
 
-        // Update related parent info
-        $student->parentInfo()->update([
-            'father_fName' => $request->student_fatherFName,
-            'father_mName' => $request->student_fatherMName,
-            'father_lName' => $request->student_fatherLName,
-            'father_phone' => $request->student_fatherPhone,
-            'mother_fName' => $request->student_motherFName,
-            'mother_mName' => $request->student_motherMName,
-            'mother_lName' => $request->student_motherLName,
-            'mother_phone' => $request->student_motherPhone,
-            'emergcont_fName' => $request->student_emergcontFName,
-            'emergcont_mName' => $request->student_emergcontMName,
-            'emergcont_lName' => $request->student_emergcontLName,
-            'emergcont_phone' => $request->student_emergcontPhone,
-            'parent_email' => $request->student_parentEmail,
-        ]);
+        // 🔍 Find or create parent (don’t overwrite shared record)
+        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
+
+        if (!$parent) {
+            $parent = ParentInfo::where('father_fName', $request->student_fatherFName)
+                ->where('father_lName', $request->student_fatherLName)
+                ->orWhere(function ($query) use ($request) {
+                    $query->where('mother_fName', $request->student_motherFName)
+                        ->where('mother_lName', $request->student_motherLName);
+                })->first();
+        }
+
+        if (!$parent) {
+            $parent = ParentInfo::create([
+                'father_fName'    => $request->student_fatherFName,
+                'father_mName'    => $request->student_fatherMName,
+                'father_lName'    => $request->student_fatherLName,
+                'father_phone'    => $request->student_fatherPhone,
+                'mother_fName'    => $request->student_motherFName,
+                'mother_mName'    => $request->student_motherMName,
+                'mother_lName'    => $request->student_motherLName,
+                'mother_phone'    => $request->student_motherPhone,
+                'emergcont_fName' => $request->student_emergcontFName,
+                'emergcont_mName' => $request->student_emergcontMName,
+                'emergcont_lName' => $request->student_emergcontLName,
+                'emergcont_phone' => $request->student_emergcontPhone,
+                'parent_email'    => $request->student_parentEmail,
+            ]);
+        }
+
+        // ✅ Link student to the found/created parent
+        $student->parent_id = $parent->id;
+        $student->save();
 
         // Retrieve or create the class for the selected school year
         $class = Classes::firstOrCreate([
@@ -444,7 +476,8 @@ class StudentController extends Controller
             'student_sex' => ucfirst($validatedData['student_sex']),
         ]);
 
-        return redirect()->route('show.students', ['school_year' => $selectedSchoolYear])->with('success', 'Student updated successfully!');
+        return redirect()->route('show.students', ['school_year' => $selectedSchoolYear])
+            ->with('success', 'Student updated successfully!');
     }
 
     public function unenroll($id)

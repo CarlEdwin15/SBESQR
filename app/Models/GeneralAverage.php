@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class FinalSubjectGrade extends Model
+class GeneralAverage extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'student_id',
-        'class_subject_id',
-        'final_grade',
+        'school_year_id',
+        'general_average',
         'remarks',
     ];
 
@@ -21,8 +21,8 @@ class FinalSubjectGrade extends Model
         return $this->belongsTo(Student::class);
     }
 
-    public function classSubject()
+    public function schoolYear()
     {
-        return $this->belongsTo(ClassSubject::class);
+        return $this->belongsTo(SchoolYear::class);
     }
 }

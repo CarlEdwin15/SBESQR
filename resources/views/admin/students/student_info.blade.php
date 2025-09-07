@@ -102,7 +102,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">All Announcements</div>
                                 </a>
                             </li>
@@ -275,7 +275,7 @@
                     </h4>
 
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <a href="{{ route('show.students') }}"
+                        <a href="{{ url()->previous() }}"
                             style="margin: auto; margin-bottom: 10px; margin-left: 10px"
                             class="btn btn-danger mt-3">Back</a>
 

@@ -44,27 +44,35 @@ class Student extends Model
 
     public function schoolYears()
     {
-        return $this->belongsToMany(SchoolYear::class, 'class_student', 'student_id', 'class_id')
-            ->withPivot('school_year_id', 'enrollment_status', 'enrollment_type')
+        return $this->belongsToMany(SchoolYear::class, 'class_student', 'student_id', 'school_year_id')
+            ->withPivot('class_id', 'enrollment_status', 'enrollment_type')
             ->withTimestamps();
     }
 
-    public function studentGrades()
+    /** Quarterly grades (per subject per quarter) */
+    public function quarterlyGrades()
     {
-        return $this->hasMany(StudentGrade::class);
+        return $this->hasMany(QuarterlyGrade::class);
     }
 
+    /** Final grades per subject */
     public function finalSubjectGrades()
     {
         return $this->hasMany(FinalSubjectGrade::class);
     }
 
-    public function subjects()
+    /** General average per school year */
+    public function generalAverages()
     {
-        return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
-            ->withPivot('school_year_id')
-            ->withTimestamps();
+        return $this->hasMany(GeneralAverage::class);
     }
+
+    // public function subjects()
+    // {
+    //     return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
+    //         ->withPivot('school_year_id')
+    //         ->withTimestamps();
+    // }
 
     public function getFullNameAttribute()
     {

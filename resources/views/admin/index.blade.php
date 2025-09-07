@@ -636,10 +636,10 @@
         new Chart(ctx1, {
             type: 'bar',
             data: {
-                labels: ['Kndg', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
+                labels: ['Kindergarten', 'Grade1', 'Grade2', 'Grade3', 'Grade', 'Grade5', 'Grade6'],
                 datasets: [{
                     label: 'Enrollees',
-                    data: [45, 35, 42, 155, 46, 34, 43],
+                    data: [45, 35, 42, 50, 46, 34, 43],
                     backgroundColor: [
                         '#FF8A8A', '#82E6E6', '#FFE852', '#C9A5FF',
                         '#FF8A8A', '#82E6E6', '#FFE852'

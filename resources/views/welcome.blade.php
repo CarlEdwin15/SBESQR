@@ -145,7 +145,7 @@
                                         alt="" />
                                     <h3>Saul Goodman</h3>
                                     <h4>Ceo &amp; Founder</h4> --}}
-                                    <div class="text-end">{{ $announcement->date_published?->format('M d, Y') }}</div>
+                                    <div class="text-end">{{ $announcement->date_published?->format('M d, Y | l | h:i A') }}</div>
                                     <h3 class="text-black text-center announcement-title">{{ $announcement->title }}</h3>
                                     <div class="quill-content announcement-body">
                                         {!! $announcement->body !!}

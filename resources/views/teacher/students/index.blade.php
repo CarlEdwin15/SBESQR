@@ -38,7 +38,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item active">
                                 <a href="{{ route('teacher.my.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-danger">My Students</div>
+                                    <div class="text-warning">My Students</div>
                                 </a>
                             </li>
                         </ul>
@@ -52,7 +52,7 @@
                         </a>
                         <ul class="menu-sub">
                             <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
+                                <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
                                     <div class="text-light">My Class</div>
                                 </a>
                             </li>

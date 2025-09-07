@@ -139,7 +139,6 @@ Route::middleware('auth')->prefix('announcements')->name('announcements.')->grou
 
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])
     ->name('push.subscribe')->middleware('auth');
-
 Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])
     ->name('push.unsubscribe')->middleware('auth');
 
@@ -149,6 +148,9 @@ Route::get('/pusher', [AnnouncementController::class, 'pusher']);
 // Payment Management (on ADMIN Dashboard)
 Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
 Route::resource('payments', PaymentController::class);
+
+
+
 
 
 // TEACHER DASHBOARD ROUTES
@@ -180,6 +182,7 @@ Route::post('/teacher/attendance/qr-mark', [TeacherController::class, 'markAtten
 
 Route::post('/teacher/manual-attendance', [TeacherController::class, 'markManualAttendance'])->name('teacher.markManualAttendance');
 
+// Export SF2 (Teacher's Dashboard)
 Route::get('/teacher-export-attendance', function () {
     $controller = app(AttendanceController::class);
     $data = $controller->getAttendanceExportData();
@@ -193,14 +196,29 @@ Route::get('/teacher-export-attendance', function () {
     return Excel::download(new SF2Export($data), $fileName);
 })->name('export.sf2');
 
+// Subject Management (on Teacher's Dashboard)
 Route::get('/teacher/subjects/{grade_level}/{section}', [TeacherController::class, 'myClassSubject'])->name('teacher.myClassSubject');
 
 Route::post('/teacher/class/{grade_level}/{section}/subjects/create', [TeacherController::class, 'createSubject'])
     ->name('teacher.subjects.create');
 
-Route::get('/teacher/class/{grade_level}/{section}/subjects/store', [TeacherController::class, 'storeSubject'])
-    ->name('teacher.subjects.store');
+Route::get(
+    '/teacher/class/{grade_level}/{section}/subjects/{subject_id}/view',
+    [TeacherController::class, 'viewSubject']
+)->name('teacher.subjects.view');
 
+
+// Quarterly grades export in the viewSubject view
+Route::get(
+    '/teacher/class/{grade_level}/{section}/subjects/{subject_id}/export',
+    [TeacherController::class, 'exportGrades']
+)->name('teacher.subjects.export');
+
+
+Route::post(
+    '/teacher/class/{grade_level}/{section}/subjects/{subject_id}/save-grades',
+    [TeacherController::class, 'saveGrades']
+)->name('teacher.subjects.saveGrades');
 
 
 

@@ -24,7 +24,7 @@
                     <li class="menu-item active">
                         <a href="{{ '/home ' }}" class="menu-link">
                             <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                            <div>Dashboard</div>
+                            <div class="text-warning">Dashboard</div>
                         </a>
                     </li>
 
