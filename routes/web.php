@@ -136,6 +136,9 @@ Route::middleware('auth')->prefix('announcements')->name('announcements.')->grou
     Route::post('upload-image', [AnnouncementController::class, 'uploadImage'])->name('uploadImage');
 });
 
+// Show ajax notif
+Route::get('/announcements/{id}/show-ajax', [AnnouncementController::class, 'showAjax'])
+    ->name('announcements.showAjax');
 
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])
     ->name('push.subscribe')->middleware('auth');
@@ -207,11 +210,16 @@ Route::get(
     [TeacherController::class, 'viewSubject']
 )->name('teacher.subjects.view');
 
+// Student report card grades export in the student info view
+Route::get(
+    '/teacher/student/{student_id}/report_card/export',
+    [TeacherController::class, 'studentReportCard']
+)->name('teacher.student.card');
 
 // Quarterly grades export in the viewSubject view
 Route::get(
     '/teacher/class/{grade_level}/{section}/subjects/{subject_id}/export',
-    [TeacherController::class, 'exportGrades']
+    [TeacherController::class, 'exportQuarterlyGrades']
 )->name('teacher.subjects.export');
 
 

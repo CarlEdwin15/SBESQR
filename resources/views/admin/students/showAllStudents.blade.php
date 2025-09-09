@@ -5,482 +5,356 @@
 
 @section('content')
 
-    <!-- Layout wrapper -->
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
+    <!-- Menu -->
+    <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand bg-dark">
+            <a href="{{ url('/home') }}" class="app-brand-link">
+                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
+                <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
+                    Dashboard</span>
+            </a>
 
-            <!-- Menu -->
-            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-                <div class="app-brand bg-dark">
-                    <a href="{{ url('/home') }}" class="app-brand-link">
-                        <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
-                        <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
-                            Dashboard</span>
-                    </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
+                <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+        </div>
 
-                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
-                        <i class="bx bx-chevron-left bx-sm align-middle"></i>
-                    </a>
-                </div>
+        <ul class="menu-inner py-1 bg-dark">
 
-                <ul class="menu-inner py-1 bg-dark">
+            <!-- Dashboard sidebar-->
+            <li class="menu-item">
+                <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                    <div class="text-light">Dashboard</div>
+                </a>
+            </li>
 
-                    <!-- Dashboard sidebar-->
+            <!-- Teachers sidebar -->
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
+                    <div class="text-light">Teachers</div>
+                </a>
+
+                <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                            <div class="text-light">Dashboard</div>
+                        <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Teachers</div>
                         </a>
                     </li>
+                </ul>
+            </li>
 
-                    <!-- Teachers sidebar -->
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
-                            <div class="text-light">Teachers</div>
+            {{-- Students sidebar --}}
+            <li class="menu-item active open">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bxs-graduation"></i>
+                    <div>Students</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item active">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
+                            <div class="text-warning">All Students</div>
                         </a>
-
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Teachers</div>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-
-                    {{-- Students sidebar --}}
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bxs-graduation"></i>
-                            <div>Students</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item active">
-                                <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-warning">All Students</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Enrollment</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Promotion</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Graduated Students</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Classes sidebar --}}
                     <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                        <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Enrollment</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Promotion</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="" class="menu-link bg-dark text-light">
+                            <div class="text-light">Graduated Students</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            {{-- Classes sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                    <div class="text-light">Classes</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Classes</div>
                         </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Classes</div>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-
-                    {{-- Announcement sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
-                            <div class="text-light">Announcements</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Announcements</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Payments sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                            <div class="text-light">Payments</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Payments</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Account Settings sidebar --}}
-                    <li class="menu-item">
-                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
-                            <i class="bx bx-cog me-3 text-light"></i>
-                            <div class="text-light"> Account Settings</div>
-                        </a>
-                    </li>
-
-                    {{-- Log Out sidebar --}}
-                    <li class="menu-item">
-                        <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
-                                onclick="event.preventDefault(); confirmLogout();">
-                                <i class="bx bx-power-off me-3 text-light"></i>
-                                <div class="text-light">{{ __('Log Out') }}</div>
-                            </a>
-                        </form>
-                    </li>
-
                 </ul>
-            </aside>
-            <!-- / Menu -->
+            </li>
 
-            <!-- Layout container -->
-            <div class="layout-page">
-                <!-- Navbar -->
-
-                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-                    id="layout-navbar">
-                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                            <i class="bx bx-menu bx-sm"></i>
+            {{-- Announcement sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
+                    <div class="text-light">Announcements</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Announcements</div>
                         </a>
-                    </div>
+                    </li>
+                </ul>
+            </li>
 
-                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-                        <!-- Search -->
-                        <div class="navbar-nav align-items-center">
+            {{-- Payments sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                    <div class="text-light">Payments</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Payments</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                        </div>
-                        <!-- /Search -->
+            {{-- Account Settings sidebar --}}
+            <li class="menu-item">
+                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                    <i class="bx bx-cog me-3 text-light"></i>
+                    <div class="text-light"> Account Settings</div>
+                </a>
+            </li>
 
-                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+            {{-- Log Out sidebar --}}
+            <li class="menu-item">
+                <form id="logout-form" method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
+                        onclick="event.preventDefault(); confirmLogout();">
+                        <i class="bx bx-power-off me-3 text-light"></i>
+                        <div class="text-light">{{ __('Log Out') }}</div>
+                    </a>
+                </form>
+            </li>
 
-                            <!-- User Profile-->
-                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
-                                    data-bs-toggle="dropdown">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar">
-                                            @auth
-                                                @php
-                                                    $profilePhoto = Auth::user()->profile_photo
-                                                        ? asset('storage/' . Auth::user()->profile_photo)
-                                                        : asset(
-                                                            'assetsDashboard/img/profile_pictures/admin_profile.png',
-                                                        );
-                                                @endphp
-                                                <img src="{{ $profilePhoto }}" alt="Profile Photo"
-                                                    class="w-px-40 h-auto rounded-circle" />
-                                            @else
-                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                    alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
-                                            @endauth
-                                        </div>
-                                        @auth
-                                            <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
-                                        @endauth
-                                    </div>
+        </ul>
+    </aside>
+    <!-- / Menu -->
 
-                                </a>
+    <!-- Content wrapper -->
+    <div class="container-xxl flex-grow-1 container-p-y">
+        <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
+                <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
+                <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
+            </span> All Students
+        </h4>
 
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <div class="d-flex">
-
-                                                <div class="flex-shrink-0 me-3">
-                                                    <div class="avatar">
-                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                            alt class="w-px-40 h-auto rounded-circle" />
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">{{ Auth::user()->firstName }}</span>
-                                                    <small class="text-muted">Admin</small>
-                                                </div>
-
-                                            </div>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <i class="bx bx-user me-2"></i>
-                                            <span class="align-middle">My Profile</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
-                                            <i class="bx bx-cog me-2"></i>
-                                            <span class="align-middle">Settings</span>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <x-dropdown-link class="dropdown-item" href="{{ route('logout') }}"
-                                            onclick="event.preventDefault(); confirmLogout();">
-                                            <i class="bx bx-power-off me-2"></i>
-                                            {{ __('Log Out') }}
-                                        </x-dropdown-link>
-                                    </form>
-                                </ul>
-                            </li>
-                            <!--/ User -->
-                        </ul>
-                    </div>
-                </nav>
-
-                <!-- / Navbar -->
-
-                <!-- Content wrapper -->
-                <div class="container-xxl flex-grow-1 container-p-y">
-                    <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
-                            <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
-                        </span> All Students
-                    </h4>
-
-                    <div class="text-center mb-3">
-                        <h3 class="text-primary">
-                            All Students Enrolled in School Year: {{ $selectedYear }}
-                        </h3>
-                    </div>
-
-                    <div class="row mb-3 align-items-center">
-                        {{-- Search Bar --}}
-                        <div class="col-md-6 d-flex justify-content-start">
-                            <div class="d-flex align-items-center w-100" style="max-width: 400px;">
-                                <i class="bx bx-search fs-4 lh-0 me-2"></i>
-                                <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
-                                    placeholder="Search..." aria-label="Search..." />
-                            </div>
-                        </div>
-
-                        {{-- School Year Selection --}}
-                        <div class="col-md-6 d-flex justify-content-end">
-                            <!-- School Year Dropdown -->
-                            <div class="dropdown">
-                                <button class="btn btn-info text-white dropdown-toggle w-100 text-start"
-                                    type="button" id="yearDropdownStudents" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                    {{ $selectedYear }}
-                                </button>
-                                <ul class="dropdown-menu w-100" aria-labelledby="yearDropdownStudents">
-                                    @foreach ($schoolYears as $year)
-                                        <li>
-                                            <a class="dropdown-item"
-                                                href="{{ route(
-                                                    'show.students',
-                                                    array_filter([
-                                                        'school_year' => $year,
-                                                        'section' => $selectedSection ?? null,
-                                                    ]),
-                                                ) }}">
-                                                {{ $year }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-
-                            <!-- "Now" button -->
-                            <form method="GET" action="{{ route('show.students') }}">
-                                <input type="hidden" name="school_year"
-                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                @if ($selectedSection)
-                                    <input type="hidden" name="section" value="{{ $selectedSection }}">
-                                @endif
-                                <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
-                                    Now
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div id="noResultsMessage" class="alert alert-info text-center d-none">
-                        No search found.
-                    </div>
-
-                    {{-- Card --}}
-                    @foreach ($groupedStudents as $grade => $students)
-                        <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <h5 class="fw-bold text-primary mb-0">{{ $grade }}</h5>
-                                <a href="" class="btn btn-success btn-sm">
-                                    <i class="bx bx-printer"></i> Export
-                                </a>
-                            </div>
-
-                            <div class="table-responsive text-nowrap">
-                                <table class="table table-hover table-bordered text-center mb-0"
-                                    id="table-{{ Str::slug($grade) }}">
-                                    <thead>
-                                        <tr>
-                                            <th style="min-width: 220px;">Full Name</th>
-                                            <th style="width: 10%;">Photo</th>
-                                            <th style="width: 15%;">LRN</th>
-                                            <th style="width: 20%;">Grade & Section</th>
-                                            <th style="width: 15%;">Enrollment Status</th>
-                                            <th style="width: 15%;">Enrollment Type</th>
-                                            <th style="width: 15%;">Emergency Contact No.</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse ($students->sortBy([
-                                                                                                    ['student_lName', 'asc'],
-                                                                                                    ['student_fName', 'asc'],
-                                                                                                    ['student_mName', 'asc'],
-                                                                                                    ['student_extName', 'asc'],
-                                                                                                    ]) as $student)
-                                            <tr class="student-row"
-                                                data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
-                                                data-section="{{ strtolower(optional($student->class->first())->section) }}"
-                                                data-grade="{{ strtolower(optional($student->class->first())->formatted_grade_level) }}"
-                                                data-lrn="{{ strtolower($student->student_lrn) }}"
-                                                data-enrollment_status="{{ strtolower(optional($student->class->first())->pivot->enrollment_status ?? '') }}"
-                                                data-enrollment_type="{{ strtolower(optional($student->class->first())->pivot->enrollment_type ?? '') }}">
-                                                <td><a class="text-primary"
-                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                        {{ $student->student_lName }},
-                                                        {{ $student->student_fName }}
-                                                        {{ $student->student_mName }}
-                                                        {{ $student->student_extName }}</a></td>
-                                                <td><a class="text-primary"
-                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                        @if ($student->student_photo)
-                                                            <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                                alt="Profile Photo" width="30" height="30"
-                                                                style="object-fit: cover; border-radius: 50%;">
-                                                        @else
-                                                            <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                                alt="No Profile" width="30" height="30"
-                                                                style="object-fit: cover; border-radius: 50%;">
-                                                        @endif
-                                                    </a>
-                                                </td>
-                                                <td>{{ $student->student_lrn }}</td>
-                                                <td>{{ optional($student->class->first())->formatted_grade_level }}
-                                                    - {{ optional($student->class->first())->section }}</td>
-                                                <td>
-                                                    @php
-                                                        $status =
-                                                            optional($student->class->first())->pivot
-                                                                ->enrollment_status ?? 'N/A';
-                                                        $badgeClass = match ($status) {
-                                                            'enrolled' => 'bg-label-success',
-                                                            'not_enrolled' => 'bg-label-secondary',
-                                                            'archived' => 'bg-label-warning',
-                                                            'graduated' => 'bg-label-info',
-                                                            default => 'bg-label-dark',
-                                                        };
-                                                    @endphp
-                                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    @php
-                                                        $type =
-                                                            optional($student->class->first())->pivot
-                                                                ->enrollment_type ?? 'N/A';
-                                                        $badgeClass = match ($type) {
-                                                            'regular' => 'bg-label-primary',
-                                                            'transferee' => 'bg-label-info',
-                                                            'returnee' => 'bg-label-warning',
-                                                            default => 'bg-label-dark',
-                                                        };
-                                                    @endphp
-                                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                                        {{ strtoupper(str_replace('_', ' ', $type)) }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
-                                                <td>
-                                                    <div class="dropdown">
-                                                        <button class="btn p-0 dropdown-toggle hide-arrow"
-                                                            data-bs-toggle="dropdown">
-                                                            <i class="bx bx-dots-vertical-rounded"></i>
-                                                        </button>
-                                                        <div class="dropdown-menu">
-                                                            <a class="dropdown-item text-info"
-                                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                                <i class="bx bxs-user-badge me-1"></i> View Profile
-                                                            </a>
-                                                            @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
-                                                                <a class="dropdown-item text-warning"
-                                                                    href="{{ route('edit.student', ['id' => $student->id]) }}">
-                                                                    <i class="bx bx-edit-alt me-1"></i> Edit
-                                                                </a>
-                                                                <button type="button" class="dropdown-item text-danger"
-                                                                    onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}')">
-                                                                    <i class="bx bx-user-x me-1"></i> Unenroll
-                                                                </button>
-                                                                <form id="unenroll-form-{{ $student->id }}"
-                                                                    action="{{ route('unenroll.student', $student->id) }}"
-                                                                    method="POST" style="display: none;">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                </form>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr class="text-muted">
-                                                <td colspan="7">No students enrolled in {{ $grade }}.</td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Pagination for this grade -->
-                            <div class="d-flex justify-content-start px-3 py-2 border-top">
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
-                                </nav>
-                            </div>
-                        </div>
-                    @endforeach
-                    {{-- / Card --}}
-
-                    <hr class="my-5" />
-
-                </div>
-                <!-- / Content wrapper -->
-
-            </div>
-            <!-- / Layout page -->
+        <div class="text-center mb-3">
+            <h3 class="text-primary">
+                All Students Enrolled in School Year: {{ $selectedYear }}
+            </h3>
         </div>
-    </div>
-    <!-- / Layout wrapper -->
 
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <div class="row mb-3 align-items-center">
+            {{-- Search Bar --}}
+            <div class="col-md-6 d-flex justify-content-start">
+                <div class="d-flex align-items-center w-100" style="max-width: 400px;">
+                    <i class="bx bx-search fs-4 lh-0 me-2"></i>
+                    <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
+                        placeholder="Search..." aria-label="Search..." />
+                </div>
+            </div>
+
+            {{-- School Year Selection --}}
+            <div class="col-md-6 d-flex justify-content-end">
+                <!-- School Year Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-info text-white dropdown-toggle w-100 text-start" type="button"
+                        id="yearDropdownStudents" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ $selectedYear }}
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="yearDropdownStudents">
+                        @foreach ($schoolYears as $year)
+                            <li>
+                                <a class="dropdown-item @if ($year === $selectedYear) active fw-bold @endif"
+                                    href="{{ route(
+                                        'show.students',
+                                        array_filter([
+                                            'school_year' => $year,
+                                            'section' => $selectedSection ?? null,
+                                        ]),
+                                    ) }}">
+                                    {{ $year }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                <!-- "Now" button -->
+                <form method="GET" action="{{ route('show.students') }}">
+                    <input type="hidden" name="school_year" value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                    @if ($selectedSection)
+                        <input type="hidden" name="section" value="{{ $selectedSection }}">
+                    @endif
+                    <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
+                        Now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="noResultsMessage" class="alert alert-info text-center d-none">
+            No search found.
+        </div>
+
+        {{-- Card --}}
+        @foreach ($groupedStudents as $grade => $students)
+            <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-primary mb-0">{{ $grade }}</h5>
+                    <a href="" class="btn btn-success btn-sm">
+                        <i class="bx bx-printer"></i> Export
+                    </a>
+                </div>
+
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-hover table-bordered text-center mb-0" id="table-{{ Str::slug($grade) }}">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 220px;">Full Name</th>
+                                <th style="width: 10%;">Photo</th>
+                                <th style="width: 15%;">LRN</th>
+                                <th style="width: 20%;">Grade & Section</th>
+                                <th style="width: 15%;">Enrollment Status</th>
+                                <th style="width: 15%;">Enrollment Type</th>
+                                <th style="width: 15%;">Emergency Contact No.</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($students->sortBy([
+                                                                                                                ['student_lName', 'asc'],
+                                                                                                                ['student_fName', 'asc'],
+                                                                                                                ['student_mName', 'asc'],
+                                                                                                                ['student_extName', 'asc'],
+                                                                                                                ]) as $student)
+                                <tr class="student-row"
+                                    data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
+                                    data-section="{{ strtolower(optional($student->class->first())->section) }}"
+                                    data-grade="{{ strtolower(optional($student->class->first())->formatted_grade_level) }}"
+                                    data-lrn="{{ strtolower($student->student_lrn) }}"
+                                    data-enrollment_status="{{ strtolower(optional($student->class->first())->pivot->enrollment_status ?? '') }}"
+                                    data-enrollment_type="{{ strtolower(optional($student->class->first())->pivot->enrollment_type ?? '') }}">
+                                    <td><a class="text-primary"
+                                            href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                            {{ $student->student_lName }},
+                                            {{ $student->student_fName }}
+                                            {{ $student->student_mName }}
+                                            {{ $student->student_extName }}</a></td>
+                                    <td><a class="text-primary"
+                                            href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                            @if ($student->student_photo)
+                                                <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                    alt="Profile Photo" width="30" height="30"
+                                                    style="object-fit: cover; border-radius: 50%;">
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                    alt="No Profile" width="30" height="30"
+                                                    style="object-fit: cover; border-radius: 50%;">
+                                            @endif
+                                        </a>
+                                    </td>
+                                    <td>{{ $student->student_lrn }}</td>
+                                    <td>{{ optional($student->class->first())->formatted_grade_level }}
+                                        - {{ optional($student->class->first())->section }}</td>
+                                    <td>
+                                        @php
+                                            $status =
+                                                optional($student->class->first())->pivot->enrollment_status ?? 'N/A';
+                                            $badgeClass = match ($status) {
+                                                'enrolled' => 'bg-label-success',
+                                                'not_enrolled' => 'bg-label-secondary',
+                                                'archived' => 'bg-label-warning',
+                                                'graduated' => 'bg-label-info',
+                                                default => 'bg-label-dark',
+                                            };
+                                        @endphp
+                                        <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                            {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $type = optional($student->class->first())->pivot->enrollment_type ?? 'N/A';
+                                            $badgeClass = match ($type) {
+                                                'regular' => 'bg-label-primary',
+                                                'transferee' => 'bg-label-info',
+                                                'returnee' => 'bg-label-warning',
+                                                default => 'bg-label-dark',
+                                            };
+                                        @endphp
+                                        <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                            {{ strtoupper(str_replace('_', ' ', $type)) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item text-info"
+                                                    href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                    <i class="bx bxs-user-badge me-1"></i> View Profile
+                                                </a>
+                                                @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
+                                                    <a class="dropdown-item text-warning"
+                                                        href="{{ route('edit.student', ['id' => $student->id]) }}">
+                                                        <i class="bx bx-edit-alt me-1"></i> Edit
+                                                    </a>
+                                                    <button type="button" class="dropdown-item text-danger"
+                                                        onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}')">
+                                                        <i class="bx bx-user-x me-1"></i> Unenroll
+                                                    </button>
+                                                    <form id="unenroll-form-{{ $student->id }}"
+                                                        action="{{ route('unenroll.student', $student->id) }}"
+                                                        method="POST" style="display: none;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr class="text-muted">
+                                    <td colspan="7">No students enrolled in {{ $grade }}.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination for this grade -->
+                <div class="d-flex justify-content-start px-3 py-2 border-top">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
+                    </nav>
+                </div>
+            </div>
+        @endforeach
+        {{-- / Card --}}
+
+        <hr class="my-5" />
+
+    </div>
+    <!-- / Content wrapper -->
 
 @endsection
 

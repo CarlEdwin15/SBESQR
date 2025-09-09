@@ -2,6 +2,10 @@
 
 @section('title', 'Login')
 
+@section('hideNavbar', true)
+
+@section('hideWrapper', true)
+
 @section('content')
 
     <!-- Content -->

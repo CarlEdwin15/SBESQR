@@ -2,6 +2,10 @@
 
 @section('title', 'SBESqr')
 
+@section('hideNavbar', true)
+
+@section('hideWrapper', true)
+
 @section('content')
 
     <!-- Preloader -->

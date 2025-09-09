@@ -2,556 +2,363 @@
 
 @section('title', 'Admin | Announcements')
 
-
 @section('content')
 
-    <!-- Layout wrapper -->
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
+    <!-- Menu -->
+    <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand bg-dark">
+            <a href="{{ url('/home') }}" class="app-brand-link">
+                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
+                <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
+                    Dashboard</span>
+            </a>
 
-            <!-- Menu -->
-            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-                <div class="app-brand bg-dark">
-                    <a href="{{ url('/home') }}" class="app-brand-link">
-                        <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
-                        <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
-                            Dashboard</span>
-                    </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
+                <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+        </div>
 
-                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
-                        <i class="bx bx-chevron-left bx-sm align-middle"></i>
-                    </a>
-                </div>
+        <ul class="menu-inner py-1 bg-dark">
 
-                <ul class="menu-inner py-1 bg-dark">
+            <!-- Dashboard sidebar-->
+            <li class="menu-item">
+                <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                    <div class="text-light">Dashboard</div>
+                </a>
+            </li>
 
-                    <!-- Dashboard sidebar-->
+            <!-- Teachers sidebar -->
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
+                    <div class="text-light">Teachers</div>
+                </a>
+
+                <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                            <div class="text-light">Dashboard</div>
+                        <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Teachers</div>
                         </a>
                     </li>
-
-                    <!-- Teachers sidebar -->
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
-                            <div class="text-light">Teachers</div>
-                        </a>
-
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Teachers</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Students sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
-                            <div class="text-light">Students</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Students</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Enrollment</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Promotion</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Classes sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
-                            <div class="text-light">Classes</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Classes</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Announcement sidebar --}}
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bxs-megaphone"></i>
-                            <div>Announcements</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item active">
-                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-warning">All Announcements</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Payments sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                            <div class="text-light">Payments</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Payments</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Account Settings sidebar --}}
-                    <li class="menu-item">
-                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
-                            <i class="bx bx-cog me-3 text-light"></i>
-                            <div class="text-light"> Account Settings</div>
-                        </a>
-                    </li>
-
-                    {{-- Log Out sidebar --}}
-                    <li class="menu-item">
-                        <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
-                                onclick="event.preventDefault(); confirmLogout();">
-                                <i class="bx bx-power-off me-3 text-light"></i>
-                                <div class="text-light">{{ __('Log Out') }}</div>
-                            </a>
-                        </form>
-                    </li>
-
                 </ul>
-            </aside>
-            <!-- / Menu -->
+            </li>
 
-            <!-- Layout container -->
-            <div class="layout-page">
-
-                <!-- Navbar -->
-                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-                    id="layout-navbar">
-                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                            <i class="bx bx-menu bx-sm"></i>
+            {{-- Students sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
+                    <div class="text-light">Students</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Students</div>
                         </a>
-                    </div>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Enrollment</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Promotion</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-                        <!-- Search -->
-                        <div class="navbar-nav align-items-center">
+            {{-- Classes sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                    <div class="text-light">Classes</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Classes</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                        </div>
-                        <!-- /Search -->
+            {{-- Announcement sidebar --}}
+            <li class="menu-item active open">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bxs-megaphone"></i>
+                    <div>Announcements</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item active">
+                        <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
+                            <div class="text-warning">All Announcements</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+            {{-- Payments sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                    <div class="text-light">Payments</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Payments</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                            <!-- Notification Dropdown -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown"
-                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class='bx bx-bell fs-4'></i>
-                                    @if ($notifications->count())
-                                        <span class="badge bg-danger rounded-pill badge-notifications">
-                                            {{ $notifications->count() }}
-                                        </span>
-                                    @endif
-                                </a>
+            {{-- Account Settings sidebar --}}
+            <li class="menu-item">
+                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                    <i class="bx bx-cog me-3 text-light"></i>
+                    <div class="text-light"> Account Settings</div>
+                </a>
+            </li>
 
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0"
-                                    aria-labelledby="notificationDropdown"
-                                    style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+            {{-- Log Out sidebar --}}
+            <li class="menu-item">
+                <form id="logout-form" method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
+                        onclick="event.preventDefault(); confirmLogout();">
+                        <i class="bx bx-power-off me-3 text-light"></i>
+                        <div class="text-light">{{ __('Log Out') }}</div>
+                    </a>
+                </form>
+            </li>
 
-                                    <li class="px-3 pt-2">
-                                        <h6 class="mb-1 d-flex justify-content-between">
-                                            Notifications
-                                            <span class="badge bg-light-primary text-primary fw-bold">
-                                                {{ $notifications->count() }} New
-                                            </span>
-                                        </h6>
-                                    </li>
+        </ul>
+    </aside>
+    <!-- / Menu -->
 
-                                    @forelse($notifications as $notif)
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-start gap-2 py-3" href="#">
-                                                <div class="rounded-circle d-flex justify-content-center align-items-center overflow-hidden"
-                                                    style="width:36px; height:36px; background-color:#f8f9fa;">
-                                                    <img src="assets/img/logo.png" alt="Logo" class="img-fluid"
-                                                        style="width:100%; height:100%; object-fit:contain;">
-                                                </div>
-                                                <div>
-                                                    <strong>{{ $notif->title }}</strong>
-                                                    <div class="text-muted small">{!! Str::limit(strip_tags($notif->body), 40) !!}</div>
-                                                    <small
-                                                        class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                                                </div>
-                                                <span class="ms-auto text-primary mt-1">
-                                                    <i class="bx bxs-circle"></i>
-                                                </span>
-                                            </a>
-                                        </li>
-                                    @empty
-                                        <li>
-                                            <div class="dropdown-item text-center text-muted py-3">
-                                                No notifications
-                                            </div>
-                                        </li>
-                                    @endforelse
+    <!-- Content wrapper -->
+    <div class="container-xxl flex-grow-1 container-p-y">
+        <h4 class="fw-bold text-warning mb-2">
+            <span class="text-muted fw-light">
+                <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                <a class="text-muted fw-light" href="{{ route('announcements.index') }}">Announcement</a> /
+            </span>
+            All Announcements
+        </h4>
 
-                                    <li>
-                                        <hr class="dropdown-divider my-0">
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('announcements.index') }}"
-                                            class="dropdown-item text-center text-primary fw-semibold py-2">
-                                            View all announcements
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <!-- /Notification Dropdown -->
-
-                            <!-- User Profile-->
-                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
-                                    data-bs-toggle="dropdown">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar">
-                                            @auth
-                                                @php
-                                                    $profilePhoto = Auth::user()->profile_photo
-                                                        ? asset('storage/' . Auth::user()->profile_photo)
-                                                        : asset(
-                                                            'assetsDashboard/img/profile_pictures/admin_profile.png',
-                                                        );
-                                                @endphp
-                                                <img src="{{ $profilePhoto }}" alt="Profile Photo"
-                                                    class="w-px-40 h-auto rounded-circle" />
-                                            @else
-                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                    alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
-                                            @endauth
-                                        </div>
-                                        @auth
-                                            <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
-                                        @endauth
-                                    </div>
-
-                                </a>
-
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <div class="d-flex">
-
-                                                <div class="flex-shrink-0 me-3">
-                                                    <div class="avatar">
-                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                            alt class="w-px-40 h-auto rounded-circle" />
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">{{ Auth::user()->firstName }}</span>
-                                                    <small class="text-muted">Admin</small>
-                                                </div>
-
-                                            </div>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <i class="bx bx-user me-2"></i>
-                                            <span class="align-middle">My Profile</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
-                                            <i class="bx bx-cog me-2"></i>
-                                            <span class="align-middle">Settings</span>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <x-dropdown-link class="dropdown-item" href="{{ route('logout') }}"
-                                            onclick="event.preventDefault(); confirmLogout();">
-                                            <i class="bx bx-power-off me-2"></i>
-                                            {{ __('Log Out') }}
-                                        </x-dropdown-link>
-                                    </form>
+        <h3 class="text-center text-primary fw-bold mt-5 mb-5"> 📢 Announcement Management</h3>
 
 
+        {{-- Add New and Filters --}}
+        <div class="row align-items-end mb-3 gy-2">
+            {{-- Search input (full-width on mobile, left-aligned on desktop) --}}
+            <div class="col-12 col-md-4 d-flex align-items-center gap-2">
+                <input type="text" id="announcementSearch" class="form-control border-1 shadow-none"
+                    placeholder="Search title or body..." />
+            </div>
 
-                                </ul>
-                            </li>
-                            <!--/ User -->
-                        </ul>
-                    </div>
-                </nav>
-                <!-- / Navbar -->
+            {{-- Add New Button (left on mobile, center on desktop) --}}
+            <div class="col-6 col-md-4">
+                <button class="btn btn-primary d-flex justify-content-center align-items-center" data-bs-toggle="modal"
+                    data-bs-target="#createAnnouncementModal">
+                    <i class='bx bx-message-alt-add me-2'></i>
+                    <span class="d-none d-sm-inline">New Announcement</span>
+                </button>
+            </div>
 
-                <!-- Content wrapper -->
-                <div class="container-xxl flex-grow-1 container-p-y">
-                    <h4 class="fw-bold text-warning mb-2">
-                        <span class="text-muted fw-light">
-                            <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                            <a class="text-muted fw-light" href="{{ route('announcements.index') }}">Announcement</a> /
-                        </span>
-                        All Announcements
-                    </h4>
+            {{-- School Year Filter + Now Button (right on mobile, right-aligned on desktop) --}}
+            <div class="col-6 col-md-4 d-flex justify-content-between align-items-end gap-2">
+                <form method="GET" action="{{ route('announcements.index') }}"
+                    class="d-flex align-items-center gap-2 flex-grow-1">
+                    <span class="form-label mb-0 d-none d-sm-inline">School Year</span>
+                    <select name="school_year" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        @foreach ($schoolYears as $year)
+                            <option value="{{ $year->id }}"
+                                {{ request('school_year') == $year->id ? 'selected' : '' }}>
+                                {{ $year->school_year }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
 
-                    <h3 class="text-center text-primary fw-bold mt-5 mb-5"> 📢 Announcement Management</h3>
+                <form method="GET" action="{{ route('announcements.index') }}">
+                    <input type="hidden" name="school_year" value="{{ $defaultSchoolYear->id }}">
+                    <button type="submit" class="btn btn-primary">
+                        Now
+                    </button>
+                </form>
+            </div>
+        </div>
 
+        @if (request('search') || request('school_year'))
+            <div class="alert alert-info">
+                Showing results for:
+                @if (request('search'))
+                    <strong>Search:</strong> "{{ request('search') }}"
+                @endif
+                @if (request('search') && request('school_year'))
+                    |
+                @endif
+                @if (request('school_year'))
+                    <strong>School Year:</strong>
+                    {{ $schoolYears->firstWhere('id', request('school_year'))?->school_year ?? 'N/A' }}
+                @endif
+            </div>
+        @endif
 
-                    {{-- Add New and Filters --}}
-                    <div class="row align-items-end mb-3 gy-2">
-                        {{-- Search input (full-width on mobile, left-aligned on desktop) --}}
-                        <div class="col-12 col-md-4 d-flex align-items-center gap-2">
-                            <input type="text" id="announcementSearch" class="form-control border-1 shadow-none"
-                                placeholder="Search title or body..." />
-                        </div>
-
-                        {{-- Add New Button (left on mobile, center on desktop) --}}
-                        <div class="col-6 col-md-4">
-                            <button class="btn btn-primary d-flex justify-content-center align-items-center"
-                                data-bs-toggle="modal" data-bs-target="#createAnnouncementModal">
-                                <i class='bx bx-message-alt-add me-2'></i>
-                                <span class="d-none d-sm-inline">New Announcement</span>
-                            </button>
-                        </div>
-
-                        {{-- School Year Filter + Now Button (right on mobile, right-aligned on desktop) --}}
-                        <div class="col-6 col-md-4 d-flex justify-content-between align-items-end gap-2">
-                            <form method="GET" action="{{ route('announcements.index') }}"
-                                class="d-flex align-items-center gap-2 flex-grow-1">
-                                <span class="form-label mb-0 d-none d-sm-inline">School Year</span>
-                                <select name="school_year" class="form-select" onchange="this.form.submit()">
-                                    <option value="">All</option>
-                                    @foreach ($schoolYears as $year)
-                                        <option value="{{ $year->id }}"
-                                            {{ request('school_year') == $year->id ? 'selected' : '' }}>
-                                            {{ $year->school_year }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
-
-                            <form method="GET" action="{{ route('announcements.index') }}">
-                                <input type="hidden" name="school_year" value="{{ $defaultSchoolYear->id }}">
-                                <button type="submit" class="btn btn-primary">
-                                    Now
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    @if (request('search') || request('school_year'))
-                        <div class="alert alert-info">
-                            Showing results for:
-                            @if (request('search'))
-                                <strong>Search:</strong> "{{ request('search') }}"
-                            @endif
-                            @if (request('search') && request('school_year'))
-                                |
-                            @endif
-                            @if (request('school_year'))
-                                <strong>School Year:</strong>
-                                {{ $schoolYears->firstWhere('id', request('school_year'))?->school_year ?? 'N/A' }}
-                            @endif
-                        </div>
-                    @endif
-
-                    {{-- Card Content --}}
-                    <div class="accordion" id="announcementAccordion">
-                        @forelse($announcements as $announcement)
-                            <div class="accordion-item mb-2 announcement-item
+        {{-- Card Content --}}
+        <div class="accordion" id="announcementAccordion">
+            @forelse($announcements as $announcement)
+                <div class="accordion-item mb-2 announcement-item
                                 @if ($announcement->computed_status == 'active') active-announcement @endif"
-                                data-title="{{ strtolower($announcement->title) }}"
-                                data-body="{{ strtolower(strip_tags($announcement->body)) }}">
+                    data-title="{{ strtolower($announcement->title) }}"
+                    data-body="{{ strtolower(strip_tags($announcement->body)) }}">
 
-                                <h2 class="accordion-header" id="heading{{ $announcement->id }}">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                        data-bs-target="#collapse{{ $announcement->id }}" aria-expanded="false"
-                                        aria-controls="collapse{{ $announcement->id }}">
-                                        {{ $announcement->formatted_published }}
-                                        | 📢 {{ $announcement->title }}
-                                        <span
-                                            class="ms-2 badge
+                    <h2 class="accordion-header" id="heading{{ $announcement->id }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse{{ $announcement->id }}" aria-expanded="false"
+                            aria-controls="collapse{{ $announcement->id }}">
+                            {{ $announcement->formatted_published }}
+                            | 📢 {{ $announcement->title }}
+                            <span
+                                class="ms-2 badge
                                             @if ($announcement->computed_status == 'active') bg-success
                                             @elseif ($announcement->computed_status == 'inactive') bg-secondary
                                             @else bg-warning @endif">
-                                            {{ ucfirst($announcement->computed_status) }}
-                                        </span>
+                                {{ ucfirst($announcement->computed_status) }}
+                            </span>
+                        </button>
+                    </h2>
+
+                    <div id="collapse{{ $announcement->id }}" class="accordion-collapse collapse"
+                        aria-labelledby="heading{{ $announcement->id }}" data-bs-parent="#announcementAccordion">
+
+                        <div class="accordion-body" style="font-family: sans-serif;">
+
+                            <div class="mt-3 mb-3 text-end">
+                                <button class="btn btn-warning" data-bs-toggle="modal"
+                                    data-bs-target="#editAnnouncementModal"
+                                    onclick="loadEditModal({{ $announcement->id }})">
+                                    <i class='bx bx-edit-alt'></i>
+                                    <span class="d-none d-sm-inline">Edit</span>
+                                </button>
+
+                                <form id="delete-form-{{ $announcement->id }}"
+                                    action="{{ route('announcements.destroy', $announcement->id) }}" method="POST"
+                                    class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn btn-danger"
+                                        onclick="confirmDelete({{ $announcement->id }}, '{{ $announcement->title }}')">
+                                        <i class='bx bx-trash'></i>
+                                        <span class="d-none d-sm-inline">Delete</span>
                                     </button>
-                                </h2>
+                                </form>
+                            </div>
 
-                                <div id="collapse{{ $announcement->id }}" class="accordion-collapse collapse"
-                                    aria-labelledby="heading{{ $announcement->id }}"
-                                    data-bs-parent="#announcementAccordion">
+                            <h2 class="text-center text-warning fw-bold mb-4">{{ $announcement->title }}</h2>
 
-                                    <div class="accordion-body" style="font-family: sans-serif;">
-
-                                        <div class="mt-3 mb-3 text-end">
-                                            <button class="btn btn-warning" data-bs-toggle="modal"
-                                                data-bs-target="#editAnnouncementModal"
-                                                onclick="loadEditModal({{ $announcement->id }})">
-                                                <i class='bx bx-edit-alt'></i>
-                                                <span class="d-none d-sm-inline">Edit</span>
-                                            </button>
-
-                                            <form id="delete-form-{{ $announcement->id }}"
-                                                action="{{ route('announcements.destroy', $announcement->id) }}"
-                                                method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="button" class="btn btn-danger"
-                                                    onclick="confirmDelete({{ $announcement->id }}, '{{ $announcement->title }}')">
-                                                    <i class='bx bx-trash'></i>
-                                                    <span class="d-none d-sm-inline">Delete</span>
-                                                </button>
-                                            </form>
-                                        </div>
-
-                                        <h2 class="text-center text-warning fw-bold mb-4">{{ $announcement->title }}</h2>
-
-                                        <div class="row">
-                                            <div class="col-md-8 border-end">
-                                                <div class="mb-4">
-                                                    <div class="border rounded p-3 bg-light quill-content">
-                                                        {!! $announcement->body !!}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <div class="border rounded p-3 bg-light">
-                                                    <p><strong>Author:</strong> {{ $announcement->author_name }}</p>
-                                                    <p><strong>Published:</strong> {{ $announcement->formatted_published }}
-                                                    </p>
-                                                    <p><strong>School Year:</strong>
-                                                        {{ $announcement->schoolYear->school_year ?? 'N/A' }}</p>
-                                                    <p><strong>Effective Date:</strong>
-                                                        {{ $announcement->formatted_effective }} -
-                                                        {{ $announcement->formatted_end }}</p>
-                                                </div>
-                                            </div>
+                            <div class="row">
+                                <div class="col-md-8 border-end">
+                                    <div class="mb-4">
+                                        <div class="border rounded p-3 bg-light quill-content">
+                                            {!! $announcement->body !!}
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @empty
-                            <div id="noResultsMessage"
-                                class="alert alert-warning alert-dismissible fade show mt-2 text-center text-primary fw-bold">
-                                No announcements found.
-                            </div>
-                        @endforelse
-                    </div>
-                    {{-- /Card Content --}}
 
-                    {{-- Create Modal --}}
-                    <div class="modal fade" id="createAnnouncementModal" tabindex="-1"
-                        aria-labelledby="createAnnouncementModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <form method="POST" action="{{ route('announcements.store') }}"
-                                    id="createAnnouncementForm">
-                                    @csrf
-                                    <div class="modal-header">
-                                        <h3 class="modal-title fw-bold text-center text-primary"
-                                            id="createAnnouncementModalLabel">
-                                            New Announcement</h3>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
+                                <div class="col-md-4">
+                                    <div class="border rounded p-3 bg-light">
+                                        <p><strong>Author:</strong> {{ $announcement->author_name }}</p>
+                                        <p><strong>Published:</strong> {{ $announcement->formatted_published }}
+                                        </p>
+                                        <p><strong>School Year:</strong>
+                                            {{ $announcement->schoolYear->school_year ?? 'N/A' }}</p>
+                                        <p><strong>Effective Date:</strong>
+                                            {{ $announcement->formatted_effective }} -
+                                            {{ $announcement->formatted_end }}</p>
                                     </div>
-                                    <div class="modal-body">
-                                        @include('admin.announcements._form', [
-                                            'announcement' => null,
-                                            'schoolYears' => $schoolYears,
-                                            'defaultSchoolYear' => $defaultSchoolYear ?? null,
-                                        ])
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-success">Publish</button>
-                                        <button type="button" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">Cancel</button>
-                                    </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    {{-- /Create Modal --}}
-
-                    {{-- Edit Modal --}}
-                    <div class="modal fade" id="editAnnouncementModal" tabindex="-1"
-                        aria-labelledby="editAnnouncementModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <form method="POST" id="editAnnouncementForm">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Edit Announcement</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body" id="editModalBody">
-                                        {{-- The form fields will be injected here by JavaScript --}}
-                                        <div class="text-center">
-                                            <div class="spinner-border text-primary" role="status"></div>
-                                            <p>Loading form...</p>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-warning">Update</button>
-                                        <button type="button" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">Cancel</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- /Edit Modal --}}
-
-                    {{-- /Card --}}
-
                 </div>
-                <!-- Content wrapper -->
-
-            </div>
-            <!-- / Layout page -->
+            @empty
+                <div id="noResultsMessage"
+                    class="alert alert-warning alert-dismissible fade show mt-2 text-center text-primary fw-bold">
+                    No announcements found.
+                </div>
+            @endforelse
         </div>
+        {{-- /Card Content --}}
+
+        {{-- Create Modal --}}
+        <div class="modal fade" id="createAnnouncementModal" tabindex="-1"
+            aria-labelledby="createAnnouncementModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="{{ route('announcements.store') }}" id="createAnnouncementForm">
+                        @csrf
+                        <div class="modal-header">
+                            <h3 class="modal-title fw-bold text-center text-primary" id="createAnnouncementModalLabel">
+                                New Announcement</h3>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            @include('admin.announcements._form', [
+                                'announcement' => null,
+                                'schoolYears' => $schoolYears,
+                                'defaultSchoolYear' => $defaultSchoolYear ?? null,
+                            ])
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Publish</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {{-- /Create Modal --}}
+
+        {{-- Edit Modal --}}
+        <div class="modal fade" id="editAnnouncementModal" tabindex="-1" aria-labelledby="editAnnouncementModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" id="editAnnouncementForm">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Announcement</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="editModalBody">
+                            {{-- The form fields will be injected here by JavaScript --}}
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p>Loading form...</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-warning">Update</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {{-- /Edit Modal --}}
+
+        {{-- /Card --}}
+
     </div>
-    <!-- / Layout wrapper -->
-
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-
+    <!-- Content wrapper -->
 
 @endsection
 

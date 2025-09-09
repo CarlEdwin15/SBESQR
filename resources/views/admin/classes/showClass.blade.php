@@ -2,404 +2,271 @@
 
 @section('title', 'Admin | ' . ucfirst(str_replace('_', ' ', $class->grade_level)) . ' - ' . $class->section)
 
-
-
 @section('content')
 
-    <!-- Layout wrapper -->
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
+    <!-- Menu -->
+    <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand bg-dark">
+            <a href="{{ url('/home') }}" class="app-brand-link">
+                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
+                <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
+                    Dashboard</span>
+            </a>
 
-            <!-- Menu -->
-            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-                <div class="app-brand bg-dark">
-                    <a href="{{ url('/home') }}" class="app-brand-link">
-                        <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
-                        <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
-                            Dashboard</span>
-                    </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
+                <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+        </div>
 
-                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
-                        <i class="bx bx-chevron-left bx-sm align-middle"></i>
-                    </a>
-                </div>
+        <ul class="menu-inner py-1 bg-dark">
 
-                <ul class="menu-inner py-1 bg-dark">
+            <!-- Dashboard sidebar-->
+            <li class="menu-item">
+                <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                    <div class="text-light">Dashboard</div>
+                </a>
+            </li>
 
-                    <!-- Dashboard sidebar-->
+            <!-- Teachers sidebar -->
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
+                    <div class="text-light">Teachers</div>
+                </a>
+
+                <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                            <div class="text-light">Dashboard</div>
+                        <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Teachers</div>
                         </a>
                     </li>
-
-                    <!-- Teachers sidebar -->
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-user-pin text-light"></i>
-                            <div class="text-light">Teachers</div>
-                        </a>
-
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Teachers</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Students sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
-                            <div class="text-light">Students</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Students</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Enrollment</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Promotion</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Classes sidebar --}}
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left"></i>
-                            <div>Classes</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item active">
-                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-warning">All Classes</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Announcement sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
-                            <div class="text-light">Announcements</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Announcements</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Payments sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                            <div class="text-light">Payments</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Payments</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Account Settings sidebar --}}
-                    <li class="menu-item">
-                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
-                            <i class="bx bx-cog me-3 text-light"></i>
-                            <div class="text-light"> Account Settings</div>
-                        </a>
-                    </li>
-
-                    {{-- Log Out sidebar --}}
-                    <li class="menu-item">
-                        <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
-                                onclick="event.preventDefault(); confirmLogout();">
-                                <i class="bx bx-power-off me-3 text-light"></i>
-                                <div class="text-light">{{ __('Log Out') }}</div>
-                            </a>
-                        </form>
-                    </li>
-
                 </ul>
-            </aside>
-            <!-- / Menu -->
+            </li>
 
-            <!-- Layout container -->
-            <div class="layout-page">
-                <!-- Navbar -->
-
-                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-                    id="layout-navbar">
-                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                            <i class="bx bx-menu bx-sm"></i>
+            {{-- Students sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
+                    <div class="text-light">Students</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Students</div>
                         </a>
-                    </div>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Enrollment</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Promotion</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-                        <!-- Search -->
-                        <div class="navbar-nav align-items-center">
+            {{-- Classes sidebar --}}
+            <li class="menu-item active open">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-objects-horizontal-left"></i>
+                    <div>Classes</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item active">
+                        <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
+                            <div class="text-warning">All Classes</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                        </div>
-                        <!-- /Search -->
+            {{-- Announcement sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
+                    <div class="text-light">Announcements</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Announcements</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+            {{-- Payments sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                    <div class="text-light">Payments</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Payments</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                            <!-- User Profile-->
-                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
-                                    data-bs-toggle="dropdown">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar">
-                                            @auth
-                                                @php
-                                                    $profilePhoto = Auth::user()->profile_photo
-                                                        ? asset('storage/' . Auth::user()->profile_photo)
-                                                        : asset(
-                                                            'assetsDashboard/img/profile_pictures/admin_profile.png',
-                                                        );
-                                                @endphp
-                                                <img src="{{ $profilePhoto }}" alt="Profile Photo"
-                                                    class="w-px-40 h-auto rounded-circle" />
-                                            @else
-                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                    alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
-                                            @endauth
-                                        </div>
-                                        @auth
-                                            <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
-                                        @endauth
-                                    </div>
+            {{-- Account Settings sidebar --}}
+            <li class="menu-item">
+                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                    <i class="bx bx-cog me-3 text-light"></i>
+                    <div class="text-light"> Account Settings</div>
+                </a>
+            </li>
 
-                                </a>
-
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <div class="d-flex">
-
-                                                <div class="flex-shrink-0 me-3">
-                                                    <div class="avatar">
-                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                            alt class="w-px-40 h-auto rounded-circle" />
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">{{ Auth::user()->firstName }}</span>
-                                                    <small class="text-muted">Admin</small>
-                                                </div>
-
-                                            </div>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <i class="bx bx-user me-2"></i>
-                                            <span class="align-middle">My Profile</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
-                                            <i class="bx bx-cog me-2"></i>
-                                            <span class="align-middle">Settings</span>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <x-dropdown-link class="dropdown-item" href="{{ route('logout') }}"
-                                            onclick="event.preventDefault(); confirmLogout();">
-                                            <i class="bx bx-power-off me-2"></i>
-                                            {{ __('Log Out') }}
-                                        </x-dropdown-link>
-                                    </form>
-
-
-
-                                </ul>
-                            </li>
-                            <!--/ User -->
-                        </ul>
-                    </div>
-                </nav>
-
-                <!-- / Navbar -->
-
-                <!-- Content wrapper -->
-                <div class="container-xxl flex-grow-1 container-p-y">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <div>
-                            <h4 class="fw-bold text-warning mb-0">
-                                <span class="text-muted fw-light">
-                                    <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                                    <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
-                                </span>
-                                {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
-                            </h4>
-                        </div>
-                    </div>
-
-                    <h2 class="text-center text-primary fw-bold">Class Management</h2>
-
-                    <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}"
-                        class="btn btn-danger mb-3">
-                        <i class="bi bi-arrow-left"></i> Back
+            {{-- Log Out sidebar --}}
+            <li class="menu-item">
+                <form id="logout-form" method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
+                        onclick="event.preventDefault(); confirmLogout();">
+                        <i class="bx bx-power-off me-3 text-light"></i>
+                        <div class="text-light">{{ __('Log Out') }}</div>
                     </a>
+                </form>
+            </li>
 
-                    <div class="card p-4 shadow-sm">
-                        <div class="row g-4 mb-4">
-                            <!-- Students -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3 flex-shrink-0">
-                                            @if ($class)
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                                    alt="Students" class="rounded" style="width:90px; height:90px;" />
-                                            @endif
-                                        </div>
-                                        <div>
-                                            <h5 class="fw-semibold mb-2">Students</h5>
-                                            <div class="display-6 fw-bold text-primary">{{ $studentCount }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- /Students -->
+        </ul>
+    </aside>
+    <!-- / Menu -->
 
-                            <!-- Attendance Today -->
-                            <div class="col-md-4">
-                                <a href=""
-                                    class="card card-hover border-0 shadow-sm h-100 bg-light text-decoration-none text-dark">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3 flex-shrink-0">
-                                            @if ($class)
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
-                                                    alt="Attendance Today" class="rounded"
-                                                    style="width:90px; height:90px;" />
-                                            @endif
-                                        </div>
-                                        <div>
-                                            <h5 class="fw-semibold mb-2">Attendance Today</h5>
-                                            <div class="display-6 fw-bold text-success">{{ $attendanceToday }}%</div>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <!-- /Attendance Today -->
+    <!-- Content wrapper -->
+    <div class="container-xxl flex-grow-1 container-p-y">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="fw-bold text-warning mb-0">
+                    <span class="text-muted fw-light">
+                        <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
+                        <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
+                    </span>
+                    {{ ucfirst(str_replace('_', ' ', $class->grade_level)) }} - {{ $class->section }}
+                </h4>
+            </div>
+        </div>
 
-                            <!-- Teacher -->
-                            <div class="col-md-4">
-                                <div class="card card-hover border-0 shadow-sm h-100 bg-light">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3 flex-shrink-0">
-                                            @if (isset($class->adviser) && $class->adviser)
-                                                @if ($class->adviser->gender === 'male')
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/adviser.png') }}"
-                                                        alt="Adviser (Male)" class="rounded"
-                                                        style="width:90px; height:90px;" />
-                                                @elseif($class->adviser->gender === 'female')
-                                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
-                                                        alt="Adviser (Female)" class="rounded"
-                                                        style="width:90px; height:90px;" />
-                                                @endif
-                                            @else
-                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
-                                                    alt="No Adviser" class="rounded"
-                                                    style="width:90px; height:90px; opacity:0.5;" />
-                                            @endif
-                                        </div>
-                                        <div>
-                                            <h5 class="fw-semibold mb-2">Adviser</h5>
-                                            <div class="fw-bold text-primary">
-                                                {{ $class->adviser->firstName ?? 'N/A' }}
-                                                {{ $class->adviser->lastName ?? '' }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- /Teacher -->
-                        </div>
+        <h2 class="text-center text-primary fw-bold">Class Management</h2>
 
-                        <!-- Navigation Links -->
-                        <div class="row g-3 mb-5">
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.schedule.index', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
-                                    <i class="bi bi-clock-history fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Schedules</div>
-                                </a>
+        <a href="{{ route('all.classes', ['section' => $class->section, 'school_year' => $selectedYear]) }}"
+            class="btn btn-danger mb-3">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+
+        <div class="card p-4 shadow-sm">
+            <div class="row g-4 mb-4">
+                <!-- Students -->
+                <div class="col-md-4">
+                    <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="me-3 flex-shrink-0">
+                                @if ($class)
+                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
+                                        alt="Students" class="rounded" style="width:90px; height:90px;" />
+                                @endif
                             </div>
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.attendance.records', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
-                                    <i class="bi bi-clipboard-check fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Attendances</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="{{ route('classes.masterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
-                                    <i class="bi bi-list-ul fs-2 mb-2"></i>
-                                    <div class="fw-semibold">Master's List</div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href=""
-                                    class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
-                                    <i class="bx bx-message-check fs-2 mb-4"></i>
-                                    <div class="fw-semibold">SMS Logs</div>
-                                </a>
+                            <div>
+                                <h5 class="fw-semibold mb-2">Students</h5>
+                                <div class="display-6 fw-bold text-primary">{{ $studentCount }}</div>
                             </div>
                         </div>
-
-                        {{-- <hr class="my-5" /> --}}
                     </div>
                 </div>
-                <!-- Content wrapper -->
+                <!-- /Students -->
 
+                <!-- Attendance Today -->
+                <div class="col-md-4">
+                    <a href=""
+                        class="card card-hover border-0 shadow-sm h-100 bg-light text-decoration-none text-dark">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="me-3 flex-shrink-0">
+                                @if ($class)
+                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
+                                        alt="Attendance Today" class="rounded" style="width:90px; height:90px;" />
+                                @endif
+                            </div>
+                            <div>
+                                <h5 class="fw-semibold mb-2">Attendance Today</h5>
+                                <div class="display-6 fw-bold text-success">{{ $attendanceToday }}%</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <!-- /Attendance Today -->
 
+                <!-- Teacher -->
+                <div class="col-md-4">
+                    <div class="card card-hover border-0 shadow-sm h-100 bg-light">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="me-3 flex-shrink-0">
+                                @if (isset($class->adviser) && $class->adviser)
+                                    @if ($class->adviser->gender === 'male')
+                                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/adviser.png') }}"
+                                            alt="Adviser (Male)" class="rounded" style="width:90px; height:90px;" />
+                                    @elseif($class->adviser->gender === 'female')
+                                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                            alt="Adviser (Female)" class="rounded" style="width:90px; height:90px;" />
+                                    @endif
+                                @else
+                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/teacherIcon.png') }}"
+                                        alt="No Adviser" class="rounded" style="width:90px; height:90px; opacity:0.5;" />
+                                @endif
+                            </div>
+                            <div>
+                                <h5 class="fw-semibold mb-2">Adviser</h5>
+                                <div class="fw-bold text-primary">
+                                    {{ $class->adviser->firstName ?? 'N/A' }}
+                                    {{ $class->adviser->lastName ?? '' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Teacher -->
             </div>
-            <!-- / Layout page -->
+
+            <!-- Navigation Links -->
+            <div class="row g-3 mb-5">
+                <div class="col-md-3">
+                    <a href="{{ route('classes.schedule.index', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
+                        class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
+                        <i class="bi bi-clock-history fs-2 mb-2"></i>
+                        <div class="fw-semibold">Schedules</div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route('classes.attendance.records', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
+                        class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
+                        <i class="bi bi-clipboard-check fs-2 mb-2"></i>
+                        <div class="fw-semibold">Attendances</div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route('classes.masterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
+                        class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
+                        <i class="bi bi-list-ul fs-2 mb-2"></i>
+                        <div class="fw-semibold">Master's List</div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href=""
+                        class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
+                        <i class="bx bx-message-check fs-2 mb-4"></i>
+                        <div class="fw-semibold">SMS Logs</div>
+                    </a>
+                </div>
+            </div>
+
+            {{-- <hr class="my-5" /> --}}
         </div>
     </div>
-    <!-- / Layout wrapper -->
-
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-
-
-
-
+    <!-- Content wrapper -->
 
 @endsection
 

@@ -52,7 +52,7 @@ class AnnouncementNotification extends Notification
             ->vibrate([100, 50, 100])
             ->tag('announcement-' . $this->announcement->id) // ensures grouping
             ->data([
-                'url' => url('/' . $this->announcement->id),
+                'url' => route('home', ['announcement_id' => $this->announcement->id]),
                 'id'  => $this->announcement->id,
             ])
             ->action('open', 'View Announcement');

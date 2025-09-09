@@ -100,27 +100,47 @@
 </head>
 
 <body>
-    @yield('content')
+    @hasSection('hideWrapper')
+        {{-- Wrapper disabled for pages like welcome --}}
+        @yield('content')
+    @else
+        <!-- Layout wrapper -->
+        <div class="layout-wrapper layout-content-navbar">
+            <div class="layout-container">
+                <!-- Layout container -->
+                <div class="layout-page">
+                    {{-- Only include navbar if child view does not disable it --}}
+                    @hasSection('hideNavbar')
+                        {{-- Navbar disabled --}}
+                    @else
+                        @include('partials.navbar')
+                    @endif
+
+                    @yield('content')
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- @if ($errors->any())
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                Swal.fire({
-                    title: 'Error!',
-                    html: `<ul style="text-align: left;">
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            Swal.fire({
+                                title: 'Error!',
+                                html: `<ul style="text-align: left;">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>`,
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        container: 'my-swal-container'
-                    }
-                });
-            });
-        </script>
-    @endif --}}
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                customClass: {
+                                    container: 'my-swal-container'
+                                }
+                            });
+                        });
+                    </script>
+                @endif --}}
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -297,6 +317,9 @@
     <!-- Additional scripts can be stacked from views -->
     @stack('scripts')
 
+    </div>
+    </div>
+    </div>
 </body>
 
 </html>

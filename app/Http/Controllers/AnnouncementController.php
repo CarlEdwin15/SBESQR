@@ -133,7 +133,7 @@ class AnnouncementController extends Controller
             app(WebPushService::class)->broadcast([
                 'title' => '📢 New Announcement',
                 'body' => $announcement->title,
-                'url'   => route('home') . '#announcement-section',
+                'url'   => route('home', ['announcement_id' => $announcement->id]) . '#announcement-section',
                 'tag'   => 'announcement-' . $announcement->id,
                 'id'    => $announcement->id,
             ]);
@@ -239,6 +239,20 @@ class AnnouncementController extends Controller
             ->with('success', 'Announcement deleted successfully.');
     }
 
+    public function showAjax($id)
+    {
+        $announcement = Announcement::with('user')->findOrFail($id);
+
+        return response()->json([
+            'title' => $announcement->title,
+            'body'  => $announcement->body,
+            'author' => $announcement->user?->firstName ?? 'Unknown',
+            'published' => $announcement->date_published
+                ? \Carbon\Carbon::parse($announcement->date_published)->format('M d, Y h:i A')
+                : 'Draft',
+        ]);
+    }
+
     public function uploadImage(Request $request)
     {
         $request->validate([
@@ -266,8 +280,8 @@ class AnnouncementController extends Controller
         return $start . '-' . ($start + 1);
     }
 
-    public function pusher()
-    {
-        return view('teacher.pusher');
-    }
+    // public function pusher()
+    // {
+    //     return view('teacher.pusher');
+    // }
 }

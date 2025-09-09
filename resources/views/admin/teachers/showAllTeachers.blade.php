@@ -5,285 +5,172 @@
 
 @section('content')
 
-    <!-- Layout wrapper -->
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
+    <!-- Menu -->
+    <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand bg-dark">
+            <a href="{{ url('/home') }}" class="app-brand-link">
+                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
+                <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
+                    Dashboard</span>
+            </a>
 
-            <!-- Menu -->
-            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-                <div class="app-brand bg-dark">
-                    <a href="{{ url('/home') }}" class="app-brand-link">
-                        <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
-                        <span class="app-brand-text menu-text fw-bolder text-white" style="padding: 9px">ADMIN
-                            Dashboard</span>
-                    </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
+                <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+        </div>
 
-                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
-                        <i class="bx bx-chevron-left bx-sm align-middle"></i>
-                    </a>
-                </div>
+        <ul class="menu-inner py-1 bg-dark">
 
-                <ul class="menu-inner py-1 bg-dark">
+            <!-- Dashboard sidebar-->
+            <li class="menu-item">
+                <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
+                    <div class="text-light">Dashboard</div>
+                </a>
+            </li>
 
-                    <!-- Dashboard sidebar-->
-                    <li class="menu-item">
-                        <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                            <div class="text-light">Dashboard</div>
+            <!-- Teachers sidebar -->
+            <li class="menu-item active open">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-user-pin"></i>
+                    <div>Teachers</div>
+                </a>
+
+                <ul class="menu-sub">
+                    <li class="menu-item active">
+                        <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
+                            <div class="text-warning">All Teachers</div>
                         </a>
                     </li>
+                </ul>
+            </li>
 
-                    <!-- Teachers sidebar -->
-                    <li class="menu-item active open">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle">
-                            <i class="menu-icon tf-icons bx bx-user-pin"></i>
-                            <div>Teachers</div>
-                        </a>
-
-                        <ul class="menu-sub">
-                            <li class="menu-item active">
-                                <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-warning">All Teachers</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Students sidebar --}}
+            {{-- Students sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
+                    <div class="text-light">Students</div>
+                </a>
+                <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-graduation text-light"></i>
-                            <div class="text-light">Students</div>
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Students</div>
                         </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Students</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Enrollment</div>
-                                </a>
-                            </li>
-                            <li class="menu-item">
-                                <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Student Promotion</div>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-
-                    {{-- Classes sidebar --}}
                     <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                        <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Enrollment</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Promotion</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            {{-- Classes sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-objects-horizontal-left text-light"></i>
+                    <div class="text-light">Classes</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Classes</div>
                         </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('all.classes') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">Classes</div>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-
-                    {{-- Announcement sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
-                            <div class="text-light">Announcements</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Announcements</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Payments sidebar --}}
-                    <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                            <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                            <div class="text-light">Payments</div>
-                        </a>
-                        <ul class="menu-sub">
-                            <li class="menu-item">
-                                <a href="" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Payments</div>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    {{-- Account Settings sidebar --}}
-                    <li class="menu-item">
-                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
-                            <i class="bx bx-cog me-3 text-light"></i>
-                            <div class="text-light"> Account Settings</div>
-                        </a>
-                    </li>
-
-                    {{-- Log Out sidebar --}}
-                    <li class="menu-item">
-                        <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
-                                onclick="event.preventDefault(); confirmLogout();">
-                                <i class="bx bx-power-off me-3 text-light"></i>
-                                <div class="text-light">{{ __('Log Out') }}</div>
-                            </a>
-                        </form>
-                    </li>
-
                 </ul>
-            </aside>
-            <!-- / Menu -->
+            </li>
 
-            <!-- Layout container -->
-            <div class="layout-page">
-                <!-- Navbar -->
-
-                <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-                    id="layout-navbar">
-                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                            <i class="bx bx-menu bx-sm"></i>
+            {{-- Announcement sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
+                    <div class="text-light">Announcements</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('announcements.index') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Announcements</div>
                         </a>
-                    </div>
+                    </li>
+                </ul>
+            </li>
 
-                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-                        <!-- Search -->
-                        <div class="navbar-nav align-items-center">
+            {{-- Payments sidebar --}}
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
+                    <div class="text-light">Payments</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="" class="menu-link bg-dark text-light">
+                            <div class="text-light">All Payments</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
-                        </div>
-                        <!-- /Search -->
+            {{-- Account Settings sidebar --}}
+            <li class="menu-item">
+                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                    <i class="bx bx-cog me-3 text-light"></i>
+                    <div class="text-light"> Account Settings</div>
+                </a>
+            </li>
 
-                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+            {{-- Log Out sidebar --}}
+            <li class="menu-item">
+                <form id="logout-form" method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <a class="menu-link bg-dark text-light" href="{{ route('logout') }}"
+                        onclick="event.preventDefault(); confirmLogout();">
+                        <i class="bx bx-power-off me-3 text-light"></i>
+                        <div class="text-light">{{ __('Log Out') }}</div>
+                    </a>
+                </form>
+            </li>
 
-                            <!-- User Profile-->
-                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);"
-                                    data-bs-toggle="dropdown">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar">
-                                            @auth
-                                                @php
-                                                    $profilePhoto = Auth::user()->profile_photo
-                                                        ? asset('storage/' . Auth::user()->profile_photo)
-                                                        : asset(
-                                                            'assetsDashboard/img/profile_pictures/admin_profile.png',
-                                                        );
-                                                @endphp
-                                                <img src="{{ $profilePhoto }}" alt="Profile Photo"
-                                                    class="w-px-40 h-auto rounded-circle" />
-                                            @else
-                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                    alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
-                                            @endauth
-                                        </div>
-                                        @auth
-                                            <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
-                                        @endauth
-                                    </div>
+        </ul>
+    </aside>
+    <!-- / Menu -->
 
-                                </a>
+    <!-- Content wrapper -->
+    <div class="container-xxl flex-grow-1 container-p-y">
+        <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
+                <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
+                <a class="text-muted fw-light" href="{{ route('show.teachers') }}">Teachers / </a>
+            </span> All Teachers
+        </h4>
 
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <div class="d-flex">
+        {{-- Notification when year is changed --}}
+        @if (session('school_year_notice'))
+            <div class="alert alert-info alert-dismissible fade show mt-2 text-center text-primary fw-bold" role="alert"
+                id="school-year-alert">
+                {{ session('school_year_notice') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
-                                                <div class="flex-shrink-0 me-3">
-                                                    <div class="avatar">
-                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
-                                                            alt class="w-px-40 h-auto rounded-circle" />
-                                                    </div>
-                                                </div>
+        <script>
+            setTimeout(function() {
+                var alertElem = document.getElementById('school-year-alert');
+                if (alertElem) {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
+                    bsAlert.close();
+                }
+            }, 10000);
+        </script>
 
-                                                <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">{{ Auth::user()->firstName }}</span>
-                                                    <small class="text-muted">Admin</small>
-                                                </div>
+        <!-- Modal Backdrop -->
+        <div class="col-lg-4 col-md-3">
 
-                                            </div>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <i class="bx bx-user me-2"></i>
-                                            <span class="align-middle">My Profile</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
-                                            <i class="bx bx-cog me-2"></i>
-                                            <span class="align-middle">Settings</span>
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
-                                    <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <x-dropdown-link class="dropdown-item" href="{{ route('logout') }}"
-                                            onclick="event.preventDefault(); confirmLogout();">
-                                            <i class="bx bx-power-off me-2"></i>
-                                            {{ __('Log Out') }}
-                                        </x-dropdown-link>
-                                    </form>
-
-
-
-                                </ul>
-                            </li>
-                            <!--/ User -->
-                        </ul>
-                    </div>
-                </nav>
-
-                <!-- / Navbar -->
-
-                <!-- Content wrapper -->
-                <div class="container-xxl flex-grow-1 container-p-y">
-                    <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
-                            <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                            <a class="text-muted fw-light" href="{{ route('show.teachers') }}">Teachers / </a>
-                        </span> All Teachers
-                    </h4>
-
-                    {{-- Notification when year is changed --}}
-                    @if (session('school_year_notice'))
-                        <div class="alert alert-info alert-dismissible fade show mt-2 text-center text-primary fw-bold"
-                            role="alert" id="school-year-alert">
-                            {{ session('school_year_notice') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
-                    <script>
-                        setTimeout(function() {
-                            var alertElem = document.getElementById('school-year-alert');
-                            if (alertElem) {
-                                var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
-                                bsAlert.close();
-                            }
-                        }, 10000);
-                    </script>
-
-                    <!-- Modal Backdrop -->
-                    <div class="col-lg-4 col-md-3">
-
-                        <div class="mt-3">
-                            {{-- @php
+            <div class="mt-3">
+                {{-- @php
                                 $now = now();
                                 $year = $now->year;
                                 $cutoff = $now->copy()->setMonth(6)->setDay(1);
@@ -304,659 +191,618 @@
                                 </button>
                             @endif --}}
 
-                            <!-- Register Modal -->
-                            <div class="modal fade" id="registerModal" data-bs-backdrop="static" tabindex="-1">
+                <!-- Register Modal -->
+                <div class="modal fade" id="registerModal" data-bs-backdrop="static" tabindex="-1">
 
-                                <div class="modal-dialog">
-                                    <form class="modal-content" action="{{ route('register.teacher') }}" method="POST"
-                                        enctype="multipart/form-data">
-                                        @csrf
-                                        <div class="modal-header">
-                                            <h4 class="modal-title fw-bold text-info" id="registerModalTitle">
-                                                REGISTER NEW TEACHER
-                                            </h4>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
+                    <div class="modal-dialog">
+                        <form class="modal-content" action="{{ route('register.teacher') }}" method="POST"
+                            enctype="multipart/form-data">
+                            @csrf
+                            <div class="modal-header">
+                                <h4 class="modal-title fw-bold text-info" id="registerModalTitle">
+                                    REGISTER NEW TEACHER
+                                </h4>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
 
-                                            <h5 class="fw-bold text-primary">Teacher's Personal Information</h5>
+                                <h5 class="fw-bold text-primary">Teacher's Personal Information</h5>
 
-                                            <input type="hidden" name="selected_school_year"
-                                                value="{{ $selectedYear }}">
+                                <input type="hidden" name="selected_school_year" value="{{ $selectedYear }}">
 
-                                            <!-- Profile Photo Upload with Preview and Default -->
-                                            <div class="row">
-                                                <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
-                                                    <div class="mb-3">
-                                                        <img id="photo-preview"
-                                                            src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                            alt="Profile Preview" width="100" height="100"
-                                                            class="profile-preview"
-                                                            style="object-fit: cover; border-radius: 5%">
-                                                    </div>
-
-                                                    <div class="button-wrapper">
-                                                        <label for="upload" class="btn btn-warning me-2 mb-2"
-                                                            tabindex="0">
-                                                            <span class="d-none d-sm-block">Upload new photo</span>
-                                                            <i class="bx bx-upload d-block d-sm-none"></i>
-                                                            <input type="file" id="upload" name="profile_photo"
-                                                                class="account-file-input" hidden
-                                                                accept="image/png, image/jpeg" />
-                                                        </label>
-
-                                                        <button type="button"
-                                                            class="btn btn-outline-secondary account-image-reset mb-2"
-                                                            id="reset-photo">
-                                                            <i class="bx bx-reset d-block d-sm-none"></i>
-                                                            <span class="d-none d-sm-block">Reset</span>
-                                                        </button>
-
-                                                        <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <!-- First Name Field -->
-                                                <div class="col mb-3">
-                                                    <label for="firstName" class="form-label fw-bold">First
-                                                        Name</label>
-                                                    <input type="text" name="firstName" id="firstName"
-                                                        class="form-control" placeholder="Enter First Name" required
-                                                        value="{{ old('firstName') }}" autofocus
-                                                        autocomplete="firstName" />
-                                                </div>
-
-                                                <!-- Middle Name Field -->
-                                                <div class="col mb-3">
-                                                    <label for="middleName" class="form-label fw-bold">Middle
-                                                        Name</label>
-                                                    <input type="text" name="middleName" id="middleName"
-                                                        class="form-control" placeholder="Enter Middle Name" required
-                                                        value="{{ old('middleName') }}" autofocus
-                                                        autocomplete="middleName" />
-                                                </div>
-
-                                            </div>
-
-                                            <div class="row g-4">
-
-                                                <!-- Last Name Field -->
-                                                <div class="col mb-3">
-                                                    <label for="lastName" class="form-label fw-bold">Last Name</label>
-                                                    <input type="text" name="lastName" id="lastName"
-                                                        class="form-control" placeholder="Enter Last Name" required
-                                                        value="{{ old('lastName') }}" autofocus
-                                                        autocomplete="lastName" />
-                                                </div>
-
-                                                <!-- Extension Name Field -->
-                                                <div class="col mb-3">
-                                                    <label for="extName" class="form-label fw-bold">Extension
-                                                        Name</label>
-                                                    <input type="text" name="extName" id="extName"
-                                                        class="form-control" placeholder="Enter Ext. Name(if applicable)"
-                                                        value="{{ old('extName') }}" />
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <!-- Email Field -->
-                                                <div class="col mb-3">
-                                                    <label for="email" class="form-label fw-bold">Email</label>
-                                                    <input type="email" name="email" id="email"
-                                                        class="form-control @error('email') is-invalid @enderror"
-                                                        placeholder="xxxx@xxx.xx" required autocomplete="email"
-                                                        value="{{ old('email') }}" />
-
-                                                    @error('email')
-                                                        <div class="invalid-feedback">
-                                                            {{ $message }}
-                                                        </div>
-                                                    @enderror
-                                                </div>
-
-
-                                                <!-- Phone Field -->
-                                                <div class="col mb-3">
-                                                    <label for="phone" class="form-label fw-bold">Phone</label>
-                                                    <input type="phone" name="phone" id="phone"
-                                                        class="form-control" placeholder="Enter Phone Number"
-                                                        value="{{ old('phone') }}" autofocus autocomplete="phone" />
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <!-- Gender Field -->
-                                                <div class="col mb-3">
-                                                    <label for="gender" class="form-label fw-bold">Gender</label>
-                                                    <select name="gender" id="gender" class="form-select" required>
-                                                        <option value="" disabled
-                                                            {{ old('gender') ? '' : 'selected' }}>Select Gender</option>
-                                                        <option value="male"
-                                                            {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
-                                                        <option value="female"
-                                                            {{ old('gender') == 'female' ? 'selected' : '' }}>Female
-                                                        </option>
-                                                    </select>
-                                                </div>
-
-                                                <!-- Date of Birth Field -->
-                                                <div class="col mb-3">
-                                                    <label for="dob" class="form-label fw-bold">Date of
-                                                        Birth</label>
-                                                    <input class="form-control" name="dob" type="date"
-                                                        id="dob" value="{{ old('dob') }}" />
-                                                </div>
-                                            </div>
-
-                                            <hr class="my-4" />
-
-
-                                            <h5 class="fw-bold text-primary">Classes</h5>
-
-                                            <div class="row">
-                                                <!-- Assigned Classes as Multi-select Dropdown -->
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label fw-bold">Assign Classes</label>
-                                                    <select name="assigned_classes[]" id="assigned_classes" multiple
-                                                        required>
-                                                        @foreach ($allClasses as $class)
-                                                            @php
-                                                                $adviser = $class->teachers
-                                                                    ->where('pivot.role', 'adviser')
-                                                                    ->first();
-                                                                $hasAdviser = !is_null($adviser);
-                                                                $isSelected = collect(
-                                                                    old('assigned_classes'),
-                                                                )->contains($class->id);
-                                                            @endphp
-                                                            <option value="{{ $class->id }}"
-                                                                {{ $isSelected ? 'selected' : '' }}>
-                                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
-                                                                - {{ $class->section }}
-                                                                @if ($hasAdviser)
-                                                                    ({{ $adviser->firstName }} {{ $adviser->lastName }})
-                                                                @endif
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <small class="form-text text-muted text-center">
-                                                        You can select multiple classes
-                                                    </small>
-                                                </div>
-
-                                                <!-- Advisory Class Dropdown -->
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="advisory_class" class="form-label fw-bold">Select Advisory
-                                                        Class</label>
-                                                    <select name="advisory_class" id="advisory_class" class="form-select"
-                                                        data-old="{{ old('advisory_class') }}">
-                                                        <option value="">-- Select advisory class from assigned --
-                                                        </option>
-                                                        {{-- Options will be dynamically injected --}}
-                                                    </select>
-                                                    <small class="form-text text-muted text-center">Select an advisory
-                                                        class from the assigned classes, or leave empty if none.</small>
-                                                </div>
-                                            </div>
-
-                                            <hr class="my-4" />
-
-                                            <h5 class="fw-bold text-primary">Address</h5>
-
-                                            <div class="row">
-                                                <!-- House No. field -->
-                                                <div class="col mb-3">
-                                                    <label for="house_no" class="form-label fw-bold">House No.</label>
-                                                    <input type="text" name="house_no" id="house_no"
-                                                        class="form-control" placeholder="Enter House No."
-                                                        value="{{ old('house_no') }}" />
-                                                </div>
-
-                                                <!-- Street Name field -->
-                                                <div class="col mb-3">
-                                                    <label for="street_name" class="form-label fw-bold">Street
-                                                        Name</label>
-                                                    <input type="text" name="street_name" id="street_name"
-                                                        class="form-control" placeholder="Enter Street Name"
-                                                        value="{{ old('street_name') }}" />
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <!-- Barangay field -->
-                                                <div class="col mb-3">
-                                                    <label for="barangay" class="form-label fw-bold">Barangay</label>
-                                                    <input type="text" name="barangay" id="barangay"
-                                                        class="form-control" placeholder="Enter Barangay"
-                                                        value="{{ old('barangay') }}" />
-                                                </div>
-
-                                                <!-- Municipality/City field -->
-                                                <div class="col mb-3">
-                                                    <label for="municipality_city"
-                                                        class="form-label fw-bold">Municipality/City</label>
-                                                    <input type="text" name="municipality_city" id="municipality_city"
-                                                        class="form-control" placeholder="Enter Municipality/City"
-                                                        value="{{ old('municipality_city') }}" />
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <!-- Province field -->
-                                                <div class="col mb-3">
-                                                    <label for="province" class="form-label fw-bold">Province</label>
-                                                    <input type="text" name="province" id="province"
-                                                        class="form-control" placeholder="Enter Province"
-                                                        value="{{ old('province') }}" />
-                                                </div>
-
-                                                <!-- Zip Code field -->
-                                                <div class="col mb-3">
-                                                    <label for="zip_code" class="form-label fw-bold">Zip Code</label>
-                                                    <input type="text" name="zip_code" id="zip_code"
-                                                        class="form-control" placeholder="Enter Zip Code"
-                                                        value="{{ old('zip_code') }}" />
-                                                </div>
-                                            </div>
-
-                                            <hr class="my-4" />
-
-                                            <h5 class="fw-bold text-primary">Password</h5>
-
-                                            <!-- Password Input -->
-                                            <div class="mb-3 form-password-toggle">
-                                                <label class="form-label fw-bold" for="password">Password</label>
-
-                                                <div class="input-group input-group-merge">
-                                                    <input type="password" id="password" class="form-control"
-                                                        name="password" required autocomplete="new-password"
-                                                        placeholder="Enter your Password" />
-
-                                                    @error('password')
-                                                        <div class="text-danger mt-1">{{ $message }}</div>
-                                                    @enderror
-
-
-                                                    <span class="input-group-text cursor-pointer"><i
-                                                            class="bx bx-hide"></i></span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Confirm Password Input -->
-                                            <div class="mb-3 form-password-toggle">
-                                                <label class="form-label fw-bold" for="password_confirmation">Confirm
-                                                    Password</label>
-                                                <div class="input-group input-group-merge">
-                                                    <input type="password" id="password_confirmation"
-                                                        class="form-control" name="password_confirmation" required
-                                                        autocomplete="new-password" placeholder="Confirm your Password" />
-                                                    @error('password')
-                                                        <div class="text-danger mt-1">{{ $message }}</div>
-                                                    @enderror
-                                                    <span class="input-group-text cursor-pointer"><i
-                                                            class="bx bx-hide"></i></span>
-                                                </div>
-                                            </div>
+                                <!-- Profile Photo Upload with Preview and Default -->
+                                <div class="row">
+                                    <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
+                                        <div class="mb-3">
+                                            <img id="photo-preview"
+                                                src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                                                alt="Profile Preview" width="100" height="100"
+                                                class="profile-preview" style="object-fit: cover; border-radius: 5%">
                                         </div>
 
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-outline-secondary"
-                                                data-bs-dismiss="modal">
-                                                Close
+                                        <div class="button-wrapper">
+                                            <label for="upload" class="btn btn-warning me-2 mb-2" tabindex="0">
+                                                <span class="d-none d-sm-block">Upload new photo</span>
+                                                <i class="bx bx-upload d-block d-sm-none"></i>
+                                                <input type="file" id="upload" name="profile_photo"
+                                                    class="account-file-input" hidden accept="image/png, image/jpeg" />
+                                            </label>
+
+                                            <button type="button"
+                                                class="btn btn-outline-secondary account-image-reset mb-2"
+                                                id="reset-photo">
+                                                <i class="bx bx-reset d-block d-sm-none"></i>
+                                                <span class="d-none d-sm-block">Reset</span>
                                             </button>
-                                            <button type="submit" class="btn btn-primary"
-                                                id="registerTeacherBtn">Register</button>
+
+                                            <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                         </div>
-                                    </form>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- First Name Field -->
+                                    <div class="col mb-3">
+                                        <label for="firstName" class="form-label fw-bold">First
+                                            Name</label>
+                                        <input type="text" name="firstName" id="firstName" class="form-control"
+                                            placeholder="Enter First Name" required value="{{ old('firstName') }}"
+                                            autofocus autocomplete="firstName" />
+                                    </div>
+
+                                    <!-- Middle Name Field -->
+                                    <div class="col mb-3">
+                                        <label for="middleName" class="form-label fw-bold">Middle
+                                            Name</label>
+                                        <input type="text" name="middleName" id="middleName" class="form-control"
+                                            placeholder="Enter Middle Name" required value="{{ old('middleName') }}"
+                                            autofocus autocomplete="middleName" />
+                                    </div>
+
+                                </div>
+
+                                <div class="row g-4">
+
+                                    <!-- Last Name Field -->
+                                    <div class="col mb-3">
+                                        <label for="lastName" class="form-label fw-bold">Last Name</label>
+                                        <input type="text" name="lastName" id="lastName" class="form-control"
+                                            placeholder="Enter Last Name" required value="{{ old('lastName') }}"
+                                            autofocus autocomplete="lastName" />
+                                    </div>
+
+                                    <!-- Extension Name Field -->
+                                    <div class="col mb-3">
+                                        <label for="extName" class="form-label fw-bold">Extension
+                                            Name</label>
+                                        <input type="text" name="extName" id="extName" class="form-control"
+                                            placeholder="Enter Ext. Name(if applicable)" value="{{ old('extName') }}" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- Email Field -->
+                                    <div class="col mb-3">
+                                        <label for="email" class="form-label fw-bold">Email</label>
+                                        <input type="email" name="email" id="email"
+                                            class="form-control @error('email') is-invalid @enderror"
+                                            placeholder="xxxx@xxx.xx" required autocomplete="email"
+                                            value="{{ old('email') }}" />
+
+                                        @error('email')
+                                            <div class="invalid-feedback">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
+                                    </div>
+
+
+                                    <!-- Phone Field -->
+                                    <div class="col mb-3">
+                                        <label for="phone" class="form-label fw-bold">Phone</label>
+                                        <input type="phone" name="phone" id="phone" class="form-control"
+                                            placeholder="Enter Phone Number" value="{{ old('phone') }}" autofocus
+                                            autocomplete="phone" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- Gender Field -->
+                                    <div class="col mb-3">
+                                        <label for="gender" class="form-label fw-bold">Gender</label>
+                                        <select name="gender" id="gender" class="form-select" required>
+                                            <option value="" disabled {{ old('gender') ? '' : 'selected' }}>Select
+                                                Gender</option>
+                                            <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male
+                                            </option>
+                                            <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>
+                                                Female
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Date of Birth Field -->
+                                    <div class="col mb-3">
+                                        <label for="dob" class="form-label fw-bold">Date of
+                                            Birth</label>
+                                        <input class="form-control" name="dob" type="date" id="dob"
+                                            value="{{ old('dob') }}" />
+                                    </div>
+                                </div>
+
+                                <hr class="my-4" />
+
+
+                                <h5 class="fw-bold text-primary">Classes</h5>
+
+                                <div class="row">
+                                    <!-- Assigned Classes as Multi-select Dropdown -->
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Assign Classes</label>
+                                        <select name="assigned_classes[]" id="assigned_classes" multiple required>
+                                            @foreach ($allClasses as $class)
+                                                @php
+                                                    $adviser = $class->teachers
+                                                        ->where('pivot.role', 'adviser')
+                                                        ->first();
+                                                    $hasAdviser = !is_null($adviser);
+                                                    $isSelected = collect(old('assigned_classes'))->contains(
+                                                        $class->id,
+                                                    );
+                                                @endphp
+                                                <option value="{{ $class->id }}" {{ $isSelected ? 'selected' : '' }}>
+                                                    {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                    - {{ $class->section }}
+                                                    @if ($hasAdviser)
+                                                        ({{ $adviser->firstName }} {{ $adviser->lastName }})
+                                                    @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <small class="form-text text-muted text-center">
+                                            You can select multiple classes
+                                        </small>
+                                    </div>
+
+                                    <!-- Advisory Class Dropdown -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="advisory_class" class="form-label fw-bold">Select Advisory
+                                            Class</label>
+                                        <select name="advisory_class" id="advisory_class" class="form-select"
+                                            data-old="{{ old('advisory_class') }}">
+                                            <option value="">-- Select advisory class from assigned --
+                                            </option>
+                                            {{-- Options will be dynamically injected --}}
+                                        </select>
+                                        <small class="form-text text-muted text-center">Select an advisory
+                                            class from the assigned classes, or leave empty if none.</small>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4" />
+
+                                <h5 class="fw-bold text-primary">Address</h5>
+
+                                <div class="row">
+                                    <!-- House No. field -->
+                                    <div class="col mb-3">
+                                        <label for="house_no" class="form-label fw-bold">House No.</label>
+                                        <input type="text" name="house_no" id="house_no" class="form-control"
+                                            placeholder="Enter House No." value="{{ old('house_no') }}" />
+                                    </div>
+
+                                    <!-- Street Name field -->
+                                    <div class="col mb-3">
+                                        <label for="street_name" class="form-label fw-bold">Street
+                                            Name</label>
+                                        <input type="text" name="street_name" id="street_name" class="form-control"
+                                            placeholder="Enter Street Name" value="{{ old('street_name') }}" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- Barangay field -->
+                                    <div class="col mb-3">
+                                        <label for="barangay" class="form-label fw-bold">Barangay</label>
+                                        <input type="text" name="barangay" id="barangay" class="form-control"
+                                            placeholder="Enter Barangay" value="{{ old('barangay') }}" />
+                                    </div>
+
+                                    <!-- Municipality/City field -->
+                                    <div class="col mb-3">
+                                        <label for="municipality_city"
+                                            class="form-label fw-bold">Municipality/City</label>
+                                        <input type="text" name="municipality_city" id="municipality_city"
+                                            class="form-control" placeholder="Enter Municipality/City"
+                                            value="{{ old('municipality_city') }}" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- Province field -->
+                                    <div class="col mb-3">
+                                        <label for="province" class="form-label fw-bold">Province</label>
+                                        <input type="text" name="province" id="province" class="form-control"
+                                            placeholder="Enter Province" value="{{ old('province') }}" />
+                                    </div>
+
+                                    <!-- Zip Code field -->
+                                    <div class="col mb-3">
+                                        <label for="zip_code" class="form-label fw-bold">Zip Code</label>
+                                        <input type="text" name="zip_code" id="zip_code" class="form-control"
+                                            placeholder="Enter Zip Code" value="{{ old('zip_code') }}" />
+                                    </div>
+                                </div>
+
+                                <hr class="my-4" />
+
+                                <h5 class="fw-bold text-primary">Password</h5>
+
+                                <!-- Password Input -->
+                                <div class="mb-3 form-password-toggle">
+                                    <label class="form-label fw-bold" for="password">Password</label>
+
+                                    <div class="input-group input-group-merge">
+                                        <input type="password" id="password" class="form-control" name="password"
+                                            required autocomplete="new-password" placeholder="Enter your Password" />
+
+                                        @error('password')
+                                            <div class="text-danger mt-1">{{ $message }}</div>
+                                        @enderror
+
+
+                                        <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                                    </div>
+                                </div>
+
+                                <!-- Confirm Password Input -->
+                                <div class="mb-3 form-password-toggle">
+                                    <label class="form-label fw-bold" for="password_confirmation">Confirm
+                                        Password</label>
+                                    <div class="input-group input-group-merge">
+                                        <input type="password" id="password_confirmation" class="form-control"
+                                            name="password_confirmation" required autocomplete="new-password"
+                                            placeholder="Confirm your Password" />
+                                        @error('password')
+                                            <div class="text-danger mt-1">{{ $message }}</div>
+                                        @enderror
+                                        <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- /Register Modal -->
 
-                            <!-- Re-assign Modal -->
-                            <div class="modal fade" id="reAssignModal" data-bs-backdrop="static" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <form class="modal-content" action="{{ route('teacher.reassignment') }}"
-                                        method="POST">
-                                        @csrf
-                                        <div class="modal-header">
-                                            <h4 class="modal-title fw-bold text-info" id="reAssignModalTitle">
-                                                RE-ASSIGN TEACHER TO THE SELECTED SCHOOL YEAR
-                                            </h4>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <input type="hidden" name="selected_school_year"
-                                                value="{{ $selectedYear }}">
-
-                                            <!-- Select Teacher -->
-                                            <div class="mb-3">
-                                                <label for="teacher_id" class="form-label fw-bold">Select Teacher</label>
-                                                <select name="teacher_id" id="teacher_id" class="form-select" required>
-                                                    <option value="">-- Select Teacher --</option>
-                                                    @foreach ($reAssignableTeachers as $teacher)
-                                                        @php
-                                                            $archivedYears = $teacher->classes
-                                                                ->filter(function ($class) use ($selectedYear) {
-                                                                    return $class->pivot->status === 'archived';
-                                                                })
-                                                                ->map(function ($class) {
-                                                                    return $class->pivot->school_year_id;
-                                                                })
-                                                                ->unique()
-                                                                ->values();
-
-                                                            $archivedYearLabels = \App\Models\SchoolYear::whereIn(
-                                                                'id',
-                                                                $archivedYears,
-                                                            )
-                                                                ->pluck('school_year')
-                                                                ->implode(', ');
-                                                        @endphp
-                                                        <option value="{{ $teacher->id }}">
-                                                            {{ $teacher->firstName }} {{ $teacher->lastName }}
-                                                            (Archived: {{ $archivedYearLabels }})
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-
-                                            <!-- Select Classes -->
-                                            <div class="mb-3">
-                                                <label for="reassign_classes" class="form-label fw-bold">Assign to
-                                                    Classes</label>
-                                                <select name="reassign_classes[]" id="reassign_classes" multiple required>
-                                                    @foreach ($allClasses as $class)
-                                                        @php
-                                                            $adviser = $class->teachers
-                                                                ->where('pivot.role', 'adviser')
-                                                                ->first();
-                                                            $hasAdviser = !is_null($adviser);
-                                                        @endphp
-                                                        <option value="{{ $class->id }}">
-                                                            {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
-                                                            - {{ $class->section }}
-                                                            @if ($hasAdviser)
-                                                                ({{ $adviser->firstName }} {{ $adviser->lastName }})
-                                                            @endif
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                <small class="form-text text-muted">Hold Ctrl or Cmd to select multiple
-                                                    classes.</small>
-                                            </div>
-
-                                            <!-- Select Advisory Class -->
-                                            <div class="mb-3">
-                                                <label for="reassign_advisory_class" class="form-label fw-bold">Select
-                                                    Advisory Class</label>
-                                                <select name="reassign_advisory_class" id="reassign_advisory_class"
-                                                    class="form-select">
-                                                    <option value="">-- Select advisory class from assigned --
-                                                    </option>
-                                                </select>
-                                                <small class="form-text text-muted">Must be one of the selected
-                                                    classes.</small>
-                                            </div>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-outline-secondary"
-                                                data-bs-dismiss="modal">
-                                                Close
-                                            </button>
-                                            <button type="submit" class="btn btn-primary"
-                                                id="reAssignTeacherBtn">Re-Assign</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            <!-- /Re-assign Modal -->
-
-                            @if ($errors->has('email'))
-                                <script>
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Registration Error',
-                                        text: '{{ $errors->first('email') }}',
-                                        confirmButtonColor: '#dc3545',
-                                        customClass: {
-                                            container: 'my-swal-container'
-                                        }
-                                    });
-                                </script>
-                            @endif
-
-                        </div>
-                    </div>
-                    <!--/ Modal Backdrop -->
-
-                    <h3 class="text-center text-info fw-bold mb-4">Teacher Management</h3>
-
-                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
-                        <div class="d-flex gap-1 mb-2 mb-md-0">
-                            <!-- Register Button trigger modal -->
-                            <button type="button" class="btn btn-primary d-flex align-items-center"
-                                data-bs-toggle="modal" data-bs-target="#registerModal">
-                                <i class='bx bx-user-plus me-2'></i>
-                                <span class="d-none d-sm-block">Register New Teacher</span>
-                            </button>
-
-                            <!-- Re-Assignment Button trigger modal -->
-                            <button type="button" class="btn btn-warning d-flex align-items-center"
-                                data-bs-toggle="modal" data-bs-target="#reAssignModal">
-                                <i class='bx bx-repost me-2'></i>
-                                <span class="d-none d-sm-block">Re-Assign Teacher</span>
-                            </button>
-                        </div>
-
-                        <!-- Filter Form -->
-                        <div class="d-flex align-items-center gap-2">
-                            <!-- School Year Dropdown -->
-                            <div class="d-flex align-items-center gap-2">
-                                <button class="btn btn-info text-white dropdown-toggle d-flex align-items-center" type="button"
-                                    id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    {{ $selectedYear }}
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    Close
                                 </button>
-                                <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                                    @foreach ($schoolYears as $year)
-                                        <li>
-                                            <a class="dropdown-item"
-                                                href="{{ request()->fullUrlWithQuery(['school_year' => $year]) }}">
-                                                {{ $year }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                <button type="submit" class="btn btn-primary" id="registerTeacherBtn">Register</button>
                             </div>
-
-                            <!-- "Now" button -->
-                            <form method="GET" action="{{ route('show.teachers') }}"
-                                class="d-flex align-items-center">
-                                <input type="hidden" name="school_year"
-                                    value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                                <button type="submit" class="btn btn-primary">Now</button>
-                            </form>
-                        </div>
+                        </form>
                     </div>
+                </div>
+                <!-- /Register Modal -->
 
-                    {{-- Card --}}
-                    <div class="card">
-                        <div class="card-header">
-                            <div
-                                class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
-                                <!-- Search input -->
-                                <div class="d-flex align-items-center w-100" style="max-width: 600px;">
-                                    <i class="bx bx-search fs-4 lh-0 me-2"></i>
-                                    <input type="text" id="teacherSearch" class="form-control border-1 shadow-none"
-                                        placeholder="Search..." aria-label="Search..." />
+                <!-- Re-assign Modal -->
+                <div class="modal fade" id="reAssignModal" data-bs-backdrop="static" tabindex="-1">
+                    <div class="modal-dialog">
+                        <form class="modal-content" action="{{ route('teacher.reassignment') }}" method="POST">
+                            @csrf
+                            <div class="modal-header">
+                                <h4 class="modal-title fw-bold text-info" id="reAssignModalTitle">
+                                    RE-ASSIGN TEACHER TO THE SELECTED SCHOOL YEAR
+                                </h4>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="selected_school_year" value="{{ $selectedYear }}">
+
+                                <!-- Select Teacher -->
+                                <div class="mb-3">
+                                    <label for="teacher_id" class="form-label fw-bold">Select Teacher</label>
+                                    <select name="teacher_id" id="teacher_id" class="form-select" required>
+                                        <option value="">-- Select Teacher --</option>
+                                        @foreach ($reAssignableTeachers as $teacher)
+                                            @php
+                                                $archivedYears = $teacher->classes
+                                                    ->filter(function ($class) use ($selectedYear) {
+                                                        return $class->pivot->status === 'archived';
+                                                    })
+                                                    ->map(function ($class) {
+                                                        return $class->pivot->school_year_id;
+                                                    })
+                                                    ->unique()
+                                                    ->values();
+
+                                                $archivedYearLabels = \App\Models\SchoolYear::whereIn(
+                                                    'id',
+                                                    $archivedYears,
+                                                )
+                                                    ->pluck('school_year')
+                                                    ->implode(', ');
+                                            @endphp
+                                            <option value="{{ $teacher->id }}">
+                                                {{ $teacher->firstName }} {{ $teacher->lastName }}
+                                                (Archived: {{ $archivedYearLabels }})
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
 
-                                <!-- Export button -->
-                                {{-- <div class="ms-md-auto">
+                                <!-- Select Classes -->
+                                <div class="mb-3">
+                                    <label for="reassign_classes" class="form-label fw-bold">Assign to
+                                        Classes</label>
+                                    <select name="reassign_classes[]" id="reassign_classes" multiple required>
+                                        @foreach ($allClasses as $class)
+                                            @php
+                                                $adviser = $class->teachers->where('pivot.role', 'adviser')->first();
+                                                $hasAdviser = !is_null($adviser);
+                                            @endphp
+                                            <option value="{{ $class->id }}">
+                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                - {{ $class->section }}
+                                                @if ($hasAdviser)
+                                                    ({{ $adviser->firstName }} {{ $adviser->lastName }})
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <small class="form-text text-muted">Hold Ctrl or Cmd to select multiple
+                                        classes.</small>
+                                </div>
+
+                                <!-- Select Advisory Class -->
+                                <div class="mb-3">
+                                    <label for="reassign_advisory_class" class="form-label fw-bold">Select
+                                        Advisory Class</label>
+                                    <select name="reassign_advisory_class" id="reassign_advisory_class"
+                                        class="form-select">
+                                        <option value="">-- Select advisory class from assigned --
+                                        </option>
+                                    </select>
+                                    <small class="form-text text-muted">Must be one of the selected
+                                        classes.</small>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    Close
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="reAssignTeacherBtn">Re-Assign</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- /Re-assign Modal -->
+
+                @if ($errors->has('email'))
+                    <script>
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Registration Error',
+                            text: '{{ $errors->first('email') }}',
+                            confirmButtonColor: '#dc3545',
+                            customClass: {
+                                container: 'my-swal-container'
+                            }
+                        });
+                    </script>
+                @endif
+
+            </div>
+        </div>
+        <!--/ Modal Backdrop -->
+
+        <h3 class="text-center text-info fw-bold mb-4">Teacher Management</h3>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+            <div class="d-flex gap-1 mb-2 mb-md-0">
+                <!-- Register Button trigger modal -->
+                <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+                    data-bs-target="#registerModal">
+                    <i class='bx bx-user-plus me-2'></i>
+                    <span class="d-none d-sm-block">Register New Teacher</span>
+                </button>
+
+                <!-- Re-Assignment Button trigger modal -->
+                <button type="button" class="btn btn-warning d-flex align-items-center" data-bs-toggle="modal"
+                    data-bs-target="#reAssignModal">
+                    <i class='bx bx-repost me-2'></i>
+                    <span class="d-none d-sm-block">Re-Assign Teacher</span>
+                </button>
+            </div>
+
+            <!-- Filter Form -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- School Year Dropdown -->
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-info text-white dropdown-toggle d-flex align-items-center" type="button"
+                        id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ $selectedYear }}
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="yearDropdown">
+                        @foreach ($schoolYears as $year)
+                            <li>
+                                <a class="dropdown-item"
+                                    href="{{ request()->fullUrlWithQuery(['school_year' => $year]) }}">
+                                    {{ $year }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                <!-- "Now" button -->
+                <form method="GET" action="{{ route('show.teachers') }}" class="d-flex align-items-center">
+                    <input type="hidden" name="school_year" value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                    <button type="submit" class="btn btn-primary">Now</button>
+                </form>
+            </div>
+        </div>
+
+        {{-- Card --}}
+        <div class="card">
+            <div class="card-header">
+                <div
+                    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+                    <!-- Search input -->
+                    <div class="d-flex align-items-center w-100" style="max-width: 600px;">
+                        <i class="bx bx-search fs-4 lh-0 me-2"></i>
+                        <input type="text" id="teacherSearch" class="form-control border-1 shadow-none"
+                            placeholder="Search..." aria-label="Search..." />
+                    </div>
+
+                    <!-- Export button -->
+                    {{-- <div class="ms-md-auto">
                                     <a href="{{ route('export.teachers') }}" class="btn btn-success"
                                         style="padding: 8px 12px;">
                                         <i class="bx bx-printer"></i> Export to Excel
                                     </a>
                                 </div> --}}
-                            </div>
-                        </div>
-
-                        <div class="table-responsive text-nowrap">
-                            <table class="table table-hover table-bordered text-center" id="teachersTable">
-                                <thead>
-                                    <tr>
-                                        <th>Full Name</th>
-                                        <th>Photo</th>
-                                        <th><span class="badge bg-warning mb-1"
-                                                style="font-size: 0.95em; vertical-align: middle;">Advisory Class
-                                                <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
-                                                    style="font-size: 0.95em; vertical-align: middle;"></i></span><br>
-                                            <span class="badge bg-secondary"
-                                                style="font-size: 0.95em; vertical-align: middle;">Subject-based
-                                                Classes</span>
-                                        </th>
-                                        <th>Email</th>
-                                        <th>Status</th>
-                                        <th>Contact No.</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="table-border-bottom-0">
-                                    @forelse ($teachers as $teacher)
-                                        <tr class="teacher-row">
-                                            <td>
-                                                <a class="text-primary"
-                                                    href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">{{ $teacher->firstName }}
-                                                    {{ $teacher->middleName }}
-                                                    {{ $teacher->lastName }} {{ $teacher->extName }}
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <a class="text-primary"
-                                                    href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                                    @if ($teacher->profile_photo)
-                                                        <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
-                                                            alt="Profile Photo" width="55" height="55"
-                                                            style="object-fit: cover; border-radius: 50%;">
-                                                    @else
-                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                            alt="no profile" width="55" height="55"
-                                                            style="object-fit: cover; border-radius: 50%">
-                                                    @endif
-                                                </a>
-                                            </td>
-                                            <td>
-                                                @if ($teacher->classes && count($teacher->classes))
-                                                    @foreach ($teacher->classes as $class)
-                                                        @php
-                                                            $role = $class->pivot->role ?? null;
-                                                            $isAdvisory = $role === 'adviser';
-                                                            $badgeClass = $isAdvisory
-                                                                ? 'bg-warning text-black'
-                                                                : 'bg-secondary';
-                                                        @endphp
-
-                                                        <span class="badge {{ $badgeClass }} text-auto mb-1">
-                                                            {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
-                                                            - Section {{ $class->section }}
-                                                            @if ($isAdvisory)
-                                                                <i class="bx bxs-star text-auto ms-1"
-                                                                    title="Advisory Class"
-                                                                    style="font-size: 0.85em; vertical-align: middle;"></i>
-                                                            @endif
-                                                        </span>
-
-                                                        @if (!$loop->last)
-                                                            <br>
-                                                        @endif
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted">No class assigned</span>
-                                                @endif
-                                            </td>
-                                            <td>{{ $teacher->email }}</td>
-                                            <td>
-                                                @php
-                                                    $status =
-                                                        optional($teacher->classes->first())->pivot->status ?? 'N/A';
-                                                    $badgeClass = match ($status) {
-                                                        'active' => 'bg-label-success',
-                                                        'archived' => 'bg-label-warning',
-                                                        default => 'bg-label-dark',
-                                                    };
-                                                @endphp
-                                                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                                    {{ strtoupper(str_replace('_', ' ', $status)) }}
-                                                </span>
-                                            </td>
-                                            <td>{{ $teacher->phone }}</td>
-                                            <td>
-                                                <div class="dropdown">
-                                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-                                                        data-bs-toggle="dropdown">
-                                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu">
-                                                        <a class="dropdown-item text-info"
-                                                            href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                                            <i class="bx bxs-user-badge me-1"></i> View Profile
-                                                        </a>
-                                                        <a class="dropdown-item text-warning"
-                                                            href="{{ route('edit.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                                            <i class="bx bx-edit-alt me-1"></i> Edit
-                                                        </a>
-                                                        @php
-                                                            $selectedYear = request('school_year'); // Or pass explicitly
-                                                        @endphp
-
-                                                        <button type="button" class="dropdown-item text-danger"
-                                                            onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}', '{{ $selectedYear }}')">
-                                                            <i class="bx bx-trash me-1"></i> Delete
-                                                        </button>
-
-                                                        <!-- Hidden form to submit delete -->
-                                                        <form id="delete-form-{{ $teacher->id }}-{{ $selectedYear }}"
-                                                            action="{{ route('delete.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}"
-                                                            method="POST" style="display: none;">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="text-center text-danger fw-bold">No teachers
-                                                found.
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    {{-- / Card --}}
-
-
-                    <hr class="my-5" />
-
                 </div>
-                <!-- Content wrapper -->
-
             </div>
-            <!-- / Layout page -->
-        </div>
-    </div>
-    <!-- / Layout wrapper -->
 
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-hover table-bordered text-center" id="teachersTable">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Photo</th>
+                            <th><span class="badge bg-warning mb-1"
+                                    style="font-size: 0.95em; vertical-align: middle;">Advisory Class
+                                    <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
+                                        style="font-size: 0.95em; vertical-align: middle;"></i></span><br>
+                                <span class="badge bg-secondary"
+                                    style="font-size: 0.95em; vertical-align: middle;">Subject-based
+                                    Classes</span>
+                            </th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Contact No.</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-border-bottom-0">
+                        @forelse ($teachers as $teacher)
+                            <tr class="teacher-row">
+                                <td>
+                                    <a class="text-primary"
+                                        href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">{{ $teacher->firstName }}
+                                        {{ $teacher->middleName }}
+                                        {{ $teacher->lastName }} {{ $teacher->extName }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a class="text-primary"
+                                        href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
+                                        @if ($teacher->profile_photo)
+                                            <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
+                                                alt="Profile Photo" width="55" height="55"
+                                                style="object-fit: cover; border-radius: 50%;">
+                                        @else
+                                            <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                                                alt="no profile" width="55" height="55"
+                                                style="object-fit: cover; border-radius: 50%">
+                                        @endif
+                                    </a>
+                                </td>
+                                <td>
+                                    @if ($teacher->classes && count($teacher->classes))
+                                        @foreach ($teacher->classes as $class)
+                                            @php
+                                                $role = $class->pivot->role ?? null;
+                                                $isAdvisory = $role === 'adviser';
+                                                $badgeClass = $isAdvisory ? 'bg-warning text-black' : 'bg-secondary';
+                                            @endphp
+
+                                            <span class="badge {{ $badgeClass }} text-auto mb-1">
+                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                - Section {{ $class->section }}
+                                                @if ($isAdvisory)
+                                                    <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
+                                                        style="font-size: 0.85em; vertical-align: middle;"></i>
+                                                @endif
+                                            </span>
+
+                                            @if (!$loop->last)
+                                                <br>
+                                            @endif
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">No class assigned</span>
+                                    @endif
+                                </td>
+                                <td>{{ $teacher->email }}</td>
+                                <td>
+                                    @php
+                                        $status = optional($teacher->classes->first())->pivot->status ?? 'N/A';
+                                        $badgeClass = match ($status) {
+                                            'active' => 'bg-label-success',
+                                            'archived' => 'bg-label-warning',
+                                            default => 'bg-label-dark',
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                    </span>
+                                </td>
+                                <td>{{ $teacher->phone }}</td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
+                                            data-bs-toggle="dropdown">
+                                            <i class="bx bx-dots-vertical-rounded"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item text-info"
+                                                href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
+                                                <i class="bx bxs-user-badge me-1"></i> View Profile
+                                            </a>
+                                            <a class="dropdown-item text-warning"
+                                                href="{{ route('edit.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
+                                                <i class="bx bx-edit-alt me-1"></i> Edit
+                                            </a>
+                                            @php
+                                                $selectedYear = request('school_year'); // Or pass explicitly
+                                            @endphp
+
+                                            <button type="button" class="dropdown-item text-danger"
+                                                onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}', '{{ $selectedYear }}')">
+                                                <i class="bx bx-trash me-1"></i> Delete
+                                            </button>
+
+                                            <!-- Hidden form to submit delete -->
+                                            <form id="delete-form-{{ $teacher->id }}-{{ $selectedYear }}"
+                                                action="{{ route('delete.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}"
+                                                method="POST" style="display: none;">
+                                                @csrf
+                                                @method('DELETE')
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-danger fw-bold">No teachers
+                                    found.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {{-- / Card --}}
+
+
+        <hr class="my-5" />
+
+    </div>
+    <!-- Content wrapper -->
 
 @endsection
 

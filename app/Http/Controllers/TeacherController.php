@@ -1072,7 +1072,7 @@ class TeacherController extends Controller
         return back()->with('success', 'Grades saved successfully!');
     }
 
-    public function exportGrades(Request $request, $grade_level, $section, $subject_id)
+    public function exportQuarterlyGrades(Request $request, $grade_level, $section, $subject_id)
     {
         $now = now();
         $year = $now->year;
@@ -1230,122 +1230,227 @@ class TeacherController extends Controller
     }
 
     public function studentInfo($student_id, Request $request)
-{
-    $schoolYearId = $request->query('school_year');
+    {
+        $schoolYearId = $request->query('school_year');
 
-    if (!$schoolYearId) {
-        $schoolYearId = SchoolYear::latest('start_date')->value('id');
-    }
+        if (!$schoolYearId) {
+            $schoolYearId = SchoolYear::latest('start_date')->value('id');
+        }
 
-    $student = Student::with([
-        'address',
-        'parentInfo',
-        'class' => function ($query) {
-            $query->with('schoolYear');
-        },
-        'schoolYears'
-    ])->findOrFail($student_id);
+        $student = Student::with([
+            'address',
+            'parentInfo',
+            'class' => function ($query) {
+                $query->with('schoolYear');
+            },
+            'schoolYears'
+        ])->findOrFail($student_id);
 
-    $class = $student->class()
-        ->wherePivot('school_year_id', $schoolYearId)
-        ->first();
+        $class = $student->class()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->first();
 
-    $schoolYear = SchoolYear::find($schoolYearId);
+        $schoolYear = SchoolYear::find($schoolYearId);
 
-    $classHistory = $student->class()
-        ->with(['schoolYear', 'advisers' => function ($q) {
-            $q->wherePivot('role', 'adviser');
-        }])
-        ->orderBy('school_year_id', 'asc')
-        ->get();
-
-    // 🔹 Prepare storage
-    $gradesByClass = [];
-    $generalAverages = [];
-
-    foreach ($classHistory as $classItem) {
-        $classSubjects = $classItem->classSubjects()
-            ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
-                $q->where('student_id', $student->id);
+        $classHistory = $student->class()
+            ->with(['schoolYear', 'advisers' => function ($q) {
+                $q->wherePivot('role', 'adviser');
             }])
-            ->where('school_year_id', $classItem->pivot->school_year_id)
+            ->orderBy('school_year_id', 'asc')
             ->get();
 
-        $subjectsWithGrades = [];
-        $finalGrades = [];
+        // 🔹 Prepare storage
+        $gradesByClass = [];
+        $generalAverages = [];
 
-        foreach ($classSubjects as $classSubject) {
-            // Collect quarters
-            $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
-                return [
-                    'quarter' => $quarter->quarter,
-                    'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
+        foreach ($classHistory as $classItem) {
+            $classSubjects = $classItem->classSubjects()
+                ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
+                    $q->where('student_id', $student->id);
+                }])
+                ->where('school_year_id', $classItem->pivot->school_year_id)
+                ->get();
+
+            $subjectsWithGrades = [];
+            $finalGrades = [];
+
+            foreach ($classSubjects as $classSubject) {
+                // Collect quarters
+                $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
+                    return [
+                        'quarter' => $quarter->quarter,
+                        'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
+                    ];
+                });
+
+                // Check if all 4 quarters are present
+                $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
+
+                $finalAverage = null;
+                $remarks = null;
+
+                if ($allQuartersHaveGrades) {
+                    $grades = $quarters->pluck('grade')->all();
+                    $finalAverage = round(array_sum($grades) / 4, 2);
+                    $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
+                    $finalGrades[] = $finalAverage;
+                }
+
+                $subjectsWithGrades[] = [
+                    'subject' => $classSubject->subject->name,
+                    'quarters' => $quarters,
+                    'final_average' => $finalAverage,
+                    'remarks' => $remarks,
                 ];
-            });
-
-            // Check if all 4 quarters are present
-            $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
-
-            $finalAverage = null;
-            $remarks = null;
-
-            if ($allQuartersHaveGrades) {
-                $grades = $quarters->pluck('grade')->all();
-                $finalAverage = round(array_sum($grades) / 4, 2);
-                $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
-                $finalGrades[] = $finalAverage;
             }
 
-            $subjectsWithGrades[] = [
-                'subject' => $classSubject->subject->name,
-                'quarters' => $quarters,
-                'final_average' => $finalAverage,
-                'remarks' => $remarks,
-            ];
-        }
+            $gradesByClass[$classItem->id] = $subjectsWithGrades;
 
-        $gradesByClass[$classItem->id] = $subjectsWithGrades;
+            // 🔹 General Average: only if ALL subjects have final grades
+            $totalSubjects = count($classSubjects);
+            $completedSubjects = count($finalGrades);
 
-        // 🔹 General Average: only if ALL subjects have final grades
-        $totalSubjects = count($classSubjects);
-        $completedSubjects = count($finalGrades);
+            if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
+                $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+                $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
 
-        if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
-            $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
-            $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
+                // Save or update in DB
+                \App\Models\GeneralAverage::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'school_year_id' => $classItem->pivot->school_year_id,
+                    ],
+                    [
+                        'general_average' => $generalAverage,
+                        'remarks' => $remarks,
+                    ]
+                );
 
-            // Save or update in DB
-            \App\Models\GeneralAverage::updateOrCreate(
-                [
-                    'student_id' => $student->id,
-                    'school_year_id' => $classItem->pivot->school_year_id,
-                ],
-                [
+                $generalAverages[$classItem->id] = [
                     'general_average' => $generalAverage,
                     'remarks' => $remarks,
-                ]
-            );
-
-            $generalAverages[$classItem->id] = [
-                'general_average' => $generalAverage,
-                'remarks' => $remarks,
-            ];
-        } else {
-            $generalAverages[$classItem->id] = null;
+                ];
+            } else {
+                $generalAverages[$classItem->id] = null;
+            }
         }
+
+        return view('teacher.students.myStudentInfo', compact(
+            'student',
+            'class',
+            'schoolYear',
+            'schoolYearId',
+            'classHistory',
+            'gradesByClass',
+            'generalAverages'
+        ));
     }
 
-    return view('teacher.students.myStudentInfo', compact(
-        'student',
-        'class',
-        'schoolYear',
-        'schoolYearId',
-        'classHistory',
-        'gradesByClass',
-        'generalAverages'
-    ));
-}
+    public function studentReportCard($student_id, Request $request)
+    {
+        // Determine school_year_id (from query or latest)
+        $schoolYearId = $request->query('school_year');
+        if (!$schoolYearId) {
+            $schoolYearId = SchoolYear::latest('start_date')->value('id');
+        }
 
+        $student = \App\Models\Student::with(['address', 'parentInfo', 'class' => function ($q) {
+            $q->with('schoolYear');
+        }])->findOrFail($student_id);
+
+        // get the class for this student in the selected school year
+        $class = $student->class()->wherePivot('school_year_id', $schoolYearId)->first();
+
+        // If no class found for that year, try to find class history and pick the matching pivot entry
+        if (!$class) {
+            $class = $student->class()->wherePivot('school_year_id', $schoolYearId)->first();
+        }
+
+        // Collect subjects & grades for this class + school year
+        $subjectsWithGrades = collect();
+
+        if ($class) {
+            // load classSubjects for this class + school year
+            $classSubjects = ClassSubject::where('class_id', $class->id)
+                ->where('school_year_id', $schoolYearId)
+                ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
+                    $q->where('student_id', $student->id);
+                }])->get();
+
+            foreach ($classSubjects as $cs) {
+                $quarters = collect();
+                foreach ($cs->quarters as $q) {
+                    // find grade record for this student & quarter
+                    $qgrade = $q->quarterlyGrades->first();
+                    $quarters->push([
+                        'quarter' => $q->quarter,
+                        'grade' => $qgrade ? $qgrade->final_grade : null,
+                    ]);
+                }
+
+                // compute final average if all 4 quarters present
+                $allPresent = $quarters->every(fn($x) => $x['grade'] !== null);
+                $final = null;
+                $remarks = null;
+                if ($allPresent) {
+                    $arr = $quarters->pluck('grade')->all();
+                    $final = round(array_sum($arr) / count($arr), 2);
+                    $remarks = $final >= 75 ? 'Passed' : 'Failed';
+                }
+
+                $subjectsWithGrades->push([
+                    'subject' => $cs->subject->name,
+                    'quarters' => $quarters,
+                    'final' => $final,
+                    'remarks' => $remarks,
+                ]);
+            }
+        }
+
+        // General average calculation (only if all subject finals available)
+        $finals = $subjectsWithGrades->pluck('final')->filter();
+        $generalAverage = null;
+        $generalRemarks = null;
+        if ($subjectsWithGrades->count() > 0 && $finals->count() === $subjectsWithGrades->count()) {
+            $generalAverage = round($finals->sum() / $finals->count(), 2);
+            $generalRemarks = $generalAverage >= 75 ? 'Passed' : 'Failed';
+        }
+
+        // Attendance counts - placeholder logic (you can replace with your Attendance model)
+        $attendance = [
+            'days_school' => 0,
+            'days_present' => 0,
+            'days_absent' => 0,
+            // If you have monthly attendance, compute arrays here
+        ];
+
+        // Prepare data for blade
+        $data = [
+            'student' => $student,
+            'class' => $class,
+            'schoolYear' => SchoolYear::find($schoolYearId),
+            'subjects' => $subjectsWithGrades,
+            'generalAverage' => $generalAverage,
+            'generalRemarks' => $generalRemarks,
+            'attendance' => $attendance,
+            // any school header info you want
+            'school' => [
+                'name' => 'STA. BARBARA ELEMENTARY SCHOOL',
+                'division' => 'Schools Division Office of Camarines Sur',
+                'region' => 'Region V',
+                'department' => 'Republic of the Philippines, Department of Education',
+            ],
+        ];
+
+        // Render PDF: A4 landscape and show two pages side-by-side
+        $pdf = Pdf::loadView('pdf.student_report_card', $data)
+            ->setPaper('a4', 'landscape');
+
+        // stream download
+        $filename = "Report_Card(SF9){$student->student_lName}_{$student->student_fName}_{$data['schoolYear']->school_year}.pdf";
+
+        return $pdf->stream($filename);
+    }
 
     public function editStudentInfo($student_id)
     {
