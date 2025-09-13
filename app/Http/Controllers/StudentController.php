@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Models\StudentAddress;
 use App\Models\ParentInfo;
 use App\Models\SchoolYear;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf; // Make sure you have barryvdh/laravel-dompdf installed
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -178,12 +179,10 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        // Custom validation message for LRN regex failure
         $messages = [
             'student_lrn.regex' => 'The LRN must start with "112828" and be exactly 12 digits long.',
         ];
 
-        // Validate the incoming request data
         $validatedData = $request->validate([
             'student_lrn' => ['required', 'string', 'max:12', 'regex:/^112828[0-9]{6}$/', 'unique:students,student_lrn'],
             'student_grade_level' => 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6',
@@ -206,29 +205,42 @@ class StudentController extends Controller
             'student_fatherFName' => 'nullable|string|max:255',
             'student_fatherMName' => 'nullable|string|max:255',
             'student_fatherLName' => 'nullable|string|max:255',
-            'student_fatherPhone' => 'nullable|string|max:255',
+            'student_fatherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
             'student_motherFName' => 'nullable|string|max:255',
             'student_motherMName' => 'nullable|string|max:255',
             'student_motherLName' => 'nullable|string|max:255',
-            'student_motherPhone' => 'nullable|string|max:255',
+            'student_motherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
             'student_emergcontFName' => 'nullable|string|max:255',
             'student_emergcontMName' => 'nullable|string|max:255',
             'student_emergcontLName' => 'nullable|string|max:255',
-            'student_emergcontPhone' => 'nullable|string|max:255',
-            'student_parentEmail' => 'nullable|string|max:255',
+            'student_emergcontPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
+            'student_parentEmail' => [
+                'nullable',
+                'string',
+                'max:255',
+                'email',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+
+                    // only restrict if the email is already used for login
+                    if (User::where('email', $value)->exists()) {
+                        $fail('This email is already used for a user account.');
+                    }
+                },
+            ],
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
-        // Handle profile photo upload if provided
+        // Profile photo
         $profilePhotoPath = null;
         if ($request->hasFile('student_profile_photo')) {
             $profilePhotoPath = $request->file('student_profile_photo')->store('student_profile_photos', 'public');
         }
 
-        // Generate a unique QR code ID
+        // QR code
         $qrCode = uniqid('QR');
 
-        // Save student address data and get the address ID
+        // Address
         $address = StudentAddress::create([
             'house_no' => $request->house_no,
             'street_name' => $request->street_name,
@@ -240,11 +252,14 @@ class StudentController extends Controller
             'pob' => $request->student_pob,
         ]);
 
-        // Find existing parent by email (preferred unique identifier)
-        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
+        // Phones normalized
+        $fatherPhone = $this->normalizePhone($request->student_fatherPhone);
+        $motherPhone = $this->normalizePhone($request->student_motherPhone);
+        $emergPhone  = $this->normalizePhone($request->student_emergcontPhone);
 
+        // Find existing parent
+        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
         if (!$parent) {
-            // If no email, fallback to checking names (optional)
             $parent = ParentInfo::where('father_fName', $request->student_fatherFName)
                 ->where('father_lName', $request->student_fatherLName)
                 ->orWhere(function ($query) use ($request) {
@@ -253,32 +268,48 @@ class StudentController extends Controller
                 })->first();
         }
 
-        if (!$parent) {
-            // Create new parent if no match found
+        // Update or create parent
+        if ($parent) {
+            $parent->update([
+                'father_fName'    => $request->student_fatherFName,
+                'father_mName'    => $request->student_fatherMName,
+                'father_lName'    => $request->student_fatherLName,
+                'father_phone'    => $fatherPhone,
+                'mother_fName'    => $request->student_motherFName,
+                'mother_mName'    => $request->student_motherMName,
+                'mother_lName'    => $request->student_motherLName,
+                'mother_phone'    => $motherPhone,
+                'emergcont_fName' => $request->student_emergcontFName,
+                'emergcont_mName' => $request->student_emergcontMName,
+                'emergcont_lName' => $request->student_emergcontLName,
+                'emergcont_phone' => $emergPhone,
+                'parent_email'    => $request->student_parentEmail,
+            ]);
+        } else {
             $parent = ParentInfo::create([
                 'father_fName'    => $request->student_fatherFName,
                 'father_mName'    => $request->student_fatherMName,
                 'father_lName'    => $request->student_fatherLName,
-                'father_phone'    => $request->student_fatherPhone,
+                'father_phone'    => $fatherPhone,
                 'mother_fName'    => $request->student_motherFName,
                 'mother_mName'    => $request->student_motherMName,
                 'mother_lName'    => $request->student_motherLName,
-                'mother_phone'    => $request->student_motherPhone,
+                'mother_phone'    => $motherPhone,
                 'emergcont_fName' => $request->student_emergcontFName,
                 'emergcont_mName' => $request->student_emergcontMName,
                 'emergcont_lName' => $request->student_emergcontLName,
-                'emergcont_phone' => $request->student_emergcontPhone,
+                'emergcont_phone' => $emergPhone,
                 'parent_email'    => $request->student_parentEmail,
             ]);
         }
 
-        // Retrieve or create the class for the given year
+        // Class
         $class = Classes::firstOrCreate([
             'grade_level' => $validatedData['student_grade_level'],
             'section' => $validatedData['student_section'],
         ]);
 
-        // Save student information, associating with class, address, and parent info
+        // Student
         $student = Student::create([
             'student_lrn' => $validatedData['student_lrn'],
             'student_fName' => $validatedData['student_fName'],
@@ -293,13 +324,8 @@ class StudentController extends Controller
             'parent_id' => $parent->id,
         ]);
 
-        // Get selected school year from the form (or fallback to default logic)
-        $selectedSchoolYear = $request->input('selected_school_year');
-        if (!$selectedSchoolYear) {
-            $selectedSchoolYear = $this->getDefaultSchoolYear(); // fallback just in case
-        }
-
-        // Ensure it exists or create it
+        // School Year
+        $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
         [$start, $end] = explode('-', $selectedSchoolYear);
         $schoolYear = SchoolYear::firstOrCreate(
             ['school_year' => $selectedSchoolYear],
@@ -309,20 +335,17 @@ class StudentController extends Controller
             ]
         );
 
-        // Inactivate previous enrollments of this student
+        // Enroll student
         DB::table('class_student')
             ->where('student_id', $student->id)
             ->update(['enrollment_status' => 'not_enrolled']);
 
-        // Add new (enrolled) enrollment for this school year
         $student->class()->attach($class->id, [
             'school_year_id' => $schoolYear->id,
             'enrollment_status' => 'enrolled',
             'enrollment_type' => $validatedData['enrollment_type'],
         ]);
 
-
-        // Redirect back to the student form with success message
         return redirect()->route('add.student')->with('success', 'Student enrolled successfully!');
     }
 
@@ -366,45 +389,50 @@ class StudentController extends Controller
             'student_dob' => 'nullable|date',
             'student_sex' => 'required|in:male,female',
             'student_pob' => 'required|string|max:255',
-
-            // Address fields
             'house_no' => 'nullable|string|max:255',
             'street_name' => 'nullable|string|max:255',
             'barangay' => 'nullable|string|max:255',
             'municipality_city' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
             'zip_code' => 'nullable|string|max:255',
-
-            // Parent info fields
             'student_fatherFName' => 'nullable|string|max:255',
             'student_fatherMName' => 'nullable|string|max:255',
             'student_fatherLName' => 'nullable|string|max:255',
-            'student_fatherPhone' => 'nullable|string|max:255',
+            'student_fatherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
             'student_motherFName' => 'nullable|string|max:255',
             'student_motherMName' => 'nullable|string|max:255',
             'student_motherLName' => 'nullable|string|max:255',
-            'student_motherPhone' => 'nullable|string|max:255',
+            'student_motherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
             'student_emergcontFName' => 'nullable|string|max:255',
             'student_emergcontMName' => 'nullable|string|max:255',
             'student_emergcontLName' => 'nullable|string|max:255',
-            'student_emergcontPhone' => 'nullable|string|max:255',
-            'student_parentEmail' => 'nullable|string|max:255',
+            'student_emergcontPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
+            'student_parentEmail' => [
+                'nullable',
+                'string',
+                'max:255',
+                'email',
+                function ($attribute, $value, $fail) use ($student) {
+                    if (!$value) return;
 
-            // Profile photo
+                    if (User::where('email', $value)->exists()) {
+                        $fail('This email is already used for a user account.');
+                    }
+                },
+            ],
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
-        // Handle new profile photo
+        // Profile photo
         if ($request->hasFile('student_profile_photo')) {
             if ($student->student_photo && Storage::disk('public')->exists($student->student_photo)) {
                 Storage::disk('public')->delete($student->student_photo);
             }
-
             $profilePhotoPath = $request->file('student_profile_photo')->store('student_profile_photos', 'public');
             $student->student_photo = $profilePhotoPath;
         }
 
-        // Update related address
+        // Address
         $student->address()->update([
             'house_no' => $request->house_no,
             'street_name' => $request->street_name,
@@ -416,9 +444,13 @@ class StudentController extends Controller
             'pob' => $request->student_pob,
         ]);
 
-        // 🔍 Find or create parent (don’t overwrite shared record)
-        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
+        // Phones normalized
+        $fatherPhone = $this->normalizePhone($request->student_fatherPhone);
+        $motherPhone = $this->normalizePhone($request->student_motherPhone);
+        $emergPhone  = $this->normalizePhone($request->student_emergcontPhone);
 
+        // Find existing parent
+        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
         if (!$parent) {
             $parent = ParentInfo::where('father_fName', $request->student_fatherFName)
                 ->where('father_lName', $request->student_fatherLName)
@@ -428,35 +460,52 @@ class StudentController extends Controller
                 })->first();
         }
 
-        if (!$parent) {
+        // Update or create parent
+        if ($parent) {
+            $parent->update([
+                'father_fName'    => $request->student_fatherFName,
+                'father_mName'    => $request->student_fatherMName,
+                'father_lName'    => $request->student_fatherLName,
+                'father_phone'    => $fatherPhone,
+                'mother_fName'    => $request->student_motherFName,
+                'mother_mName'    => $request->student_motherMName,
+                'mother_lName'    => $request->student_motherLName,
+                'mother_phone'    => $motherPhone,
+                'emergcont_fName' => $request->student_emergcontFName,
+                'emergcont_mName' => $request->student_emergcontMName,
+                'emergcont_lName' => $request->student_emergcontLName,
+                'emergcont_phone' => $emergPhone,
+                'parent_email'    => $request->student_parentEmail,
+            ]);
+        } else {
             $parent = ParentInfo::create([
                 'father_fName'    => $request->student_fatherFName,
                 'father_mName'    => $request->student_fatherMName,
                 'father_lName'    => $request->student_fatherLName,
-                'father_phone'    => $request->student_fatherPhone,
+                'father_phone'    => $fatherPhone,
                 'mother_fName'    => $request->student_motherFName,
                 'mother_mName'    => $request->student_motherMName,
                 'mother_lName'    => $request->student_motherLName,
-                'mother_phone'    => $request->student_motherPhone,
+                'mother_phone'    => $motherPhone,
                 'emergcont_fName' => $request->student_emergcontFName,
                 'emergcont_mName' => $request->student_emergcontMName,
                 'emergcont_lName' => $request->student_emergcontLName,
-                'emergcont_phone' => $request->student_emergcontPhone,
+                'emergcont_phone' => $emergPhone,
                 'parent_email'    => $request->student_parentEmail,
             ]);
         }
 
-        // ✅ Link student to the found/created parent
+        // Link student to parent
         $student->parent_id = $parent->id;
         $student->save();
 
-        // Retrieve or create the class for the selected school year
+        // Class
         $class = Classes::firstOrCreate([
             'grade_level' => $validatedData['student_grade_level'],
             'section' => $validatedData['student_section'],
         ]);
 
-        // Update enrollment record for the selected school year
+        // Update enrollment
         DB::table('class_student')
             ->where('student_id', $student->id)
             ->where('school_year_id', $schoolYear->id)
@@ -465,7 +514,7 @@ class StudentController extends Controller
                 'updated_at' => now(),
             ]);
 
-        // Update main student fields
+        // Student main fields
         $student->update([
             'student_lrn' => $validatedData['student_lrn'],
             'student_fName' => $validatedData['student_fName'],
@@ -717,5 +766,30 @@ class StudentController extends Controller
         $cutoff = now()->copy()->setMonth(6)->setDay(1);
         $start = $now->lt($cutoff) ? $year - 1 : $year;
         return $start . '-' . ($start + 1);
+    }
+
+    private function normalizePhone($phone)
+    {
+        if (!$phone) return null;
+
+        // Remove spaces, dashes, parentheses
+        $phone = preg_replace('/\D+/', '', $phone);
+
+        // Convert "09XXXXXXXXX" → "+639XXXXXXXXX"
+        if (str_starts_with($phone, '09')) {
+            return '+63' . substr($phone, 1);
+        }
+
+        // If already starts with "639", prepend "+"
+        if (str_starts_with($phone, '639')) {
+            return '+' . $phone;
+        }
+
+        // If already correct E.164
+        if (str_starts_with($phone, '+639')) {
+            return $phone;
+        }
+
+        return $phone; // fallback (just in case)
     }
 }

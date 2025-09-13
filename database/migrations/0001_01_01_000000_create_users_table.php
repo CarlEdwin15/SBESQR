@@ -36,6 +36,12 @@ return new class extends Migration
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo', 2048)->nullable();
+
+            $table->enum('status', ['active', 'inactive', 'suspended', 'banned'])->default('inactive');
+
+            $table->timestamp('sign_in_at')->nullable()->index();
+            $table->timestamp('last_sign_in_at')->nullable()->index();
+
             $table->timestamps();
         });
 

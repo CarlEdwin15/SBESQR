@@ -1,4 +1,3 @@
-{{-- resources/views/errors/500.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 

@@ -41,13 +41,34 @@ class GoogleController extends Controller
         $parentInfo = ParentInfo::where('parent_email', $email)->first();
 
         if ($parentInfo) {
-            // Create or fetch a user record for parent
-            $user = User::firstOrCreate(
+            // Prefer mother's full name if available, otherwise father's
+            if (!empty($parentInfo->mother_fName) && !empty($parentInfo->mother_lName)) {
+                $firstName  = $parentInfo->mother_fName;
+                $middleName = $parentInfo->mother_mName ?? null;
+                $lastName   = $parentInfo->mother_lName;
+                $phone      = $parentInfo->mother_phone ?? null;
+            } else {
+                $firstName  = $parentInfo->father_fName ?? '';
+                $middleName = $parentInfo->father_mName ?? null;
+                $lastName   = $parentInfo->father_lName ?? '';
+                $phone      = $parentInfo->father_phone ?? null;
+            }
+
+            // If no phone from parents, fallback to emergency contact
+            if (!$phone) {
+                $phone = $parentInfo->emergcont_phone ?? null;
+            }
+
+            $user = User::updateOrCreate(
                 ['email' => $email],
                 [
-                    'name' => trim($firstName . ' ' . $lastName),
-                    'role' => 'parent',
-                    'password' => bcrypt(Str::random(16)), // random password since login is via Google
+                    'firstName'     => $firstName,
+                    'middleName'    => $middleName,
+                    'lastName'      => $lastName,
+                    'phone'         => $phone,
+                    'role'          => 'parent',
+                    'password'      => bcrypt(Str::random(16)), // random password since login is via Google
+                    'profile_photo' => $googleUser->getAvatar() ?? "https://ui-avatars.com/api/?name=" . urlencode("$firstName $lastName"),
                 ]
             );
 
@@ -58,6 +79,6 @@ class GoogleController extends Controller
         }
 
         // 3. If not found anywhere → Not authorized
-        return response()->view('auth.not_authorized', [], 403);
+        return response()->view('errors.401_not_authorized', [], 403);
     }
 }

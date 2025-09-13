@@ -62,11 +62,9 @@ class ScheduleController extends Controller
             ->where('section', $section)
             ->firstOrFail();
 
-        $teacher = User::findOrFail($request->teacher_id);
-        $teacherFullName = trim("{$teacher->firstName} {$teacher->middleName} {$teacher->lastName} {$teacher->extName}");
-
         foreach ($request->days as $day) {
-            $conflict = Schedule::where('teacher_id', $request->teacher_id)
+            // 🔹 1. Check teacher conflict
+            $teacherConflict = Schedule::where('teacher_id', $request->teacher_id)
                 ->where('day', $day)
                 ->where('school_year_id', $schoolYear->id)
                 ->where(function ($query) use ($request) {
@@ -77,23 +75,42 @@ class ScheduleController extends Controller
                                 ->where('end_time', '>=', $request->end_time);
                         });
                 })
-                ->with('class') // eager load class relation
                 ->first();
 
-            if ($conflict) {
-                $conflictClass = $conflict->class;
-                $gradeLevel = ucfirst(str_replace('grade', 'Grade ', $conflictClass->grade_level)); // e.g. grade1 → Grade 1
-                $sectionLabel = $conflictClass->section;
-
+            if ($teacherConflict) {
                 $formattedStart = \Carbon\Carbon::createFromFormat('H:i', $request->start_time)->format('g:i A');
                 $formattedEnd = \Carbon\Carbon::createFromFormat('H:i', $request->end_time)->format('g:i A');
 
                 return back()->withErrors([
-                    'schedule_conflict' => "{$teacherFullName} already has a schedule from {$formattedStart} to {$formattedEnd} on {$day} for {$gradeLevel} - Section {$sectionLabel}."
+                    'schedule_conflict' => "The selected teacher already has a schedule from {$formattedStart} - {$formattedEnd} on {$day}."
+                ])->withInput();
+            }
+
+            // 🔹 2. Check class conflict
+            $classConflict = Schedule::where('class_id', $class->id)
+                ->where('day', $day)
+                ->where('school_year_id', $schoolYear->id)
+                ->where(function ($query) use ($request) {
+                    $query->whereBetween('start_time', [$request->start_time, $request->end_time])
+                        ->orWhereBetween('end_time', [$request->start_time, $request->end_time])
+                        ->orWhere(function ($query) use ($request) {
+                            $query->where('start_time', '<=', $request->start_time)
+                                ->where('end_time', '>=', $request->end_time);
+                        });
+                })
+                ->first();
+
+            if ($classConflict) {
+                $formattedStart = \Carbon\Carbon::createFromFormat('H:i', $request->start_time)->format('g:i A');
+                $formattedEnd = \Carbon\Carbon::createFromFormat('H:i', $request->end_time)->format('g:i A');
+
+                return back()->withErrors([
+                    'schedule_conflict' => "This class already has a schedule from {$formattedStart} - {$formattedEnd} on {$day} for school year {$schoolYear->school_year}."
                 ])->withInput();
             }
         }
 
+        // 🔹 Save new schedule (only if no conflicts found)
         foreach ($request->days as $day) {
             $alreadyExists = Schedule::where([
                 'teacher_id' => $request->teacher_id,

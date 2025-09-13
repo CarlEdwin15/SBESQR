@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -33,6 +35,8 @@ class User extends Authenticatable
         'password',
         'profile_photo',
         'role',
+        'sign_in_at',
+        'last_sign_in_at',
     ];
 
     protected $hidden = [
@@ -45,6 +49,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'sign_in_at' => 'datetime',
+        'last_sign_in_at' => 'datetime',
     ];
 
     /** 🔑 Full name accessor */
@@ -113,5 +119,37 @@ class User extends Authenticatable
     public function pushSubscriptions()
     {
         return $this->hasMany(\App\Models\PushSubscription::class);
+    }
+
+    protected $appends = ['is_online', 'last_seen'];
+
+    public function getIsOnlineAttribute()
+    {
+        if (!$this->id) {
+            return false;
+        }
+
+        $session = DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->where('last_activity', '>=', now()->subMinutes(5)->timestamp) // active in last 5 mins
+            ->first();
+
+        return $session !== null;
+    }
+
+    public function getLastSeenAttribute()
+    {
+        if (!$this->last_sign_in_at) {
+            return 'Not signed in yet';
+        }
+
+        return Carbon::parse($this->last_sign_in_at)->diffForHumans();
+    }
+
+    public function getLastLoginAttribute()
+    {
+        return $this->sign_in_at
+            ? $this->sign_in_at->diffForHumans()
+            : 'Never';
     }
 }

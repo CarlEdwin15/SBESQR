@@ -12,6 +12,7 @@ use App\Models\Schedule;
 use App\Models\SchoolYear;
 use App\Models\QuarterlyGrade;
 use App\Models\Subject;
+use App\Services\TwilioService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -768,6 +769,26 @@ class TeacherController extends Controller
             'time_out' => $customTimeout ?? $schedule->end_time,
         ]);
 
+        // Send SMS to parent
+        if ($student->parent_id) {
+            $parent = DB::table('parent_info')->where('id', $student->parent_id)->first();
+
+            if ($parent) {
+                // Correct fallback: mother > father > emergency contact
+                $recipientPhone = $parent->mother_phone
+                    ?? $parent->father_phone
+                    ?? $parent->emergcont_phone;
+
+                if ($recipientPhone) {
+                    $twilio = new TwilioService();
+                    $message = "Hello! Your child {$student->student_fName} {$student->student_lName} has been marked as {$status} today (" . now()->format('M d, Y h:i A') . ").";
+                    $twilio->sendSMS($recipientPhone, $message);
+                } else {
+                    Log::warning("No valid parent/emergency phone found for student ID {$student->id}");
+                }
+            }
+        }
+
         return response()->json([
             'success' => true,
             'student' => $student->full_name,
@@ -1070,6 +1091,56 @@ class TeacherController extends Controller
         }
 
         return back()->with('success', 'Grades saved successfully!');
+    }
+
+    public function deleteGrade(Request $request, $grade_level, $section, $subject_id, $student_id, $quarter)
+    {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        $class = $this->getClass($grade_level, $section);
+        $teacherId = Auth::id();
+
+        $classSubject = ClassSubject::where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('teacher_id', $teacherId)
+            ->where('id', $subject_id)
+            ->firstOrFail();
+
+        $quarterId = $classSubject->quarters()->where('quarter', $quarter)->value('id');
+
+        if ($quarterId) {
+            QuarterlyGrade::where('student_id', $student_id)
+                ->where('quarter_id', $quarterId)
+                ->delete();
+        }
+
+        // Recompute final grade after deletion
+        $quarterGrades = QuarterlyGrade::where('student_id', $student_id)
+            ->whereIn('quarter_id', $classSubject->quarters()->pluck('id'))
+            ->pluck('final_grade')
+            ->filter()
+            ->toArray();
+
+        if (count($quarterGrades) > 0) {
+            $finalAverage = round(array_sum($quarterGrades) / count($quarterGrades), 2);
+            FinalSubjectGrade::updateOrCreate(
+                [
+                    'student_id' => $student_id,
+                    'class_subject_id' => $classSubject->id,
+                ],
+                [
+                    'final_grade' => $finalAverage,
+                    'remarks' => $finalAverage >= 75 ? 'passed' : 'failed',
+                ]
+            );
+        } else {
+            FinalSubjectGrade::where('student_id', $student_id)
+                ->where('class_subject_id', $classSubject->id)
+                ->delete();
+        }
+
+        return back()->with('success', 'Grade deleted successfully!');
     }
 
     public function exportQuarterlyGrades(Request $request, $grade_level, $section, $subject_id)
@@ -1444,7 +1515,7 @@ class TeacherController extends Controller
 
         // Render PDF: A4 landscape and show two pages side-by-side
         $pdf = Pdf::loadView('pdf.student_report_card', $data)
-            ->setPaper('a4', 'landscape');
+            ->setPaper('letter', 'landscape');
 
         // stream download
         $filename = "Report_Card(SF9){$student->student_lName}_{$student->student_fName}_{$data['schoolYear']->school_year}.pdf";

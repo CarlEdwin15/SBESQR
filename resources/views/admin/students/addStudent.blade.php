@@ -114,6 +114,14 @@
                 </ul>
             </li>
 
+            {{-- User Management sidebar --}}
+            <li class="menu-item">
+                <a href="{{ route('user.management') }}" class="menu-link bg-dark text-light">
+                    <i class='bx bxs-user-account me-3 text-light'></i>
+                    <div class="text-light"> User Management</div>
+                </a>
+            </li>
+
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
                 <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
@@ -461,8 +469,10 @@
                     <!-- Father's Phone No. -->
                     <div class="col mb-2 mt-2">
                         <label for="student_fatherPhone" class="form-label fw-bold">Phone No.</label>
-                        <input type="text" name="student_fatherPhone" id="student_fatherPhone" class="form-control"
-                            placeholder="Enter Father's Phone Number" value="{{ old('student_fatherPhone') }}" />
+                        <!-- Father's Phone -->
+                        <input type="tel" name="student_fatherPhone" id="student_fatherPhone" class="form-control"
+                            placeholder="e.g. 09123456789"
+                            value="{{ old('student_fatherPhone', $student->parentInfo->father_phone ?? '') }}" />
                     </div>
                 </div>
 
@@ -496,8 +506,9 @@
                     <!-- Mother's Phone No. -->
                     <div class="col mb-2 mt-2">
                         <label for="student_motherPhone" class="form-label fw-bold">Phone No.</label>
-                        <input type="text" name="student_motherPhone" id="student_motherPhone" class="form-control"
-                            placeholder="Enter Mother's Phone Number" value="{{ old('student_motherPhone') }}" />
+                        <input type="tel" name="student_motherPhone" id="student_motherPhone" class="form-control"
+                            placeholder="e.g. +639123456789"
+                            value="{{ old('student_motherPhone', $student->parentInfo->mother_phone ?? '') }}" />
                     </div>
                 </div>
 
@@ -538,7 +549,8 @@
                         <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
                         <input type="tel" name="student_emergcontPhone" id="student_emergcontPhone"
                             class="form-control" placeholder="e.g. +639123456789"
-                            value="+639{{ old('student_emergcontPhone') }}" required />
+                            value="{{ old('student_emergcontPhone') }}" required />
+                        <small class="text-muted">Format: +639XXXXXXXXX</small>
                     </div>
                 </div>
 

@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@section('hideNavbar', true)
+
+@section('hideWrapper', true)
+
 @section('content')
     <!-- Error -->
     <div class="text-center mt-5">

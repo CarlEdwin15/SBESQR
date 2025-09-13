@@ -52,7 +52,7 @@
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <ul class="navbar-nav flex-row align-items-center ms-auto">
 
-            <button id="enablePush" class="btn btn-outline-primary">Enable browser notifications</button>
+            <button id="enablePush" class="btn btn-outline-primary">Enable SBESqr notifications</button>
 
             <!-- Notification Dropdown -->
             <li class="nav-item dropdown">
@@ -84,7 +84,7 @@
                                 href="javascript:void(0);" data-id="{{ $notif->id }}">
                                 <div class="rounded-circle d-flex justify-content-center align-items-center overflow-hidden"
                                     style="width:36px; height:36px; background-color:#f8f9fa;">
-                                    <img src="assets/img/logo.png" alt="Logo" class="img-fluid"
+                                    <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="img-fluid"
                                         style="width:100%; height:100%; object-fit:contain;">
                                 </div>
                                 <div>
@@ -123,18 +123,56 @@
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="d-flex align-items-center">
                         <div class="avatar">
+                            @php use Illuminate\Support\Str; @endphp
+
                             @auth
                                 @php
-                                    $profilePhoto = Auth::user()->profile_photo
-                                        ? asset('storage/' . Auth::user()->profile_photo)
-                                        : asset('assetsDashboard/img/profile_pictures/admin_profile.png');
+                                    $profilePhoto = Auth::user()->profile_photo;
+
+                                    if ($profilePhoto) {
+                                        if (Str::startsWith($profilePhoto, ['http://', 'https://'])) {
+                                            // External photo (Google login, etc.)
+                                            $profilePhoto = $profilePhoto;
+                                        } else {
+                                            // Stored locally
+                                            $profilePhoto = asset('storage/' . $profilePhoto);
+                                        }
+                                    } else {
+                                        // No profile photo, fallback by role
+                                        switch (Auth::user()->role) {
+                                            case 'admin':
+                                                $profilePhoto = asset(
+                                                    'assetsDashboard/img/profile_pictures/admin_profile.png',
+                                                );
+                                                break;
+                                            case 'teacher':
+                                                $profilePhoto = asset(
+                                                    'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
+                                                );
+                                                break;
+                                            case 'parent':
+                                                $profilePhoto = asset(
+                                                    'assetsDashboard/img/profile_pictures/parents_default_profile.png',
+                                                );
+                                                break;
+                                            default:
+                                                // generic fallback (teacher style)
+                                                $profilePhoto = asset(
+                                                    'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
+                                                );
+                                                break;
+                                        }
+                                    }
                                 @endphp
+
                                 <img src="{{ $profilePhoto }}" alt="Profile Photo" class="w-px-40 h-auto rounded-circle" />
                             @else
-                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
+                                {{-- Guest fallback --}}
+                                <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
                                     alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
                             @endauth
                         </div>
+
                         @auth
                             <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
                         @endauth
@@ -293,7 +331,7 @@
                 })
                 .catch(err => {
                     content.innerHTML =
-                    `<div class="alert alert-danger">Failed to load announcement.</div>`;
+                        `<div class="alert alert-danger">Failed to load announcement.</div>`;
                 });
         }
     });

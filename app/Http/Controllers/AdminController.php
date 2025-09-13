@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Classes;
+use App\Models\ParentInfo;
 use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,32 @@ use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    public function userManagement()
+    {
+        // Fetch all users with computed attributes
+        $users = User::all()
+            ->sortBy(function ($user) {
+                return sprintf(
+                    '%d-%s',
+                    $user->is_online ? 0 : 1,  // online first
+                    strtolower($user->full_name) // alphabetical inside group
+                );
+            })
+            ->values(); // reindex collection
+
+        // You can paginate manually if needed
+        // $users = $users->paginate(10); // collections don’t paginate directly
+
+        $stats = [
+            'totalUsers'   => User::count(),
+            'totalTeachers' => User::where('role', 'teacher')->count(),
+            'totalAdmins'  => User::where('role', 'admin')->count(),
+            'totalParents' => User::where('role', 'parent')->count(),
+        ];
+
+        return view('admin.user_management.index', compact('users', 'stats'));
+    }
+
     public function accountSettings()
     {
         $user = Auth::user();
@@ -178,7 +205,28 @@ class AdminController extends Controller
             'lastName' => 'required|string|max:255',
             'middleName' => 'nullable|string|max:255',
             'extName' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    // Check if email belongs to an existing teacher
+                    if (User::where('email', $value)->where('role', 'teacher')->exists()) {
+                        return $fail('This email is already registered to a teacher.');
+                    }
+
+                    // Check if email belongs to a parent
+                    if (ParentInfo::where('parent_email', $value)->exists()) {
+                        return $fail('This email is already registered to a parent.');
+                    }
+
+                    // Generic check in case other roles exist (like admin)
+                    if (User::where('email', $value)->where('role', '!=', 'teacher')->exists()) {
+                        return $fail('This email is already registered for another user.');
+                    }
+                },
+            ],
             'gender' => 'required|in:male,female',
             'phone' => 'nullable|string|max:20',
             'house_no' => 'nullable|string|max:255',
@@ -283,7 +331,28 @@ class AdminController extends Controller
             'lastName' => 'required|string|max:255',
             'middleName' => 'nullable|string|max:255',
             'extName' => 'nullable|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                function ($attribute, $value, $fail) use ($id) {
+                    // Check if another teacher already has this email
+                    if (User::where('email', $value)->where('id', '!=', $id)->where('role', 'teacher')->exists()) {
+                        return $fail('This email is already registered to another teacher.');
+                    }
+
+                    // Check if parent is using this email
+                    if (ParentInfo::where('parent_email', $value)->exists()) {
+                        return $fail('This email is already registered to a parent.');
+                    }
+
+                    // Generic check for other users (like admin)
+                    if (User::where('email', $value)->where('id', '!=', $id)->where('role', '!=', 'teacher')->exists()) {
+                        return $fail('This email is already registered for another user.');
+                    }
+                },
+            ],
             'gender' => 'required|in:male,female',
             'phone' => 'nullable|string|max:20',
             'house_no' => 'nullable|string|max:255',

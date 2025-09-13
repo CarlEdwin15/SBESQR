@@ -163,6 +163,18 @@
             No search found.
         </div>
 
+        {{-- Show alert if no students enrolled for this school year --}}
+        @if ($groupedStudents->isEmpty())
+            <div class="alert alert-warning text-center">
+                No enrolled students found for School Year
+                <strong>{{ $selectedYear }}</strong>.
+                <br>
+                <span class="text-primary">
+                    Please check back later or contact the administration for more information.
+                </span>
+            </div>
+        @endif
+
         {{-- Card --}}
         @foreach ($groupedStudents as $grade => $students)
             <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
@@ -189,11 +201,11 @@
                         </thead>
                         <tbody>
                             @forelse ($students->sortBy([
-                                                                                                                    ['student_lName', 'asc'],
-                                                                                                                    ['student_fName', 'asc'],
-                                                                                                                    ['student_mName', 'asc'],
-                                                                                                                    ['student_extName', 'asc'],
-                                                                                                                    ]) as $student)
+                                        ['student_lName', 'asc'],
+                                        ['student_fName', 'asc'],
+                                        ['student_mName', 'asc'],
+                                        ['student_extName', 'asc'],
+                                        ]) as $student)
                                 <tr class="student-row t-row"
                                     data-href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}"
                                     data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"

@@ -219,7 +219,6 @@
                         </div>
                     </div>
 
-
                     <!-- Right: Student List -->
                     <div class="col-md-6">
                         <div id="qr-result" class="mb-2 text-success fw-bold"></div>

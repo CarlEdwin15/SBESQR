@@ -59,20 +59,25 @@ class StudentSeeder extends Seeder
                     'pob' => 'Sample City',
                 ]);
 
+                $fatherFirstNames = ['Juan', 'Jose', 'Carlos', 'Ramon', 'Miguel', 'Andres', 'Antonio', 'Luis', 'Fernando', 'Rafael'];
+                $motherFirstNames = ['Maria', 'Ana', 'Carmen', 'Luisa', 'Teresa', 'Rosa', 'Elena', 'Isabel', 'Patricia', 'Clara'];
+                $middleNames = ['Dela', 'Santos', 'Lopez', 'Reyes', 'Gomez', 'Cruz', 'Morales', 'Navarro', 'Ramos', 'Castillo'];
+                $lastNames = ['Garcia', 'Santos', 'Reyes', 'Cruz', 'Torres', 'Lopez', 'Dela Cruz', 'Gomez', 'Domingo', 'Morales', 'Navarro', 'Castillo', 'Ramos', 'Mendoza', 'Flores'];
+
                 $parent = ParentInfo::create([
-                    'father_fName' => 'Juan',
-                    'father_mName' => 'Dela',
-                    'father_lName' => 'Cruz',
+                    'father_fName' => $fatherFirstNames[array_rand($fatherFirstNames)],
+                    'father_mName' => $middleNames[array_rand($middleNames)],
+                    'father_lName' => $lastNames[array_rand($lastNames)],
                     'father_phone' => '0917' . rand(1000000, 9999999),
-                    'mother_fName' => 'Maria',
-                    'mother_mName' => 'Santos',
-                    'mother_lName' => 'Reyes',
+                    'mother_fName' => $motherFirstNames[array_rand($motherFirstNames)],
+                    'mother_mName' => $middleNames[array_rand($middleNames)],
+                    'mother_lName' => $lastNames[array_rand($lastNames)],
                     'mother_phone' => '0918' . rand(1000000, 9999999),
-                    'emergcont_fName' => 'Pedro',
-                    'emergcont_mName' => 'Lopez',
-                    'emergcont_lName' => 'Gomez',
+                    'emergcont_fName' => $firstNames[array_rand($firstNames)],
+                    'emergcont_mName' => $middleNames[array_rand($middleNames)],
+                    'emergcont_lName' => $lastNames[array_rand($lastNames)],
                     'emergcont_phone' => '0920' . rand(1000000, 9999999),
-                    'parent_email' => 'parent' . $i . '@example.com',
+                    'parent_email' => 'parent' . $i . '_' . $gradeLevel . '@example.com',
                 ]);
 
                 $student = Student::create([

@@ -175,10 +175,22 @@
                                 <th style="width: 40px;">No.</th>
                                 <th style="width: 5%;">PHOTO</th>
                                 <th style="width: 20%">Male || Name</th>
-                                <th>1st Quarter</th>
-                                <th>2nd Quarter</th>
-                                <th>3rd Quarter</th>
-                                <th>4th Quarter</th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="1" @endif>
+                                    1st Quarter
+                                </th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="2" @endif>
+                                    2nd Quarter
+                                </th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="3" @endif>
+                                    3rd Quarter
+                                </th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="4" @endif>
+                                    4th Quarter
+                                </th>
                                 <th>Final Grade</th>
                                 <th>Remarks</th>
                             </tr>
@@ -210,8 +222,9 @@
                                             @if ($canEdit)
                                                 <input type="number"
                                                     name="grades[{{ $student->id }}][q{{ $q }}]"
-                                                    class="form-control quarter-input" value="{{ $grade }}"
-                                                    min="0" max="100" step="0.01">
+                                                    class="form-control quarter-input quarter-{{ $q }}"
+                                                    value="{{ $grade }}" min="0" max="100"
+                                                    step="0.01" disabled>
                                             @else
                                                 <span>{{ $grade }}</span>
                                             @endif
@@ -259,10 +272,22 @@
                                 <th style="width: 40px;">No.</th>
                                 <th style="width: 5%;">Photo</th>
                                 <th style="width: 20%">Male || Name</th>
-                                <th>1st Quarter</th>
-                                <th>2nd Quarter</th>
-                                <th>3rd Quarter</th>
-                                <th>4th Quarter</th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="1" @endif>
+                                    1st Quarter
+                                </th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="2" @endif>
+                                    2nd Quarter
+                                </th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="3" @endif>
+                                    3rd Quarter
+                                </th>
+                                <th class="toggle-edit text-decoration-underline cursor-pointer"
+                                    @if ($canEdit) data-quarter="4" @endif>
+                                    4th Quarter
+                                </th>
                                 <th>Final Grade</th>
                                 <th>Remarks</th>
                             </tr>
@@ -507,6 +532,70 @@
             }
         });
     </script>
+
+    <script>
+        // Toggle enabling inputs by clicking the quarter header with SweetAlert confirmation
+        document.querySelectorAll(".toggle-edit").forEach(th => {
+            th.addEventListener("click", function() {
+                if (!this.dataset.quarter) return; // skip if not editable
+
+                const quarter = this.dataset.quarter;
+                const inputs = document.querySelectorAll(`.quarter-${quarter}`);
+                const columnCells = document.querySelectorAll(
+                    `th[data-quarter="${quarter}"], td:nth-child(${parseInt(quarter) + 3})`
+                );
+                // +3 offset = No., Photo, Name columns before quarters
+
+                let currentlyDisabled = inputs[0]?.disabled;
+
+                if (currentlyDisabled) {
+                    // Ask before enabling
+                    Swal.fire({
+                        title: `Enable Editing?`,
+                        text: `Do you want to enable inputting grades for Quarter ${quarter}?`,
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, enable",
+                        cancelButtonText: "Cancel",
+                        customClass: {
+                            container: "my-swal-container"
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            inputs.forEach(input => input.disabled = false);
+                            th.classList.add("text-dark");
+                            th.classList.remove("text-muted");
+
+                            // ✅ Highlight the entire column
+                            columnCells.forEach(cell => cell.classList.add("active-quarter"));
+                        }
+                    });
+                } else {
+                    // Ask before disabling
+                    Swal.fire({
+                        title: `Disable Editing?`,
+                        text: `Do you want to disable editing for Quarter ${quarter}?`,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, disable",
+                        cancelButtonText: "Cancel",
+                        customClass: {
+                            container: "my-swal-container"
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            inputs.forEach(input => input.disabled = true);
+                            th.classList.remove("text-success");
+                            th.classList.add("text-muted");
+
+                            // ✅ Remove highlight
+                            columnCells.forEach(cell => cell.classList.remove("active-quarter"));
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 @endpush
 
 @push('styles')
@@ -531,6 +620,11 @@
         .student-photo:hover {
             transform: scale(1.1);
             box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .active-quarter {
+            background-color: #e0fdd0 !important;
+            /* Bootstrap bg-warning */
         }
     </style>
 @endpush

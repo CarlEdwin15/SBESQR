@@ -75,17 +75,17 @@ return new class extends Migration
             $table->string('father_fName')->nullable();
             $table->string('father_mName')->nullable();
             $table->string('father_lName')->nullable();
-            $table->string('father_phone')->nullable();
+            $table->string('father_phone', 20)->nullable();
 
             $table->string('mother_fName')->nullable();
             $table->string('mother_mName')->nullable();
             $table->string('mother_lName')->nullable();
-            $table->string('mother_phone')->nullable();
+            $table->string('mother_phone', 20)->nullable();
 
             $table->string('emergcont_fName')->nullable();
             $table->string('emergcont_mName')->nullable();
             $table->string('emergcont_lName')->nullable();
-            $table->string('emergcont_phone')->nullable();
+            $table->string('emergcont_phone', 20)->nullable();
 
             $table->string('parent_email')->nullable();
 

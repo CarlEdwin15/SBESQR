@@ -33,4 +33,32 @@ class ParentInfo extends Model
     {
         return $this->hasMany(Announcement::class);
     }
+
+    // Parent's phone conversion from +63 to 09
+    public function getFatherPhoneAttribute($value)
+    {
+        return $this->formatForDisplay($value);
+    }
+
+    public function getMotherPhoneAttribute($value)
+    {
+        return $this->formatForDisplay($value);
+    }
+
+    public function getEmergcontPhoneAttribute($value)
+    {
+        return $this->formatForDisplay($value);
+    }
+
+    private function formatForDisplay($phone)
+    {
+        if (!$phone) return null;
+
+        // If starts with +639, display as 09
+        if (str_starts_with($phone, '+639')) {
+            return '0' . substr($phone, 3);
+        }
+
+        return $phone;
+    }
 }

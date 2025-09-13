@@ -22,6 +22,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Models\Announcement;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -29,7 +30,7 @@ Route::get('/', function () {
         ->take(99)
         ->get()
         ->filter(function ($announcement) {
-            return $announcement->getStatus() === 'active'; // ✅ only active
+            return $announcement->getStatus() === 'active';
         });
 
     return view('welcome', compact('announcements'));
@@ -40,6 +41,22 @@ Route::get('/', function () {
 
 // HOME
 Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+// User Management (on ADMIN dashboard)
+Route::get('/userManagement', [AdminController::class, 'userManagement'])->name('user.management');
+
+Route::get('/admin/user-status-refresh', function () {
+    $users = User::select('id', 'sign_in_at', 'last_sign_in_at')
+        ->get()
+        ->mapWithKeys(fn($user) => [
+            $user->id => [
+                'is_online' => $user->is_online,
+                'last_seen' => $user->last_seen ?? 'N/A',
+            ],
+        ]);
+
+    return response()->json($users);
+})->middleware(['auth', 'verified']);
 
 // Google login
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
@@ -199,6 +216,7 @@ Route::get('/teacher-export-attendance', function () {
     return Excel::download(new SF2Export($data), $fileName);
 })->name('export.sf2');
 
+
 // Subject Management (on Teacher's Dashboard)
 Route::get('/teacher/subjects/{grade_level}/{section}', [TeacherController::class, 'myClassSubject'])->name('teacher.myClassSubject');
 
@@ -210,7 +228,8 @@ Route::get(
     [TeacherController::class, 'viewSubject']
 )->name('teacher.subjects.view');
 
-// Student report card grades export in the student info view
+
+// Export Student Report Card grades in the student info view
 Route::get(
     '/teacher/student/{student_id}/report_card/export',
     [TeacherController::class, 'studentReportCard']
@@ -228,6 +247,11 @@ Route::post(
     [TeacherController::class, 'saveGrades']
 )->name('teacher.subjects.saveGrades');
 
+Route::delete(
+    '/teacher/subjects/{grade_level}/{section}/{subject_id}/grades/{student_id}/{quarter}',
+    [TeacherController::class, 'deleteGrade']
+)
+    ->name('teacher.subjects.deleteGrade');
 
 
 //List of Student's Info (on teacher Dashboard)

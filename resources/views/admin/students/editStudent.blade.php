@@ -114,6 +114,14 @@
                 </ul>
             </li>
 
+            {{-- User Management sidebar --}}
+            <li class="menu-item">
+                <a href="{{ route('user.management') }}" class="menu-link bg-dark text-light">
+                    <i class='bx bxs-user-account me-3 text-light'></i>
+                    <div class="text-light"> User Management</div>
+                </a>
+            </li>
+
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
                 <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
@@ -447,7 +455,7 @@
                         <!-- Father's Phone No. Field -->
                         <div class="col mb-2 mt-2">
                             <label for="student_fatherPhone" class="form-label fw-bold">Phone No.</label>
-                            <input type="text" name="student_fatherPhone" id="student_fatherPhone"
+                            <input type="tel" name="student_fatherPhone" id="student_fatherPhone"
                                 class="form-control" value="{{ $student->parentInfo->father_phone }}" />
                         </div>
 
@@ -486,7 +494,7 @@
                         <!-- Mother's Phone No. Field -->
                         <div class="col mb-2 mt-2">
                             <label for="student_motherPhone" class="form-label fw-bold">Phone No.</label>
-                            <input type="text" name="student_motherPhone" id="student_motherPhone"
+                            <input type="tel" name="student_motherPhone" id="student_motherPhone"
                                 class="form-control" value="{{ $student->parentInfo->mother_phone }}" />
                         </div>
 
@@ -525,7 +533,7 @@
                         <!-- Emergency Contact's Phone No. Field -->
                         <div class="col mb-2 mt-2">
                             <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
-                            <input type="text" name="student_emergcontPhone" id="student_emergcontPhone"
+                            <input type="tel" name="student_emergcontPhone" id="student_emergcontPhone"
                                 class="form-control" value="{{ $student->parentInfo->emergcont_phone }}" />
                         </div>
                     </div>
