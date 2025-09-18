@@ -245,7 +245,7 @@ button.list-group-item-primary.active {
   color: #fff;
   background-color: #006aff;
   border-color: #006aff;
-  box-shadow: 0 0.125rem 0.25rem 0 rgba(105, 108, 255, 0.4);
+  box-shadow: 0 0.125rem 0.25rem 0 rgba(79, 82, 250, 0.4);
   transform: translateY(-1px);
 }
 .btn-check:focus + .btn-outline-primary, .btn-outline-primary:focus {
@@ -325,7 +325,7 @@ button.list-group-item-primary.active {
 .form-check-input:checked, .form-check-input[type=checkbox]:indeterminate {
   background-color: #1778ff;
   border-color: #1778ff;
-  box-shadow: 0 2px 4px 0 rgba(105, 108, 255, 0.4);
+  box-shadow: 0 2px 4px 0 rgba(255, 155, 105, 0.4);
 }
 
 .custom-option.checked {

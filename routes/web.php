@@ -25,25 +25,26 @@ use App\Models\Announcement;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
-Route::get('/', function () {
-    $announcements = Announcement::orderBy('date_published', 'desc')
-        ->take(99)
-        ->get()
-        ->filter(function ($announcement) {
-            return $announcement->getStatus() === 'active';
-        });
-
-    return view('welcome', compact('announcements'));
-})->name('welcome');
-
 
 // ADMIN DASHBOARD ROUTES
 
-// HOME
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+// Error routes
+Route::view('/error/inactive', 'errors.423_inactive')->name('error.inactive');
+Route::view('/error/suspended', 'errors.402_suspended')->name('error.suspended');
+Route::view('/error/banned', 'errors.403_banned')->name('error.banned');
+
+Route::post('/admin/users/bulk-update-status', [AdminController::class, 'bulkUpdateStatus'])
+    ->name('admin.users.bulkUpdateStatus');
+
+// Protected routes
+Route::middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class])->group(function () {
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+});
 
 // User Management (on ADMIN dashboard)
-Route::get('/userManagement', [AdminController::class, 'userManagement'])->name('user.management');
+Route::get('/userManagement', [AdminController::class, 'userManagement'])
+    ->name('admin.user.management')
+    ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
 
 Route::get('/admin/user-status-refresh', function () {
     $users = User::select('id', 'sign_in_at', 'last_sign_in_at')
@@ -58,13 +59,21 @@ Route::get('/admin/user-status-refresh', function () {
     return response()->json($users);
 })->middleware(['auth', 'verified']);
 
+// Update user status
+Route::post('/admin/users/{user}/status', [AdminController::class, 'updateUserStatus'])
+    ->name('admin.users.updateStatus')
+    ->middleware(['auth', 'verified']);
+
+Route::get('/userInfo/{id}', [AdminController::class, 'userInfo'])->name('admin.user.info');
+
+
 // Google login
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 // Facebook login
-Route::get('/auth/facebook', [FacebookController::class, 'redirectToFacebook'])->name('facebook.login');
-Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
+// Route::get('/auth/facebook', [FacebookController::class, 'redirectToFacebook'])->name('facebook.login');
+// Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
 
 // User Account Settings (on ADMIN dashboard)
 Route::get('/accountSettings', [AdminController::class, 'accountSettings'])->name('account.settings');
@@ -153,17 +162,30 @@ Route::middleware('auth')->prefix('announcements')->name('announcements.')->grou
     Route::post('upload-image', [AnnouncementController::class, 'uploadImage'])->name('uploadImage');
 });
 
-// Show ajax notif
+// Show ajax notification
 Route::get('/announcements/{id}/show-ajax', [AnnouncementController::class, 'showAjax'])
     ->name('announcements.showAjax');
 
+// Announcement in landing page
+Route::get('/', function () {
+    $announcements = Announcement::orderBy('date_published', 'desc')
+        ->take(99)
+        ->get()
+        ->filter(function ($announcement) {
+            return $announcement->getStatus() === 'active';
+        });
+
+    return view('welcome', compact('announcements'));
+})->name('welcome');
+
+// Push subscription for Notifications
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])
     ->name('push.subscribe')->middleware('auth');
 Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])
     ->name('push.unsubscribe')->middleware('auth');
 
 
-Route::get('/pusher', [AnnouncementController::class, 'pusher']);
+// Route::get('/pusher', [AnnouncementController::class, 'pusher']);
 
 // Payment Management (on ADMIN Dashboard)
 Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');

@@ -61,4 +61,10 @@ class ParentInfo extends Model
 
         return $phone;
     }
+
+    // Helper method to Check if parent has associated students
+    public function hasStudents()
+    {
+        return $this->student()->exists();
+    }
 }

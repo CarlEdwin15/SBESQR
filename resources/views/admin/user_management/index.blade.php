@@ -115,7 +115,7 @@
 
             {{-- User Management sidebar --}}
             <li class="menu-item active">
-                <a href="{{ route('user.management') }}" class="menu-link">
+                <a href="{{ route('admin.user.management') }}" class="menu-link">
                     <i class='bx bxs-user-account me-3'></i>
                     <div class="text-warning"> User Management</div>
                 </a>
@@ -231,7 +231,7 @@
                         <div class="col-md-4 col-sm-6">
                             <input type="text" class="form-control" placeholder="Search..." id="userSearch">
                         </div>
-                        <div class="col-md-2 col-sm-3">
+                        <div class="col-md-4 col-sm-3">
                             <select id="roleFilter" class="form-select">
                                 <option value="">All Roles</option>
                                 <option value="admin">Admin</option>
@@ -239,7 +239,7 @@
                                 <option value="parent">Parent</option>
                             </select>
                         </div>
-                        <div class="col-md-2 col-sm-3">
+                        <div class="col-md-4 col-sm-3">
                             <select id="statusFilter" class="form-select">
                                 <option value="">All Status</option>
                                 <option value="active">Active</option>
@@ -248,9 +248,67 @@
                                 <option value="banned">Banned</option>
                             </select>
                         </div>
-                        <div class="col-md-4 text-end">
-                            <button class="btn btn-sm btn-primary">Export</button>
-                            <a href="{{ route('register') }}" class="btn btn-sm btn-success">+ Add User</a>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+
+                        <!-- Left: Table Length Selector -->
+                        <div>
+                            <select id="tableLength" class="form-select">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+
+                        <!-- Right: Bulk Actions + Buttons -->
+                        <div class="d-flex gap-2">
+
+                            <!-- Bulk Status Dropdown Settings -->
+                            <form id="bulkStatusForm" action="{{ route('admin.users.bulkUpdateStatus') }}"
+                                method="POST" class="d-flex gap-2 d-none">
+                                @csrf
+                                <div id="bulkUserIds"></div> <!-- Will hold <input name="user_ids[]"> dynamically -->
+
+                                <!-- Styled like per-row dropdown -->
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-outline-primary dropdown-toggle" type="button"
+                                        id="bulkStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Set Status
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="bulkStatusDropdown">
+                                        <li>
+                                            <button type="submit" class="dropdown-item text-success"
+                                                onclick="setBulkStatus('active')">
+                                                <i class="bx bx-check-circle text-success me-1"></i> Activate
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="submit" class="dropdown-item text-secondary"
+                                                onclick="setBulkStatus('inactive')">
+                                                <i class="bx bx-power-off text-secondary me-1"></i> Deactivate
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="submit" class="dropdown-item text-warning"
+                                                onclick="setBulkStatus('suspended')">
+                                                <i class="bx bx-pause-circle text-warning me-1"></i> Suspend
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="submit" class="dropdown-item text-danger"
+                                                onclick="setBulkStatus('banned')">
+                                                <i class="bx bx-block text-danger me-1"></i> Ban
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </form>
+
+                            <a href="{{ route('register') }}" class="btn btn-success">+ Add User</a>
                         </div>
                     </div>
 
@@ -259,13 +317,15 @@
                         <table class="table table-hover align-middle" id="userTable">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th style="width: 20%;">Full Name</th>
+                                    <th style="width: 5%;">
+                                        <input class="form-check-input me-1" type="checkbox" id="selectAll">
+                                    </th>
+                                    <th class="text-start" style="width: 35%;">Full Name</th>
                                     <th style="width: 15%;">Last Active</th>
-                                    <th style="width: 15%;">Role</th>
-                                    <th style="width: 15%;">Email</th>
+                                    <th style="width: 10%;">Role</th>
+                                    <th style="width: 10%;">Email</th>
                                     <th style="width: 10%;">Access Status</th>
-                                    <th style="width: 10%;">Joined</th>
-                                    <th style="width: 15%;" class="text-center">Actions</th>
+                                    <th style="width: 15%;">Joined</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -317,12 +377,18 @@
                                         data-role="{{ strtolower($user->role) }}"
                                         data-status="{{ strtolower($user->status) }}">
 
+                                        <td class="text-center">
+                                            <input type="checkbox" class="user-checkbox form-check-input me-1"
+                                                value="{{ $user->id }}">
+                                        </td>
                                         <!-- Full Name with profile photo -->
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <img src="{{ $profilePhoto }}" alt="{{ $user->full_name }}"
-                                                    class="rounded-circle me-2" width="36" height="36">
-                                                <span>{{ $user->full_name }}</span>
+                                                <a href="{{ route('admin.user.info', ['id' => $user->id]) }}">
+                                                    <img src="{{ $profilePhoto }}" alt="{{ $user->full_name }}"
+                                                        class="rounded-circle me-2" width="30" height="30">
+                                                    <span>{{ $user->full_name }}</span>
+                                                </a>
                                             </div>
                                         </td>
 
@@ -359,30 +425,25 @@
                                         <td class="text-center">
                                             <span
                                                 class="badge
-                            @if ($user->status === 'active') bg-label-success
-                            @elseif($user->status === 'inactive') bg-label-secondary
-                            @elseif($user->status === 'suspended') bg-label-warning
-                            @elseif($user->status === 'banned') bg-label-danger @endif">
+                                            @if ($user->status === 'active') bg-label-success
+                                            @elseif($user->status === 'inactive') bg-label-secondary
+                                            @elseif($user->status === 'suspended') bg-label-warning
+                                            @elseif($user->status === 'banned') bg-label-danger @endif">
                                                 {{ ucfirst($user->status) }}
                                             </span>
                                         </td>
 
                                         <!-- Joined -->
-                                        <td class="text-center">{{ $user->created_at->format('M d, Y') }}</td>
-
-                                        <!-- Actions -->
-                                        <td class="text-center">
-                                            <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
-                                        </td>
+                                        <td>{{ $user->created_at->format('M d, Y') }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Pagination -->
-                    <div class="d-flex justify-content-start px-3 py-3 border-top">
+                    <!-- Pagination + Info -->
+                    <div class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
+                        <div id="tableInfo" class="text-muted small"></div>
                         <nav aria-label="Page navigation">
                             <ul class="pagination mb-0" id="userPagination"></ul>
                         </nav>
@@ -432,21 +493,23 @@
         }
     </script>
 
+    <!-- Pagination, Search, Filter Logic -->
     <script>
         let allUserRows = [];
         const visibleRowsMap = {};
-        let currentPage = 1; // 🔑 keep track of current page
+        let currentPage = 1;
+        let rowsPerPage = 10; // default
 
-        function paginateUsers(tableId, paginationId, rowsPerPage = 10, maxVisiblePages = 10) {
-            const table = document.getElementById(tableId);
+        function paginateUsers(tableId, paginationId, maxVisiblePages = 10) {
             const pagination = document.getElementById(paginationId);
             const rows = visibleRowsMap[tableId] || [];
 
             function showPage(page) {
-                const totalPages = Math.ceil(rows.length / rowsPerPage);
-                currentPage = Math.min(Math.max(1, page), totalPages); // update current page safely
+                const totalEntries = rows.length;
+                const totalPages = Math.max(1, Math.ceil(totalEntries / rowsPerPage));
+                currentPage = Math.min(Math.max(1, page), totalPages);
                 const start = (currentPage - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
+                const end = Math.min(start + rowsPerPage, totalEntries);
 
                 // Hide all first
                 allUserRows.forEach(r => r.style.display = "none");
@@ -454,10 +517,16 @@
                 // Show only the slice
                 rows.slice(start, end).forEach(r => r.style.display = "table-row");
 
-                // Build pagination
-                pagination.innerHTML = "";
-                if (totalPages <= 1) return;
+                // Update info text
+                const tableInfo = document.getElementById("tableInfo");
+                if (totalEntries > 0) {
+                    tableInfo.textContent = `Showing ${start + 1} to ${end} of ${totalEntries} entries`;
+                } else {
+                    tableInfo.textContent = "Showing 0 to 0 of 0 entries";
+                }
 
+                // Build pagination (always visible)
+                pagination.innerHTML = "";
                 const ul = document.createElement("ul");
                 ul.className = "pagination mb-0";
 
@@ -489,7 +558,7 @@
                 pagination.appendChild(ul);
             }
 
-            showPage(currentPage); // 🔑 keep current page after refresh/filter
+            showPage(currentPage);
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -500,6 +569,13 @@
             // Initialize
             visibleRowsMap[tableId] = allUserRows;
             paginateUsers(tableId, paginationId);
+
+            // Table length selector
+            document.getElementById("tableLength").addEventListener("change", function() {
+                rowsPerPage = parseInt(this.value);
+                currentPage = 1;
+                paginateUsers(tableId, paginationId);
+            });
 
             // Search + Filter
             document.getElementById("userSearch").addEventListener("input", filterUsers);
@@ -522,13 +598,15 @@
                 });
 
                 visibleRowsMap[tableId] = filteredRows;
-                currentPage = 1; // reset to page 1 when filtering
+                currentPage = 1;
                 paginateUsers(tableId, paginationId);
             }
         });
     </script>
 
+    <!-- Auto-refresh User Online Status -->
     <script>
+        // Auto-refresh user online status every 1s
         function refreshUserStatus() {
             fetch("{{ url('/admin/user-status-refresh') }}")
                 .then(res => res.json())
@@ -597,6 +675,115 @@
         // Run every 30s (use 1000ms only for testing)
         setInterval(refreshUserStatus, 1000);
     </script>
+
+    <!-- Select All and Bulk Actions -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const selectAll = document.getElementById("selectAll");
+            const checkboxes = document.querySelectorAll(".user-checkbox");
+            const bulkForm = document.getElementById("bulkStatusForm");
+            const bulkUserIdsContainer = document.getElementById("bulkUserIds");
+
+            // Helper: check if any checkbox is selected
+            function toggleBulkForm() {
+                const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                bulkForm.classList.toggle("d-none", !anyChecked);
+            }
+
+            // Select all toggle
+            selectAll.addEventListener("change", () => {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                toggleBulkForm();
+            });
+
+            // Individual checkbox toggle
+            checkboxes.forEach(cb => {
+                cb.addEventListener("change", toggleBulkForm);
+            });
+
+            // Collect checked IDs before submit
+            bulkForm.addEventListener("submit", (e) => {
+                const selected = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    e.preventDefault();
+                    alert("Please select at least one user.");
+                    return;
+                }
+
+                // Clear old inputs
+                bulkUserIdsContainer.innerHTML = "";
+
+                // Create hidden inputs for each selected user
+                selected.forEach(id => {
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "user_ids[]";
+                    input.value = id;
+                    bulkUserIdsContainer.appendChild(input);
+                });
+            });
+        });
+    </script>
+
+    <!-- Bulk Status Update Logic -->
+    <script>
+        function setBulkStatus(status) {
+            event.preventDefault(); // prevent immediate submit
+            const bulkForm = document.getElementById("bulkStatusForm");
+            const checkboxes = document.querySelectorAll(".user-checkbox:checked");
+            const bulkUserIdsContainer = document.getElementById("bulkUserIds");
+
+            if (checkboxes.length === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "No users selected",
+                    text: "Please select at least one user.",
+                    confirmButtonColor: "#3085d6",
+                });
+                return;
+            }
+
+            let statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+            Swal.fire({
+                title: `Are you sure?`,
+                text: `You are about to set ${checkboxes.length} user(s) to "${statusLabel}".`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: `Yes, set to ${statusLabel}`,
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Clear previous inputs
+                    bulkUserIdsContainer.innerHTML = "";
+
+                    // Add selected IDs
+                    checkboxes.forEach(cb => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "user_ids[]";
+                        input.value = cb.value;
+                        bulkUserIdsContainer.appendChild(input);
+                    });
+
+                    // Add status input
+                    const statusInput = document.createElement("input");
+                    statusInput.type = "hidden";
+                    statusInput.name = "status";
+                    statusInput.value = status;
+                    bulkUserIdsContainer.appendChild(statusInput);
+
+                    // Submit form
+                    bulkForm.submit();
+                }
+            });
+        }
+    </script>
 @endpush
 
 @push('styles')
@@ -617,6 +804,12 @@
             font-size: 0.6rem;
             /* adjust until it feels right */
             vertical-align: middle;
+        }
+
+        /* Make checkboxes use pointer cursor */
+        .user-checkbox,
+        #selectAll {
+            cursor: pointer;
         }
     </style>
 @endpush

@@ -20,28 +20,27 @@ class GoogleController extends Controller
     {
         $googleUser = Socialite::driver('google')->user();
 
-        $email = $googleUser->getEmail();
+        $email     = $googleUser->getEmail();
         $firstName = $googleUser->user['given_name'] ?? '';
-        $lastName = $googleUser->user['family_name'] ?? '';
-        $avatar = $googleUser->getAvatar() ?? "https://ui-avatars.com/api/?name=" . urlencode("$firstName $lastName");
+        $lastName  = $googleUser->user['family_name'] ?? '';
+        $avatar    = $googleUser->getAvatar()
+            ?? "https://ui-avatars.com/api/?name=" . urlencode("$firstName $lastName");
 
-        // 1. Check if user is a teacher or admin in users table
+        // Teachers/Admins
         $user = User::where('email', $email)
             ->whereIn('role', ['teacher', 'admin'])
             ->first();
 
         if ($user) {
             Auth::login($user);
-
-            // Redirect to home route which handles preparing notifications
             return redirect()->route('home');
         }
 
-        // 2. Check if email exists in parent_info
+        // Parents (lookup in ParentInfo)
         $parentInfo = ParentInfo::where('parent_email', $email)->first();
 
         if ($parentInfo) {
-            // Prefer mother's full name if available, otherwise father's
+            // Prefer mother's details if available
             if (!empty($parentInfo->mother_fName) && !empty($parentInfo->mother_lName)) {
                 $firstName  = $parentInfo->mother_fName;
                 $middleName = $parentInfo->mother_mName ?? null;
@@ -54,7 +53,6 @@ class GoogleController extends Controller
                 $phone      = $parentInfo->father_phone ?? null;
             }
 
-            // If no phone from parents, fallback to emergency contact
             if (!$phone) {
                 $phone = $parentInfo->emergcont_phone ?? null;
             }
@@ -67,18 +65,17 @@ class GoogleController extends Controller
                     'lastName'      => $lastName,
                     'phone'         => $phone,
                     'role'          => 'parent',
-                    'password'      => bcrypt(Str::random(16)), // random password since login is via Google
-                    'profile_photo' => $googleUser->getAvatar() ?? "https://ui-avatars.com/api/?name=" . urlencode("$firstName $lastName"),
+                    'status'        => 'active',
+                    'password'      => bcrypt(Str::random(16)),
+                    'profile_photo' => $avatar,
                 ]
             );
 
-            // Log them in
             Auth::login($user);
-
             return redirect()->route('home');
         }
 
-        // 3. If not found anywhere → Not authorized
+        // Not authorized
         return response()->view('errors.401_not_authorized', [], 403);
     }
 }

@@ -120,7 +120,7 @@
 
             {{-- User Management sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('user.management') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.user.management') }}" class="menu-link bg-dark text-light">
                     <i class='bx bxs-user-account me-3 text-light'></i>
                     <div class="text-light"> User Management</div>
                 </a>

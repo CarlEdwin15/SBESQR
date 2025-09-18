@@ -222,9 +222,10 @@ class StudentController extends Controller
                 function ($attribute, $value, $fail) {
                     if (!$value) return;
 
-                    // only restrict if the email is already used for login
-                    if (User::where('email', $value)->exists()) {
-                        $fail('This email is already used for a user account.');
+                    $user = User::where('email', $value)->first();
+
+                    if ($user && $user->role !== 'parent') {
+                        $fail('This email is already used for ' . $user->role . ' account ');
                     }
                 },
             ],
@@ -257,35 +258,14 @@ class StudentController extends Controller
         $motherPhone = $this->normalizePhone($request->student_motherPhone);
         $emergPhone  = $this->normalizePhone($request->student_emergcontPhone);
 
-        // Find existing parent
-        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
-        if (!$parent) {
-            $parent = ParentInfo::where('father_fName', $request->student_fatherFName)
-                ->where('father_lName', $request->student_fatherLName)
-                ->orWhere(function ($query) use ($request) {
-                    $query->where('mother_fName', $request->student_motherFName)
-                        ->where('mother_lName', $request->student_motherLName);
-                })->first();
+        // Find existing parent by email
+        $parent = null;
+        if ($request->student_parentEmail) {
+            $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
         }
 
-        // Update or create parent
-        if ($parent) {
-            $parent->update([
-                'father_fName'    => $request->student_fatherFName,
-                'father_mName'    => $request->student_fatherMName,
-                'father_lName'    => $request->student_fatherLName,
-                'father_phone'    => $fatherPhone,
-                'mother_fName'    => $request->student_motherFName,
-                'mother_mName'    => $request->student_motherMName,
-                'mother_lName'    => $request->student_motherLName,
-                'mother_phone'    => $motherPhone,
-                'emergcont_fName' => $request->student_emergcontFName,
-                'emergcont_mName' => $request->student_emergcontMName,
-                'emergcont_lName' => $request->student_emergcontLName,
-                'emergcont_phone' => $emergPhone,
-                'parent_email'    => $request->student_parentEmail,
-            ]);
-        } else {
+        if (!$parent) {
+            // Create parent if not found
             $parent = ParentInfo::create([
                 'father_fName'    => $request->student_fatherFName,
                 'father_mName'    => $request->student_fatherMName,
@@ -412,11 +392,13 @@ class StudentController extends Controller
                 'string',
                 'max:255',
                 'email',
-                function ($attribute, $value, $fail) use ($student) {
+                function ($attribute, $value, $fail) {
                     if (!$value) return;
 
-                    if (User::where('email', $value)->exists()) {
-                        $fail('This email is already used for a user account.');
+                    $user = User::where('email', $value)->first();
+
+                    if ($user && $user->role !== 'parent') {
+                        $fail('This email is already used for ' . $user->role . ' account ');
                     }
                 },
             ],
@@ -449,35 +431,14 @@ class StudentController extends Controller
         $motherPhone = $this->normalizePhone($request->student_motherPhone);
         $emergPhone  = $this->normalizePhone($request->student_emergcontPhone);
 
-        // Find existing parent
-        $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
-        if (!$parent) {
-            $parent = ParentInfo::where('father_fName', $request->student_fatherFName)
-                ->where('father_lName', $request->student_fatherLName)
-                ->orWhere(function ($query) use ($request) {
-                    $query->where('mother_fName', $request->student_motherFName)
-                        ->where('mother_lName', $request->student_motherLName);
-                })->first();
+        // Find parent by email
+        $parent = null;
+        if ($request->student_parentEmail) {
+            $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
         }
 
-        // Update or create parent
-        if ($parent) {
-            $parent->update([
-                'father_fName'    => $request->student_fatherFName,
-                'father_mName'    => $request->student_fatherMName,
-                'father_lName'    => $request->student_fatherLName,
-                'father_phone'    => $fatherPhone,
-                'mother_fName'    => $request->student_motherFName,
-                'mother_mName'    => $request->student_motherMName,
-                'mother_lName'    => $request->student_motherLName,
-                'mother_phone'    => $motherPhone,
-                'emergcont_fName' => $request->student_emergcontFName,
-                'emergcont_mName' => $request->student_emergcontMName,
-                'emergcont_lName' => $request->student_emergcontLName,
-                'emergcont_phone' => $emergPhone,
-                'parent_email'    => $request->student_parentEmail,
-            ]);
-        } else {
+        if (!$parent) {
+            // Create if not found
             $parent = ParentInfo::create([
                 'father_fName'    => $request->student_fatherFName,
                 'father_mName'    => $request->student_fatherMName,

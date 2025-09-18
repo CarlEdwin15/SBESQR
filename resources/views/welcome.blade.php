@@ -38,10 +38,6 @@
                     </a>
                 @else
                     <a class="cta-btn-login" data-aos="fade-up" data-aos-delay="100" href="{{ route('login') }}">Login</a>
-
-                    {{-- @if (Route::has('register'))
-                        <a class="cta-btn" href="{{ route('register') }}">Register</a>
-                    @endif --}}
                 @endauth
                 </nav>
             @endif

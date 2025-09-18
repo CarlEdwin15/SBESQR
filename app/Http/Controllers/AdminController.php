@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Classes;
 use App\Models\ParentInfo;
 use App\Models\SchoolYear;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
@@ -39,6 +40,56 @@ class AdminController extends Controller
         ];
 
         return view('admin.user_management.index', compact('users', 'stats'));
+    }
+
+    public function updateUserStatus(Request $request, User $user)
+    {
+        $request->validate([
+            'status' => 'required|in:active,inactive,suspended,banned',
+        ]);
+
+        $user->status = $request->status;
+        $user->save();
+
+        return redirect()->back()->with('success', "{$user->full_name}'s status updated to {$user->status}.");
+    }
+
+    public function bulkUpdateStatus(Request $request)
+    {
+        $request->validate([
+            'user_ids'   => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+            'status'     => 'required|in:active,inactive,suspended,banned',
+        ]);
+
+        $userIds = $request->input('user_ids');
+        $status  = $request->input('status');
+
+        User::whereIn('id', $userIds)->update(['status' => $status]);
+
+        return redirect()->back()->with('success', 'Selected users updated successfully.');
+    }
+
+    public function userInfo($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Role-based related data:
+        if ($user->role === 'teacher') {
+            $classes = $user->classes()->with('subjects', 'advisers')->get();
+            return view('admin.user_management.user_info', compact('user', 'classes'));
+        }
+
+        if ($user->role === 'parent') {
+            // Later you could link parents to students if needed
+            $students = Student::whereHas('parentInfo', function ($q) use ($user) {
+                $q->where('parent_email', $user->email);
+            })->get();
+            return view('admin.user_management.user_info', compact('user', 'students'));
+        }
+
+        // Admins don’t have extra relations
+        return view('admin.user_management.user_info', compact('user'));
     }
 
     public function accountSettings()

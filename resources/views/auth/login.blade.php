@@ -34,7 +34,7 @@
 
                     @if ($errors->any())
                         <div class="toast-container position-fixed top-0 end-0 p-4">
-                            {{-- Toast for displaying errors --}}
+
                             <div class="toast show align-items-center bg-danger border-0" role="alert"
                                 aria-live="assertive" aria-atomic="true">
                                 <div class="d-flex">

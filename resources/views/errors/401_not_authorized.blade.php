@@ -4,6 +4,8 @@
 
 @section('hideWrapper', true)
 
+@section('title', 'Account Not Authorized')
+
 @section('content')
     <!-- Error -->
     <div class="text-center mt-5">

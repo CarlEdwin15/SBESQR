@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Session extends Model
 {
-    protected $table = 'sessions';
-    public $timestamps = false;
+    // protected $table = 'sessions';
+    // public $timestamps = false;
 
-    protected $casts = [
-        'last_activity' => 'integer',
-    ];
+    // protected $casts = [
+    //     'last_activity' => 'integer',
+    // ];
 }

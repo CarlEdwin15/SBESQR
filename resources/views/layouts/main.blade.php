@@ -47,16 +47,14 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     @push('styles')
+        <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
         <style>
             .my-swal-container {
                 /* For Log out sweet alert*/
                 z-index: 10000;
                 /* Or a sufficiently high value */
             }
-        </style>
 
-        <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-        <style>
             /* Ensure announcement content respects Quill styling */
             .quill-content {
                 font-family: sans-serif;
@@ -121,6 +119,62 @@
             </div>
         </div>
     @endif
+
+    {{-- <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const htmlEl = document.documentElement;
+            const toggles = document.querySelectorAll('.layout-menu-toggle');
+            const overlay = document.querySelector('.layout-overlay');
+
+            const DESKTOP_BREAKPOINT = 1200; // Sneat default
+
+            function isDesktop() {
+                return window.innerWidth >= DESKTOP_BREAKPOINT;
+            }
+
+            function closeMobileMenu() {
+                htmlEl.classList.remove('layout-menu-expanded');
+            }
+
+            function toggleMenu() {
+                if (isDesktop()) {
+                    // ✅ Desktop toggle (collapse/expand sidebar)
+                    htmlEl.classList.toggle('layout-menu-collapsed');
+                    htmlEl.classList.remove('layout-menu-expanded');
+                } else {
+                    // ✅ Mobile toggle (overlay slide in/out)
+                    htmlEl.classList.toggle('layout-menu-expanded');
+                }
+            }
+
+            // Bind toggle button
+            toggles.forEach(btn => btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleMenu();
+            }));
+
+            // Overlay click closes mobile menu
+            overlay?.addEventListener('click', closeMobileMenu);
+
+            // ESC closes mobile menu
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeMobileMenu();
+            });
+
+            // Resize handler keeps state clean
+            let rt;
+            window.addEventListener('resize', function() {
+                clearTimeout(rt);
+                rt = setTimeout(function() {
+                    if (isDesktop()) {
+                        htmlEl.classList.remove('layout-menu-expanded');
+                    } else {
+                        htmlEl.classList.remove('layout-menu-collapsed');
+                    }
+                }, 150);
+            });
+        });
+    </script> --}}
 
     {{-- @if ($errors->any())
                     <script>
@@ -317,9 +371,9 @@
     <!-- Additional scripts can be stacked from views -->
     @stack('scripts')
 
+    {{-- </div>
     </div>
-    </div>
-    </div>
+    </div> --}}
 </body>
 
 </html>
