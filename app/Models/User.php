@@ -38,6 +38,7 @@ class User extends Authenticatable
         'status',
         'sign_in_at',
         'last_sign_in_at',
+        'parent_type',
     ];
 
     protected $hidden = [
@@ -54,7 +55,7 @@ class User extends Authenticatable
         'last_sign_in_at' => 'datetime',
     ];
 
-    /** 🔑 Full name accessor */
+    /** Full name accessor */
     public function getFullNameAttribute()
     {
         $middle = $this->middleName ? " {$this->middleName}" : '';
@@ -63,7 +64,13 @@ class User extends Authenticatable
         return "{$this->firstName}{$middle} {$this->lastName}{$ext}";
     }
 
-    /** 🔑 Classes the teacher is assigned to (via class_user pivot) */
+    /** 🔹 Many-to-many: a parent can have multiple children */
+    public function children()
+    {
+        return $this->belongsToMany(Student::class, 'student_parent', 'parent_id', 'student_id');
+    }
+
+    /** Classes the teacher is assigned to (via class_user pivot) */
     public function classes()
     {
         return $this->belongsToMany(Classes::class, 'class_user', 'user_id', 'class_id')
@@ -71,19 +78,16 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    /** 🔑 Advisory role */
     public function advisoryClasses()
     {
         return $this->classes()->wherePivot('role', 'adviser');
     }
 
-    /** 🔑 Subject teaching role */
     public function subjectClasses()
     {
         return $this->classes()->wherePivot('role', 'subject_teacher');
     }
 
-    /** 🔑 School years where teacher is active */
     public function schoolYears()
     {
         return $this->belongsToMany(SchoolYear::class, 'class_user', 'user_id', 'school_year_id')
@@ -91,20 +95,18 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    /** 🔑 Subjects taught by this teacher through class_subject */
     public function classSubjects()
     {
         return $this->hasManyThrough(
             ClassSubject::class,
             Classes::class,
-            'id',            // Classes PK
-            'class_id',      // ClassSubject FK
-            'id',            // User PK
-            'id'             // Classes PK
+            'id',       // Classes PK
+            'class_id', // ClassSubject FK
+            'id',       // User PK
+            'id'        // Classes PK
         );
     }
 
-    /** 🔑 Shortcut: subjects taught by this teacher */
     public function subjects()
     {
         return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
@@ -132,7 +134,7 @@ class User extends Authenticatable
 
         $session = DB::table('sessions')
             ->where('user_id', $this->id)
-            ->where('last_activity', '>=', now()->subMinutes(5)->timestamp) // active in last 5 mins
+            ->where('last_activity', '>=', now()->subMinutes(5)->timestamp)
             ->first();
 
         return $session !== null;

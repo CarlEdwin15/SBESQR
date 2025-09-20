@@ -189,6 +189,12 @@
                             <span class="d-none d-sm-block">Classes &amp; Grades</span>
                         </button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#parents">
+                            <i class="bx bx-user me-1"></i>
+                            <span class="d-none d-sm-block">Parents</span>
+                        </button>
+                    </li>
                 </ul>
 
                 <div class="card shadow">
@@ -230,48 +236,48 @@
                                     </div>
                                 </div>
 
-                                <!-- Parents Info -->
+                                {{-- <!-- Parents Info -->
                                 <h5 class="fw-bold text-primary mt-4 mb-3">Parent Information</h5>
                                 <div class="row mb-2">
                                     <div class="col-sm-4 fw-bold">Father's Name:</div>
-                                    <div class="col-sm-8">{{ $student->parentInfo->father_fName ?? 'N/A' }}
-                                        {{ $student->parentInfo->father_lName ?? 'N/A' }}
+                                    <div class="col-sm-8">{{ $student->parents->father_fName ?? 'N/A' }}
+                                        {{ $student->parents->father_lName ?? 'N/A' }}
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-sm-4 fw-bold">Father's Contact No.:</div>
                                     <div class="col-sm-8">
-                                        {{ $student->parentInfo->father_phone ?? 'N/A' }}
+                                        {{ $student->parents->father_phone ?? 'N/A' }}
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-sm-4 fw-bold">Mother's Name:</div>
-                                    <div class="col-sm-8">{{ $student->parentInfo->mother_fName ?? 'N/A' }}
-                                        {{ $student->parentInfo->mother_lName ?? 'N/A' }}
+                                    <div class="col-sm-8">{{ $student->parents->mother_fName ?? 'N/A' }}
+                                        {{ $student->parents->mother_lName ?? 'N/A' }}
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-sm-4 fw-bold">Mother's Contact No.:</div>
                                     <div class="col-sm-8">
-                                        {{ $student->parentInfo->mother_phone ?? 'N/A' }}
+                                        {{ $student->parents->mother_phone ?? 'N/A' }}
                                     </div>
-                                </div>
+                                </div> --}}
 
-                                <!-- Emergency Contact -->
+                                {{-- <!-- Emergency Contact -->
                                 <h5 class="fw-bold text-primary mt-4 mb-3">Emergency Contact</h5>
                                 <div class="row mb-2">
                                     <div class="col-sm-4 fw-bold">Name:</div>
                                     <div class="col-sm-8">
-                                        {{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
-                                        {{ $student->parentInfo->emergcont_lName ?? 'N/A' }}
+                                        {{ $student->parents->emergcont_fName ?? 'N/A' }}
+                                        {{ $student->parents->emergcont_lName ?? 'N/A' }}
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-sm-4 fw-bold">Phone:</div>
                                     <div class="col-sm-8">
-                                        {{ $student->parentInfo->emergcont_phone ?? 'N/A' }}
+                                        {{ $student->parents->emergcont_phone ?? 'N/A' }}
                                     </div>
-                                </div>
+                                </div> --}}
 
                                 <!-- QR Code -->
                                 <h5 class="fw-bold text-primary mt-4 mb-3">QR Code</h5>
@@ -461,6 +467,10 @@
                             </div>
                             <!-- /Classes -->
 
+                            <!-- Parents -->
+                            <div class="tab-pane fade" id="parents">
+                                <h5 class="fw-bold text-primary mb-3">Parents</h5>
+                            </div>
                         </div>
                     </div>
                 </div>

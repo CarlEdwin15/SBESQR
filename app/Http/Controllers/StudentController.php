@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Classes;
 use App\Models\Student;
 use App\Models\StudentAddress;
-use App\Models\ParentInfo;
 use App\Models\SchoolYear;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,6 +16,21 @@ use Carbon\Carbon;
 
 class StudentController extends Controller
 {
+    public function search(Request $request)
+    {
+        $term = $request->get('q');
+
+        $students = Student::query()
+            ->where('student_lrn', 'like', "%{$term}%")
+            ->orWhere(function ($q) use ($term) {
+                $q->where('student_fName', 'like', "%{$term}%")
+                    ->orWhere('student_lName', 'like', "%{$term}%");
+            })
+            ->limit(10)
+            ->get(['id', 'student_lrn', 'student_fName', 'student_lName']);
+
+        return response()->json($students);
+    }
 
     public function show(Request $request)
     {
@@ -110,7 +124,7 @@ class StudentController extends Controller
                 }
             })->with([
                 'address',
-                'parentInfo',
+                'parents',
                 'class' => function ($query) use ($schoolYear) {
                     $query->where('class_student.school_year_id', $schoolYear->id);
                 }
@@ -196,24 +210,6 @@ class StudentController extends Controller
             'student_pob' => 'required|string|max:255',
             'enrollment_status' => 'required|in:enrolled,not_enrolled,archived,graduated',
             'enrollment_type' => 'required|in:regular,transferee',
-            'house_no' => 'nullable|string|max:255',
-            'street_name' => 'nullable|string|max:255',
-            'barangay' => 'nullable|string|max:255',
-            'municipality_city' => 'nullable|string|max:255',
-            'province' => 'nullable|string|max:255',
-            'zip_code' => 'nullable|string|max:255',
-            'student_fatherFName' => 'nullable|string|max:255',
-            'student_fatherMName' => 'nullable|string|max:255',
-            'student_fatherLName' => 'nullable|string|max:255',
-            'student_fatherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
-            'student_motherFName' => 'nullable|string|max:255',
-            'student_motherMName' => 'nullable|string|max:255',
-            'student_motherLName' => 'nullable|string|max:255',
-            'student_motherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
-            'student_emergcontFName' => 'nullable|string|max:255',
-            'student_emergcontMName' => 'nullable|string|max:255',
-            'student_emergcontLName' => 'nullable|string|max:255',
-            'student_emergcontPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
             'student_parentEmail' => [
                 'nullable',
                 'string',
@@ -223,7 +219,6 @@ class StudentController extends Controller
                     if (!$value) return;
 
                     $user = User::where('email', $value)->first();
-
                     if ($user && $user->role !== 'parent') {
                         $fail('This email is already used for ' . $user->role . ' account ');
                     }
@@ -232,16 +227,15 @@ class StudentController extends Controller
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
-        // Profile photo
-        $profilePhotoPath = null;
-        if ($request->hasFile('student_profile_photo')) {
-            $profilePhotoPath = $request->file('student_profile_photo')->store('student_profile_photos', 'public');
-        }
+        // 📌 Handle profile photo
+        $profilePhotoPath = $request->hasFile('student_profile_photo')
+            ? $request->file('student_profile_photo')->store('student_profile_photos', 'public')
+            : null;
 
-        // QR code
+        // 📌 QR Code
         $qrCode = uniqid('QR');
 
-        // Address
+        // 📌 Address
         $address = StudentAddress::create([
             'house_no' => $request->house_no,
             'street_name' => $request->street_name,
@@ -253,43 +247,7 @@ class StudentController extends Controller
             'pob' => $request->student_pob,
         ]);
 
-        // Phones normalized
-        $fatherPhone = $this->normalizePhone($request->student_fatherPhone);
-        $motherPhone = $this->normalizePhone($request->student_motherPhone);
-        $emergPhone  = $this->normalizePhone($request->student_emergcontPhone);
-
-        // Find existing parent by email
-        $parent = null;
-        if ($request->student_parentEmail) {
-            $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
-        }
-
-        if (!$parent) {
-            // Create parent if not found
-            $parent = ParentInfo::create([
-                'father_fName'    => $request->student_fatherFName,
-                'father_mName'    => $request->student_fatherMName,
-                'father_lName'    => $request->student_fatherLName,
-                'father_phone'    => $fatherPhone,
-                'mother_fName'    => $request->student_motherFName,
-                'mother_mName'    => $request->student_motherMName,
-                'mother_lName'    => $request->student_motherLName,
-                'mother_phone'    => $motherPhone,
-                'emergcont_fName' => $request->student_emergcontFName,
-                'emergcont_mName' => $request->student_emergcontMName,
-                'emergcont_lName' => $request->student_emergcontLName,
-                'emergcont_phone' => $emergPhone,
-                'parent_email'    => $request->student_parentEmail,
-            ]);
-        }
-
-        // Class
-        $class = Classes::firstOrCreate([
-            'grade_level' => $validatedData['student_grade_level'],
-            'section' => $validatedData['student_section'],
-        ]);
-
-        // Student
+        // 📌 Create Student
         $student = Student::create([
             'student_lrn' => $validatedData['student_lrn'],
             'student_fName' => $validatedData['student_fName'],
@@ -301,10 +259,36 @@ class StudentController extends Controller
             'student_photo' => $profilePhotoPath,
             'qr_code' => $qrCode,
             'address_id' => $address->id,
-            'parent_id' => $parent->id,
         ]);
 
-        // School Year
+        // 📌 Handle Parent User
+        if ($request->student_parentEmail) {
+            $parent = User::where('email', $request->student_parentEmail)
+                ->where('role', 'parent')
+                ->first();
+
+            if (!$parent) {
+                $parent = User::create([
+                    'firstName' => $request->student_fatherFName ?? $request->student_motherFName ?? 'Parent',
+                    'lastName'  => $request->student_fatherLName ?? $request->student_motherLName ?? 'Unknown',
+                    'email'     => $request->student_parentEmail,
+                    'role'      => 'parent',
+                    'password'  => bcrypt('default123'), // 🔹 or send invite to set password
+                    'phone'     => $request->student_fatherPhone ?? $request->student_motherPhone,
+                ]);
+            }
+
+            // Attach to pivot
+            $student->parents()->syncWithoutDetaching([$parent->id]);
+        }
+
+        // 📌 Class
+        $class = Classes::firstOrCreate([
+            'grade_level' => $validatedData['student_grade_level'],
+            'section' => $validatedData['student_section'],
+        ]);
+
+        // 📌 School Year
         $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
         [$start, $end] = explode('-', $selectedSchoolYear);
         $schoolYear = SchoolYear::firstOrCreate(
@@ -315,11 +299,7 @@ class StudentController extends Controller
             ]
         );
 
-        // Enroll student
-        DB::table('class_student')
-            ->where('student_id', $student->id)
-            ->update(['enrollment_status' => 'not_enrolled']);
-
+        // 📌 Enroll student
         $student->class()->attach($class->id, [
             'school_year_id' => $schoolYear->id,
             'enrollment_status' => 'enrolled',
@@ -334,7 +314,7 @@ class StudentController extends Controller
         $selectedSchoolYear = $request->query('school_year', $this->getDefaultSchoolYear());
         $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->firstOrFail();
 
-        $student = Student::with(['address', 'parentInfo', 'class' => function ($query) use ($schoolYear) {
+        $student = Student::with(['address', 'parents', 'class' => function ($query) use ($schoolYear) {
             $query->where('class_student.school_year_id', $schoolYear->id);
         }])->findOrFail($id);
 
@@ -343,14 +323,7 @@ class StudentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $selectedSchoolYear = $request->input('school_year', $this->getDefaultSchoolYear());
-        $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->firstOrFail();
-
-        $student = Student::with(['address', 'parentInfo'])->findOrFail($id);
-
-        $messages = [
-            'student_lrn.regex' => 'The LRN must start with "112828" and be exactly 12 digits long.',
-        ];
+        $student = Student::findOrFail($id);
 
         $validatedData = $request->validate([
             'student_lrn' => [
@@ -369,24 +342,8 @@ class StudentController extends Controller
             'student_dob' => 'nullable|date',
             'student_sex' => 'required|in:male,female',
             'student_pob' => 'required|string|max:255',
-            'house_no' => 'nullable|string|max:255',
-            'street_name' => 'nullable|string|max:255',
-            'barangay' => 'nullable|string|max:255',
-            'municipality_city' => 'nullable|string|max:255',
-            'province' => 'nullable|string|max:255',
-            'zip_code' => 'nullable|string|max:255',
-            'student_fatherFName' => 'nullable|string|max:255',
-            'student_fatherMName' => 'nullable|string|max:255',
-            'student_fatherLName' => 'nullable|string|max:255',
-            'student_fatherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
-            'student_motherFName' => 'nullable|string|max:255',
-            'student_motherMName' => 'nullable|string|max:255',
-            'student_motherLName' => 'nullable|string|max:255',
-            'student_motherPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
-            'student_emergcontFName' => 'nullable|string|max:255',
-            'student_emergcontMName' => 'nullable|string|max:255',
-            'student_emergcontLName' => 'nullable|string|max:255',
-            'student_emergcontPhone' => ['nullable', 'regex:/^(?:\+639\d{9}|09\d{9})$/'],
+            'enrollment_status' => 'required|in:enrolled,not_enrolled,archived,graduated',
+            'enrollment_type' => 'required|in:regular,transferee',
             'student_parentEmail' => [
                 'nullable',
                 'string',
@@ -394,88 +351,37 @@ class StudentController extends Controller
                 'email',
                 function ($attribute, $value, $fail) {
                     if (!$value) return;
-
                     $user = User::where('email', $value)->first();
-
                     if ($user && $user->role !== 'parent') {
-                        $fail('This email is already used for ' . $user->role . ' account ');
+                        $fail('This email is already used for ' . $user->role . ' account');
                     }
                 },
             ],
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
-        ], $messages);
+        ]);
 
-        // Profile photo
+        // 📌 Handle profile photo
         if ($request->hasFile('student_profile_photo')) {
-            if ($student->student_photo && Storage::disk('public')->exists($student->student_photo)) {
-                Storage::disk('public')->delete($student->student_photo);
-            }
             $profilePhotoPath = $request->file('student_profile_photo')->store('student_profile_photos', 'public');
-            $student->student_photo = $profilePhotoPath;
+        } else {
+            $profilePhotoPath = $student->student_photo;
         }
 
-        // Address
-        $student->address()->update([
-            'house_no' => $request->house_no,
-            'street_name' => $request->street_name,
-            'barangay' => $request->barangay,
-            'municipality_city' => $request->municipality_city,
-            'province' => $request->province,
-            'zip_code' => $request->zip_code,
-            'country' => 'Philippines',
-            'pob' => $request->student_pob,
-        ]);
-
-        // Phones normalized
-        $fatherPhone = $this->normalizePhone($request->student_fatherPhone);
-        $motherPhone = $this->normalizePhone($request->student_motherPhone);
-        $emergPhone  = $this->normalizePhone($request->student_emergcontPhone);
-
-        // Find parent by email
-        $parent = null;
-        if ($request->student_parentEmail) {
-            $parent = ParentInfo::where('parent_email', $request->student_parentEmail)->first();
-        }
-
-        if (!$parent) {
-            // Create if not found
-            $parent = ParentInfo::create([
-                'father_fName'    => $request->student_fatherFName,
-                'father_mName'    => $request->student_fatherMName,
-                'father_lName'    => $request->student_fatherLName,
-                'father_phone'    => $fatherPhone,
-                'mother_fName'    => $request->student_motherFName,
-                'mother_mName'    => $request->student_motherMName,
-                'mother_lName'    => $request->student_motherLName,
-                'mother_phone'    => $motherPhone,
-                'emergcont_fName' => $request->student_emergcontFName,
-                'emergcont_mName' => $request->student_emergcontMName,
-                'emergcont_lName' => $request->student_emergcontLName,
-                'emergcont_phone' => $emergPhone,
-                'parent_email'    => $request->student_parentEmail,
+        // 📌 Update Address
+        if ($student->address) {
+            $student->address->update([
+                'house_no' => $request->house_no,
+                'street_name' => $request->street_name,
+                'barangay' => $request->barangay,
+                'municipality_city' => $request->municipality_city,
+                'province' => $request->province,
+                'zip_code' => $request->zip_code,
+                'country' => 'Philippines',
+                'pob' => $request->student_pob,
             ]);
         }
 
-        // Link student to parent
-        $student->parent_id = $parent->id;
-        $student->save();
-
-        // Class
-        $class = Classes::firstOrCreate([
-            'grade_level' => $validatedData['student_grade_level'],
-            'section' => $validatedData['student_section'],
-        ]);
-
-        // Update enrollment
-        DB::table('class_student')
-            ->where('student_id', $student->id)
-            ->where('school_year_id', $schoolYear->id)
-            ->update([
-                'class_id' => $class->id,
-                'updated_at' => now(),
-            ]);
-
-        // Student main fields
+        // 📌 Update Student
         $student->update([
             'student_lrn' => $validatedData['student_lrn'],
             'student_fName' => $validatedData['student_fName'],
@@ -483,11 +389,58 @@ class StudentController extends Controller
             'student_lName' => $validatedData['student_lName'],
             'student_extName' => $validatedData['student_extName'] ?? null,
             'student_dob' => $validatedData['student_dob'] ?? null,
-            'student_sex' => ucfirst($validatedData['student_sex']),
+            'student_sex' => $validatedData['student_sex'],
+            'student_photo' => $profilePhotoPath,
         ]);
 
-        return redirect()->route('show.students', ['school_year' => $selectedSchoolYear])
-            ->with('success', 'Student updated successfully!');
+        // 📌 Handle Parent User
+        if ($request->student_parentEmail) {
+            $parent = User::where('email', $request->student_parentEmail)
+                ->where('role', 'parent')
+                ->first();
+
+            if (!$parent) {
+                $parent = User::create([
+                    'firstName' => $request->student_fatherFName ?? $request->student_motherFName ?? 'Parent',
+                    'lastName'  => $request->student_fatherLName ?? $request->student_motherLName ?? 'Unknown',
+                    'email'     => $request->student_parentEmail,
+                    'role'      => 'parent',
+                    'password'  => bcrypt('default123'),
+                    'phone'     => $request->student_fatherPhone ?? $request->student_motherPhone,
+                ]);
+            }
+
+            // Attach or sync parent pivot
+            $student->parents()->syncWithoutDetaching([$parent->id]);
+        }
+
+        // 📌 Class
+        $class = Classes::firstOrCreate([
+            'grade_level' => $validatedData['student_grade_level'],
+            'section' => $validatedData['student_section'],
+        ]);
+
+        // 📌 School Year
+        $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
+        [$start, $end] = explode('-', $selectedSchoolYear);
+        $schoolYear = SchoolYear::firstOrCreate(
+            ['school_year' => $selectedSchoolYear],
+            [
+                'start_date' => "$start-06-01",
+                'end_date' => "$end-03-31",
+            ]
+        );
+
+        // 📌 Sync enrollment
+        $student->class()->syncWithoutDetaching([
+            $class->id => [
+                'school_year_id' => $schoolYear->id,
+                'enrollment_status' => $validatedData['enrollment_status'],
+                'enrollment_type' => $validatedData['enrollment_type'],
+            ],
+        ]);
+
+        return redirect()->route('add.student')->with('success', 'Student updated successfully!');
     }
 
     public function unenroll($id)
@@ -523,7 +476,7 @@ class StudentController extends Controller
     {
         $schoolYearId = $request->query('school_year');
 
-        $student = Student::with(['address', 'parentInfo'])->findOrFail($id);
+        $student = Student::with(['address', 'parents'])->findOrFail($id);
 
         $class = $student->class()->where('school_year_id', $schoolYearId)->first();
 

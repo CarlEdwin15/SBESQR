@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -472,7 +472,7 @@
                         <!-- Father's Phone -->
                         <input type="tel" name="student_fatherPhone" id="student_fatherPhone" class="form-control"
                             placeholder="e.g. 09123456789"
-                            value="{{ old('student_fatherPhone', $student->parentInfo->father_phone ?? '') }}" />
+                            value="{{ old('student_fatherPhone', $student->parents->father_phone ?? '') }}" />
                     </div>
                 </div>
 
@@ -508,7 +508,7 @@
                         <label for="student_motherPhone" class="form-label fw-bold">Phone No.</label>
                         <input type="tel" name="student_motherPhone" id="student_motherPhone" class="form-control"
                             placeholder="e.g. +639123456789"
-                            value="{{ old('student_motherPhone', $student->parentInfo->mother_phone ?? '') }}" />
+                            value="{{ old('student_motherPhone', $student->parents->mother_phone ?? '') }}" />
                     </div>
                 </div>
 

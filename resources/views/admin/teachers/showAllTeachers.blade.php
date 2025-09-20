@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | All Teachers')
+@section('title', 'Admin | Teacher Class Management')
 
 
 @section('content')
@@ -39,7 +39,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Teachers</div>
+                            <div class="text-warning">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -152,7 +152,7 @@
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
                 <a class="text-muted fw-light" href="{{ route('show.teachers') }}">Teachers / </a>
-            </span> All Teachers
+            </span> Teacher's Class Management
         </h4>
 
         {{-- Notification when year is changed --}}
@@ -224,7 +224,7 @@
                                     <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
                                         <div class="mb-3">
                                             <img id="photo-preview"
-                                                src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                                                src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                                 alt="Profile Preview" width="100" height="100"
                                                 class="profile-preview" style="object-fit: cover; border-radius: 5%">
                                         </div>
@@ -500,49 +500,32 @@
                                 <h4 class="modal-title fw-bold text-info" id="reAssignModalTitle">
                                     RE-ASSIGN TEACHER TO THE SELECTED SCHOOL YEAR
                                 </h4>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
+
                             <div class="modal-body">
                                 <input type="hidden" name="selected_school_year" value="{{ $selectedYear }}">
 
                                 <!-- Select Teacher -->
                                 <div class="mb-3">
                                     <label for="teacher_id" class="form-label fw-bold">Select Teacher</label>
-                                    <select name="teacher_id" id="teacher_id" class="form-select" required>
+                                    <select name="teacher_id" id="teacher_id" class="tom-select" required>
                                         <option value="">-- Select Teacher --</option>
-                                        @foreach ($reAssignableTeachers as $teacher)
-                                            @php
-                                                $archivedYears = $teacher->classes
-                                                    ->filter(function ($class) use ($selectedYear) {
-                                                        return $class->pivot->status === 'archived';
-                                                    })
-                                                    ->map(function ($class) {
-                                                        return $class->pivot->school_year_id;
-                                                    })
-                                                    ->unique()
-                                                    ->values();
-
-                                                $archivedYearLabels = \App\Models\SchoolYear::whereIn(
-                                                    'id',
-                                                    $archivedYears,
-                                                )
-                                                    ->pluck('school_year')
-                                                    ->implode(', ');
-                                            @endphp
+                                        @foreach ($eligibleTeachers as $teacher)
                                             <option value="{{ $teacher->id }}">
                                                 {{ $teacher->firstName }} {{ $teacher->lastName }}
-                                                (Archived: {{ $archivedYearLabels }})
+                                                ({{ $teacher->email }})
                                             </option>
                                         @endforeach
                                     </select>
+                                    <small class="text-muted">Select One teacher Only</small>
                                 </div>
 
                                 <!-- Select Classes -->
                                 <div class="mb-3">
-                                    <label for="reassign_classes" class="form-label fw-bold">Assign to
-                                        Classes</label>
-                                    <select name="reassign_classes[]" id="reassign_classes" multiple required>
+                                    <label for="reassign_classes" class="form-label fw-bold">Assign to Classes</label>
+                                    <select name="reassign_classes[]" id="reassign_classes" multiple required
+                                        class="tom-select">
                                         @foreach ($allClasses as $class)
                                             @php
                                                 $adviser = $class->teachers->where('pivot.role', 'adviser')->first();
@@ -557,28 +540,26 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <small class="form-text text-muted">Hold Ctrl or Cmd to select multiple
-                                        classes.</small>
+                                    <small class="text-muted">Can Select Multiple Classses</small>
                                 </div>
 
                                 <!-- Select Advisory Class -->
                                 <div class="mb-3">
-                                    <label for="reassign_advisory_class" class="form-label fw-bold">Select
-                                        Advisory Class</label>
+                                    <label for="reassign_advisory_class" class="form-label fw-bold">Select Advisory
+                                        Class</label>
                                     <select name="reassign_advisory_class" id="reassign_advisory_class"
-                                        class="form-select">
-                                        <option value="">-- Select advisory class from assigned --
-                                        </option>
+                                        class="form-select tom-select">
+                                        <option value="">Select advisory class from assigned</option>
                                     </select>
-                                    <small class="form-text text-muted">Must be one of the selected
-                                        classes.</small>
+                                    <small class="text-muted">Optional: Select One Advisory Class from the selected
+                                        Classes</small>
                                 </div>
+
                             </div>
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                    Close
-                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                    data-bs-dismiss="modal">Close</button>
                                 <button type="submit" class="btn btn-primary" id="reAssignTeacherBtn">Re-Assign</button>
                             </div>
                         </form>
@@ -586,25 +567,9 @@
                 </div>
                 <!-- /Re-assign Modal -->
 
-                @if ($errors->has('email'))
-                    <script>
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Registration Error',
-                            text: '{{ $errors->first('email') }}',
-                            confirmButtonColor: '#dc3545',
-                            customClass: {
-                                container: 'my-swal-container'
-                            }
-                        });
-                    </script>
-                @endif
-
             </div>
         </div>
         <!--/ Modal Backdrop -->
-
-        <h3 class="text-center text-info fw-bold mb-4">Teacher Management</h3>
 
         <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
             <div class="d-flex gap-1 mb-2 mb-md-0">
@@ -627,20 +592,22 @@
             <div class="d-flex align-items-center gap-2">
                 <!-- School Year Dropdown -->
                 <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-info text-white dropdown-toggle d-flex align-items-center" type="button"
-                        id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        {{ $selectedYear }}
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="yearDropdown">
-                        @foreach ($schoolYears as $year)
-                            <li>
-                                <a class="dropdown-item"
-                                    href="{{ request()->fullUrlWithQuery(['school_year' => $year]) }}">
-                                    {{ $year }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
+                    <div class="dropdown">
+                        <button class="btn btn-info text-white dropdown-toggle d-flex align-items-center" type="button"
+                            id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ $selectedYear }}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="yearDropdown">
+                            @foreach ($schoolYears as $year)
+                                <li>
+                                    <a class="dropdown-item @if ($year === $selectedYear) active fw-bold @endif"
+                                        href="{{ request()->fullUrlWithQuery(['school_year' => $year]) }}">
+                                        {{ $year }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
                 </div>
 
                 <!-- "Now" button -->
@@ -651,160 +618,169 @@
             </div>
         </div>
 
-        {{-- Card --}}
-        <div class="card">
-            <div class="card-header">
-                <div
-                    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
-                    <!-- Search input -->
-                    <div class="d-flex align-items-center w-100" style="max-width: 600px;">
-                        <i class="bx bx-search fs-4 lh-0 me-2"></i>
-                        <input type="text" id="teacherSearch" class="form-control border-1 shadow-none"
-                            placeholder="Search..." aria-label="Search..." />
+        {{-- Teacher Management Table --}}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title mb-3 fw-bold text-center">Teacher's Class Management</h3>
+
+                <!-- Search & Filters -->
+                <div class="row g-2 mb-3 align-items-center">
+                    <!-- Search -->
+                    <div class="col-md-4 col-sm-6">
+                        <input type="text" class="form-control" placeholder="Search..." id="teacherSearch">
                     </div>
-
-                    <!-- Export button -->
-                    {{-- <div class="ms-md-auto">
-                                    <a href="{{ route('export.teachers') }}" class="btn btn-success"
-                                        style="padding: 8px 12px;">
-                                        <i class="bx bx-printer"></i> Export to Excel
-                                    </a>
-                                </div> --}}
                 </div>
-            </div>
 
-            <div class="table-responsive text-nowrap">
-                <table class="table table-hover table-bordered text-center" id="teachersTable">
-                    <thead>
-                        <tr>
-                            <th>Full Name</th>
-                            <th>Photo</th>
-                            <th><span class="badge bg-warning mb-1"
-                                    style="font-size: 0.95em; vertical-align: middle;">Advisory Class
-                                    <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
-                                        style="font-size: 0.95em; vertical-align: middle;"></i></span><br>
-                                <span class="badge bg-secondary"
-                                    style="font-size: 0.95em; vertical-align: middle;">Subject-based
-                                    Classes</span>
-                            </th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Contact No.</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="table-border-bottom-0">
-                        @forelse ($teachers as $teacher)
-                            <tr class="teacher-row">
-                                <td>
-                                    <a class="text-primary"
-                                        href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">{{ $teacher->firstName }}
-                                        {{ $teacher->middleName }}
-                                        {{ $teacher->lastName }} {{ $teacher->extName }}
-                                    </a>
-                                </td>
-                                <td>
-                                    <a class="text-primary"
-                                        href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                        @if ($teacher->profile_photo)
-                                            <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
-                                                alt="Profile Photo" width="55" height="55"
-                                                style="object-fit: cover; border-radius: 50%;">
-                                        @else
-                                            <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
-                                                alt="no profile" width="55" height="55"
-                                                style="object-fit: cover; border-radius: 50%">
-                                        @endif
-                                    </a>
-                                </td>
-                                <td>
-                                    @if ($teacher->classes && count($teacher->classes))
-                                        @foreach ($teacher->classes as $class)
-                                            @php
-                                                $role = $class->pivot->role ?? null;
-                                                $isAdvisory = $role === 'adviser';
-                                                $badgeClass = $isAdvisory ? 'bg-warning text-black' : 'bg-secondary';
-                                            @endphp
+                <hr class="my-4" />
 
-                                            <span class="badge {{ $badgeClass }} text-auto mb-1">
-                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
-                                                - Section {{ $class->section }}
-                                                @if ($isAdvisory)
-                                                    <i class="bx bxs-star text-auto ms-1" title="Advisory Class"
-                                                        style="font-size: 0.85em; vertical-align: middle;"></i>
-                                                @endif
-                                            </span>
+                <!-- Table Controls (Length & Add Teacher Button) -->
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                    <!-- Left: Table Length Selector -->
+                    <div>
+                        <select id="teacherTableLength" class="form-select">
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
 
-                                            @if (!$loop->last)
-                                                <br>
-                                            @endif
-                                        @endforeach
-                                    @else
-                                        <span class="text-muted">No class assigned</span>
-                                    @endif
-                                </td>
-                                <td>{{ $teacher->email }}</td>
-                                <td>
-                                    @php
-                                        $status = optional($teacher->classes->first())->pivot->status ?? 'N/A';
-                                        $badgeClass = match ($status) {
-                                            'active' => 'bg-label-success',
-                                            'archived' => 'bg-label-warning',
-                                            default => 'bg-label-dark',
-                                        };
-                                    @endphp
-                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
-                                    </span>
-                                </td>
-                                <td>{{ $teacher->phone }}</td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-                                            data-bs-toggle="dropdown">
-                                            <i class="bx bx-dots-vertical-rounded"></i>
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item text-info"
-                                                href="{{ route('teacher.info', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                                <i class="bx bxs-user-badge me-1"></i> View Profile
-                                            </a>
-                                            <a class="dropdown-item text-warning"
-                                                href="{{ route('edit.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                                <i class="bx bx-edit-alt me-1"></i> Edit
-                                            </a>
-                                            @php
-                                                $selectedYear = request('school_year'); // Or pass explicitly
-                                            @endphp
-
-                                            <button type="button" class="dropdown-item text-danger"
-                                                onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}', '{{ $selectedYear }}')">
-                                                <i class="bx bx-trash me-1"></i> Delete
-                                            </button>
-
-                                            <!-- Hidden form to submit delete -->
-                                            <form id="delete-form-{{ $teacher->id }}-{{ $selectedYear }}"
-                                                action="{{ route('delete.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}"
-                                                method="POST" style="display: none;">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
+                <!-- Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered text-center" id="teachersTable">
+                        <thead>
                             <tr>
-                                <td colspan="6" class="text-center text-danger fw-bold">No teachers
-                                    found.
-                                </td>
+                                <th>Full Name</th>
+                                <th>Photo</th>
+                                <th>Classes</th>
+                                <th>Email</th>
+                                <th>Class Status</th>
+                                <th>Contact No.</th>
+                                <th>Actions</th>
                             </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @forelse ($teachers as $teacher)
+                                <tr class="teacher-row text-start"
+                                    data-name="{{ strtolower($teacher->firstName . ' ' . $teacher->lastName) }}"
+                                    data-email="{{ strtolower($teacher->email) }}"
+                                    data-status="{{ strtolower(optional($teacher->classes->first())->pivot->status ?? '') }}">
+                                    <td>
+                                        <a class="text-primary"
+                                            href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
+                                            {{ $teacher->firstName }} {{ $teacher->middleName }} {{ $teacher->lastName }}
+                                            {{ $teacher->extName }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a
+                                            href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
+                                            @if ($teacher->profile_photo)
+                                                <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
+                                                    width="40" height="40"
+                                                    style="object-fit: cover; border-radius: 50%;">
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
+                                                    width="40" height="40"
+                                                    style="object-fit: cover; border-radius: 50%;">
+                                            @endif
+                                        </a>
+                                    </td>
+                                    <td>
+                                        @if ($teacher->classes && count($teacher->classes))
+                                            @foreach ($teacher->classes as $class)
+                                                @php
+                                                    $isAdvisory = $class->pivot->role === 'adviser';
+                                                    $badgeClass = $isAdvisory
+                                                        ? 'bg-warning text-black'
+                                                        : 'bg-secondary';
+                                                @endphp
+                                                <span class="badge {{ $badgeClass }} mb-1">
+                                                    {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }} -
+                                                    Section {{ $class->section }}
+                                                    @if ($isAdvisory)
+                                                        <i class="bx bxs-star ms-1" title="Advisory Class"
+                                                            style="font-size: 0.85em;"></i>
+                                                    @endif
+                                                </span>
+                                                @if (!$loop->last)
+                                                    <br>
+                                                @endif
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">No class assigned</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $teacher->email }}</td>
+                                    <td>
+                                        @php
+                                            $status = optional($teacher->classes->first())->pivot->status ?? 'N/A';
+                                            $badgeClass = match ($status) {
+                                                'active' => 'bg-label-success',
+                                                'archived' => 'bg-label-warning',
+                                                default => 'bg-label-dark',
+                                            };
+                                        @endphp
+                                        <span class="badge {{ $badgeClass }}">{{ strtoupper($status) }}</span>
+                                    </td>
+                                    <td>
+                                        @if ($teacher->phone)
+                                            {{ $teacher->phone }}
+                                        @else
+                                            <em>No contact no. yet</em>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow"
+                                                data-bs-toggle="dropdown">
+                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item text-info"
+                                                    href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
+                                                    <i class="bx bxs-user-badge me-1"></i> View Profile
+                                                </a>
+                                                <a class="dropdown-item text-warning"
+                                                    href="{{ route('edit.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
+                                                    <i class="bx bx-edit-alt me-1"></i> Edit
+                                                </a>
+                                                <button type="button" class="dropdown-item text-danger"
+                                                    onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}', '{{ $selectedYear }}')">
+                                                    <i class="bx bx-trash me-1"></i> Delete
+                                                </button>
+                                                <form id="delete-form-{{ $teacher->id }}-{{ $selectedYear }}"
+                                                    action="{{ route('delete.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}"
+                                                    method="POST" style="display: none;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-danger fw-bold">No teachers found.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination + Info -->
+                <div class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
+                    <div id="teacherTableInfo" class="text-muted small"></div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination mb-0" id="teacherPagination"></ul>
+                    </nav>
+                </div>
+                <!-- / Pagination + Info -->
+
             </div>
         </div>
-        {{-- / Card --}}
+        {{-- / Teacher Management Table --}}
 
 
         <hr class="my-5" />
@@ -815,15 +791,107 @@
 @endsection
 
 @push('scripts')
+    <!-- Pagination, Search, and Length Control Script -->
     <script>
-        // Search bar filter
-        document.getElementById('teacherSearch').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            document.querySelectorAll('#teachersTable tbody .teacher-row').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(searchValue) ? '' : 'none';
+        let allTeacherRows = [];
+        const visibleTeacherRowsMap = {};
+        let teacherCurrentPage = 1;
+        let teacherRowsPerPage = 10;
+
+        function paginateTeachers(tableId, paginationId, infoId, maxVisiblePages = 10) {
+            const pagination = document.getElementById(paginationId);
+            const rows = visibleTeacherRowsMap[tableId] || [];
+
+            function showPage(page) {
+                const totalEntries = rows.length;
+                const totalPages = Math.max(1, Math.ceil(totalEntries / teacherRowsPerPage));
+                teacherCurrentPage = Math.min(Math.max(1, page), totalPages);
+                const start = (teacherCurrentPage - 1) * teacherRowsPerPage;
+                const end = Math.min(start + teacherRowsPerPage, totalEntries);
+
+                // Hide all
+                allTeacherRows.forEach(r => r.style.display = "none");
+
+                // Show only the slice
+                rows.slice(start, end).forEach(r => r.style.display = "table-row");
+
+                // Update info text
+                const tableInfo = document.getElementById(infoId);
+                if (totalEntries > 0) {
+                    tableInfo.textContent = `Showing ${start + 1} to ${end} of ${totalEntries} entries`;
+                } else {
+                    tableInfo.textContent = "Showing 0 to 0 of 0 entries";
+                }
+
+                // Build pagination
+                pagination.innerHTML = "";
+                const ul = document.createElement("ul");
+                ul.className = "pagination mb-0";
+
+                // Prev
+                const prev = document.createElement("li");
+                prev.className = `page-item ${teacherCurrentPage === 1 ? 'disabled' : ''}`;
+                prev.innerHTML = `<a class="page-link text-primary" href="javascript:void(0);">&laquo;</a>`;
+                prev.onclick = () => teacherCurrentPage > 1 && showPage(teacherCurrentPage - 1);
+                ul.appendChild(prev);
+
+                let startPage = Math.max(1, teacherCurrentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const li = document.createElement("li");
+                    li.className = `page-item ${i === teacherCurrentPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="javascript:void(0);">${i}</a>`;
+                    li.onclick = () => showPage(i);
+                    ul.appendChild(li);
+                }
+
+                // Next
+                const next = document.createElement("li");
+                next.className = `page-item ${teacherCurrentPage === totalPages ? 'disabled' : ''}`;
+                next.innerHTML = `<a class="page-link text-primary" href="javascript:void(0);">&raquo;</a>`;
+                next.onclick = () => teacherCurrentPage < totalPages && showPage(teacherCurrentPage + 1);
+                ul.appendChild(next);
+
+                pagination.appendChild(ul);
+            }
+
+            showPage(teacherCurrentPage);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const tableId = "teachersTable";
+            const paginationId = "teacherPagination";
+            const infoId = "teacherTableInfo";
+            allTeacherRows = Array.from(document.querySelectorAll("#teachersTable tbody tr.teacher-row"));
+
+            // Initialize
+            visibleTeacherRowsMap[tableId] = allTeacherRows;
+            paginateTeachers(tableId, paginationId, infoId);
+
+            // Table length selector
+            document.getElementById("teacherTableLength").addEventListener("change", function() {
+                teacherRowsPerPage = parseInt(this.value);
+                teacherCurrentPage = 1;
+                paginateTeachers(tableId, paginationId, infoId);
+            });
+
+            // Search
+            document.getElementById("teacherSearch").addEventListener("input", function() {
+                const query = this.value.trim().toLowerCase();
+                const filteredRows = allTeacherRows.filter(row =>
+                    row.innerText.toLowerCase().includes(query)
+                );
+
+                visibleTeacherRowsMap[tableId] = filteredRows;
+                teacherCurrentPage = 1;
+                paginateTeachers(tableId, paginationId, infoId);
             });
         });
+    </script>
 
+    <!-- SweetAlert2 for delete confirmations -->
+    <script>
         // Delete confirmation
         function confirmDelete(teacherId, firstName, lastName, schoolYear) {
             Swal.fire({
@@ -844,7 +912,10 @@
                 }
             });
         }
+    </script>
 
+    <!-- SweetAlert2 for logout confirmation -->
+    <script>
         // Logout confirmation
         function confirmLogout() {
             Swal.fire({
@@ -864,12 +935,15 @@
                 }
             });
         }
+    </script>
 
+    <!-- Profile Photo Preview and Reset -->
+    <script>
         // Profile photo preview and reset
         const uploadInput = document.getElementById('upload');
         const previewImg = document.getElementById('photo-preview');
         const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}";
+        const defaultImage = "{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}";
 
         uploadInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -884,7 +958,10 @@
             uploadInput.value = '';
             previewImg.src = defaultImage;
         });
+    </script>
 
+    <!-- Register Modal Form Validation and Submission -->
+    <script>
         // Register Teacher Modal Form Validation and Submission
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('#registerModal form');
@@ -987,34 +1064,66 @@
             updateAdvisoryOptions();
             assignedSelect.addEventListener('change', updateAdvisoryOptions);
         });
+    </script>
 
-        // Re-assignment Modal Form Validation and Submission
+    <!-- Re-assign Modal Form Validation and Submission -->
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const reassignForm = document.querySelector('#reAssignModal form');
             const reassignBtn = document.getElementById('reAssignTeacherBtn');
             const classSelect = document.getElementById('reassign_classes');
             const advisorySelect = document.getElementById('reassign_advisory_class');
 
+            // ✅ Init Tom Select
+            new TomSelect("#teacher_id", {
+                placeholder: "Search teacher...",
+                allowEmptyOption: true,
+                maxOptions: 5000
+            });
+
+            const classTomSelect = new TomSelect("#reassign_classes", {
+                plugins: ['remove_button'],
+                placeholder: "Select classes...",
+                persist: false,
+                create: false
+            });
+
+            const advisoryTomSelect = new TomSelect("#reassign_advisory_class", {
+                placeholder: "Select advisory class...",
+                allowEmptyOption: true,
+                persist: false,
+                create: false
+            });
+
             // IDs of classes that already have advisers
             const reassignClassesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
 
+            // Update advisory class options dynamically
             function updateAdvisoryClassOptions() {
-                const selected = Array.from(classSelect.selectedOptions).map(opt => parseInt(opt.value));
-                advisorySelect.innerHTML = '<option value="">-- Select advisory class from assigned --</option>';
-                Array.from(classSelect.options).forEach(opt => {
+                const selected = classTomSelect.getValue().map(v => parseInt(v));
+                advisoryTomSelect.clearOptions();
+
+                advisoryTomSelect.addOption({
+                    value: "",
+                    text: "-- Select advisory class from assigned --"
+                });
+
+                classTomSelect.options && Object.values(classTomSelect.options).forEach(opt => {
                     const id = parseInt(opt.value);
                     if (selected.includes(id) && !reassignClassesWithAdvisers.includes(id)) {
-                        const newOpt = document.createElement('option');
-                        newOpt.value = opt.value;
-                        newOpt.textContent = opt.textContent;
-                        advisorySelect.appendChild(newOpt);
+                        advisoryTomSelect.addOption({
+                            value: opt.value,
+                            text: opt.text
+                        });
                     }
                 });
+                advisoryTomSelect.refreshOptions(false);
             }
 
-            classSelect.addEventListener('change', updateAdvisoryClassOptions);
+            classTomSelect.on("change", updateAdvisoryClassOptions);
             updateAdvisoryClassOptions();
 
+            // Validation + confirmation
             reassignBtn.addEventListener('click', function(e) {
                 e.preventDefault();
 
@@ -1060,7 +1169,10 @@
                 });
             });
         });
+    </script>
 
+    <!-- SweetAlert2 for success and error messages -->
+    <script>
         // Success alert
         @if (session('success'))
             Swal.fire({
@@ -1091,16 +1203,28 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
     <script>
-        new TomSelect('#assigned_classes', {
+        // Teacher select styled same as class select
+        new TomSelect('#teacher_id', {
             plugins: ['remove_button'],
-            maxItems: null,
-            placeholder: "Select classes...",
+            maxItems: 1, // only 1 teacher can be selected
+            placeholder: "Select teacher...",
+            create: false,
         });
 
+        // Assign to classes
         new TomSelect('#reassign_classes', {
             plugins: ['remove_button'],
             maxItems: null,
             placeholder: "Select classes...",
+            create: false,
+        });
+
+        // (Optional: assigned_classes if you’re using it elsewhere)
+        new TomSelect('#assigned_classes', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Select classes...",
+            create: false,
         });
     </script>
 @endpush

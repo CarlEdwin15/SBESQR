@@ -39,7 +39,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -309,7 +309,7 @@
                                             {{ strtoupper(str_replace('_', ' ', $type)) }}
                                         </span>
                                     </td>
-                                    <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
+                                    <td>{{ $student->phone ?? 'N/A' }}</td>
                                     <td>
                                         <div class="dropdown">
                                             <button class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">

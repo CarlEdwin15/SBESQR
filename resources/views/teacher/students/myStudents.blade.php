@@ -262,7 +262,7 @@
                                             {{ strtoupper(str_replace('_', ' ', $type)) }}
                                         </span>
                                     </td>
-                                    <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
+                                    <td>{{ $student->phone ?? 'N/A' }}</td>
                                     <td>
                                         <div class="dropdown">
                                             <button class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">

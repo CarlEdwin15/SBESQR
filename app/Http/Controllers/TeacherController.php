@@ -770,24 +770,24 @@ class TeacherController extends Controller
         ]);
 
         // Send SMS to parent
-        if ($student->parent_id) {
-            $parent = DB::table('parent_info')->where('id', $student->parent_id)->first();
+        // if ($student->parent_id) {
+        //     $parent = DB::table('parent_info')->where('id', $student->parent_id)->first();
 
-            if ($parent) {
-                // Correct fallback: mother > father > emergency contact
-                $recipientPhone = $parent->mother_phone
-                    ?? $parent->father_phone
-                    ?? $parent->emergcont_phone;
+        //     if ($parent) {
+        //         // Correct fallback: mother > father > emergency contact
+        //         $recipientPhone = $parent->mother_phone
+        //             ?? $parent->father_phone
+        //             ?? $parent->emergcont_phone;
 
-                if ($recipientPhone) {
-                    $twilio = new TwilioService();
-                    $message = "Hello! Your child {$student->student_fName} {$student->student_lName} has been marked as {$status} today (" . now()->format('M d, Y h:i A') . ").";
-                    $twilio->sendSMS($recipientPhone, $message);
-                } else {
-                    Log::warning("No valid parent/emergency phone found for student ID {$student->id}");
-                }
-            }
-        }
+        //         if ($recipientPhone) {
+        //             $twilio = new TwilioService();
+        //             $message = "Hello! Your child {$student->student_fName} {$student->student_lName} has been marked as {$status} today (" . now()->format('M d, Y h:i A') . ").";
+        //             $twilio->sendSMS($recipientPhone, $message);
+        //         } else {
+        //             Log::warning("No valid parent/emergency phone found for student ID {$student->id}");
+        //         }
+        //     }
+        // }
 
         return response()->json([
             'success' => true,
@@ -1273,7 +1273,7 @@ class TeacherController extends Controller
                 }
             })->with([
                 'address',
-                'parentInfo',
+                'parents',
                 'class' => function ($query) use ($schoolYearId) {
                     $query->where('class_student.school_year_id', $schoolYearId);
                 }
@@ -1310,7 +1310,7 @@ class TeacherController extends Controller
 
         $student = Student::with([
             'address',
-            'parentInfo',
+            'parents',
             'class' => function ($query) {
                 $query->with('schoolYear');
             },
@@ -1425,7 +1425,7 @@ class TeacherController extends Controller
             $schoolYearId = SchoolYear::latest('start_date')->value('id');
         }
 
-        $student = \App\Models\Student::with(['address', 'parentInfo', 'class' => function ($q) {
+        $student = \App\Models\Student::with(['address', 'parents', 'class' => function ($q) {
             $q->with('schoolYear');
         }])->findOrFail($student_id);
 
@@ -1531,7 +1531,7 @@ class TeacherController extends Controller
 
     public function updateStudentInfo(Request $request, $student_id)
     {
-        $student = Student::with(['address', 'parentInfo'])->findOrFail($student_id);
+        $student = Student::with(['address', 'parents'])->findOrFail($student_id);
 
         $messages = [
             'student_lrn.regex' => 'The LRN must start with "112828" and be exactly 12 digits long.',
@@ -1604,7 +1604,7 @@ class TeacherController extends Controller
         ]);
 
         // Update parent info
-        $student->parentInfo()->updateOrCreate([], [
+        $student->parents()->updateOrCreate([], [
             'father_fName' => $request->student_fatherFName,
             'father_mName' => $request->student_fatherMName,
             'father_lName' => $request->student_fatherLName,

@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -155,11 +155,27 @@
             </span> All Classes
         </h4>
 
-        <h5 class="alert alert-primary alert-dismissible fade show mt-2 text-center text-primary fw-bold" role="alert">
-            Showing Grade Levels in <strong class="text-warning"> Section
-                {{ $section }}</strong> for
-            School Year <strong class="text-warning">{{ $selectedYear }}</strong>
+        <h5 id="autoDismissAlert"
+            class="alert alert-primary alert-dismissible fade show mt-2 text-center text-primary fw-bold" role="alert">
+            Showing Grade Levels in
+            <strong class="text-warning">Section {{ $section }}</strong>
+            for School Year
+            <strong class="text-warning">{{ $selectedYear }}</strong>
+
+            <!-- Dismiss button -->
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </h5>
+
+        <script>
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById('autoDismissAlert');
+                if (alertElement) {
+                    const alert = bootstrap.Alert.getOrCreateInstance(alertElement);
+                    alert.close();
+                }
+            }, 5000); // 5000ms = 5 seconds
+        </script>
 
         {{-- Section and School Year Selection --}}
         <div class="d-flex justify-content-end align-items-end flex-wrap mb-3 gap-2">

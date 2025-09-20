@@ -37,7 +37,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -174,12 +174,12 @@
                             } else {
                                 // No profile photo → role-based fallback
                                 $profilePhoto = match ($user->role) {
-                                    'admin' => asset('assetsDashboard/img/profile_pictures/admin_profile.png'),
+                                    'admin' => asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg'),
                                     'teacher' => asset(
-                                        'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
+                                        'assetsDashboard/img/profile_pictures/teacher_default_profile.jpg',
                                     ),
                                     'parent' => asset(
-                                        'assetsDashboard/img/profile_pictures/parents_default_profile.png',
+                                        'assetsDashboard/img/profile_pictures/parent_default_profile.jpg',
                                     ),
                                     default => 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name),
                                 };
@@ -213,9 +213,9 @@
                             </span>
                         </div>
 
-                        <div class="d-flex justify-content-center mt-3">
+                        <div class="d-flex justify-content-center mt-3 gap-2">
                             <!-- Back Button -->
-                            <a href="{{ url()->previous() }}" class="btn btn-danger me-2 d-flex align-items-center">
+                            <a href="{{ url()->previous() }}" class="btn btn-secondary d-flex align-items-center">
                                 <i class='bx bx-chevrons-left'></i>
                                 <span class="d-none d-sm-block">Back</span>
                             </a>
@@ -224,6 +224,12 @@
                                 class="btn btn-warning d-flex align-items-center">
                                 <i class='bx bx-edit me-1'></i>
                                 <span class="d-none d-sm-block">Edit</span>
+                            </a>
+                            <!-- Edit Button -->
+                            <a href="{{ route('admin.user.management') }}"
+                                class="btn btn-danger d-flex align-items-center">
+                                <i class='bx bx-trash me-1'></i>
+                                <span class="d-none d-sm-block">Delete</span>
                             </a>
                         </div>
                     </div>
@@ -271,14 +277,97 @@
                                     </div>
 
                                     <div class="row mb-2">
+                                        <div class="col-sm-4 fw-bold">Age:</div>
+                                        <div class="col-sm-8">{{ \Carbon\Carbon::parse($user->dob)->age }} years old</div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 fw-bold">Gender:</div>
+                                        <div class="col-sm-8">{{ ucfirst($user->gender) }}</div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 fw-bold">Contact Number:</div>
+                                        <div class="col-sm-8">{{ $user->contact_number ?? 'N/A' }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-4 fw-bold">
+                                            Date of Birth:
+                                        </div>
+                                        <div class="col-sm-8">
+                                            {{ $user->dob ? \Carbon\Carbon::parse($user->dob)->format('F j, Y') : 'N/A' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-2">
                                         <div class="col-sm-4 fw-bold">Joined:</div>
                                         <div class="col-sm-8">{{ $user->created_at->format('F j, Y') }}</div>
                                     </div>
 
                                     <div class="row mb-2">
-                                        <div class="col-sm-4 fw-bold">Last Seen:</div>
+                                        <div class="col-sm-4 fw-bold">Last Active:</div>
                                         <div class="col-sm-8">{{ $user->last_seen ?? 'N/A' }}</div>
                                     </div>
+
+                                    @if ($user->role === 'parent' && $user->parent_type)
+                                        <div class="row mb-2">
+                                            <div class="col-sm-4 fw-bold">Parent Type:</div>
+                                            <div class="col-sm-8 text-capitalize">{{ $user->parent_type }}</div>
+                                        </div>
+                                    @endif
+
+                                    @if (
+                                        $user->house_no ||
+                                            $user->street_name ||
+                                            $user->barangay ||
+                                            $user->municipality_city ||
+                                            $user->province ||
+                                            $user->zip_code)
+                                        <hr>
+                                        <h6 class="fw-bold text-primary mt-3">Address</h6>
+
+                                        @if ($user->house_no)
+                                            <div class="row mb-2">
+                                                <div class="col-sm-4 fw-bold">House No.:</div>
+                                                <div class="col-sm-8">{{ $user->house_no }}</div>
+                                            </div>
+                                        @endif
+
+                                        @if ($user->street_name)
+                                            <div class="row mb-2">
+                                                <div class="col-sm-4 fw-bold">Street:</div>
+                                                <div class="col-sm-8">{{ $user->street_name }}</div>
+                                            </div>
+                                        @endif
+
+                                        @if ($user->barangay)
+                                            <div class="row mb-2">
+                                                <div class="col-sm-4 fw-bold">Barangay:</div>
+                                                <div class="col-sm-8">{{ $user->barangay }}</div>
+                                            </div>
+                                        @endif
+
+                                        @if ($user->municipality_city)
+                                            <div class="row mb-2">
+                                                <div class="col-sm-4 fw-bold">Municipality/City:</div>
+                                                <div class="col-sm-8">{{ $user->municipality_city }}</div>
+                                            </div>
+                                        @endif
+
+                                        @if ($user->province)
+                                            <div class="row mb-2">
+                                                <div class="col-sm-4 fw-bold">Province:</div>
+                                                <div class="col-sm-8">{{ $user->province }}</div>
+                                            </div>
+                                        @endif
+
+                                        @if ($user->zip_code)
+                                            <div class="row mb-2">
+                                                <div class="col-sm-4 fw-bold">Zip Code:</div>
+                                                <div class="col-sm-8">{{ $user->zip_code }}</div>
+                                            </div>
+                                        @endif
+                                    @endif
                                 </div>
 
                                 <!-- Teacher Classes -->
@@ -287,19 +376,73 @@
                                         <h5 class="fw-bold text-primary mb-3">Assigned Classes</h5>
 
                                         @if ($classes->isEmpty())
-                                            <p class="text-muted">No classes assigned to this teacher.</p>
+                                            <p class="text-muted">No classes assigned to this teacher yet.</p>
                                         @else
-                                            <ul class="list-group">
-                                                @foreach ($classes as $class)
-                                                    <li
-                                                        class="list-group-item d-flex justify-content-between align-items-center">
-                                                        {{ $class->formatted_grade_level }} - {{ $class->section }}
-                                                        <span class="badge bg-secondary">
-                                                            {{ $class->pivot->school_year_id ? \App\Models\SchoolYear::find($class->pivot->school_year_id)->school_year : 'N/A' }}
-                                                        </span>
-                                                    </li>
+                                            <div class="accordion" id="teacherClassAccordion">
+                                                @foreach ($classes as $index => $classGroup)
+                                                    @php
+                                                        // $index is the school year label (because controller keyed by label)
+                                                        $schoolYearLabel = $index;
+                                                        // create a safe id for collapse (avoid spaces/chars)
+                                                        $collapseId =
+                                                            'collapse-' .
+                                                            Str::slug($schoolYearLabel) .
+                                                            '-' .
+                                                            $loop->index;
+                                                    @endphp
+
+                                                    <div class="accordion-item border-0 shadow-sm mb-2 rounded-3">
+                                                        <h2 class="accordion-header" id="heading-{{ $loop->index }}">
+                                                            <button
+                                                                class="accordion-button collapsed fw-bold text-dark d-flex justify-content-between align-items-center"
+                                                                type="button" data-bs-toggle="collapse"
+                                                                data-bs-target="#{{ $collapseId }}"
+                                                                aria-expanded="false"
+                                                                aria-controls="{{ $collapseId }}">
+                                                                <div>
+                                                                    {{ $schoolYearLabel }}
+                                                                </div>
+
+                                                                <div class="text-end">
+                                                                    <span
+                                                                        class="badge bg-primary ms-2">{{ $classGroup->count() }}
+                                                                        class{{ $classGroup->count() > 1 ? 'es' : '' }}</span>
+                                                                </div>
+                                                            </button>
+                                                        </h2>
+
+                                                        <div id="{{ $collapseId }}" class="accordion-collapse collapse"
+                                                            aria-labelledby="heading-{{ $loop->index }}"
+                                                            data-bs-parent="#teacherClassAccordion">
+                                                            <div class="accordion-body p-0">
+                                                                <ul class="list-group list-group-flush">
+                                                                    @foreach ($classGroup->sortByDesc(fn($c) => $c->pivot->role === 'adviser') as $class)
+                                                                        <li
+                                                                            class="list-group-item d-flex justify-content-between align-items-center">
+                                                                            <div>
+                                                                                {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                                                                - {{ $class->section }}
+                                                                            </div>
+
+                                                                            <div class="text-end">
+                                                                                <span
+                                                                                    class="badge {{ $class->pivot->role === 'adviser' ? 'bg-success' : 'bg-info' }}">
+                                                                                    {{ ucfirst($class->pivot->role) }}
+                                                                                </span>
+                                                                                {{-- Optional: show the pivot status if present --}}
+                                                                                @if (isset($class->pivot->status))
+                                                                                    <span
+                                                                                        class="badge bg-secondary ms-1">{{ ucfirst($class->pivot->status) }}</span>
+                                                                                @endif
+                                                                            </div>
+                                                                        </li>
+                                                                    @endforeach
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 @endforeach
-                                            </ul>
+                                            </div>
                                         @endif
                                     </div>
                                 @endif
@@ -341,6 +484,7 @@
 @endsection
 
 @push('scripts')
+    <!-- Logout -->
     <script>
         function confirmLogout() {
             Swal.fire({

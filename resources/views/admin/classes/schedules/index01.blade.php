@@ -43,7 +43,7 @@
                         <ul class="menu-sub">
                             <li class="menu-item">
                                 <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                                    <div class="text-light">All Teachers</div>
+                                    <div class="text-light">Teacher's Class Management</div>
                                 </a>
                             </li>
                         </ul>
@@ -175,13 +175,13 @@
                                                     $profilePhoto = Auth::user()->profile_photo
                                                         ? asset('storage/' . Auth::user()->profile_photo)
                                                         : asset(
-                                                            'assetsDashboard/img/profile_pictures/admin_profile.png',
+                                                            'assetsDashboard/img/profile_pictures/admin_default_profile.jpg',
                                                         );
                                                 @endphp
                                                 <img src="{{ $profilePhoto }}" alt="Profile Photo"
                                                     class="w-px-40 h-auto rounded-circle" />
                                             @else
-                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
+                                                <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
                                                     alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
                                             @endauth
                                         </div>
@@ -199,7 +199,7 @@
 
                                                 <div class="flex-shrink-0 me-3">
                                                     <div class="avatar">
-                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
+                                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
                                                             alt class="w-px-40 h-auto rounded-circle" />
                                                     </div>
                                                 </div>

@@ -17,7 +17,6 @@ class Student extends Model
         'student_photo',
         'qr_code',
         'address_id',
-        'parent_id',
     ];
 
     public function address()
@@ -25,9 +24,11 @@ class Student extends Model
         return $this->belongsTo(StudentAddress::class, 'address_id');
     }
 
-    public function parentInfo()
+    /** 🔹 Many-to-many: a student can have multiple parents */
+    public function parents()
     {
-        return $this->belongsTo(ParentInfo::class, 'parent_id');
+        return $this->belongsToMany(User::class, 'student_parent', 'student_id', 'parent_id')
+            ->where('role', 'parent');
     }
 
     public function class()
@@ -49,30 +50,20 @@ class Student extends Model
             ->withTimestamps();
     }
 
-    /** Quarterly grades (per subject per quarter) */
     public function quarterlyGrades()
     {
         return $this->hasMany(QuarterlyGrade::class);
     }
 
-    /** Final grades per subject */
     public function finalSubjectGrades()
     {
         return $this->hasMany(FinalSubjectGrade::class);
     }
 
-    /** General average per school year */
     public function generalAverages()
     {
         return $this->hasMany(GeneralAverage::class);
     }
-
-    // public function subjects()
-    // {
-    //     return $this->belongsToMany(Subject::class, 'class_subject', 'class_id', 'subject_id')
-    //         ->withPivot('school_year_id')
-    //         ->withTimestamps();
-    // }
 
     public function getFullNameAttribute()
     {

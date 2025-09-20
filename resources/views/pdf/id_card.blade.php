@@ -199,12 +199,12 @@
                 <div class="fw-bold" style="font-size: 9px">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
 
                 <div class="card-name med-text text-start">
-                    <p>Name: <strong>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
-                            {{ $student->parentInfo->emergcont_lName ?? '' }}</strong></p>
-                    <p>Address: <strong>{{ $student->parentInfo->barangay ?? 'N/A' }},
-                            {{ $student->parentInfo->municipality_city ?? 'N/A' }},
-                            {{ $student->parentInfo->province ?? 'N/A' }}</strong></p>
-                    <p>Contact No.: <strong>{{ $student->parentInfo->emergcontPhone ?? 'N/A' }}</strong></p>
+                    <p>Name: <strong>{{ $student->parents->emergcont_fName ?? 'N/A' }}
+                            {{ $student->parents->emergcont_lName ?? '' }}</strong></p>
+                    <p>Address: <strong>{{ $student->parents->barangay ?? 'N/A' }},
+                            {{ $student->parents->municipality_city ?? 'N/A' }},
+                            {{ $student->parents->province ?? 'N/A' }}</strong></p>
+                    <p>Contact No.: <strong>{{ $student->parents->emergcontPhone ?? 'N/A' }}</strong></p>
                 </div>
 
                 <table class="table">

@@ -142,12 +142,12 @@
                                         switch (Auth::user()->role) {
                                             case 'admin':
                                                 $profilePhoto = asset(
-                                                    'assetsDashboard/img/profile_pictures/admin_profile.png',
+                                                    'assetsDashboard/img/profile_pictures/admin_default_profile.jpg',
                                                 );
                                                 break;
                                             case 'teacher':
                                                 $profilePhoto = asset(
-                                                    'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
+                                                    'assetsDashboard/img/profile_pictures/teacher_default_profile.jpg',
                                                 );
                                                 break;
                                             case 'parent':
@@ -158,7 +158,7 @@
                                             default:
                                                 // generic fallback (teacher style)
                                                 $profilePhoto = asset(
-                                                    'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
+                                                    'assetsDashboard/img/profile_pictures/teacher_default_profile.jpg',
                                                 );
                                                 break;
                                         }
@@ -168,7 +168,7 @@
                                 <img src="{{ $profilePhoto }}" alt="Profile Photo" class="w-px-40 h-auto rounded-circle" />
                             @else
                                 {{-- Guest fallback --}}
-                                <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                                <img src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                     alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
                             @endauth
                         </div>
@@ -188,7 +188,7 @@
                                         <img src="{{ $profilePhoto }}" alt="Profile Photo"
                                             class="w-px-40 h-auto rounded-circle" />
                                     @else
-                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_profile.png') }}"
+                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
                                             alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
                                     @endauth
                                 </div>

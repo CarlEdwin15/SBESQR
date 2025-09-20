@@ -39,7 +39,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>

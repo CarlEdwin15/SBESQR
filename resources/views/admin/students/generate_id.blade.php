@@ -42,7 +42,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -232,8 +232,8 @@
 
                             <div style="font-size: 11px;">
                                 <p class="mb-1">Name:
-                                    <strong>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
-                                        {{ $student->parentInfo->emergcont_lName ?? '' }}</strong>
+                                    <strong>{{ $student->parents->emergcont_fName ?? 'N/A' }}
+                                        {{ $student->parents->emergcont_lName ?? '' }}</strong>
                                 </p>
                                 <p class="mb-1">Address:
                                     <strong>{{ $student->address->barangay ?? 'N/A' }},
@@ -241,7 +241,7 @@
                                         {{ $student->address->province ?? 'N/A' }}</strong>
                                 </p>
                                 <p class="mb-1">Contact No.:
-                                    <strong>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</strong>
+                                    <strong>{{ $student->parents->emergcont_phone ?? 'N/A' }}</strong>
                                 </p>
                             </div>
 

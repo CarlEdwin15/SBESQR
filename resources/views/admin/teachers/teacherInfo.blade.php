@@ -41,7 +41,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Teachers</div>
+                            <div class="text-warning">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -170,7 +170,7 @@
                             <img src="{{ asset('storage/' . $teacher->profile_photo) }}" alt="Teacher Photo"
                                 class="img-thumbnail mb-3" style="object-fit: cover; height: 450px; width: 450px;">
                         @else
-                            <img src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                            <img src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                 alt="Default Photo" class="img-thumbnail mb-3"
                                 style="object-fit: cover; height: 450px; width: 450px;">
                         @endif

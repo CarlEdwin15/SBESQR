@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Classes;
-use App\Models\ParentInfo;
 use App\Models\SchoolYear;
 use App\Models\Student;
 use Illuminate\Http\Request;
@@ -13,33 +12,233 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
-    public function userManagement()
+    public function userManagement(Request $request)
     {
-        // Fetch all users with computed attributes
-        $users = User::all()
-            ->sortBy(function ($user) {
-                return sprintf(
-                    '%d-%s',
-                    $user->is_online ? 0 : 1,  // online first
-                    strtolower($user->full_name) // alphabetical inside group
-                );
-            })
-            ->values(); // reindex collection
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
 
-        // You can paginate manually if needed
-        // $users = $users->paginate(10); // collections don’t paginate directly
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
+
+        // Fetch all saved school years
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
+        $savedStartYears = array_map(fn($sy) => (int)substr($sy, 0, 4), $savedYears);
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+        if (!in_array($currentSchoolYear, $schoolYears)) $schoolYears[] = $currentSchoolYear;
+        if (!in_array($nextSchoolYear, $schoolYears)) $schoolYears[] = $nextSchoolYear;
+
+        usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
+
+        // Selected year
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+        $schoolYearRecord = SchoolYear::where('school_year', $selectedYear)->first();
+
+        // Users: online first, then alphabetical
+        $users = User::all()
+            ->sortBy(fn($user) => sprintf('%d-%s', $user->is_online ? 0 : 1, strtolower($user->full_name)))
+            ->values();
 
         $stats = [
-            'totalUsers'   => User::count(),
+            'totalUsers'    => User::count(),
             'totalTeachers' => User::where('role', 'teacher')->count(),
-            'totalAdmins'  => User::where('role', 'admin')->count(),
-            'totalParents' => User::where('role', 'parent')->count(),
+            'totalAdmins'   => User::where('role', 'admin')->count(),
+            'totalParents'  => User::where('role', 'parent')->count(),
         ];
 
-        return view('admin.user_management.index', compact('users', 'stats'));
+        // All classes with teachers for this school year
+        $allClasses = Classes::with(['teachers' => function ($q) use ($schoolYearRecord) {
+            if ($schoolYearRecord) {
+                $q->wherePivot('school_year_id', $schoolYearRecord->id);
+            }
+        }])->get();
+
+        return view('admin.user_management.index', compact(
+            'users',
+            'stats',
+            'allClasses',
+            'schoolYears',
+            'selectedYear'
+        ));
+    }
+
+    public function createUser(Request $request)
+    {
+        $rules = [
+            'firstName'  => 'required|string|max:255',
+            'middleName' => 'nullable|string|max:255',
+            'extName'    => 'nullable|string|max:255',
+            'lastName'   => 'required|string|max:255',
+            'email'      => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    // Teacher duplicate check
+                    if (User::where('email', $value)->where('role', 'teacher')->exists()) {
+                        return $fail('This email is already registered to a teacher.');
+                    }
+
+                    // Parent duplicate check
+                    if (User::where('email', $value)->where('role', 'parent')->exists()) {
+                        return $fail('This email is already registered to a parent.');
+                    }
+
+                    // Other roles
+                    if (User::where('email', $value)->where('role', '!=', 'teacher')->exists()) {
+                        return $fail('This email is already registered for another user.');
+                    }
+                },
+            ],
+            'role'       => 'required|in:teacher,admin,parent',
+            'status'     => 'required|in:active,inactive,suspended,banned',
+            'gender'     => 'nullable|in:male,female',
+            'dob'        => 'nullable|date',
+            'phone'      => 'nullable|string|max:20',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'house_no'   => 'nullable|string|max:50',
+            'street_name' => 'nullable|string|max:255',
+            'barangay'   => 'nullable|string|max:255',
+            'municipality_city' => 'nullable|string|max:255',
+            'province'   => 'nullable|string|max:255',
+            'zip_code'   => 'nullable|string|max:20',
+        ];
+
+        if ($request->role === 'parent') {
+            $rules['parent_type'] = 'required|in:mother,father,guardian';
+        } else {
+            $rules['password'] = [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*#?&]/',
+            ];
+        }
+
+        if ($request->role === 'teacher') {
+            $rules['assigned_classes'] = 'required|array|min:1';
+            $rules['assigned_classes.*'] = 'exists:classes,id';
+            $rules['advisory_class'] = 'nullable|exists:classes,id';
+            $rules['selected_school_year'] = 'required|string|exists:school_years,school_year';
+        }
+
+        $validated = $request->validate($rules);
+
+        $password = $request->role === 'parent'
+            ? Hash::make(Str::random(16))
+            : Hash::make($request->password);
+
+        $photoPath = $request->hasFile('profile_photo')
+            ? $request->file('profile_photo')->store('profile_pictures', 'public')
+            : null;
+
+        $user = User::create([
+            'firstName'    => $request->firstName,
+            'middleName'   => $request->middleName,
+            'lastName'     => $request->lastName,
+            'extName'      => $request->extName,
+            'email'        => $request->email,
+            'gender'       => $request->gender,
+            'dob'          => $request->dob,
+            'phone'        => $request->phone,
+            'role'         => $request->role,
+            'status'       => $request->status,
+            'parent_type'  => $request->parent_type,
+            'password'     => $password,
+            'profile_photo' => $photoPath,
+            'house_no'          => $request->house_no,
+            'street_name'       => $request->street_name,
+            'barangay'          => $request->barangay,
+            'municipality_city' => $request->municipality_city,
+            'province'          => $request->province,
+            'zip_code'          => $request->zip_code,
+        ]);
+
+        // Parent: link children
+        if ($request->filled('students') && $user->role === 'parent') {
+            $user->children()->sync($request->students);
+        }
+
+        // Teacher: attach classes with school year
+        if ($user->role === 'teacher') {
+            $schoolYear = SchoolYear::where('school_year', $request->selected_school_year)->first();
+            if (!$schoolYear) {
+                return back()->withErrors(['selected_school_year' => 'Invalid school year selected.'])->withInput();
+            }
+
+            if ($request->advisory_class && !in_array($request->advisory_class, $request->assigned_classes)) {
+                return back()->withErrors(['advisory_class' => 'Advisory must be in assigned classes.'])->withInput();
+            }
+
+            if ($request->advisory_class) {
+                $advisoryClass = Classes::find($request->advisory_class);
+                if ($advisoryClass->teachers()
+                    ->wherePivot('school_year_id', $schoolYear->id)
+                    ->wherePivot('role', 'adviser')
+                    ->exists()
+                ) {
+                    return back()->withErrors(['advisory_class' => 'This class already has an adviser.'])->withInput();
+                }
+            }
+
+            foreach ($request->assigned_classes as $classId) {
+                $role = ($classId == $request->advisory_class) ? 'adviser' : 'subject_teacher';
+                $user->classes()->attach($classId, [
+                    'role' => $role,
+                    'school_year_id' => $schoolYear->id,
+                    'status' => 'active',
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.user.management')->with('success', 'User added successfully.');
+    }
+
+    public function userInfo($id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->role === 'teacher') {
+            // Load classes (with pivot data) for this teacher
+            $classesRaw = $user->classes()
+                ->with(['subjects', 'advisers']) // keep existing relations
+                ->get();
+
+            // Group by the pivot school_year_id (this is the pivot column that holds the school year)
+            $groupedBySyId = $classesRaw->groupBy(fn($class) => $class->pivot->school_year_id);
+
+            // Turn grouped collection into keyed-by-school-year-string collection:
+            $classes = collect();
+
+            // Sort school year ids ascending (optional). If you prefer newest-first, use ->sortDesc()
+            $syIds = $groupedBySyId->keys()->sortDesc()->values();
+
+            foreach ($syIds as $syId) {
+                $group = $groupedBySyId->get($syId);
+                $label = \App\Models\SchoolYear::find($syId)?->school_year ?? 'Unknown School Year';
+                // Use the human label as the key so the view can print it directly
+                $classes[$label] = $group;
+            }
+
+            return view('admin.user_management.user_info', compact('user', 'classes'));
+        }
+
+        return view('admin.user_management.user_info', compact('user'));
     }
 
     public function updateUserStatus(Request $request, User $user)
@@ -70,27 +269,8 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Selected users updated successfully.');
     }
 
-    public function userInfo($id)
-    {
-        $user = User::findOrFail($id);
 
-        // Role-based related data:
-        if ($user->role === 'teacher') {
-            $classes = $user->classes()->with('subjects', 'advisers')->get();
-            return view('admin.user_management.user_info', compact('user', 'classes'));
-        }
 
-        if ($user->role === 'parent') {
-            // Later you could link parents to students if needed
-            $students = Student::whereHas('parentInfo', function ($q) use ($user) {
-                $q->where('parent_email', $user->email);
-            })->get();
-            return view('admin.user_management.user_info', compact('user', 'students'));
-        }
-
-        // Admins don’t have extra relations
-        return view('admin.user_management.user_info', compact('user'));
-    }
 
     public function accountSettings()
     {
@@ -193,21 +373,16 @@ class AdminController extends Controller
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
         $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
 
-        // Get re-assignable teachers: previously assigned but currently archived, and not yet re-assigned this year
-        $reAssignableTeachers = User::where('role', 'teacher')
-            ->whereHas('classes', function ($query) use ($schoolYear) {
-                $query->where('class_user.status', 'archived')
-                    ->where('class_user.school_year_id', '<>', $schoolYear->id);
-            })
-            ->whereDoesntHave('classes', function ($query) use ($schoolYear) {
-                $query->where('class_user.school_year_id', $schoolYear->id)
-                    ->where('class_user.status', 'active');
-            })
-            ->with(['classes' => function ($query) {
-                $query->withPivot('school_year_id', 'status');
-            }])
-            ->get();
-
+        // Get eligible teachers: role=teacher but not assigned in this school year
+        $eligibleTeachers = collect(); // default empty
+        if ($schoolYear) {
+            $eligibleTeachers = User::where('role', 'teacher')
+                ->whereDoesntHave('classes', function ($query) use ($schoolYear) {
+                    $query->where('class_user.school_year_id', $schoolYear->id);
+                })
+                ->orderBy('lastName')
+                ->get();
+        }
 
         // 1. Auto-archive "active" from past years
         if ($currentSchoolYearRecord) {
@@ -244,7 +419,7 @@ class AdminController extends Controller
             'selectedYear',
             'allClasses',
             'currentYear',
-            'reAssignableTeachers',
+            'eligibleTeachers',
         ));
     }
 
@@ -267,8 +442,8 @@ class AdminController extends Controller
                         return $fail('This email is already registered to a teacher.');
                     }
 
-                    // Check if email belongs to a parent
-                    if (ParentInfo::where('parent_email', $value)->exists()) {
+                    // Check if email belongs to an existing parent
+                    if (User::where('email', $value)->where('role', 'parent')->exists()) {
                         return $fail('This email is already registered to a parent.');
                     }
 
@@ -394,7 +569,7 @@ class AdminController extends Controller
                     }
 
                     // Check if parent is using this email
-                    if (ParentInfo::where('parent_email', $value)->exists()) {
+                    if (User::where('email', $value)->exists()) {
                         return $fail('This email is already registered to a parent.');
                     }
 
@@ -581,6 +756,13 @@ class AdminController extends Controller
         $advisoryClassId = $request->reassign_advisory_class;
 
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+
+        $eligibleTeachers = User::where('role', 'teacher')
+            ->whereDoesntHave('classes', function ($query) use ($schoolYear) {
+                $query->where('class_user.school_year_id', $schoolYear->id);
+            })
+            ->orderBy('lastName')
+            ->get();
 
         // Remove any existing assignments for this teacher in that school year (optional safety step)
         DB::table('class_user')

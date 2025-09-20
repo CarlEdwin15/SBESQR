@@ -44,7 +44,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -300,23 +300,23 @@
                                         <tbody>
                                             <tr>
                                                 <th class="text-primary">Father's Name</th>
-                                                <td>{{ $student->parentInfo->father_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->father_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->father_lName ?? 'N/A' }}</td>
+                                                <td>{{ $student->parents->father_fName ?? 'N/A' }}
+                                                    {{ $student->parents->father_mName ?? 'N/A' }}
+                                                    {{ $student->parents->father_lName ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Father's Contact No.</th>
-                                                <td>{{ $student->parentInfo->father_phone ?? 'N/A' }}</td>
+                                                <td>{{ $student->parents->father_phone ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Mother's Name</th>
-                                                <td>{{ $student->parentInfo->mother_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->mother_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->mother_lName ?? 'N/A' }}</td>
+                                                <td>{{ $student->parents->mother_fName ?? 'N/A' }}
+                                                    {{ $student->parents->mother_mName ?? 'N/A' }}
+                                                    {{ $student->parents->mother_lName ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Mother's Contact No.</th>
-                                                <td>{{ $student->parentInfo->mother_phone ?? 'N/A' }}</td>
+                                                <td>{{ $student->parents->mother_phone ?? 'N/A' }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -328,13 +328,13 @@
                                         <tbody>
                                             <tr>
                                                 <th class="text-primary">Emergency Contact</th>
-                                                <td>{{ $student->parentInfo->emergcont_fName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergcont_mName ?? 'N/A' }}
-                                                    {{ $student->parentInfo->emergcont_lName ?? 'N/A' }}</td>
+                                                <td>{{ $student->parents->emergcont_fName ?? 'N/A' }}
+                                                    {{ $student->parents->emergcont_mName ?? 'N/A' }}
+                                                    {{ $student->parents->emergcont_lName ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="text-primary">Emergency Contact No.</th>
-                                                <td>{{ $student->parentInfo->emergcont_phone ?? 'N/A' }}</td>
+                                                <td>{{ $student->parents->emergcont_phone ?? 'N/A' }}</td>
                                             </tr>
                                         </tbody>
                                     </table>

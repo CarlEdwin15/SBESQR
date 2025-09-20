@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Teachers</div>
+                            <div class="text-warning">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -158,11 +158,11 @@
         <div class="d-flex justify-content-start mb-3 gap-2">
             <button type="button" class="btn btn-danger d-flex align-items-center gap-1" onclick="handleCancel()">
                 <i class="bx bx-arrow-back"></i>
-                <span class="d-sm-block">Back</span>
+                <span class="d-none d-sm-block">Back</span>
             </button>
             <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="saveChangesBtn">
                 <i class="bx bx-save"></i>
-                <span class="d-sm-block">Save</span>
+                <span class="d-none d-sm-block">Save</span>
             </button>
         </div>
 
@@ -199,7 +199,7 @@
                                         style="object-fit: cover; border-radius: 5%">
                                 @else
                                     <img id="photo-preview"
-                                        src="{{ asset('assetsDashboard/img/profile_pictures/teachers_default_profile.jpg') }}"
+                                        src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                         alt="Profile Preview" width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius: 5%">
                                 @endif

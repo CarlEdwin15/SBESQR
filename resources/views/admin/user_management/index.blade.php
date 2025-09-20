@@ -37,7 +37,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -222,7 +222,7 @@
             <!-- User Management Table -->
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h4 class="card-title mb-3">User Management</h4>
+                    <h3 class="card-title mb-3 fw-bold">User Management</h3>
                     {{-- <p class="text-muted">Manage all users in one place. Control access, assign roles, and monitor
                         activity.</p> --}}
 
@@ -252,20 +252,20 @@
 
                     <hr class="my-4" />
 
+                    <!-- Search & Filters -->
                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
 
-                        <!-- Left: Table Length Selector -->
-                        <div>
-                            <select id="tableLength" class="form-select">
-                                <option value="10" selected>10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                        </div>
-
-                        <!-- Right: Bulk Actions + Buttons -->
-                        <div class="d-flex gap-2">
+                        <!-- Left: Table Length Selector + Bulk Dropdown -->
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Table Length Selector -->
+                            <div>
+                                <select id="tableLength" class="form-select">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
 
                             <!-- Bulk Status Dropdown Settings -->
                             <form id="bulkStatusForm" action="{{ route('admin.users.bulkUpdateStatus') }}"
@@ -307,20 +307,34 @@
                                     </ul>
                                 </div>
                             </form>
+                        </div>
 
-                            <a href="{{ route('register') }}" class="btn btn-success">+ Add User</a>
+                        <!-- Right: Add User Button -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary d-flex align-items-center gap-1" id="openAddUserRole">
+                                <i class="bx bx-user-plus"></i>
+                                <span class="d-none d-sm-block"> Add User</span>
+                            </button>
                         </div>
                     </div>
+                    <!-- /Search & Filters -->
+
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
 
                     <!-- Table -->
                     <div class="table-responsive">
                         <table class="table table-hover align-middle" id="userTable">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th style="width: 5%;">
+                                    <th style="width: 1%;">
                                         <input class="form-check-input me-1" type="checkbox" id="selectAll">
                                     </th>
-                                    <th class="text-start" style="width: 35%;">Full Name</th>
+                                    <th class="text-start" style="width: 38%;">Full Name</th>
                                     <th style="width: 15%;">Last Active</th>
                                     <th style="width: 10%;">Role</th>
                                     <th style="width: 10%;">Email</th>
@@ -342,13 +356,13 @@
                                             // No profile photo → role-based fallback
                                             $profilePhoto = match ($user->role) {
                                                 'admin' => asset(
-                                                    'assetsDashboard/img/profile_pictures/admin_profile.png',
+                                                    'assetsDashboard/img/profile_pictures/admin_default_profile.jpg',
                                                 ),
                                                 'teacher' => asset(
-                                                    'assetsDashboard/img/profile_pictures/teachers_default_profile.jpg',
+                                                    'assetsDashboard/img/profile_pictures/teacher_default_profile.jpg',
                                                 ),
                                                 'parent' => asset(
-                                                    'assetsDashboard/img/profile_pictures/parents_default_profile.png',
+                                                    'assetsDashboard/img/profile_pictures/parent_default_profile.jpg',
                                                 ),
                                                 default => 'https://ui-avatars.com/api/?name=' .
                                                     urlencode($user->full_name),
@@ -385,8 +399,8 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <a href="{{ route('admin.user.info', ['id' => $user->id]) }}">
-                                                    <img src="{{ $profilePhoto }}" alt="{{ $user->full_name }}"
-                                                        class="rounded-circle me-2" width="30" height="30">
+                                                    <img src="{{ $profilePhoto }}" class="rounded-circle me-2"
+                                                        width="30" height="30">
                                                     <span>{{ $user->full_name }}</span>
                                                 </a>
                                             </div>
@@ -459,6 +473,520 @@
         <div class="content-backdrop fade"></div>
     </div>
     <!-- Content wrapper -->
+
+    <!-- Add Admin Modal -->
+    <div class="modal fade" id="addAdminModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form class="modal-content" action="{{ route('admin.user.create') }}" method="POST"
+                enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="role" value="admin">
+
+                <div class="modal-header">
+                    <h4 class="modal-title fw-bold text-primary">REGISTER NEW ADMIN</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- Profile Photo Upload with Preview and Default -->
+                    <div class="row">
+                        <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
+                            <div class="mb-3">
+                                <img id="photo-preview-admin"
+                                    src="{{ asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
+                                    alt="Profile Preview" width="100" height="100" class="profile-preview"
+                                    style="object-fit: cover; border-radius: 5%">
+                            </div>
+
+                            <div class="button-wrapper">
+                                <label for="upload-admin" class="btn btn-warning me-2 mb-2" tabindex="0">
+                                    <span class="d-none d-sm-block">Upload new photo</span>
+                                    <i class="bx bx-upload d-block d-sm-none"></i>
+                                    <input type="file" id="upload-admin" name="profile_photo"
+                                        class="account-file-input" hidden accept="image/png, image/jpeg" />
+                                </label>
+
+                                <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
+                                    id="reset-photo-admin">
+                                    <i class="bx bx-reset d-block d-sm-none"></i>
+                                    <span class="d-none d-sm-block">Reset</span>
+                                </button>
+
+                                <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Profile Photo Upload with Preview and Default -->
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">First Name</label>
+                            <input type="text" class="form-control" name="firstName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Middle Name</label>
+                            <input type="text" class="form-control" name="middleName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Last Name</label>
+                            <input type="text" class="form-control" name="lastName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Extension Name</label>
+                            <input type="text" class="form-control" name="extName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Phone</label>
+                            <input type="text" class="form-control" name="phone">
+                        </div>
+                        <!-- Password Input -->
+                        <div class="col-md-6 form-password-toggle">
+                            <label class="form-label fw-bold" for="password">Password</label>
+                            <div class="input-group input-group-merge">
+                                <input type="password" id="password" class="form-control" name="password" required
+                                    autocomplete="new-password" placeholder="Enter your Password" />
+
+                                @error('password')
+                                    <div class="text-danger mt-1">{{ $message }}</div>
+                                @enderror
+
+                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password Input -->
+                        <div class="col-md-6 form-password-toggle">
+                            <label class="form-label fw-bold" for="password_confirmation">Confirm Password</label>
+                            <div class="input-group input-group-merge">
+                                <input type="password" id="password_confirmation" class="form-control"
+                                    name="password_confirmation" required autocomplete="new-password"
+                                    placeholder="Confirm your Password" />
+
+                                @error('password_confirmation')
+                                    <div class="text-danger mt-1">{{ $message }}</div>
+                                @enderror
+
+                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <select class="form-select" name="status" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="banned">Banned</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="registerAdminBtn" class="btn btn-primary">Save Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- /Add Admin Modal -->
+
+    <!-- Add Teacher Modal -->
+    <div class="modal fade" id="addTeacherModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form class="modal-content" action="{{ route('admin.user.create') }}" method="POST"
+                enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="role" value="teacher">
+
+                <div class="modal-header">
+                    <h4 class="modal-title fw-bold text-primary">REGISTER NEW TEACHER</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- Profile Photo Upload with Preview and Default -->
+                    <div class="row">
+                        <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
+                            <div class="mb-3">
+                                <img id="photo-preview-teacher"
+                                    src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
+                                    alt="Profile Preview" width="100" height="100" class="profile-preview"
+                                    style="object-fit: cover; border-radius: 5%">
+                            </div>
+
+                            <div class="button-wrapper">
+                                <label for="upload-teacher" class="btn btn-warning me-2 mb-2" tabindex="0">
+                                    <span class="d-none d-sm-block">Upload new photo</span>
+                                    <i class="bx bx-upload d-block d-sm-none"></i>
+                                    <input type="file" id="upload-teacher" name="profile_photo"
+                                        class="account-file-input" hidden accept="image/png, image/jpeg" />
+                                </label>
+
+                                <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
+                                    id="reset-photo-teacher">
+                                    <i class="bx bx-reset d-block d-sm-none"></i>
+                                    <span class="d-none d-sm-block">Reset</span>
+                                </button>
+
+                                <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Profile Photo Upload -->
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">School Year</label>
+                            <select name="selected_school_year" class="form-select" required>
+                                <option value="" disabled
+                                    {{ old('selected_school_year', $selectedYear) ? '' : 'selected' }}>Select School Year
+                                </option>
+                                @foreach ($schoolYears as $year)
+                                    <option value="{{ $year }}"
+                                        {{ old('selected_school_year', $selectedYear) == $year ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">First Name</label>
+                            <input type="text" class="form-control" name="firstName" value="{{ old('firstName') }}"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Middle Name</label>
+                            <input type="text" class="form-control" name="middleName"
+                                value="{{ old('middleName') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Last Name</label>
+                            <input type="text" class="form-control" name="lastName" value="{{ old('lastName') }}"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Extension Name</label>
+                            <input type="text" class="form-control" name="extName" value="{{ old('extName') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" class="form-control" name="email" value="{{ old('email') }}"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Phone</label>
+                            <input type="text" class="form-control" name="phone" value="{{ old('phone') }}">
+                        </div>
+
+                        <!-- Gender Field -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Gender</label>
+                            <select class="form-select" name="gender" required>
+                                <option value="" disabled {{ old('gender') ? '' : 'selected' }}>Select Gender
+                                </option>
+                                <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
+                                <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
+                            </select>
+                        </div>
+
+                        <!-- Date of Birth Field -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Date of Birth</label>
+                            <input type="date" class="form-control" name="dob" value="{{ old('dob') }}">
+                        </div>
+
+                        <!-- Assigned Classes -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Assign Classes</label>
+                            <select name="assigned_classes[]" id="assigned_classes" multiple required>
+                                @foreach ($allClasses as $class)
+                                    @php
+                                        $adviser = $class->teachers->where('pivot.role', 'adviser')->first();
+                                        $hasAdviser = !is_null($adviser);
+                                        $isSelected = collect(old('assigned_classes'))->contains($class->id);
+                                    @endphp
+                                    <option value="{{ $class->id }}" {{ $isSelected ? 'selected' : '' }}>
+                                        {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
+                                        - {{ $class->section }}
+                                        @if ($hasAdviser)
+                                            ({{ $adviser->firstName }} {{ $adviser->lastName }})
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted text-center">
+                                You can select multiple classes
+                            </small>
+                        </div>
+
+                        <!-- Advisory Class -->
+                        <div class="col-md-6 mb-3">
+                            <label for="advisory_class" class="form-label fw-bold">Select Advisory Class</label>
+                            <select name="advisory_class" id="advisory_class" class="form-select"
+                                data-old="{{ old('advisory_class') }}">
+                                <option value="">-- Select advisory class from assigned --</option>
+                                {{-- Options injected dynamically --}}
+                            </select>
+                            <small class="form-text text-muted text-center">Select an advisory
+                                class from the assigned classes, or leave empty if none.</small>
+                        </div>
+
+                        <!-- Password Input -->
+                        <div class="col-md-6 form-password-toggle">
+                            <label class="form-label fw-bold" for="password">Password</label>
+                            <div class="input-group input-group-merge">
+                                <input type="password" id="password" class="form-control" name="password" required
+                                    autocomplete="new-password" placeholder="Enter your Password" />
+
+                                @error('password')
+                                    <div class="text-danger mt-1">{{ $message }}</div>
+                                @enderror
+
+                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password Input -->
+                        <div class="col-md-6 form-password-toggle">
+                            <label class="form-label fw-bold" for="password_confirmation">Confirm Password</label>
+                            <div class="input-group input-group-merge">
+                                <input type="password" id="password_confirmation" class="form-control"
+                                    name="password_confirmation" required autocomplete="new-password"
+                                    placeholder="Confirm your Password" />
+
+                                @error('password_confirmation')
+                                    <div class="text-danger mt-1">{{ $message }}</div>
+                                @enderror
+
+                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <select class="form-select" name="status" required>
+                                <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
+                                <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive
+                                </option>
+                                <option value="suspended" {{ old('status') == 'suspended' ? 'selected' : '' }}>Suspended
+                                </option>
+                                <option value="banned" {{ old('status') == 'banned' ? 'selected' : '' }}>Banned</option>
+                            </select>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <h5 class="fw-bold text-primary">Address</h5>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">House No.</label>
+                                <input type="text" class="form-control" name="house_no"
+                                    value="{{ old('house_no') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Street Name</label>
+                                <input type="text" class="form-control" name="street_name"
+                                    value="{{ old('street_name') }}">
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Barangay</label>
+                                <input type="text" class="form-control" name="barangay"
+                                    value="{{ old('barangay') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Municipality/City</label>
+                                <input type="text" class="form-control" name="municipality_city"
+                                    value="{{ old('municipality_city') }}">
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Province</label>
+                                <input type="text" class="form-control" name="province"
+                                    value="{{ old('province') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Zip Code</label>
+                                <input type="text" class="form-control" name="zip_code"
+                                    value="{{ old('zip_code') }}">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="registerTeacherBtn" class="btn btn-primary">Save Teacher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- /Add Teacher Modal -->
+
+    <!-- Add Parent Modal -->
+    <div class="modal fade" id="addParentModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form class="modal-content" action="{{ route('admin.user.create') }}" method="POST"
+                enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="role" value="parent">
+
+                <div class="modal-header">
+                    <h4 class="modal-title fw-bold text-primary">REGISTER NEW PARENT</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- Profile Photo Upload with Preview and Default -->
+                    <div class="row">
+                        <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
+                            <div class="mb-3">
+                                <img id="photo-preview-parent"
+                                    src="{{ asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg') }}"
+                                    width="100" height="100" class="profile-preview"
+                                    style="object-fit: cover; border-radius: 5%; background-color: #e9ecef;">
+                            </div>
+
+                            <div class="button-wrapper">
+                                <label for="upload-parent" class="btn btn-warning me-2 mb-2" tabindex="0">
+                                    <span class="d-none d-sm-block">Upload new photo</span>
+                                    <i class="bx bx-upload d-block d-sm-none"></i>
+                                    <input type="file" id="upload-parent" name="profile_photo"
+                                        class="account-file-input" hidden accept="image/png, image/jpeg" />
+                                </label>
+
+                                <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
+                                    id="reset-photo-parent">
+                                    <i class="bx bx-reset d-block d-sm-none"></i>
+                                    <span class="d-none d-sm-block">Reset</span>
+                                </button>
+
+                                <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Profile Photo Upload with Preview and Default -->
+
+                    <div class="row g-3">
+                        <div class="col-md-6 mt-3">
+                            <label class="form-label fw-bold">Parent Type</label>
+                            <select class="form-select" name="parent_type" required>
+                                <option value="" disabled selected>Select type</option>
+                                <option value="mother">Mother</option>
+                                <option value="father">Father</option>
+                                <option value="guardian">Guardian</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <select class="form-select" name="status" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="banned">Banned</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">First Name</label>
+                            <input type="text" class="form-control" name="firstName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Middle Name</label>
+                            <input type="text" class="form-control" name="middleName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Last Name</label>
+                            <input type="text" class="form-control" name="lastName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Extension Name</label>
+                            <input type="text" class="form-control" name="extName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Phone</label>
+                            <input type="tel" class="form-control" name="phone">
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-bold">Link Students</label>
+                        <select id="link_students" name="students[]" multiple required></select>
+                        <small class="form-text text-muted">You can search and select multiple students.</small>
+                    </div>
+
+                    <hr class="my-4" />
+                    <h5 class="fw-bold text-primary">Address</h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">House No.</label>
+                            <input type="text" class="form-control" name="house_no" value="{{ old('house_no') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Street Name</label>
+                            <input type="text" class="form-control" name="street_name"
+                                value="{{ old('street_name') }}">
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Barangay</label>
+                            <input type="text" class="form-control" name="barangay" value="{{ old('barangay') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Municipality/City</label>
+                            <input type="text" class="form-control" name="municipality_city"
+                                value="{{ old('municipality_city') }}">
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Province</label>
+                            <input type="text" class="form-control" name="province" value="{{ old('province') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Zip Code</label>
+                            <input type="text" class="form-control" name="zip_code" value="{{ old('zip_code') }}">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info text-warning mt-3">
+                        <i class="bx bx-info-circle fs-4 text-warning"></i> Parent accounts don’t require a password.
+                        They log in via Google using their registered email.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white">Save Parent</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- /Add Parent Modal -->
 
     <!-- Overlay -->
     <div class="layout-overlay layout-menu-toggle"></div>
@@ -680,31 +1208,38 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const selectAll = document.getElementById("selectAll");
-            const checkboxes = document.querySelectorAll(".user-checkbox");
             const bulkForm = document.getElementById("bulkStatusForm");
             const bulkUserIdsContainer = document.getElementById("bulkUserIds");
 
-            // Helper: check if any checkbox is selected
+            // Helper: check if any visible checkbox is selected
             function toggleBulkForm() {
-                const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                const visibleCheckboxes = Array.from(document.querySelectorAll("#userTable tbody tr.user-row"))
+                    .filter(row => row.style.display !== "none") // only visible
+                    .map(row => row.querySelector(".user-checkbox"));
+
+                const anyChecked = visibleCheckboxes.some(cb => cb.checked);
                 bulkForm.classList.toggle("d-none", !anyChecked);
             }
 
-            // Select all toggle
+            // ✅ Select all only visible rows
             selectAll.addEventListener("change", () => {
-                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                const visibleCheckboxes = Array.from(document.querySelectorAll(
+                        "#userTable tbody tr.user-row"))
+                    .filter(row => row.style.display !== "none") // only visible
+                    .map(row => row.querySelector(".user-checkbox"));
+
+                visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
                 toggleBulkForm();
             });
 
-            // Individual checkbox toggle
-            checkboxes.forEach(cb => {
+            // Individual checkbox toggle (for all rows, but bulk form reacts only if visible are checked)
+            document.querySelectorAll(".user-checkbox").forEach(cb => {
                 cb.addEventListener("change", toggleBulkForm);
             });
 
             // Collect checked IDs before submit
             bulkForm.addEventListener("submit", (e) => {
-                const selected = Array.from(checkboxes)
-                    .filter(cb => cb.checked)
+                const selected = Array.from(document.querySelectorAll(".user-checkbox:checked"))
                     .map(cb => cb.value);
 
                 if (selected.length === 0) {
@@ -784,9 +1319,328 @@
             });
         }
     </script>
+
+    <!-- Add User Role Selection -->
+    <script>
+        document.getElementById('openAddUserRole').addEventListener('click', function() {
+            Swal.fire({
+                title: 'Select User Role',
+                text: 'Which type of user would you like to add?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Continue',
+                input: 'select',
+                customClass: {
+                    container: 'my-swal-container'
+                },
+                inputOptions: {
+                    admin: 'Admin',
+                    teacher: 'Teacher',
+                    parent: 'Parent'
+                },
+                inputPlaceholder: 'Choose a role',
+                preConfirm: (role) => {
+                    if (!role) {
+                        Swal.showValidationMessage('Please select a role first');
+                    }
+                    return role;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const role = result.value;
+                    if (role === 'admin') {
+                        new bootstrap.Modal(document.getElementById('addAdminModal')).show();
+                    } else if (role === 'teacher') {
+                        new bootstrap.Modal(document.getElementById('addTeacherModal')).show();
+                    } else if (role === 'parent') {
+                        new bootstrap.Modal(document.getElementById('addParentModal')).show();
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- Profile photo preview & reset for all roles -->
+    <script>
+        ['teacher', 'admin', 'parent'].forEach(role => {
+            const uploadInput = document.getElementById(`upload-${role}`);
+            const previewImg = document.getElementById(`photo-preview-${role}`);
+            const resetBtn = document.getElementById(`reset-photo-${role}`);
+            const defaultImage = `/assetsDashboard/img/profile_pictures/${role}_default_profile.jpg`;
+
+            if (uploadInput && previewImg && resetBtn) {
+                uploadInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = e => previewImg.src = e.target.result;
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                resetBtn.addEventListener('click', function() {
+                    uploadInput.value = '';
+                    previewImg.src = defaultImage;
+                });
+            }
+        });
+    </script>
+
+    <!-- Teacher Registration Validation and Confirmation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('#addTeacherModal form');
+            const registerBtn = document.getElementById('registerTeacherBtn');
+
+            registerBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                let allFilled = true;
+                let passwordErrors = [];
+                form.querySelectorAll('[required]').forEach(field => {
+                    if (!field.value.trim()) {
+                        allFilled = false;
+                        field.classList.add('is-invalid');
+                    } else {
+                        field.classList.remove('is-invalid');
+                    }
+                });
+
+                const password = form.password.value;
+                const passwordConfirm = form.password_confirmation.value;
+
+                if (password.length < 8) passwordErrors.push("Password must be at least 8 characters.");
+                if (!/[a-z]/.test(password)) passwordErrors.push(
+                    "Password must include at least one lowercase letter.");
+                if (!/[A-Z]/.test(password)) passwordErrors.push(
+                    "Password must include at least one uppercase letter.");
+                if (!/[0-9]/.test(password)) passwordErrors.push(
+                    "Password must include at least one number.");
+                if (!/[@$!%*#?&]/.test(password)) passwordErrors.push(
+                    "Password must include at least one special character (@$!%*#?&).");
+                if (password !== passwordConfirm) passwordErrors.push(
+                    "Password confirmation does not match.");
+
+                if (!allFilled) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Form',
+                        text: 'Please fill in all required fields before submitting.',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                if (passwordErrors.length) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Password',
+                        html: passwordErrors.join('<br>'),
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Register Teacher?",
+                    text: "Are you sure all the details are correct?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#06D001",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, register",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- Admin Registration Validation and Confirmation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('#addAdminModal form');
+            const registerBtn = document.getElementById('registerAdminBtn');
+
+            registerBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                let allFilled = true;
+                let passwordErrors = [];
+                form.querySelectorAll('[required]').forEach(field => {
+                    if (!field.value.trim()) {
+                        allFilled = false;
+                        field.classList.add('is-invalid');
+                    } else {
+                        field.classList.remove('is-invalid');
+                    }
+                });
+
+                const password = form.password.value;
+                const passwordConfirm = form.password_confirmation.value;
+
+                if (password.length < 8) passwordErrors.push("Password must be at least 8 characters.");
+                if (!/[a-z]/.test(password)) passwordErrors.push(
+                    "Password must include at least one lowercase letter.");
+                if (!/[A-Z]/.test(password)) passwordErrors.push(
+                    "Password must include at least one uppercase letter.");
+                if (!/[0-9]/.test(password)) passwordErrors.push(
+                    "Password must include at least one number.");
+                if (!/[@$!%*#?&]/.test(password)) passwordErrors.push(
+                    "Password must include at least one special character (@$!%*#?&).");
+                if (password !== passwordConfirm) passwordErrors.push(
+                    "Password confirmation does not match.");
+
+                if (!allFilled) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Form',
+                        text: 'Please fill in all required fields before submitting.',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                if (passwordErrors.length) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Password',
+                        html: passwordErrors.join('<br>'),
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Register Admin?",
+                    text: "Are you sure all the details are correct?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#06D001",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, register",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            // Advisory class options update
+            const classesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
+            const assignedSelect = document.getElementById('assigned_classes');
+            const advisorySelect = document.getElementById('advisory_class');
+            const oldAdvisory = advisorySelect.dataset.old;
+
+            function updateAdvisoryOptions() {
+                const selectedAssigned = Array.from(assignedSelect.selectedOptions).map(opt => parseInt(opt.value));
+                advisorySelect.innerHTML = '<option value="">-- Select advisory class from assigned --</option>';
+                Array.from(assignedSelect.options).forEach(option => {
+                    const classId = parseInt(option.value);
+                    if (selectedAssigned.includes(classId) && !classesWithAdvisers.includes(classId)) {
+                        const newOption = document.createElement('option');
+                        newOption.value = option.value;
+                        newOption.textContent = option.textContent;
+                        if (oldAdvisory && option.value === oldAdvisory) newOption.selected = true;
+                        advisorySelect.appendChild(newOption);
+                    }
+                });
+            }
+            updateAdvisoryOptions();
+            assignedSelect.addEventListener('change', updateAdvisoryOptions);
+        });
+    </script>
+
+    <!-- SweetAlert for success and error messages -->
+    <script>
+        // Success alert
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                confirmButtonColor: '#3085d6',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
+
+        // Registration error alert (email)
+        @if ($errors->has('email'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Error',
+                text: '{{ $errors->first('email') }}',
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        new TomSelect('#assigned_classes', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Select classes...",
+        });
+    </script>
+
+    <!-- Tom Select for linking students in Parent Registration -->
+    <script>
+        new TomSelect('#link_students', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Search students by name or LRN...",
+            valueField: 'id',
+            labelField: 'text',
+            searchField: 'text',
+            load: function(query, callback) {
+                if (!query.length) return callback();
+                fetch("{{ route('students.search') }}?q=" + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        callback(data.map(student => ({
+                            id: student.id,
+                            text: student.student_lrn + " - " + student.student_fName +
+                                " " + student.student_lName
+                        })));
+                    }).catch(() => {
+                        callback();
+                    });
+            }
+        });
+    </script>
 @endpush
 
 @push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <style>
@@ -810,6 +1664,24 @@
         .user-checkbox,
         #selectAll {
             cursor: pointer;
+        }
+
+        .ts-control {
+            background-color: #e0f7fa;
+            border-color: #42a5f5;
+        }
+
+        .ts-control .item {
+            background-color: #4dd0e1;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 4px;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
         }
     </style>
 @endpush

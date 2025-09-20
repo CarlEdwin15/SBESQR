@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Teachers</div>
+                            <div class="text-light">Teacher's Class Management</div>
                         </a>
                     </li>
                 </ul>
@@ -431,7 +431,7 @@
                             <label for="student_fatherFName" class="form-label fw-bold">First
                                 Name</label>
                             <input type="text" name="student_fatherFName" id="student_fatherFName"
-                                class="form-control" value="{{ $student->parentInfo->father_fName }}" />
+                                class="form-control" value="{{ $student->parents->father_fName }}" />
                         </div>
 
                         <!-- Father's Middle Name Field -->
@@ -439,7 +439,7 @@
                             <label for="student_fatherMName" class="form-label fw-bold">Midlle
                                 Name</label>
                             <input type="text" name="student_fatherMName" id="student_fatherMName"
-                                class="form-control" value="{{ $student->parentInfo->father_mName }}" />
+                                class="form-control" value="{{ $student->parents->father_mName }}" />
                         </div>
                     </div>
 
@@ -449,14 +449,14 @@
                             <label for="student_fatherLName" class="form-label fw-bold">Last
                                 Name</label>
                             <input type="text" name="student_fatherLName" id="student_fatherLName"
-                                class="form-control" value="{{ $student->parentInfo->father_lName }}" />
+                                class="form-control" value="{{ $student->parents->father_lName }}" />
                         </div>
 
                         <!-- Father's Phone No. Field -->
                         <div class="col mb-2 mt-2">
                             <label for="student_fatherPhone" class="form-label fw-bold">Phone No.</label>
                             <input type="tel" name="student_fatherPhone" id="student_fatherPhone"
-                                class="form-control" value="{{ $student->parentInfo->father_phone }}" />
+                                class="form-control" value="{{ $student->parents->father_phone }}" />
                         </div>
 
                     </div>
@@ -470,7 +470,7 @@
                             <label for="student_motherFName" class="form-label fw-bold">First
                                 Name</label>
                             <input type="text" name="student_motherFName" id="student_motherFName"
-                                class="form-control" value="{{ $student->parentInfo->mother_fName }}" />
+                                class="form-control" value="{{ $student->parents->mother_fName }}" />
                         </div>
 
                         <!-- Mother's Middle Name Field -->
@@ -478,7 +478,7 @@
                             <label for="student_motherMName" class="form-label fw-bold">Middle
                                 Name</label>
                             <input type="text" name="student_motherMName" id="student_motherMName"
-                                class="form-control" value="{{ $student->parentInfo->mother_mName }}" />
+                                class="form-control" value="{{ $student->parents->mother_mName }}" />
                         </div>
                     </div>
 
@@ -488,14 +488,14 @@
                             <label for="student_motherLName" class="form-label fw-bold">Last
                                 Name</label>
                             <input type="text" name="student_motherLName" id="student_motherLName"
-                                class="form-control" value="{{ $student->parentInfo->mother_lName }}" />
+                                class="form-control" value="{{ $student->parents->mother_lName }}" />
                         </div>
 
                         <!-- Mother's Phone No. Field -->
                         <div class="col mb-2 mt-2">
                             <label for="student_motherPhone" class="form-label fw-bold">Phone No.</label>
                             <input type="tel" name="student_motherPhone" id="student_motherPhone"
-                                class="form-control" value="{{ $student->parentInfo->mother_phone }}" />
+                                class="form-control" value="{{ $student->parents->mother_phone }}" />
                         </div>
 
                     </div>
@@ -509,7 +509,7 @@
                             <label for="student_emergcontFName" class="form-label fw-bold">First
                                 Name</label>
                             <input type="text" name="student_emergcontFName" id="student_emergcontFName"
-                                class="form-control" value="{{ $student->parentInfo->emergcont_fName }}" />
+                                class="form-control" value="{{ $student->parents->emergcont_fName }}" />
                         </div>
 
                         <!-- Emergency Contact's Middle Name Field -->
@@ -517,7 +517,7 @@
                             <label for="student_emergcontMName" class="form-label fw-bold">Midlle
                                 Name</label>
                             <input type="text" name="student_emergcontMName" id="student_emergcontMName"
-                                class="form-control" value="{{ $student->parentInfo->emergcont_mName }}" />
+                                class="form-control" value="{{ $student->parents->emergcont_mName }}" />
                         </div>
                     </div>
 
@@ -527,14 +527,14 @@
                             <label for="student_emergcontLName" class="form-label fw-bold">Last
                                 Name</label>
                             <input type="text" name="student_emergcontLName" id="student_emergcontLName"
-                                class="form-control" value="{{ $student->parentInfo->emergcont_lName }}" />
+                                class="form-control" value="{{ $student->parents->emergcont_lName }}" />
                         </div>
 
                         <!-- Emergency Contact's Phone No. Field -->
                         <div class="col mb-2 mt-2">
                             <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
                             <input type="tel" name="student_emergcontPhone" id="student_emergcontPhone"
-                                class="form-control" value="{{ $student->parentInfo->emergcont_phone }}" />
+                                class="form-control" value="{{ $student->parents->emergcont_phone }}" />
                         </div>
                     </div>
 
@@ -545,7 +545,7 @@
                         <div class="col mb-2 mt-2">
                             <label for="student_parentEmail" class="form-label fw-bold">Parent's Email</label>
                             <input type="email" name="student_parentEmail" id="student_parentEmail"
-                                class="form-control" value="{{ $student->parentInfo->parent_email }}" />
+                                class="form-control" value="{{ $student->parents->parent_email }}" />
                         </div>
                     </div>
 

@@ -16,7 +16,6 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\PaymentController;
-use App\Models\ParentInfo;
 use Illuminate\Support\Facades\Broadcast;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +45,16 @@ Route::get('/userManagement', [AdminController::class, 'userManagement'])
     ->name('admin.user.management')
     ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
 
+// User Management - create new user
+Route::post('/userManagement/create', [AdminController::class, 'createUser'])
+    ->name('admin.user.create')
+    ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
+
+// User Management - search students (AJAX)
+Route::get('/students/search', [StudentController::class, 'search'])->name('students.search');
+
+
+// Fetch user status (for AJAX polling)
 Route::get('/admin/user-status-refresh', function () {
     $users = User::select('id', 'sign_in_at', 'last_sign_in_at')
         ->get()
