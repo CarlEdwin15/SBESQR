@@ -969,7 +969,6 @@
     </script>
 
     <!-- Profile photo preview & reset for all roles -->
-    <!-- Profile photo preview & reset for all roles -->
     <script>
         ['teacher', 'admin', 'parent'].forEach(role => {
             // Determine input, preview, and reset IDs based on role
@@ -999,33 +998,9 @@
         });
     </script>
 
-    <!-- Profile Photo Preview & Reset, Advisory Class Logic, Confirmation Dialog -->
+    <!-- TomSelect for Classes and Advisory with validation -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Profile photo preview & reset
-            const fileInput = document.getElementById('upload');
-            const resetBtn = document.getElementById('reset-photo');
-            const imagePreview = document.getElementById('photo-preview');
-            const originalImage = imagePreview.src;
-
-            if (fileInput) {
-                fileInput.addEventListener('change', e => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = ev => imagePreview.src = ev.target.result;
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-
-            if (resetBtn) {
-                resetBtn.addEventListener('click', () => {
-                    fileInput.value = '';
-                    imagePreview.src = originalImage;
-                });
-            }
-
             // Advisory must be one of assigned classes
             const assignedSelect = document.getElementById('assigned_classes');
             const advisorySelect = document.getElementById('advisory_class');

@@ -510,7 +510,6 @@
                                 <div class="mb-3">
                                     <label for="teacher_id" class="form-label fw-bold">Select Teacher</label>
                                     <select name="teacher_id" id="teacher_id" class="tom-select" required>
-                                        <option value="">-- Select Teacher --</option>
                                         @foreach ($eligibleTeachers as $teacher)
                                             <option value="{{ $teacher->id }}">
                                                 {{ $teacher->firstName }} {{ $teacher->lastName }}
@@ -548,7 +547,7 @@
                                     <label for="reassign_advisory_class" class="form-label fw-bold">Select Advisory
                                         Class</label>
                                     <select name="reassign_advisory_class" id="reassign_advisory_class"
-                                        class="form-select tom-select">
+                                        class="tom-select" data-old="{{ old('advisory_class') }}">
                                         <option value="">Select advisory class from assigned</option>
                                     </select>
                                     <small class="text-muted">Optional: Select One Advisory Class from the selected
@@ -674,8 +673,7 @@
                                         </a>
                                     </td>
                                     <td>
-                                        <a
-                                            href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
+                                        <a href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
                                             @if ($teacher->profile_photo)
                                                 <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
                                                     width="40" height="40"
@@ -1171,6 +1169,117 @@
         });
     </script>
 
+    <!-- Re-assign Modal Form Validation and Submission v2 (with advisory logic) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const reassignForm = document.querySelector('#reAssignModal form');
+            const reassignBtn = document.getElementById('reAssignTeacherBtn');
+            const classSelect = document.getElementById('reassign_classes');
+            const advisorySelect = document.getElementById('reassign_advisory_class');
+
+            // IDs of classes that already have advisers
+            const reassignClassesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
+
+            // ✅ Initialize TomSelect with desired design and placeholders
+            new TomSelect("#teacher_id", {
+                placeholder: "Search teacher...",
+                allowEmptyOption: true,
+                maxOptions: 5000
+            });
+
+            const classTomSelect = new TomSelect("#reassign_classes", {
+                plugins: ['remove_button'],
+                placeholder: "Select classes...",
+                persist: false,
+                create: false
+            });
+
+            const advisoryTomSelect = new TomSelect("#reassign_advisory_class", {
+                placeholder: "Select advisory class...",
+                allowEmptyOption: true,
+                persist: false,
+                create: false
+            });
+
+            // Function to update advisory class options dynamically
+            function updateAdvisoryClassOptions() {
+                const selected = classTomSelect.getValue().map(v => parseInt(v));
+                advisoryTomSelect.clearOptions();
+
+                advisoryTomSelect.addOption({
+                    value: "",
+                    text: "-- Select advisory class from assigned --"
+                });
+
+                selected.forEach(id => {
+                    if (!reassignClassesWithAdvisers.includes(id)) {
+                        const option = classTomSelect.options[id];
+                        if (option) {
+                            advisoryTomSelect.addOption({
+                                value: option.value,
+                                text: option.text
+                            });
+                        }
+                    }
+                });
+
+                advisoryTomSelect.refreshOptions(false);
+            }
+
+            // Update advisory class whenever classes are selected
+            classTomSelect.on("change", updateAdvisoryClassOptions);
+
+            // Initial population in case some classes are pre-selected
+            updateAdvisoryClassOptions();
+
+            // Form validation + confirmation
+            reassignBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                let valid = true;
+                reassignForm.querySelectorAll('[required]').forEach(input => {
+                    if (!input.value.trim()) {
+                        valid = false;
+                        input.classList.add('is-invalid');
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+
+                if (!valid) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Form',
+                        text: 'Please fill in all required fields.',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Confirm Re-Assignment?",
+                    text: "Are you sure you want to re-assign this teacher?",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#06D001",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, re-assign",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        reassignForm.submit();
+                    }
+                });
+            });
+        });
+    </script>
+
     <!-- SweetAlert2 for success and error messages -->
     <script>
         // Success alert
@@ -1203,21 +1312,21 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
     <script>
-        // Teacher select styled same as class select
-        new TomSelect('#teacher_id', {
-            plugins: ['remove_button'],
-            maxItems: 1, // only 1 teacher can be selected
-            placeholder: "Select teacher...",
-            create: false,
-        });
+        // // Teacher select styled same as class select
+        // new TomSelect('#teacher_id', {
+        //     plugins: ['remove_button'],
+        //     maxItems: 1, // only 1 teacher can be selected
+        //     placeholder: "Select teacher...",
+        //     create: false,
+        // });
 
-        // Assign to classes
-        new TomSelect('#reassign_classes', {
-            plugins: ['remove_button'],
-            maxItems: null,
-            placeholder: "Select classes...",
-            create: false,
-        });
+        // // Assign to classes
+        // new TomSelect('#reassign_classes', {
+        //     plugins: ['remove_button'],
+        //     maxItems: null,
+        //     placeholder: "Select classes...",
+        //     create: false,
+        // });
 
         // (Optional: assigned_classes if you’re using it elsewhere)
         new TomSelect('#assigned_classes', {
