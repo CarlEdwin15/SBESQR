@@ -240,10 +240,21 @@ class AdminController extends Controller
             'municipality_city' => 'nullable|string|max:255',
             'province'   => 'nullable|string|max:255',
             'zip_code'   => 'nullable|string|max:20',
-            'assigned_classes' => 'nullable|array',
-            'assigned_classes.*' => 'exists:classes,id',
-            'advisory_class' => 'nullable|exists:classes,id',
         ];
+
+        // Parent-specific rules
+        if ($request->role === 'parent') {
+            $rules['parent_type'] = 'required|in:mother,father,guardian';
+            $rules['students'] = 'nullable|array';
+            $rules['students.*'] = 'exists:students,id';
+        }
+
+        // Teacher-specific rules
+        if ($request->role === 'teacher') {
+            $rules['assigned_classes'] = 'required|array|min:1';
+            $rules['assigned_classes.*'] = 'exists:classes,id';
+            $rules['advisory_class'] = 'nullable|exists:classes,id';
+        }
 
         $validated = $request->validate($rules);
 
@@ -258,7 +269,12 @@ class AdminController extends Controller
 
         $user->update($validated);
 
-        // Teacher-specific logic
+        // Parent logic: sync linked students
+        if ($user->role === 'parent') {
+            $user->children()->sync($request->students ?? []);
+        }
+
+        // Teacher logic
         if ($user->role === 'teacher') {
             $schoolYear = SchoolYear::where('school_year', $this->getDefaultSchoolYear())->firstOrFail();
 
@@ -282,7 +298,7 @@ class AdminController extends Controller
             if ($syncData) $user->classes()->attach($syncData);
         }
 
-        return redirect()->back()->with('success', 'Teacher updated successfully.');
+        return redirect()->back()->with('success', ucfirst($user->role) . ' updated successfully.');
     }
 
     public function userInfo(Request $request, $id)

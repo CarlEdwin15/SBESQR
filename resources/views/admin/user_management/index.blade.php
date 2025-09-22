@@ -854,7 +854,7 @@
 
                 <div class="modal-body">
 
-                    <!-- Profile Photo Upload with Preview and Default -->
+                    <!-- Profile Photo Upload with Preview -->
                     <div class="row">
                         <div class="col mb-3 d-flex align-items-start align-items-sm-center gap-4">
                             <div class="mb-3">
@@ -882,10 +882,10 @@
                             </div>
                         </div>
                     </div>
-                    <!-- /Profile Photo Upload with Preview and Default -->
+                    <!-- /Profile Photo Upload with Preview -->
 
-                    <div class="row g-3">
-                        <div class="col-md-6 mt-3">
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold">Parent Type</label>
                             <select class="form-select" name="parent_type" required>
                                 <option value="" disabled selected>Select type</option>
@@ -903,6 +903,8 @@
                                 <option value="banned">Banned</option>
                             </select>
                         </div>
+
+                        <!-- Names & Contact -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">First Name</label>
                             <input type="text" class="form-control" name="firstName" required>
@@ -927,8 +929,15 @@
                             <label class="form-label fw-bold">Phone</label>
                             <input type="tel" class="form-control" name="phone">
                         </div>
+
+                        <!-- Date of Birth Field -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Date of Birth</label>
+                            <input type="date" class="form-control" name="dob" value="{{ old('dob') }}">
+                        </div>
                     </div>
 
+                    <!-- Link Students -->
                     <div class="col-12 mt-3">
                         <label class="form-label fw-bold">Link Students</label>
                         <select id="link_students" name="students[]" multiple required></select>
@@ -938,7 +947,7 @@
                     <hr class="my-4" />
                     <h5 class="fw-bold text-primary">Address</h5>
 
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">House No.</label>
                             <input type="text" class="form-control" name="house_no" value="{{ old('house_no') }}">
@@ -948,9 +957,6 @@
                             <input type="text" class="form-control" name="street_name"
                                 value="{{ old('street_name') }}">
                         </div>
-                    </div>
-
-                    <div class="row mt-2">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Barangay</label>
                             <input type="text" class="form-control" name="barangay" value="{{ old('barangay') }}">
@@ -960,9 +966,6 @@
                             <input type="text" class="form-control" name="municipality_city"
                                 value="{{ old('municipality_city') }}">
                         </div>
-                    </div>
-
-                    <div class="row mt-2">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Province</label>
                             <input type="text" class="form-control" name="province" value="{{ old('province') }}">
@@ -1318,7 +1321,33 @@
                 }
             });
         }
-    </script>\
+    </script>
+
+    <!-- Profile photo preview & reset for all roles -->
+    <script>
+        ['teacher', 'admin', 'parent'].forEach(role => {
+            const uploadInput = document.getElementById(`upload-${role}`);
+            const previewImg = document.getElementById(`photo-preview-${role}`);
+            const resetBtn = document.getElementById(`reset-photo-${role}`);
+            const defaultImage = `/assetsDashboard/img/profile_pictures/${role}_default_profile.jpg`;
+
+            if (uploadInput && previewImg && resetBtn) {
+                uploadInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = e => previewImg.src = e.target.result;
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                resetBtn.addEventListener('click', function() {
+                    uploadInput.value = '';
+                    previewImg.src = defaultImage;
+                });
+            }
+        });
+    </script>
 
     <!-- Add User Role Selection -->
     <script>
@@ -1357,32 +1386,6 @@
                     }
                 }
             });
-        });
-    </script>
-
-    <!-- Profile photo preview & reset for all roles -->
-    <script>
-        ['teacher', 'admin', 'parent'].forEach(role => {
-            const uploadInput = document.getElementById(`upload-${role}`);
-            const previewImg = document.getElementById(`photo-preview-${role}`);
-            const resetBtn = document.getElementById(`reset-photo-${role}`);
-            const defaultImage = `/assetsDashboard/img/profile_pictures/${role}_default_profile.jpg`;
-
-            if (uploadInput && previewImg && resetBtn) {
-                uploadInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = e => previewImg.src = e.target.result;
-                        reader.readAsDataURL(file);
-                    }
-                });
-
-                resetBtn.addEventListener('click', function() {
-                    uploadInput.value = '';
-                    previewImg.src = defaultImage;
-                });
-            }
         });
     </script>
 
@@ -1573,28 +1576,57 @@
         });
     </script>
 
-    <!-- Tom Select for linking students in Parent Registration -->
+    <!-- Parent Registration Validation and Confirmation -->
     <script>
-        new TomSelect('#link_students', {
-            plugins: ['remove_button'],
-            maxItems: null,
-            placeholder: "Search students by name or LRN...",
-            valueField: 'id',
-            labelField: 'text',
-            searchField: 'text',
-            load: function(query, callback) {
-                if (!query.length) return callback();
-                fetch("{{ route('students.search') }}?q=" + encodeURIComponent(query))
-                    .then(response => response.json())
-                    .then(data => {
-                        callback(data.map(student => ({
-                            id: student.id,
-                            text: student.student_lrn + " - " + student.student_fName +
-                                " " + student.student_lName
-                        })));
-                    }).catch(() => {
-                        callback();
-                    });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Profile photo preview & reset
+            const fileInputParent = document.getElementById('upload-parent');
+            const resetBtnParent = document.getElementById('reset-photo-parent');
+            const imagePreviewParent = document.getElementById('photo-preview-parent');
+            const originalImageParent = imagePreviewParent.src;
+
+            if (fileInputParent) {
+                fileInputParent.addEventListener('change', e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = ev => imagePreviewParent.src = ev.target.result;
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            if (resetBtnParent) {
+                resetBtnParent.addEventListener('click', () => {
+                    fileInputParent.value = '';
+                    imagePreviewParent.src = originalImageParent;
+                });
+            }
+
+            // TomSelect for linking students
+            if (document.getElementById('link_students')) {
+                new TomSelect('#link_students', {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Search students by name or LRN...",
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+                        fetch("{{ route('students.search') }}?q=" + encodeURIComponent(query))
+                            .then(response => response.json())
+                            .then(data => {
+                                callback(data.map(student => ({
+                                    id: student.id,
+                                    text: student.student_lrn + " - " + student
+                                        .student_fName + " " + student.student_lName
+                                })));
+                            }).catch(() => {
+                                callback();
+                            });
+                    }
+                });
             }
         });
     </script>
@@ -1641,6 +1673,7 @@
 
 @push('styles')
     <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <style>

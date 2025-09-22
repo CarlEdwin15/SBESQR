@@ -192,13 +192,31 @@
                         <h5 class="fw-bold">{{ $user->full_name }}</h5>
 
                         <!-- Role -->
-                        <div class="mb-2">
-                            <span class="badge bg-primary">{{ ucfirst($user->role) }}</span>
+                        @php
+                            // Role icon
+                            $roleIcon = match (strtolower($user->role)) {
+                                'admin' => '<i class="bx bx-cog text-info me-1"></i>',
+                                'teacher' => '<i class="bx bx-book-reader text-primary me-1"></i>',
+                                'parent' => '<i class="bx bx-home-heart text-warning me-1"></i>',
+                                default => '<i class="bi bi-person-fill text-secondary me-1"></i>',
+                            };
+
+                            $roleTextClass = match (strtolower($user->role)) {
+                                'admin' => 'text-info',
+                                'teacher' => 'text-primary',
+                                'parent' => 'text-warning',
+                                default => 'text-secondary',
+                            };
+                        @endphp
+                        <div class="d-flex justify-content-center align-items-center mb-2">
+                            <span class="badge {{ $roleTextClass }} d-flex align-items-center">
+                                {!! $roleIcon !!} {{ ucfirst($user->role) }}
+                            </span>
                         </div>
 
                         <!-- Status -->
                         <div class="mb-3">
-                            <span class="fw-bold">Status:</span><br>
+                            <span class="fw-bold">Access Status:</span><br>
                             @php
                                 $statusClass = match ($user->status) {
                                     'active' => 'bg-label-success fw-bold',
@@ -270,6 +288,7 @@
                         @endif
                     </ul>
 
+                    <!-- Card -->
                     <div class="card shadow">
                         <div class="card-body">
                             <!-- Tab Content -->
@@ -295,7 +314,7 @@
 
                                     <div class="row mb-2">
                                         <div class="col-sm-4 fw-bold">Contact Number:</div>
-                                        <div class="col-sm-8">{{ $user->contact_number ?? 'N/A' }}</div>
+                                        <div class="col-sm-8">{{ $user->phone ?? 'N/A' }}</div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-sm-4 fw-bold">
@@ -485,6 +504,37 @@
                     </div>
 
                     <div class="modal-body">
+                        <!-- Profile Photo -->
+                        <div class="row mb-3">
+                            <div class="col d-flex align-items-center gap-4">
+                                <div>
+                                    <img id="photo-preview"
+                                        src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
+                                        width="100" height="100" class="profile-preview"
+                                        style="object-fit: cover; border-radius:5%;">
+                                </div>
+                                <div class="button-wrapper">
+                                    <label for="upload" class="btn btn-warning mb-2">
+                                        <span class="d-none d-sm-block">Upload new photo</span>
+                                        <i class="bx bx-upload d-block d-sm-none"></i>
+                                        <input type="file" name="profile_photo" id="upload" hidden
+                                            accept="image/png, image/jpeg">
+                                    </label>
+                                    <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
+                                        id="reset-photo">
+                                        <i class="bx bx-reset d-block d-sm-none"></i>
+                                        <span class="d-none d-sm-block">Reset</span>
+                                    </button>
+                                    <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <h5 class="text-primary fw-bold">Personal Information</h5>
+
+                        <!-- Names & Contact -->
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">First Name</label>
@@ -515,35 +565,6 @@
                                 <label class="form-label fw-bold">Phone</label>
                                 <input type="text" class="form-control" name="phone"
                                     value="{{ old('phone', $user->phone) }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Status</label>
-                                <select name="status" class="form-select" required>
-                                    <option value="active"
-                                        {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Active</option>
-                                    <option value="inactive"
-                                        {{ old('status', $user->status) == 'inactive' ? 'selected' : '' }}>Inactive
-                                    </option>
-                                    <option value="suspended"
-                                        {{ old('status', $user->status) == 'suspended' ? 'selected' : '' }}>Suspended
-                                    </option>
-                                    <option value="banned"
-                                        {{ old('status', $user->status) == 'banned' ? 'selected' : '' }}>Banned</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Profile Photo</label>
-                                <input type="file" class="form-control" name="profile_photo" accept="image/*">
-                                @if ($user->profile_photo)
-                                    <img src="{{ asset('storage/' . $user->profile_photo) }}" class="img-thumbnail mt-2"
-                                        width="120">
-                                @endif
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Password (leave blank to keep)</label>
-                                <input type="password" class="form-control" name="password">
-                                <input type="password" class="form-control mt-2" name="password_confirmation"
-                                    placeholder="Confirm Password">
                             </div>
                         </div>
                     </div>
@@ -577,20 +598,20 @@
                         <div class="row mb-3">
                             <div class="col d-flex align-items-center gap-4">
                                 <div>
-                                    <img id="photo-preview"
+                                    <img id="photo-preview-edit"
                                         src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                         width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius:5%;">
                                 </div>
                                 <div class="button-wrapper">
-                                    <label for="upload" class="btn btn-warning mb-2">
+                                    <label for="upload-edit" class="btn btn-warning mb-2">
                                         <span class="d-none d-sm-block">Upload new photo</span>
                                         <i class="bx bx-upload d-block d-sm-none"></i>
-                                        <input type="file" name="profile_photo" id="upload" hidden
+                                        <input type="file" name="profile_photo" id="upload-edit" hidden
                                             accept="image/png, image/jpeg">
                                     </label>
                                     <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
-                                        id="reset-photo">
+                                        id="reset-photo-edit">
                                         <i class="bx bx-reset d-block d-sm-none"></i>
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
@@ -760,16 +781,58 @@
                     </div>
 
                     <div class="modal-body">
+                        <!-- Profile Photo -->
+                        <div class="row mb-3">
+                            <div class="col d-flex align-items-center gap-4">
+                                <div>
+                                    <img id="photo-preview-edit"
+                                        src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg') }}"
+                                        width="100" height="100" class="profile-preview"
+                                        style="object-fit: cover; border-radius:5%;">
+                                </div>
+                                <div class="button-wrapper">
+                                    <label for="upload-edit" class="btn btn-warning mb-2">
+                                        <span class="d-none d-sm-block">Upload new photo</span>
+                                        <i class="bx bx-upload d-block d-sm-none"></i>
+                                        <input type="file" name="profile_photo" id="upload-edit" hidden
+                                            accept="image/png, image/jpeg">
+                                    </label>
+                                    <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
+                                        id="reset-photo-edit">
+                                        <i class="bx bx-reset d-block d-sm-none"></i>
+                                        <span class="d-none d-sm-block">Reset</span>
+                                    </button>
+                                    <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <h5 class="text-primary fw-bold">Personal Information</h5>
+
+                        <!-- Names & Contact -->
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">First Name</label>
                                 <input type="text" class="form-control" name="firstName"
                                     value="{{ old('firstName', $user->firstName) }}" required>
                             </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Middle Name</label>
+                                <input type="text" class="form-control" name="middleName"
+                                    value="{{ old('middleName', $user->middleName) }}">
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Last Name</label>
                                 <input type="text" class="form-control" name="lastName"
                                     value="{{ old('lastName', $user->lastName) }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Extension Name</label>
+                                <input type="text" class="form-control" name="extName"
+                                    value="{{ old('extName', $user->extName) }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Email</label>
@@ -781,7 +844,6 @@
                                 <input type="text" class="form-control" name="phone"
                                     value="{{ old('phone', $user->phone) }}">
                             </div>
-
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Parent Type</label>
                                 <select name="parent_type" class="form-select" required>
@@ -797,42 +859,63 @@
                                 </select>
                             </div>
 
+                            <!-- Date of Birth Field -->
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Status</label>
-                                <select name="status" class="form-select" required>
-                                    <option value="active"
-                                        {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Active</option>
-                                    <option value="inactive"
-                                        {{ old('status', $user->status) == 'inactive' ? 'selected' : '' }}>Inactive
-                                    </option>
-                                    <option value="suspended"
-                                        {{ old('status', $user->status) == 'suspended' ? 'selected' : '' }}>Suspended
-                                    </option>
-                                    <option value="banned"
-                                        {{ old('status', $user->status) == 'banned' ? 'selected' : '' }}>Banned</option>
-                                </select>
+                                <label class="form-label fw-bold">Date of Birth</label>
+                                <input type="date" class="form-control" name="dob" value="{{ old('dob', $user->dob) }}">
                             </div>
 
                             <!-- Link Students -->
                             <div class="col-12">
                                 <label class="form-label fw-bold">Link Students</label>
-                                <select name="students[]" class="form-select" multiple>
+                                <select id="link_students_edit" name="students[]" multiple>
                                     @foreach ($allStudents as $student)
                                         <option value="{{ $student->id }}"
                                             {{ collect(old('students', $user->children->pluck('id')))->contains($student->id) ? 'selected' : '' }}>
-                                            {{ $student->firstName }} {{ $student->lastName }}
+                                            {{ $student->student_lrn }} - {{ $student->student_fName }}
+                                            {{ $student->student_lName }}
                                         </option>
                                     @endforeach
                                 </select>
+                                <small class="form-text text-muted">You can search and select multiple students.</small>
                             </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Profile Photo</label>
-                                <input type="file" class="form-control" name="profile_photo" accept="image/*">
-                                @if ($user->profile_photo)
-                                    <img src="{{ asset('storage/' . $user->profile_photo) }}" class="img-thumbnail mt-2"
-                                        width="120">
-                                @endif
+                            <hr class="my-3">
+                            <h5 class="text-primary fw-bold">Address</h5>
+
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">House No.</label>
+                                    <input type="text" class="form-control" name="house_no"
+                                        value="{{ old('house_no', $user->house_no) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Street</label>
+                                    <input type="text" class="form-control" name="street_name"
+                                        value="{{ old('street_name', $user->street_name) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Barangay</label>
+                                    <input type="text" class="form-control" name="barangay"
+                                        value="{{ old('barangay', $user->barangay) }}">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">City/Municipality</label>
+                                    <input type="text" class="form-control" name="municipality_city"
+                                        value="{{ old('municipality_city', $user->municipality_city) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Province</label>
+                                    <input type="text" class="form-control" name="province"
+                                        value="{{ old('province', $user->province) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Zip Code</label>
+                                    <input type="text" class="form-control" name="zip_code"
+                                        value="{{ old('zip_code', $user->zip_code) }}">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -845,7 +928,6 @@
             </div>
         </div>
         <!-- /Edit Parent Modal -->
-
 
 
         <div class="content-backdrop fade"></div>
@@ -884,6 +966,37 @@
                 }
             });
         }
+    </script>
+
+    <!-- Profile photo preview & reset for all roles -->
+    <!-- Profile photo preview & reset for all roles -->
+    <script>
+        ['teacher', 'admin', 'parent'].forEach(role => {
+            // Determine input, preview, and reset IDs based on role
+            // Note: Adjust IDs if they differ in your markup (e.g., 'upload-edit' for parent)
+            const uploadInput = document.getElementById(role === 'parent' ? 'upload-edit' : `upload`);
+            const previewImg = document.getElementById(role === 'parent' ? 'photo-preview-edit' : 'photo-preview');
+            const resetBtn = document.getElementById(role === 'parent' ? 'reset-photo-edit' : 'reset-photo');
+            const defaultImage = `/assetsDashboard/img/profile_pictures/${role}_default_profile.jpg`;
+
+            if (uploadInput && previewImg && resetBtn) {
+                // Preview new image
+                uploadInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = e => previewImg.src = e.target.result;
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                // Reset to default
+                resetBtn.addEventListener('click', function() {
+                    uploadInput.value = '';
+                    previewImg.src = defaultImage;
+                });
+            }
+        });
     </script>
 
     <!-- Profile Photo Preview & Reset, Advisory Class Logic, Confirmation Dialog -->
@@ -965,6 +1078,40 @@
                             form.submit();
                         }
                     });
+                });
+            }
+        });
+    </script>
+
+    <!-- TomSelect for Linking Students -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const studentSelect = document.getElementById('link_students_edit');
+            if (studentSelect) {
+                new TomSelect('#link_students_edit', {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Search students by name or LRN...",
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+
+                        fetch("{{ route('students.search') }}?q=" + encodeURIComponent(query))
+                            .then(res => res.json())
+                            .then(data => {
+                                // Map the API data to TomSelect format
+                                callback(data.map(student => ({
+                                    id: student.id,
+                                    // Make sure these fields exist in your API response
+                                    text: (student.student_lrn ?? '') + " - " + (
+                                        student.student_fName ?? '') + " " + (
+                                        student.student_lName ?? '')
+                                })));
+                            })
+                            .catch(() => callback());
+                    }
                 });
             }
         });

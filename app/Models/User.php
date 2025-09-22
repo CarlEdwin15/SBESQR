@@ -155,4 +155,17 @@ class User extends Authenticatable
             ? $this->sign_in_at->diffForHumans()
             : 'Never';
     }
+
+    // Accessor for formatted phone number
+    private function formatForDisplay($phone)
+    {
+        if (!$phone) return null;
+
+        // If starts with +639, display as 09
+        if (str_starts_with($phone, '+639')) {
+            return '0' . substr($phone, 3);
+        }
+
+        return $phone;
+    }
 }
