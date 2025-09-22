@@ -209,36 +209,157 @@ class AdminController extends Controller
         return redirect()->route('admin.user.management')->with('success', 'User added successfully.');
     }
 
-    public function userInfo($id)
+    public function updateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
-        if ($user->role === 'teacher') {
-            // Load classes (with pivot data) for this teacher
-            $classesRaw = $user->classes()
-                ->with(['subjects', 'advisers']) // keep existing relations
-                ->get();
+        // Base validation
+        $rules = [
+            'firstName'  => 'required|string|max:255',
+            'middleName' => 'nullable|string|max:255',
+            'extName'    => 'nullable|string|max:255',
+            'lastName'   => 'required|string|max:255',
+            'email'      => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (User::where('email', $value)->where('id', '!=', $user->id)->exists()) {
+                        $fail('This email is already registered.');
+                    }
+                }
+            ],
+            'gender'     => 'nullable|in:male,female',
+            'dob'        => 'nullable|date',
+            'phone'      => 'nullable|string|max:20',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'house_no'   => 'nullable|string|max:50',
+            'street_name' => 'nullable|string|max:255',
+            'barangay'   => 'nullable|string|max:255',
+            'municipality_city' => 'nullable|string|max:255',
+            'province'   => 'nullable|string|max:255',
+            'zip_code'   => 'nullable|string|max:20',
+            'assigned_classes' => 'nullable|array',
+            'assigned_classes.*' => 'exists:classes,id',
+            'advisory_class' => 'nullable|exists:classes,id',
+        ];
 
-            // Group by the pivot school_year_id (this is the pivot column that holds the school year)
-            $groupedBySyId = $classesRaw->groupBy(fn($class) => $class->pivot->school_year_id);
+        $validated = $request->validate($rules);
 
-            // Turn grouped collection into keyed-by-school-year-string collection:
-            $classes = collect();
-
-            // Sort school year ids ascending (optional). If you prefer newest-first, use ->sortDesc()
-            $syIds = $groupedBySyId->keys()->sortDesc()->values();
-
-            foreach ($syIds as $syId) {
-                $group = $groupedBySyId->get($syId);
-                $label = \App\Models\SchoolYear::find($syId)?->school_year ?? 'Unknown School Year';
-                // Use the human label as the key so the view can print it directly
-                $classes[$label] = $group;
+        // Handle profile photo
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')->store('profile_pictures', 'public');
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
             }
-
-            return view('admin.user_management.user_info', compact('user', 'classes'));
+            $validated['profile_photo'] = $path;
         }
 
-        return view('admin.user_management.user_info', compact('user'));
+        $user->update($validated);
+
+        // Teacher-specific logic
+        if ($user->role === 'teacher') {
+            $schoolYear = SchoolYear::where('school_year', $this->getDefaultSchoolYear())->firstOrFail();
+
+            $assigned = $request->assigned_classes ?? [];
+            $advisory = $request->advisory_class;
+
+            // Advisory must be in assigned classes
+            if ($advisory && !in_array($advisory, $assigned)) {
+                return back()->withErrors(['advisory_class' => 'Advisory must be in assigned classes.'])->withInput();
+            }
+
+            $syncData = [];
+            foreach ($assigned as $classId) {
+                $syncData[$classId] = [
+                    'role' => $classId == $advisory ? 'adviser' : 'subject_teacher',
+                    'school_year_id' => $schoolYear->id,
+                    'status' => 'active',
+                ];
+            }
+            $user->classes()->wherePivot('school_year_id', $schoolYear->id)->detach();
+            if ($syncData) $user->classes()->attach($syncData);
+        }
+
+        return redirect()->back()->with('success', 'Teacher updated successfully.');
+    }
+
+    public function userInfo(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $schoolYears = SchoolYear::orderBy('id', 'desc')->get();
+
+        $allStudents = collect();
+        $students = collect();
+        $classes = collect();
+        $classesByYear = collect();
+        $assignedClasses = [];
+        $advisoryClass = null;
+
+        if ($user->role === 'parent') {
+            $allStudents = Student::all();
+            $students = $user->children;
+        }
+
+        if ($user->role === 'teacher') {
+            // Always use the active school year
+            $schoolYear = SchoolYear::where('school_year', $this->getDefaultSchoolYear())->firstOrFail();
+
+            // Fetch teacher’s classes for this active school year
+            $teacherClasses = $user->classes()
+                ->withPivot('role', 'school_year_id', 'status')
+                ->wherePivot('school_year_id', $schoolYear->id)
+                ->get();
+
+            $assignedClasses = $teacherClasses->pluck('id')->toArray();
+            $advisoryClass = $teacherClasses->where('pivot.role', 'adviser')->pluck('id')->first();
+
+            // Fetch all classes (with teachers for this SY)
+            $classes = Classes::with(['teachers' => function ($query) use ($schoolYear) {
+                $query->wherePivot('school_year_id', $schoolYear->id);
+            }])->get();
+
+            // Group teacher’s classes by year (for history view)
+            $classesByYear = $user->classes()
+                ->withPivot('school_year_id', 'role', 'status')
+                ->get()
+                ->groupBy(function ($class) {
+                    return optional(
+                        SchoolYear::find($class->pivot->school_year_id)
+                    )->school_year ?? 'Unassigned';
+                });
+        }
+
+        // Store the previous URL, but avoid self-loop
+        $previous = url()->previous();
+        if ($previous !== $request->fullUrl()) {
+            session(['back_url' => $previous]);
+        }
+
+        return view('admin.user_management.user_info', compact(
+            'user',
+            'schoolYears',
+            'allStudents',
+            'students',
+            'classes',
+            'classesByYear',
+            'assignedClasses',
+            'advisoryClass'
+        ));
+    }
+
+    public function deleteUser($id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->profile_photo) {
+            Storage::disk('public')->delete($user->profile_photo);
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.user.management')->with('success', 'User deleted successfully.');
     }
 
     public function updateUserStatus(Request $request, User $user)

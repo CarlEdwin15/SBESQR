@@ -40,6 +40,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::cla
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 });
 
+
 // User Management (on ADMIN dashboard)
 Route::get('/userManagement', [AdminController::class, 'userManagement'])
     ->name('admin.user.management')
@@ -50,8 +51,21 @@ Route::post('/userManagement/create', [AdminController::class, 'createUser'])
     ->name('admin.user.create')
     ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
 
+// User Management - update user
+Route::put('/userManagement/{id}/update', [AdminController::class, 'updateUser'])
+    ->name('admin.user.update')
+    ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
+
+// User Management - delete user
+Route::delete('/userManagement/{id}/delete', [AdminController::class, 'deleteUser'])
+    ->name('admin.user.delete')
+    ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
+
 // User Management - search students (AJAX)
 Route::get('/students/search', [StudentController::class, 'search'])->name('students.search');
+
+// View user info
+Route::get('/userInfo/{id}', [AdminController::class, 'userInfo'])->name('admin.user.info');
 
 
 // Fetch user status (for AJAX polling)
@@ -72,8 +86,6 @@ Route::get('/admin/user-status-refresh', function () {
 Route::post('/admin/users/{user}/status', [AdminController::class, 'updateUserStatus'])
     ->name('admin.users.updateStatus')
     ->middleware(['auth', 'verified']);
-
-Route::get('/userInfo/{id}', [AdminController::class, 'userInfo'])->name('admin.user.info');
 
 
 // Google login

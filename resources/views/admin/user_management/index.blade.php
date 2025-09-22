@@ -1318,7 +1318,7 @@
                 }
             });
         }
-    </script>
+    </script>\
 
     <!-- Add User Role Selection -->
     <script>
@@ -1573,6 +1573,32 @@
         });
     </script>
 
+    <!-- Tom Select for linking students in Parent Registration -->
+    <script>
+        new TomSelect('#link_students', {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: "Search students by name or LRN...",
+            valueField: 'id',
+            labelField: 'text',
+            searchField: 'text',
+            load: function(query, callback) {
+                if (!query.length) return callback();
+                fetch("{{ route('students.search') }}?q=" + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        callback(data.map(student => ({
+                            id: student.id,
+                            text: student.student_lrn + " - " + student.student_fName +
+                                " " + student.student_lName
+                        })));
+                    }).catch(() => {
+                        callback();
+                    });
+            }
+        });
+    </script>
+
     <!-- SweetAlert for success and error messages -->
     <script>
         // Success alert
@@ -1609,32 +1635,6 @@
             plugins: ['remove_button'],
             maxItems: null,
             placeholder: "Select classes...",
-        });
-    </script>
-
-    <!-- Tom Select for linking students in Parent Registration -->
-    <script>
-        new TomSelect('#link_students', {
-            plugins: ['remove_button'],
-            maxItems: null,
-            placeholder: "Search students by name or LRN...",
-            valueField: 'id',
-            labelField: 'text',
-            searchField: 'text',
-            load: function(query, callback) {
-                if (!query.length) return callback();
-                fetch("{{ route('students.search') }}?q=" + encodeURIComponent(query))
-                    .then(response => response.json())
-                    .then(data => {
-                        callback(data.map(student => ({
-                            id: student.id,
-                            text: student.student_lrn + " - " + student.student_fName +
-                                " " + student.student_lName
-                        })));
-                    }).catch(() => {
-                        callback();
-                    });
-            }
         });
     </script>
 @endpush
