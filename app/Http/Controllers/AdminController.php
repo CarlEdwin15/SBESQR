@@ -102,7 +102,6 @@ class AdminController extends Controller
                 },
             ],
             'role'       => 'required|in:teacher,admin,parent',
-            'status'     => 'required|in:active,inactive,suspended,banned',
             'gender'     => 'nullable|in:male,female',
             'dob'        => 'nullable|date',
             'phone'      => 'nullable|string|max:20',
@@ -157,7 +156,6 @@ class AdminController extends Controller
             'dob'          => $request->dob,
             'phone'        => $request->phone,
             'role'         => $request->role,
-            'status'       => $request->status,
             'parent_type'  => $request->parent_type,
             'password'     => $password,
             'profile_photo' => $photoPath,
@@ -204,9 +202,11 @@ class AdminController extends Controller
                     'status' => 'active',
                 ]);
             }
+
+            return redirect()->route('admin.user.management')->with('success', ucfirst($user->role) . ' added successfully.');
         }
 
-        return redirect()->route('admin.user.management')->with('success', 'User added successfully.');
+        return redirect()->route('admin.user.management')->with('success', ucfirst($user->role) . ' added successfully.');
     }
 
     public function updateUser(Request $request, $id)
@@ -381,7 +381,7 @@ class AdminController extends Controller
     public function updateUserStatus(Request $request, User $user)
     {
         $request->validate([
-            'status' => 'required|in:active,inactive,suspended,banned',
+            'status' => 'nullable|in:active,inactive,suspended,banned',
         ]);
 
         $user->status = $request->status;
@@ -393,9 +393,9 @@ class AdminController extends Controller
     public function bulkUpdateStatus(Request $request)
     {
         $request->validate([
-            'user_ids'   => 'required|array',
+            'user_ids'   => 'nullable|array',
             'user_ids.*' => 'exists:users,id',
-            'status'     => 'required|in:active,inactive,suspended,banned',
+            'status'     => 'nullable|in:active,inactive,suspended,banned',
         ]);
 
         $userIds = $request->input('user_ids');

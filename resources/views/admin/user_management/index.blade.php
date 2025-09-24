@@ -106,7 +106,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <div class="text-light">All Payments</div>
                         </a>
                     </li>
@@ -318,13 +318,6 @@
                         </div>
                     </div>
                     <!-- /Search & Filters -->
-
-                    @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
 
                     <!-- Table -->
                     <div class="table-responsive">
@@ -574,16 +567,6 @@
                                 <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
                             </div>
                         </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Status</label>
-                            <select class="form-select" name="status" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="suspended">Suspended</option>
-                                <option value="banned">Banned</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 
@@ -772,18 +755,6 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Status</label>
-                            <select class="form-select" name="status" required>
-                                <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive
-                                </option>
-                                <option value="suspended" {{ old('status') == 'suspended' ? 'selected' : '' }}>Suspended
-                                </option>
-                                <option value="banned" {{ old('status') == 'banned' ? 'selected' : '' }}>Banned</option>
-                            </select>
-                        </div>
-
                         <hr class="my-4" />
 
                         <h5 class="fw-bold text-primary">Address</h5>
@@ -885,24 +856,6 @@
                     <!-- /Profile Photo Upload with Preview -->
 
                     <div class="row g-3 mt-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Parent Type</label>
-                            <select class="form-select" name="parent_type" required>
-                                <option value="" disabled selected>Select type</option>
-                                <option value="mother">Mother</option>
-                                <option value="father">Father</option>
-                                <option value="guardian">Guardian</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Status</label>
-                            <select class="form-select" name="status" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="suspended">Suspended</option>
-                                <option value="banned">Banned</option>
-                            </select>
-                        </div>
 
                         <!-- Names & Contact -->
                         <div class="col-md-6">
@@ -928,6 +881,17 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Phone</label>
                             <input type="tel" class="form-control" name="phone">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Parent Type</label>
+                            <select class="form-select" name="parent_type" required>
+                                <option value="" disabled selected>Select type</option>
+                                <option value="mother">Mother</option>
+                                <option value="father">Father</option>
+                                <option value="guardian">Guardian</option>
+                            </select>
+                            <small class="text-muted">Select Type(Mother, Father, or Guardian)</small>
                         </div>
 
                         <!-- Date of Birth Field -->
@@ -1214,7 +1178,7 @@
             const bulkForm = document.getElementById("bulkStatusForm");
             const bulkUserIdsContainer = document.getElementById("bulkUserIds");
 
-            // Helper: check if any visible checkbox is selected
+            // ✅ Helper: check if any visible checkbox is selected
             function toggleBulkForm() {
                 const visibleCheckboxes = Array.from(document.querySelectorAll("#userTable tbody tr.user-row"))
                     .filter(row => row.style.display !== "none") // only visible
@@ -1224,6 +1188,16 @@
                 bulkForm.classList.toggle("d-none", !anyChecked);
             }
 
+            // ✅ Highlight rows when checkbox is toggled
+            function toggleRowHighlight(cb) {
+                const row = cb.closest("tr");
+                if (cb.checked) {
+                    row.classList.add("row-highlight");
+                } else {
+                    row.classList.remove("row-highlight");
+                }
+            }
+
             // ✅ Select all only visible rows
             selectAll.addEventListener("change", () => {
                 const visibleCheckboxes = Array.from(document.querySelectorAll(
@@ -1231,16 +1205,23 @@
                     .filter(row => row.style.display !== "none") // only visible
                     .map(row => row.querySelector(".user-checkbox"));
 
-                visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+                visibleCheckboxes.forEach(cb => {
+                    cb.checked = selectAll.checked;
+                    toggleRowHighlight(cb); // highlight or remove highlight
+                });
+
                 toggleBulkForm();
             });
 
-            // Individual checkbox toggle (for all rows, but bulk form reacts only if visible are checked)
+            // ✅ Individual checkbox toggle
             document.querySelectorAll(".user-checkbox").forEach(cb => {
-                cb.addEventListener("change", toggleBulkForm);
+                cb.addEventListener("change", () => {
+                    toggleRowHighlight(cb);
+                    toggleBulkForm();
+                });
             });
 
-            // Collect checked IDs before submit
+            // ✅ Collect checked IDs before submit
             bulkForm.addEventListener("submit", (e) => {
                 const selected = Array.from(document.querySelectorAll(".user-checkbox:checked"))
                     .map(cb => cb.value);
@@ -1632,14 +1613,18 @@
     </script>
 
     <!-- SweetAlert for success and error messages -->
-    <script>
+    {{-- <script>
         // Success alert
+        // Success alert after payment creation
         @if (session('success'))
             Swal.fire({
+                toast: true,
+                position: 'top-end',
                 icon: 'success',
-                title: 'Success!',
-                text: '{{ session('success') }}',
-                confirmButtonColor: '#3085d6',
+                title: "{{ session('success') }}",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
                 customClass: {
                     container: 'my-swal-container'
                 }
@@ -1658,9 +1643,7 @@
                 }
             });
         @endif
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    </script> --}}
 
     <script>
         new TomSelect('#assigned_classes', {
@@ -1672,10 +1655,6 @@
 @endpush
 
 @push('styles')
-    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
     <style>
         .card-hover:hover {
             transform: translateY(-5px);
@@ -1715,6 +1694,12 @@
         .ts-dropdown .option.active {
             background-color: #e3f2fd;
             color: #1976d2;
+        }
+
+        .row-highlight {
+            background-color: #e6f7ff !important;
+            /* light blue highlight */
+            transition: background-color 0.3s ease;
         }
     </style>
 @endpush

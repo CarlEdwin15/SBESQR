@@ -50,6 +50,11 @@ class Student extends Model
             ->withTimestamps();
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'student_id');
+    }
+
     public function quarterlyGrades()
     {
         return $this->hasMany(QuarterlyGrade::class);
@@ -70,8 +75,28 @@ class Student extends Model
         return trim("{$this->student_lName}, {$this->student_fName} {$this->student_mName} {$this->student_extName}");
     }
 
+    // public function getGenderAttribute()
+    // {
+    //     return ucfirst(strtolower($this->student_sex));
+    // }
+
     public function getGenderAttribute()
     {
-        return ucfirst(strtolower($this->student_sex));
+        $val = $this->attributes['student_sex'] ?? null;
+        if ($val === null) return null;
+
+        $val = strtolower(trim($val));
+
+        if (in_array($val, ['m', 'male'])) return 'male';
+        if (in_array($val, ['f', 'female'])) return 'female';
+
+        return null;
+    }
+
+    public function getSexIconAttribute()
+    {
+        if ($this->gender === 'male') return 'bx bx-male text-info';
+        if ($this->gender === 'female') return 'bx bx-female text-danger';
+        return 'bx bx-user text-secondary';
     }
 }

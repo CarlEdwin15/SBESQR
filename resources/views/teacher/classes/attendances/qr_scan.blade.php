@@ -229,6 +229,7 @@
                                     <thead>
                                         <tr>
                                             <th class="text-center">Name</th>
+                                            <th class="text-center">Photo</th>
                                             <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
@@ -256,19 +257,28 @@
                                                 };
                                             @endphp
                                             <tr data-student-id="{{ $student->id }}" class="{{ $rowClass }}">
-                                                <td class="text-center">
+                                                <td>
                                                     <span
                                                         class="fw-bold text-primary">{{ $student->student_lName }}</span>,
                                                     {{ $student->student_fName }}
                                                     {{ $student->student_mName }}
                                                     {{ $student->student_extName }}
+                                                    <span><i class="{{ $student->sex_icon }}"></i></span>
                                                 </td>
+
+                                                <td class="text-center">
+                                                    <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                        alt="Student Photo" class="rounded-circle me-2 student-photo"
+                                                        style="width: 40px; height: 40px;">
+                                                </td>
+
                                                 <td class="text-center">
                                                     {{-- Display attendance status --}}
                                                     <span class="badge status-badge {{ $badgeClass }}">
                                                         {{ ucfirst($status ?? '-') }}
                                                     </span>
                                                 </td>
+
                                                 <td class="text-center">
                                                     {{-- Dropdown for manual attendance --}}
                                                     <div class="dropdown">

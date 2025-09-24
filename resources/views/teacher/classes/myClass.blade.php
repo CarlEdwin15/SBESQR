@@ -205,39 +205,58 @@
             </div>
 
             <!-- Card Links -->
-            <div class="row g-3 mb-5">
-                <div class="col-md-3">
+            <div class="row g-3 mb-5 d-flex justify-content-center">
+
+                <!-- Schedules -->
+                <div class="col-md-4">
                     <a href="{{ route('teacher.mySchedule', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                         class="card card-hover border-0 shadow-sm text-center py-4 bg-primary text-white h-100">
                         <i class="bi bi-clock-history fs-2 mb-2"></i>
                         <div class="fw-semibold">Schedules</div>
                     </a>
                 </div>
-                <div class="col-md-3">
+
+                <!-- Attendance Records -->
+                <div class="col-md-4">
                     <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                         class="card card-hover border-0 shadow-sm text-center py-4 bg-info text-white h-100">
                         <i class="bi bi-clipboard-check fs-2 mb-2"></i>
                         <div class="fw-semibold">Attendance Records</div>
                     </a>
                 </div>
-                <div class="col-md-3">
+
+                <!-- Master's List -->
+                <div class="col-md-4">
                     <a href="{{ route('teacher.myClassMasterList', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                         class="card card-hover border-0 shadow-sm text-center py-4 bg-success text-white h-100">
                         <i class="bi bi-list-ul fs-2 mb-2"></i>
                         <div class="fw-semibold">Master's List</div>
                     </a>
                 </div>
+            </div>
 
-                <div class="col-md-3">
+            <div class="row g-3 d-flex justify-content-center">
+
+                <!-- Subjects & Grades -->
+                <div class="col-md-4">
                     <a href="{{ route('teacher.myClassSubject', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                         class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
                         <i class="bx bx-book fs-2 mb-4"></i>
                         <div class="fw-semibold">Subjects & Grades</div>
                     </a>
                 </div>
+
+                <!-- Payments -->
+                <div class="col-md-4">
+                    <a href="{{ route('teacher.payments.index', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
+                        class="card card-hover border-0 shadow-sm text-center py-4 bg-secondary text-white h-100">
+                        <i class="bx bx-money fs-2 mb-4"></i>
+                        <div class="fw-semibold">Payments</div>
+                    </a>
+                </div>
             </div>
+
         </div>
-        <hr class="my-5" />
     </div>
     <!-- Content wrapper -->
 

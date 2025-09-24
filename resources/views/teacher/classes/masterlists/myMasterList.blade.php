@@ -136,10 +136,6 @@
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <h3 class="fw-bold mb-2 text-primary">{{ $class->formatted_grade_level }} -
                     {{ $class->section }}</h3>
-
-                <a href="" class="btn btn-success d-flex align-items-center">
-                    <i class='bx bx-printer me-2'></i><span class="d-none d-sm-block">Export</span>
-                </a>
             </div>
 
             <h5 class="text-center">Adviser:</h5>
@@ -237,7 +233,7 @@
                             @endforeach
                             @if ($femaleCount === 1)
                                 <tr>
-                                    <td colspan="2" class="text-center">No female students enrolled.</td>
+                                    <td colspan="3" class="text-center">No female students enrolled.</td>
                                 </tr>
                             @endif
                         </tbody>

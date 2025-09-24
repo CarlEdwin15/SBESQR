@@ -15,7 +15,7 @@ class SchoolYearSeeder extends Seeder
         $years = [];
 
         // Generate 100 school years starting from 2024-2025
-        $startYear = 2022;
+        $startYear = 2024;
         for ($i = 0; $i < 100; $i++) {
             $label = ($startYear + $i) . '-' . ($startYear + $i + 1);
             $start = ($startYear + $i) . '-06-01';

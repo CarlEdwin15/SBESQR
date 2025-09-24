@@ -106,7 +106,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="" class="menu-link bg-dark text-light">
                             <div class="text-light">All Payments</div>
                         </a>
                     </li>
@@ -247,11 +247,13 @@
                             </button>
 
                             <!-- Delete Button -->
-                            <form action="{{ route('admin.user.delete', $user->id) }}" method="POST"
-                                onsubmit="return confirm('Are you sure you want to delete this user?');">
+                            <form id="delete-user-{{ $user->id }}"
+                                action="{{ route('admin.user.delete', $user->id) }}" method="POST"
+                                style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button class="btn btn-danger d-flex align-items-center">
+                                <button type="button" class="btn btn-danger d-flex align-items-center"
+                                    onclick="confirmUserDelete({{ $user->id }}, '{{ $user->full_name }}')">
                                     <i class='bx bx-trash me-1'></i>
                                     <span class="d-none d-sm-block">Delete</span>
                                 </button>
@@ -307,10 +309,12 @@
                                         <div class="col-sm-8">{{ \Carbon\Carbon::parse($user->dob)->age }} years old</div>
                                     </div>
 
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4 fw-bold">Gender:</div>
-                                        <div class="col-sm-8">{{ ucfirst($user->gender) }}</div>
-                                    </div>
+                                    @if (strtolower($user->role) === 'teacher')
+                                        <div class="row mb-2">
+                                            <div class="col-sm-4 fw-bold">Gender:</div>
+                                            <div class="col-sm-8">{{ ucfirst($user->gender) }}</div>
+                                        </div>
+                                    @endif
 
                                     <div class="row mb-2">
                                         <div class="col-sm-4 fw-bold">Contact Number:</div>
@@ -862,7 +866,8 @@
                             <!-- Date of Birth Field -->
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Date of Birth</label>
-                                <input type="date" class="form-control" name="dob" value="{{ old('dob', $user->dob) }}">
+                                <input type="date" class="form-control" name="dob"
+                                    value="{{ old('dob', $user->dob) }}">
                             </div>
 
                             <!-- Link Students -->
@@ -963,6 +968,29 @@
                         }
                     });
                     document.getElementById('logout-form').submit();
+                }
+            });
+        }
+    </script>
+
+    <!-- Delete User -->
+    <script>
+        function confirmUserDelete(userId, fullName) {
+            Swal.fire({
+                title: `Delete ${fullName}'s Info?`,
+                text: "This action cannot be undone.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Yes, delete",
+                cancelButtonText: "Cancel",
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`delete-user-${userId}`).submit();
                 }
             });
         }

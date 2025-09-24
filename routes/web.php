@@ -206,12 +206,6 @@ Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'
     ->name('push.unsubscribe')->middleware('auth');
 
 
-// Route::get('/pusher', [AnnouncementController::class, 'pusher']);
-
-// Payment Management (on ADMIN Dashboard)
-Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-Route::resource('payments', PaymentController::class);
-
 
 
 
@@ -303,8 +297,28 @@ Route::get('/editStudentInfo/{id}', [TeacherController::class, 'editStudentInfo'
 Route::post('/updateStudentInfo/{id}', [TeacherController::class, 'updateStudentInfo'])->name('teacher.update.student');
 
 
+// Payment Management (on Teacher's Dashboard and Parent's Dashboard)
 
+// Teacher routes (consistent grade_level + section)
+Route::prefix('teacher')->middleware(['auth'])->group(function () {
+    Route::get('classes/{grade_level}/{section}/payments', [PaymentController::class, 'index'])
+        ->name('teacher.payments.index');
 
+    Route::get('classes/{grade_level}/{section}/payments/{paymentName}', [PaymentController::class, 'show'])
+        ->name('teacher.payments.show');
+
+    Route::post('classes/{grade_level}/{section}/payments', [PaymentController::class, 'create'])
+        ->name('teacher.payments.create');
+
+    Route::put('/teacher/payments/{id}/update', [PaymentController::class, 'update'])
+        ->name('teacher.payments.update');
+});
+
+// Parent routes
+Route::prefix('parent')->middleware(['auth', 'role:parent'])->group(function () {
+    Route::get('students/{student}/payments', [PaymentController::class, 'studentPayments'])->name('parent.payments.index');
+    Route::post('payments/{payment}/pay', [PaymentController::class, 'pay'])->name('parent.payments.pay');
+});
 
 
 

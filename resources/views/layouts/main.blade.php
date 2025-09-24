@@ -46,6 +46,12 @@
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- Tom Select CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
     @push('styles')
         <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
         <style>
@@ -228,7 +234,11 @@
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 
+    <!-- Font Awesome -->
     <script src="https://kit.fontawesome.com/ab677fe211.js" crossorigin="anonymous"></script>
+
+    <!-- Quill JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
     <script>
         // Create a SweetAlert mixin so we don’t repeat customClass everywhere
@@ -363,6 +373,38 @@
                     navItem.style.display = 'inline-block';
                 }
             }
+        });
+    </script>
+
+    <!-- SweetAlert toast for success and error messages -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            @if (session('success'))
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: "{{ session('success') }}",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                });
+            @endif
+
+            @if ($errors->any())
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Registration Error',
+                    html: `{!! implode('<br>', $errors->all()) !!}`,
+                    confirmButtonColor: '#dc3545',
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                });
+            @endif
         });
     </script>
 

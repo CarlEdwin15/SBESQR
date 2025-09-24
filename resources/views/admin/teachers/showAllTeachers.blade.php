@@ -344,6 +344,7 @@
 
                                 <h5 class="fw-bold text-primary">Classes</h5>
 
+                                <!-- Assigned Classes and Advisory Class -->
                                 <div class="row">
                                     <!-- Assigned Classes as Multi-select Dropdown -->
                                     <div class="col-md-6 mb-3">
@@ -548,7 +549,6 @@
                                         Class</label>
                                     <select name="reassign_advisory_class" id="reassign_advisory_class"
                                         class="tom-select" data-old="{{ old('advisory_class') }}">
-                                        <option value="">Select advisory class from assigned</option>
                                     </select>
                                     <small class="text-muted">Optional: Select One Advisory Class from the selected
                                         Classes</small>
@@ -569,6 +569,7 @@
             </div>
         </div>
         <!--/ Modal Backdrop -->
+
 
         <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
             <div class="d-flex gap-1 mb-2 mb-md-0">
@@ -1064,111 +1065,6 @@
         });
     </script>
 
-    <!-- Re-assign Modal Form Validation and Submission -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const reassignForm = document.querySelector('#reAssignModal form');
-            const reassignBtn = document.getElementById('reAssignTeacherBtn');
-            const classSelect = document.getElementById('reassign_classes');
-            const advisorySelect = document.getElementById('reassign_advisory_class');
-
-            // ✅ Init Tom Select
-            new TomSelect("#teacher_id", {
-                placeholder: "Search teacher...",
-                allowEmptyOption: true,
-                maxOptions: 5000
-            });
-
-            const classTomSelect = new TomSelect("#reassign_classes", {
-                plugins: ['remove_button'],
-                placeholder: "Select classes...",
-                persist: false,
-                create: false
-            });
-
-            const advisoryTomSelect = new TomSelect("#reassign_advisory_class", {
-                placeholder: "Select advisory class...",
-                allowEmptyOption: true,
-                persist: false,
-                create: false
-            });
-
-            // IDs of classes that already have advisers
-            const reassignClassesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
-
-            // Update advisory class options dynamically
-            function updateAdvisoryClassOptions() {
-                const selected = classTomSelect.getValue().map(v => parseInt(v));
-                advisoryTomSelect.clearOptions();
-
-                advisoryTomSelect.addOption({
-                    value: "",
-                    text: "-- Select advisory class from assigned --"
-                });
-
-                classTomSelect.options && Object.values(classTomSelect.options).forEach(opt => {
-                    const id = parseInt(opt.value);
-                    if (selected.includes(id) && !reassignClassesWithAdvisers.includes(id)) {
-                        advisoryTomSelect.addOption({
-                            value: opt.value,
-                            text: opt.text
-                        });
-                    }
-                });
-                advisoryTomSelect.refreshOptions(false);
-            }
-
-            classTomSelect.on("change", updateAdvisoryClassOptions);
-            updateAdvisoryClassOptions();
-
-            // Validation + confirmation
-            reassignBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-
-                let valid = true;
-                reassignForm.querySelectorAll('[required]').forEach(input => {
-                    if (!input.value.trim()) {
-                        valid = false;
-                        input.classList.add('is-invalid');
-                    } else {
-                        input.classList.remove('is-invalid');
-                    }
-                });
-
-                if (!valid) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Incomplete Form',
-                        text: 'Please fill in all required fields.',
-                        confirmButtonColor: '#dc3545',
-                        customClass: {
-                            container: 'my-swal-container'
-                        }
-                    });
-                    return;
-                }
-
-                Swal.fire({
-                    title: "Confirm Re-Assignment?",
-                    text: "Are you sure you want to re-assign this teacher?",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonColor: "#06D001",
-                    cancelButtonColor: "#6c757d",
-                    confirmButtonText: "Yes, re-assign",
-                    cancelButtonText: "Cancel",
-                    customClass: {
-                        container: 'my-swal-container'
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        reassignForm.submit();
-                    }
-                });
-            });
-        });
-    </script>
-
     <!-- Re-assign Modal Form Validation and Submission v2 (with advisory logic) -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1181,11 +1077,17 @@
             const reassignClassesWithAdvisers = @json($allClasses->filter(fn($class) => $class->teachers->where('pivot.role', 'adviser')->isNotEmpty())->pluck('id'));
 
             // ✅ Initialize TomSelect with desired design and placeholders
-            new TomSelect("#teacher_id", {
+            // Teacher select
+            const teacherTomSelect = new TomSelect("#teacher_id", {
                 placeholder: "Search teacher...",
                 allowEmptyOption: true,
+                persist: false,
+                create: false,
                 maxOptions: 5000
             });
+
+            // Clear default selection so it starts blank
+            teacherTomSelect.clear();
 
             const classTomSelect = new TomSelect("#reassign_classes", {
                 plugins: ['remove_button'],
@@ -1194,6 +1096,7 @@
                 create: false
             });
 
+            // Advisory select
             const advisoryTomSelect = new TomSelect("#reassign_advisory_class", {
                 placeholder: "Select advisory class...",
                 allowEmptyOption: true,
@@ -1201,15 +1104,18 @@
                 create: false
             });
 
+            // Clear default selection too
+            advisoryTomSelect.clear();
+
             // Function to update advisory class options dynamically
             function updateAdvisoryClassOptions() {
                 const selected = classTomSelect.getValue().map(v => parseInt(v));
                 advisoryTomSelect.clearOptions();
 
-                advisoryTomSelect.addOption({
-                    value: "",
-                    text: "-- Select advisory class from assigned --"
-                });
+                // advisoryTomSelect.addOption({
+                //     value: "",
+                //     text: "-- Select advisory class from assigned --"
+                // });
 
                 selected.forEach(id => {
                     if (!reassignClassesWithAdvisers.includes(id)) {

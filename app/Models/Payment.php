@@ -24,6 +24,7 @@ class Payment extends Model
         'remarks',
     ];
 
+    /** 🔹 Relations */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -42,5 +43,12 @@ class Payment extends Model
     public function student()
     {
         return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    public function scopeForYear($query, $year)
+    {
+        return $query->whereHas('schoolYear', function ($q) use ($year) {
+            $q->where('year', $year); // or ->where('name', $year)
+        });
     }
 }
