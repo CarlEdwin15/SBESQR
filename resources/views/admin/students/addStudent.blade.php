@@ -244,9 +244,9 @@
                         <input type="hidden" name="selected_school_year" value="{{ $selectedYear }}">
                     </div>
 
-                    <!-- Enrollment Status Field -->
+                    <!-- Enrollment Type Field -->
                     <div class="col mb-2 mt-2">
-                        <label for="enrollment_type" class="form-label fw-bold">Enrollment Status</label>
+                        <label for="enrollment_type" class="form-label fw-bold">Enrollment Type</label>
                         <select name="enrollment_type" id="enrollment_type" class="form-select" required>
                             <option value="regular" {{ old('enrollment_type') == 'regular' ? 'selected' : '' }}>
                                 Regular</option>
@@ -434,7 +434,7 @@
 
                 <hr class="my-5" />
 
-                <!-- Parent Info -->
+                {{-- <!-- Parent Info -->
                 <h4 class="fw-bold mb-3 mt-4 text-primary">Parent Information</h4>
 
                 <!-- Father's Info -->
@@ -564,7 +564,7 @@
                         <input type="email" name="student_parentEmail" id="student_parentEmail" class="form-control"
                             placeholder="Enter Parent's Email" value="{{ old('student_parentEmail') }}" />
                     </div>
-                </div>
+                </div> --}}
 
             </div>
 
@@ -691,18 +691,21 @@
     </script>
 
     <script>
-        // alert after a success edit or delete of teacher's info
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: '{{ session('success') }}',
-                confirmButtonColor: '#3085d6',
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            });
-        @endif
+        // Show success toast if session has success message
+            @if (session('success'))
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: '{{ session('success') }}',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                });
+            @endif
     </script>
 
     <script>

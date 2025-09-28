@@ -18,6 +18,12 @@ class HomeController extends Controller
             return redirect()->route('welcome');
         }
 
+        // 🔹 Flash success message only once after login
+        if (!session()->has('login_success_shown')) {
+            session()->flash('success', 'Login successful!');
+            session(['login_success_shown' => true]);
+        }
+
         $user = Auth::user();
         $role = $user->role ?? 'parent';
 

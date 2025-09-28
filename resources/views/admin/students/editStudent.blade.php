@@ -221,6 +221,19 @@
                                         size of 2MB</p>
                                 </div>
                             </div>
+
+                            <!-- Enrollment Type Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="enrollment_type" class="form-label fw-bold">Enrollment Status</label>
+                                <select name="enrollment_type" id="enrollment_type" class="form-select" required>
+                                    <option value="regular"
+                                        {{ old('enrollment_type', $student->enrollment_type) == 'regular' ? 'selected' : '' }}>
+                                        Regular</option>
+                                    <option value="transferee"
+                                        {{ old('enrollment_type', $student->enrollment_type) == 'transferee' ? 'selected' : '' }}>
+                                        Transferee</option>
+                                </select>
+                            </div>
                         </div>
 
                         <hr class="my-0" />
@@ -394,7 +407,7 @@
                                 value="{{ $student->address->barangay }}" />
                         </div>
 
-                        <!-- Father's Phone No. Field -->
+                        <!-- Municipality Name Field -->
                         <div class="col mb-2 mt-2">
                             <label for="municipality_city" class="form-label fw-bold">Municipality/City</label>
                             <input type="text" name="municipality_city" id="municipality_city" class="form-control"
@@ -411,7 +424,7 @@
                                 value="{{ $student->address->province }}" />
                         </div>
 
-                        <!-- Father's Phone No. Field -->
+                        <!-- Zip Code Field -->
                         <div class="col mb-2 mt-2">
                             <label for="zip_code" class="form-label fw-bold">Zip Code</label>
                             <input type="text" name="zip_code" id="zip_code" class="form-control"
@@ -421,133 +434,6 @@
                     </div>
 
                     <hr class="my-0 mb-4 mt-4" />
-
-                    <!-- Father's Information-->
-                    <h5 class="fw-bold mb-3 mt-3 text-primary">Father's Information</h5>
-
-                    <div class="row">
-                        <!-- Father's First Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_fatherFName" class="form-label fw-bold">First
-                                Name</label>
-                            <input type="text" name="student_fatherFName" id="student_fatherFName"
-                                class="form-control" value="{{ $student->parents->father_fName }}" />
-                        </div>
-
-                        <!-- Father's Middle Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_fatherMName" class="form-label fw-bold">Midlle
-                                Name</label>
-                            <input type="text" name="student_fatherMName" id="student_fatherMName"
-                                class="form-control" value="{{ $student->parents->father_mName }}" />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <!-- Father's Last Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_fatherLName" class="form-label fw-bold">Last
-                                Name</label>
-                            <input type="text" name="student_fatherLName" id="student_fatherLName"
-                                class="form-control" value="{{ $student->parents->father_lName }}" />
-                        </div>
-
-                        <!-- Father's Phone No. Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_fatherPhone" class="form-label fw-bold">Phone No.</label>
-                            <input type="tel" name="student_fatherPhone" id="student_fatherPhone"
-                                class="form-control" value="{{ $student->parents->father_phone }}" />
-                        </div>
-
-                    </div>
-
-                    <!-- Mother's Information-->
-                    <h5 class="fw-bold mb-3 mt-3 text-primary">Mother's Information</h5>
-
-                    <div class="row">
-                        <!-- Mother's First Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_motherFName" class="form-label fw-bold">First
-                                Name</label>
-                            <input type="text" name="student_motherFName" id="student_motherFName"
-                                class="form-control" value="{{ $student->parents->mother_fName }}" />
-                        </div>
-
-                        <!-- Mother's Middle Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_motherMName" class="form-label fw-bold">Middle
-                                Name</label>
-                            <input type="text" name="student_motherMName" id="student_motherMName"
-                                class="form-control" value="{{ $student->parents->mother_mName }}" />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <!-- Mother's Last Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_motherLName" class="form-label fw-bold">Last
-                                Name</label>
-                            <input type="text" name="student_motherLName" id="student_motherLName"
-                                class="form-control" value="{{ $student->parents->mother_lName }}" />
-                        </div>
-
-                        <!-- Mother's Phone No. Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_motherPhone" class="form-label fw-bold">Phone No.</label>
-                            <input type="tel" name="student_motherPhone" id="student_motherPhone"
-                                class="form-control" value="{{ $student->parents->mother_phone }}" />
-                        </div>
-
-                    </div>
-
-                    <!-- Emergency Contact's Information-->
-                    <h5 class="fw-bold mb-3 mt-3 text-primary">Emergency Contact's Information</h5>
-
-                    <div class="row">
-                        <!-- Emergency Contact's First Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_emergcontFName" class="form-label fw-bold">First
-                                Name</label>
-                            <input type="text" name="student_emergcontFName" id="student_emergcontFName"
-                                class="form-control" value="{{ $student->parents->emergcont_fName }}" />
-                        </div>
-
-                        <!-- Emergency Contact's Middle Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_emergcontMName" class="form-label fw-bold">Midlle
-                                Name</label>
-                            <input type="text" name="student_emergcontMName" id="student_emergcontMName"
-                                class="form-control" value="{{ $student->parents->emergcont_mName }}" />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <!-- Emergency Contact's Last Name Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_emergcontLName" class="form-label fw-bold">Last
-                                Name</label>
-                            <input type="text" name="student_emergcontLName" id="student_emergcontLName"
-                                class="form-control" value="{{ $student->parents->emergcont_lName }}" />
-                        </div>
-
-                        <!-- Emergency Contact's Phone No. Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_emergcontPhone" class="form-label fw-bold">Phone No.</label>
-                            <input type="tel" name="student_emergcontPhone" id="student_emergcontPhone"
-                                class="form-control" value="{{ $student->parents->emergcont_phone }}" />
-                        </div>
-                    </div>
-
-                    <!-- Parent's Email -->
-                    <h5 class="fw-bold mb-3 mt-4 text-primary">Parent's Email</h5>
-                    <div class="row">
-                        <!-- Parent's Email Field -->
-                        <div class="col mb-2 mt-2">
-                            <label for="student_parentEmail" class="form-label fw-bold">Parent's Email</label>
-                            <input type="email" name="student_parentEmail" id="student_parentEmail"
-                                class="form-control" value="{{ $student->parents->parent_email }}" />
-                        </div>
-                    </div>
 
             </div>
             <div class="modal-footer">

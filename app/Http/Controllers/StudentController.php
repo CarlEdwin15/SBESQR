@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classes;
+use App\Models\ClassStudent;
 use App\Models\Student;
 use App\Models\StudentAddress;
 use App\Models\SchoolYear;
@@ -30,6 +31,45 @@ class StudentController extends Controller
             ->get(['id', 'student_lrn', 'student_fName', 'student_lName']);
 
         return response()->json($students);
+    }
+
+    public function classStudentSearch(Request $request)
+    {
+        $term = $request->get('q');
+
+        // Get default school year string
+        $defaultSchoolYear = $this->getDefaultSchoolYear();
+
+        // Find the SchoolYear row (make sure the string matches your DB value)
+        $schoolYear = \App\Models\SchoolYear::where('school_year', $defaultSchoolYear)->first();
+
+        if (!$schoolYear) {
+            // fallback: return nothing instead of breaking
+            return response()->json([]);
+        }
+
+        // Query only enrolled students for that school year
+        $students = ClassStudent::with('student')
+            ->where('school_year_id', $schoolYear->id)
+            ->where('enrollment_status', 'enrolled')
+            ->whereHas('student', function ($q) use ($term) {
+                $q->where('student_lrn', 'like', "%{$term}%")
+                    ->orWhere('student_fName', 'like', "%{$term}%")
+                    ->orWhere('student_lName', 'like', "%{$term}%");
+            })
+            ->limit(10)
+            ->get();
+
+        return response()->json($students->map(function ($cs) {
+            return [
+                'id' => $cs->id, // 🔹 class_student.id
+                'student' => [
+                    'student_lrn'   => $cs->student->student_lrn,
+                    'student_fName' => $cs->student->student_fName,
+                    'student_lName' => $cs->student->student_lName,
+                ]
+            ];
+        }));
     }
 
     public function show(Request $request)
@@ -227,15 +267,15 @@ class StudentController extends Controller
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
-        // 📌 Handle profile photo
+        // Handle profile photo
         $profilePhotoPath = $request->hasFile('student_profile_photo')
             ? $request->file('student_profile_photo')->store('student_profile_photos', 'public')
             : null;
 
-        // 📌 QR Code
+        // QR Code
         $qrCode = uniqid('QR');
 
-        // 📌 Address
+        // Address
         $address = StudentAddress::create([
             'house_no' => $request->house_no,
             'street_name' => $request->street_name,
@@ -247,7 +287,7 @@ class StudentController extends Controller
             'pob' => $request->student_pob,
         ]);
 
-        // 📌 Create Student
+        // Create Student
         $student = Student::create([
             'student_lrn' => $validatedData['student_lrn'],
             'student_fName' => $validatedData['student_fName'],
@@ -261,7 +301,7 @@ class StudentController extends Controller
             'address_id' => $address->id,
         ]);
 
-        // 📌 Handle Parent User
+        // Handle Parent User
         if ($request->student_parentEmail) {
             $parent = User::where('email', $request->student_parentEmail)
                 ->where('role', 'parent')
@@ -282,13 +322,13 @@ class StudentController extends Controller
             $student->parents()->syncWithoutDetaching([$parent->id]);
         }
 
-        // 📌 Class
+        // Class
         $class = Classes::firstOrCreate([
             'grade_level' => $validatedData['student_grade_level'],
             'section' => $validatedData['student_section'],
         ]);
 
-        // 📌 School Year
+        // School Year
         $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
         [$start, $end] = explode('-', $selectedSchoolYear);
         $schoolYear = SchoolYear::firstOrCreate(
@@ -299,7 +339,7 @@ class StudentController extends Controller
             ]
         );
 
-        // 📌 Enroll student
+        // Enroll student
         $student->class()->attach($class->id, [
             'school_year_id' => $schoolYear->id,
             'enrollment_status' => 'enrolled',
@@ -318,7 +358,11 @@ class StudentController extends Controller
             $query->where('class_student.school_year_id', $schoolYear->id);
         }])->findOrFail($id);
 
-        return view('admin.students.editStudent', compact('student', 'selectedSchoolYear'));
+        return view('admin.students.editStudent', [
+            'student' => $student,
+            'selectedSchoolYear' => $selectedSchoolYear,
+            'schoolYearId' => $schoolYear->id,
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -342,8 +386,7 @@ class StudentController extends Controller
             'student_dob' => 'nullable|date',
             'student_sex' => 'required|in:male,female',
             'student_pob' => 'required|string|max:255',
-            'enrollment_status' => 'required|in:enrolled,not_enrolled,archived,graduated',
-            'enrollment_type' => 'required|in:regular,transferee',
+            'enrollment_type' => 'required|in:regular,transferee,returnee',
             'student_parentEmail' => [
                 'nullable',
                 'string',
@@ -360,14 +403,14 @@ class StudentController extends Controller
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ]);
 
-        // 📌 Handle profile photo
+        // Handle profile photo
         if ($request->hasFile('student_profile_photo')) {
             $profilePhotoPath = $request->file('student_profile_photo')->store('student_profile_photos', 'public');
         } else {
             $profilePhotoPath = $student->student_photo;
         }
 
-        // 📌 Update Address
+        // Update Address
         if ($student->address) {
             $student->address->update([
                 'house_no' => $request->house_no,
@@ -381,7 +424,7 @@ class StudentController extends Controller
             ]);
         }
 
-        // 📌 Update Student
+        // Update Student
         $student->update([
             'student_lrn' => $validatedData['student_lrn'],
             'student_fName' => $validatedData['student_fName'],
@@ -393,7 +436,7 @@ class StudentController extends Controller
             'student_photo' => $profilePhotoPath,
         ]);
 
-        // 📌 Handle Parent User
+        // Handle Parent User
         if ($request->student_parentEmail) {
             $parent = User::where('email', $request->student_parentEmail)
                 ->where('role', 'parent')
@@ -414,33 +457,127 @@ class StudentController extends Controller
             $student->parents()->syncWithoutDetaching([$parent->id]);
         }
 
-        // 📌 Class
-        $class = Classes::firstOrCreate([
-            'grade_level' => $validatedData['student_grade_level'],
-            'section' => $validatedData['student_section'],
-        ]);
-
-        // 📌 School Year
+        // Get selected school year
         $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
         [$start, $end] = explode('-', $selectedSchoolYear);
+
         $schoolYear = SchoolYear::firstOrCreate(
             ['school_year' => $selectedSchoolYear],
             [
                 'start_date' => "$start-06-01",
-                'end_date' => "$end-03-31",
+                'end_date'   => "$end-03-31",
             ]
         );
 
-        // 📌 Sync enrollment
-        $student->class()->syncWithoutDetaching([
-            $class->id => [
-                'school_year_id' => $schoolYear->id,
-                'enrollment_status' => $validatedData['enrollment_status'],
-                'enrollment_type' => $validatedData['enrollment_type'],
-            ],
+        // Find or create the class
+        $class = Classes::firstOrCreate([
+            'grade_level' => $validatedData['student_grade_level'],
+            'section'     => $validatedData['student_section'],
         ]);
 
-        return redirect()->route('add.student')->with('success', 'Student updated successfully!');
+        // Check if student already has a class record for this school year
+        $existingPivot = $student->class()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->first();
+
+        // Determine enrollment type:
+        // - If user submits a new one → use it
+        // - If not → fallback to old value in pivot
+        $enrollmentType = $validatedData['enrollment_type'] ?? null;
+
+        if ($existingPivot) {
+            if (!$enrollmentType) {
+                // fallback to old enrollment type if none provided
+                $enrollmentType = $existingPivot->pivot->enrollment_type;
+            }
+
+            // Update existing pivot row
+            $student->class()->updateExistingPivot($existingPivot->id, [
+                'class_id'        => $class->id,
+                'school_year_id'  => $schoolYear->id,
+                'enrollment_type' => $enrollmentType,
+            ]);
+        } else {
+            // If no pivot exists for this school year, attach new
+            $student->class()->attach($class->id, [
+                'school_year_id'  => $schoolYear->id,
+                'enrollment_type' => $enrollmentType ?? 'regular', // default fallback
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Student updated successfully!');
+    }
+
+    public function showStudentInfo($id, Request $request)
+    {
+        $schoolYearId = $request->query('school_year');
+
+        $student = Student::with(['address', 'parents'])->findOrFail($id);
+
+        $class = $student->class()->where('school_year_id', $schoolYearId)->first();
+
+        $schoolYear = SchoolYear::find($schoolYearId);
+
+        // 🔹 Get all classes (class history)
+        $classHistory = $student->class()->with('advisers')->get();
+
+        // 🔹 Reorder so "enrolled" classes appear first, then by school_year_id desc
+        $classHistory = $classHistory->sortByDesc(function ($classItem) {
+            return $classItem->pivot->enrollment_status === 'enrolled' ? 2 : 1;
+        })->sortByDesc(function ($classItem) {
+            return $classItem->pivot->school_year_id;
+        })->values();
+
+        // 🔹 Organize grades by class
+        $gradesByClass = [];
+        foreach ($classHistory as $classItem) {
+            $subjectsWithGrades = [];
+
+            foreach ($classItem->subjects as $subject) {
+                $quarters = $student->quarterlyGrades()
+                    ->where('class_id', $classItem->id)
+                    ->where('subject_id', $subject->id)
+                    ->get();
+
+                $final = $student->finalSubjectGrades()
+                    ->where('class_id', $classItem->id)
+                    ->where('subject_id', $subject->id)
+                    ->first();
+
+                $subjectsWithGrades[] = [
+                    'subject' => $subject->subject_name,
+                    'quarters' => $quarters,
+                    'final_average' => $final->final_grade ?? null,
+                    'remarks' => $final->remarks ?? null,
+                ];
+            }
+
+            $gradesByClass[$classItem->id] = $subjectsWithGrades;
+        }
+
+        // 🔹 Get general averages per class
+        $generalAverages = $student->generalAverages()
+            ->get()
+            ->groupBy('class_id')
+            ->map(function ($items) {
+                return $items->first();
+            });
+
+        // Store the previous URL, but avoid self-loop
+        $previous = url()->previous();
+        if ($previous !== $request->fullUrl()) {
+            session(['back_url' => $previous]);
+        }
+
+        return view('admin.students.student_info', compact(
+            'student',
+            'class',
+            'schoolYear',
+            'schoolYearId',
+            'classHistory',
+            'gradesByClass',
+            'generalAverages'
+        ));
     }
 
     public function unenroll($id)
@@ -470,19 +607,6 @@ class StudentController extends Controller
         }
 
         return redirect()->route('show.students')->with('success', 'Student unenrolled successfully!');
-    }
-
-    public function showStudentInfo($id, Request $request)
-    {
-        $schoolYearId = $request->query('school_year');
-
-        $student = Student::with(['address', 'parents'])->findOrFail($id);
-
-        $class = $student->class()->where('school_year_id', $schoolYearId)->first();
-
-        $schoolYear = SchoolYear::find($schoolYearId);
-
-        return view('admin.students.student_info', compact('student', 'class', 'schoolYear', 'schoolYearId'));
     }
 
     public function showPromotionView(Request $request)
@@ -673,7 +797,7 @@ class StudentController extends Controller
         return redirect()->route('students.promote.view')->with('success', 'Selected students promoted successfully!');
     }
 
-    private function getDefaultSchoolYear()
+    public function getDefaultSchoolYear()
     {
         $now = now();
         $year = $now->year;

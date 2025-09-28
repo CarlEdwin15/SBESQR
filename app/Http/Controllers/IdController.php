@@ -11,8 +11,14 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class IdController extends Controller
 {
 
-    public function generateID($id)
+    public function generateID(Request $request, $id)
     {
+        // Store the previous URL, but avoid self-loop
+        $previous = url()->previous();
+        if ($previous !== $request->fullUrl()) {
+            session(['back_url' => $previous]);
+        }
+
         $student = Student::findOrFail($id);
         return view('admin.students.generate_id', compact('student'));
     }
@@ -33,29 +39,6 @@ class IdController extends Controller
 
         return $pdf->download($student->student_fName . '_' . $student->student_lName . '_ID.pdf');
     }
-
-    // public function downloadID($id)
-    // {
-    //     $student = Student::findOrFail($id);
-
-    //     // Create QR Code as base64 PNG to avoid Imagick and render it in PDF
-    //     $qrCode = base64_encode(
-    //         QrCode::format('svg')
-    //             ->size(150)
-    //             ->generate(route('student.info', ['id' => $student->id]))
-    //     );
-
-    //     // $pdf = Pdf::loadView('pdf.student_id', compact('student', 'qrCode'))
-    //     //     ->setPaper('3.375in', '2.125in', 'portrait'); // Set paper size to ID card size
-
-    //     $pdf = Pdf::loadView('pdf.student_id', compact('student', 'qrCode'))
-    //         ->setPaper('a4', 'portrait');
-
-
-
-    //     return $pdf->download($student->last_name . '_ID.pdf');
-    // }
-
 
 
     /**
@@ -82,35 +65,4 @@ class IdController extends Controller
         //
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(school_id $school_id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(school_id $school_id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, school_id $school_id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(school_id $school_id)
-    {
-        //
-    }
 }

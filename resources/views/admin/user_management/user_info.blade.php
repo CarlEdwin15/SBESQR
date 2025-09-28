@@ -304,10 +304,13 @@
                                         <div class="col-sm-8">{{ $user->email }}</div>
                                     </div>
 
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4 fw-bold">Age:</div>
-                                        <div class="col-sm-8">{{ \Carbon\Carbon::parse($user->dob)->age }} years old</div>
-                                    </div>
+                                    @if ($user->role !== 'admin')
+                                        <div class="row mb-2">
+                                            <div class="col-sm-4 fw-bold">Age:</div>
+                                            <div class="col-sm-8">{{ \Carbon\Carbon::parse($user->dob)->age }} years old
+                                            </div>
+                                        </div>
+                                    @endif
 
                                     @if (strtolower($user->role) === 'teacher')
                                         <div class="row mb-2">
@@ -320,14 +323,17 @@
                                         <div class="col-sm-4 fw-bold">Contact Number:</div>
                                         <div class="col-sm-8">{{ $user->phone ?? 'N/A' }}</div>
                                     </div>
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4 fw-bold">
-                                            Date of Birth:
+
+                                    @if ($user->role !== 'admin')
+                                        <div class="row mb-2">
+                                            <div class="col-sm-4 fw-bold">
+                                                Date of Birth:
+                                            </div>
+                                            <div class="col-sm-8">
+                                                {{ $user->dob ? \Carbon\Carbon::parse($user->dob)->format('F j, Y') : 'N/A' }}
+                                            </div>
                                         </div>
-                                        <div class="col-sm-8">
-                                            {{ $user->dob ? \Carbon\Carbon::parse($user->dob)->format('F j, Y') : 'N/A' }}
-                                        </div>
-                                    </div>
+                                    @endif
 
                                     <div class="row mb-2">
                                         <div class="col-sm-4 fw-bold">Joined:</div>
@@ -409,7 +415,15 @@
                                             <p class="text-muted">No classes assigned to this teacher yet.</p>
                                         @else
                                             <div class="accordion" id="teacherClassAccordion">
-                                                @foreach ($classesByYear as $schoolYearLabel => $classGroup)
+                                                @php
+                                                    // Move current school year to the top
+                                                    $currentSchoolYear = now()->format('Y') . '-' . now()->addYear()->format('Y');
+                                                    $sortedClassesByYear = $classesByYear->sortKeysUsing(function ($key) use ($currentSchoolYear) {
+                                                        return $key === $currentSchoolYear ? -1 : 1;
+                                                    });
+                                                @endphp
+
+                                                @foreach ($sortedClassesByYear as $schoolYearLabel => $classGroup)
                                                     @php
                                                         $collapseId = 'collapse-' . Str::slug($schoolYearLabel);
                                                     @endphp

@@ -26,4 +26,9 @@ class QuarterlyGrade extends Model
     {
         return $this->belongsTo(Quarter::class);
     }
+
+    public function classStudent()
+    {
+        return $this->belongsTo(ClassStudent::class);
+    }
 }

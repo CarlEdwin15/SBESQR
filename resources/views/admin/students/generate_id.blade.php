@@ -161,8 +161,8 @@
         </h4>
 
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <a href="{{ route('show.students') }}" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
-                class="btn btn-danger mt-3">Back</a>
+            <a href="{{ session('back_url', url()->previous()) }}"
+                style="margin: auto; margin-bottom: 10px; margin-left: 10px" class="btn btn-danger mt-3">Back</a>
 
             <!-- Generate ID Form -->
             <form action="{{ route('students.downloadID', $student->id) }}" method="GET">
@@ -183,7 +183,7 @@
                             <div>
                                 <div class="mb-1 text-center">
                                     <img src="{{ asset('assets/img/logo.png') }}" alt="School Logo"
-                                        style="width: 75px;">
+                                        style="width: 105px;">
                                 </div>
 
                                 <div class="text-center mb-2">
@@ -199,16 +199,16 @@
                                 @if ($student->student_photo)
                                     <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
                                         class="border"
-                                        style="width: 1.5in; height: 1.5in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
+                                        style="width: 2.1in; height: 2.1in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
                                 @else
                                     <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                         alt="Default Photo" class="border"
-                                        style="width: 1.5in; height: 1.5in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
+                                        style="width: 2.1in; height: 2.1in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
                                 @endif
                             </div>
 
 
-                            <div class="text-center mb-2">
+                            <div class="text-center mb-3">
                                 <h6 class="mb-0 fw-bold text-uppercase" style="font-size: 14px;">
                                     {{ $student->student_fName }} {{ $student->student_mName }}
                                     {{ $student->student_lName }}
@@ -218,8 +218,13 @@
                             <div class="text-center" style="font-size: 12px;">
                                 <p class="mb-1"><strong>Date of Birth:</strong>
                                     {{ \Carbon\Carbon::parse($student->student_dob)->format('F j, Y') }}</p>
-                                <p class="mb-1"><strong>Address:</strong> Zone
-                                    {{ $student->address->barangay }}, Sta. Barbara, Nabua, Camarines Sur</p>
+                                <p class="mb-1"><strong>Address:</strong>
+                                    {{ $student->address->house_no ?? 'N/A' }},
+                                    {{ $student->address->street_name ?? 'N/A' }},
+                                    {{ $student->address->barangay ?? 'N/A' }},
+                                    {{ $student->address->municipality_city ?? 'N/A' }},
+                                    {{ $student->address->province ?? 'N/A' }},
+                                    {{ $student->address->zip_code ?? 'N/A' }}</p>
                             </div>
                         </div>
 
@@ -227,21 +232,30 @@
                         <div class="card p-3 shadow"
                             style="width: 320px; height: 510px; background-image: url('{{ asset('assetsDashboard/img/id_layout/back_bg_id.png') }}'); background-size: cover; background-repeat: no-repeat; background-position: center;">
 
-                            <h6 class="fw-bold text-center mb-2" style="font-size: 10px;">IN CASE OF EMERGENCY
-                                PLEASE NOTIFY</h6>
+                            <h6 class="fw-bold text-center mb-2" style="font-size: 13px;">IN CASE OF EMERGENCY PLEASE
+                                NOTIFY</h6>
+
+                            @php
+                                // Get first linked parent (or you can loop through if multiple)
+                                $parent = $student->parents->first();
+                            @endphp
 
                             <div style="font-size: 11px;">
                                 <p class="mb-1">Name:
-                                    <strong>{{ $student->parents->emergcont_fName ?? 'N/A' }}
-                                        {{ $student->parents->emergcont_lName ?? '' }}</strong>
+                                    <strong>
+                                        {{ $parent ? $parent->firstName . ' ' . $parent->middleName . ' ' . $parent->lastName : 'N/A' }}
+                                    </strong>
+                                </p>
+                                <p class="mb-1">Relation:
+                                    <strong>{{ ucfirst($parent->parent_type) ?? 'N/A' }}</strong>
                                 </p>
                                 <p class="mb-1">Address:
-                                    <strong>{{ $student->address->barangay ?? 'N/A' }},
-                                        {{ $student->address->municipality_city ?? 'N/A' }},
-                                        {{ $student->address->province ?? 'N/A' }}</strong>
+                                    <strong>
+                                        {{ $parent && $parent->barangay ? $parent->barangay . ', ' . $parent->municipality_city . ', ' . $parent->province : 'N/A' }}
+                                    </strong>
                                 </p>
                                 <p class="mb-1">Contact No.:
-                                    <strong>{{ $student->parents->emergcont_phone ?? 'N/A' }}</strong>
+                                    <strong>{{ $parent->phone ?? 'N/A' }}</strong>
                                 </p>
                             </div>
 
@@ -250,8 +264,8 @@
                                 style="border: 1px solid black;">
                                 <thead>
                                     <tr>
-                                        <th style="border: 1px solid black;">School Year</th>
-                                        <th style="border: 1px solid black;">Signature</th>
+                                        <th>School Year</th>
+                                        <th>Signature</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -263,8 +277,6 @@
                                     @endfor
                                 </tbody>
                             </table>
-
-
 
                             {{-- QR Code --}}
                             <div class="text-center mt-1 mb-1">

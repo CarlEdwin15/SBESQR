@@ -10,10 +10,8 @@ class Payment extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'class_student_id',
         'created_by',
-        'class_id',
-        'school_year_id',
-        'student_id',
         'payment_name',
         'amount_due',
         'date_created',
@@ -21,34 +19,46 @@ class Payment extends Model
         'amount_paid',
         'date_paid',
         'status',
-        'remarks',
     ];
 
-    /** 🔹 Relations */
-    public function creator()
+    public function classStudent()
     {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function class()
-    {
-        return $this->belongsTo(Classes::class, 'class_id');
-    }
-
-    public function schoolYear()
-    {
-        return $this->belongsTo(SchoolYear::class, 'school_year_id');
+        return $this->belongsTo(ClassStudent::class, 'class_student_id');
     }
 
     public function student()
     {
-        return $this->belongsTo(Student::class, 'student_id');
+        return $this->hasOneThrough(
+            Student::class,
+            ClassStudent::class,
+            'id',          // class_students.id
+            'id',          // students.id
+            'class_student_id', // payments.class_student_id
+            'student_id'   // class_students.student_id
+        );
     }
 
-    public function scopeForYear($query, $year)
+    public function class()
     {
-        return $query->whereHas('schoolYear', function ($q) use ($year) {
-            $q->where('year', $year); // or ->where('name', $year)
-        });
+        return $this->hasOneThrough(
+            Classes::class,
+            ClassStudent::class,
+            'id',
+            'id',
+            'class_student_id',
+            'class_id'
+        );
+    }
+
+    public function schoolYear()
+    {
+        return $this->hasOneThrough(
+            SchoolYear::class,
+            ClassStudent::class,
+            'id',
+            'id',
+            'class_student_id',
+            'school_year_id'
+        );
     }
 }

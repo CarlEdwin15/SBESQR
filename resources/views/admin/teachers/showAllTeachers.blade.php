@@ -535,7 +535,7 @@
                                                 {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }}
                                                 - {{ $class->section }}
                                                 @if ($hasAdviser)
-                                                    ({{ $adviser->firstName }} {{ $adviser->lastName }})
+                                                    ({{ $adviser->firstName }} {{ $adviser->lastName }}) ({{ $adviser->email }})
                                                 @endif
                                             </option>
                                         @endforeach

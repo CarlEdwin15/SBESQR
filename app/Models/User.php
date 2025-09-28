@@ -156,16 +156,42 @@ class User extends Authenticatable
             : 'Never';
     }
 
-    // Accessor for formatted phone number
-    private function formatForDisplay($phone)
+    // Mutator for saving phone number
+    public function setPhoneAttribute($value)
     {
-        if (!$phone) return null;
-
-        // If starts with +639, display as 09
-        if (str_starts_with($phone, '+639')) {
-            return '0' . substr($phone, 3);
+        if (!$value) {
+            $this->attributes['phone'] = null;
+            return;
         }
 
-        return $phone;
+        // Remove spaces, dashes, and parentheses just in case
+        $phone = preg_replace('/[^0-9+]/', '', $value);
+
+        // If it starts with 09 → convert to +639
+        if (preg_match('/^09\d{9}$/', $phone)) {
+            $phone = '+63' . substr($phone, 1);
+        }
+
+        // If it already starts with +639 → leave as is
+        if (preg_match('/^\+639\d{9}$/', $phone)) {
+            $this->attributes['phone'] = $phone;
+            return;
+        }
+
+        // Fallback: just save cleaned number
+        $this->attributes['phone'] = $phone;
+    }
+
+    // Accessor for displaying phone number
+    public function getPhoneAttribute($value)
+    {
+        if (!$value) return null;
+
+        // Convert +639XXXXXXXXX → 09XXXXXXXXX
+        if (str_starts_with($value, '+639')) {
+            return '0' . substr($value, 3);
+        }
+
+        return $value;
     }
 }

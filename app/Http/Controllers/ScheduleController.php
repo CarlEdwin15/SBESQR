@@ -159,9 +159,10 @@ class ScheduleController extends Controller
             ->firstOrFail();
 
         foreach ($request->days as $day) {
-            $conflict = Schedule::where('teacher_id', $request->teacher_id)
+            // 🔹 1. Teacher conflict check
+            $teacherConflict = Schedule::where('teacher_id', $request->teacher_id)
                 ->where('day', $day)
-                ->where('id', '!=', $originalSchedule->id)
+                ->where('id', '!=', $originalSchedule->id) // exclude the one being edited
                 ->where('school_year_id', $schoolYear->id)
                 ->where(function ($query) use ($request) {
                     $query->whereBetween('start_time', [$request->start_time, $request->end_time])
@@ -171,22 +172,45 @@ class ScheduleController extends Controller
                                 ->where('end_time', '>=', $request->end_time);
                         });
                 })
-                ->exists();
+                ->first();
 
-            if ($conflict) {
+            if ($teacherConflict) {
                 $formattedStart = \Carbon\Carbon::createFromFormat('H:i', $request->start_time)->format('g:i A');
                 $formattedEnd = \Carbon\Carbon::createFromFormat('H:i', $request->end_time)->format('g:i A');
                 return back()->withErrors([
                     'schedule_conflict' => "The selected teacher already has a schedule from {$formattedStart} - {$formattedEnd} on {$day}."
                 ])->withInput();
             }
+
+            // 🔹 2. Class conflict check (NEW)
+            $classConflict = Schedule::where('class_id', $class->id)
+                ->where('day', $day)
+                ->where('id', '!=', $originalSchedule->id) // exclude the one being edited
+                ->where('school_year_id', $schoolYear->id)
+                ->where(function ($query) use ($request) {
+                    $query->whereBetween('start_time', [$request->start_time, $request->end_time])
+                        ->orWhereBetween('end_time', [$request->start_time, $request->end_time])
+                        ->orWhere(function ($query) use ($request) {
+                            $query->where('start_time', '<=', $request->start_time)
+                                ->where('end_time', '>=', $request->end_time);
+                        });
+                })
+                ->first();
+
+            if ($classConflict) {
+                $formattedStart = \Carbon\Carbon::createFromFormat('H:i', $request->start_time)->format('g:i A');
+                $formattedEnd = \Carbon\Carbon::createFromFormat('H:i', $request->end_time)->format('g:i A');
+                return back()->withErrors([
+                    'schedule_conflict' => "This class already has a schedule from {$formattedStart} - {$formattedEnd} on {$day} for school year {$schoolYear->school_year}."
+                ])->withInput();
+            }
         }
 
-        // Update the existing schedule
+        // 🔹 Update the schedule
         $originalSchedule->update([
             'subject_name' => $request->subject_name,
             'teacher_id' => $request->teacher_id,
-            'day' => $request->days[0],
+            'day' => $request->days[0], // ⚠️ Currently only saving the first day
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
         ]);

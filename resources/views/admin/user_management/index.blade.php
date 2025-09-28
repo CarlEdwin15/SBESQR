@@ -1613,9 +1613,8 @@
     </script>
 
     <!-- SweetAlert for success and error messages -->
-    {{-- <script>
+    <script>
         // Success alert
-        // Success alert after payment creation
         @if (session('success'))
             Swal.fire({
                 toast: true,
@@ -1630,20 +1629,7 @@
                 }
             });
         @endif
-
-        // Registration error alert (email)
-        @if ($errors->has('email'))
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Error',
-                text: '{{ $errors->first('email') }}',
-                confirmButtonColor: '#dc3545',
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            });
-        @endif
-    </script> --}}
+    </script>
 
     <script>
         new TomSelect('#assigned_classes', {

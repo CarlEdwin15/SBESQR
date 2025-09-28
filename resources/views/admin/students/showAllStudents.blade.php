@@ -224,9 +224,9 @@
             <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold text-primary mb-0">{{ $grade }}</h5>
-                    <a href="" class="btn btn-success btn-sm">
+                    {{-- <a href="" class="btn btn-success btn-sm">
                         <i class="bx bx-printer"></i> Export
-                    </a>
+                    </a> --}}
                 </div>
 
                 <div class="table-responsive text-nowrap">
@@ -321,10 +321,10 @@
                                                     <i class="bx bxs-user-badge me-1"></i> View Profile
                                                 </a>
                                                 @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
-                                                    <a class="dropdown-item text-warning"
+                                                    {{-- <a class="dropdown-item text-warning"
                                                         href="{{ route('edit.student', ['id' => $student->id]) }}">
                                                         <i class="bx bx-edit-alt me-1"></i> Edit
-                                                    </a>
+                                                    </a> --}}
                                                     <button type="button" class="dropdown-item text-danger"
                                                         onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}')">
                                                         <i class="bx bx-user-x me-1"></i> Unenroll

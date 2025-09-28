@@ -237,7 +237,7 @@
     <!-- Font Awesome -->
     <script src="https://kit.fontawesome.com/ab677fe211.js" crossorigin="anonymous"></script>
 
-    <!-- Quill JS -->
+    <!-- Tom Select JS -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
     <script>
@@ -388,18 +388,6 @@
                     showConfirmButton: false,
                     timer: 3000,
                     timerProgressBar: true,
-                    customClass: {
-                        container: 'my-swal-container'
-                    }
-                });
-            @endif
-
-            @if ($errors->any())
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Registration Error',
-                    html: `{!! implode('<br>', $errors->all()) !!}`,
-                    confirmButtonColor: '#dc3545',
                     customClass: {
                         container: 'my-swal-container'
                     }

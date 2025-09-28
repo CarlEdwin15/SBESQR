@@ -161,15 +161,7 @@
             </span> Student Information
         </h4>
 
-        <h5 class="text-center text-success mt-2">
-            School Year: {{ $schoolYear->school_year ?? 'N/A' }}
-        </h5>
-        <h4 class="mt-2 text-primary text-center fw-semibold">
-            Student Profile:<br>
-            {{ $student->student_fName }} {{ $student->student_lName }}
-        </h4>
-
-        <div class="d-flex justify-content-between align-items-center mb-1">
+        {{-- <div class="d-flex justify-content-between align-items-center mb-1">
             <a href="{{ url()->previous() }}" style="margin: auto; margin-bottom: 10px; margin-left: 10px"
                 class="btn btn-danger mt-3">Back</a>
 
@@ -180,179 +172,386 @@
                 @csrf
                 <button type="submit" class="btn btn-success">Generate ID</button>
             </form>
-        </div>
+        </div> --}}
 
-        <ul class="nav nav-pills mb-3 nav-fill" role="tablist">
-            <li class="nav-item">
-                <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
-                    data-bs-target="#profile-tab" aria-controls="profile-tab" aria-selected="true">
-                    <i class="tf-icons bx bx-user"></i> Profile
-                </button>
-            </li>
-            <li class="nav-item">
-                <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                    data-bs-target="#parents-tab" aria-controls="parents-tab" aria-selected="false">
-                    <i class="tf-icons bx bx-group"></i> Parents
-                </button>
-            </li>
-            <li class="nav-item">
-                <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                    data-bs-target="#emergency-tab" aria-controls="emergency-tab" aria-selected="false">
-                    <i class="tf-icons bx bx-phone"></i> Emergency
-                </button>
-            </li>
-            <li class="nav-item">
-                <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#qr-tab"
-                    aria-controls="qr-tab" aria-selected="false">
-                    <i class="tf-icons bx bx-qr"></i> QR Code
-                </button>
-            </li>
-        </ul>
 
-        <!-- Student Details with Filled Pills -->
-        <div class="card shadow">
-            <div class="card-body">
-                <div class="row">
-                    <!-- Student Photo -->
-                    <div class="col-md-4 mt-3 mb-3 text-center d-flex flex-column align-items-center">
-                        @if ($student->student_photo)
-                            <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
-                                class="img-thumbnail mb-3" style="object-fit: cover; height: 450px; width: 450px;">
+        <div class="row">
+            <!-- Left Profile Card -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow p-3 align-items-center text-center">
+                    @if ($student->student_photo)
+                        <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
+                            class="mb-1 mt-2" style="object-fit: cover; height: 200px; width: 200px;">
+                    @else
+                        <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                            alt="Default Photo" class="mb-1 mt-2"
+                            style="object-fit: cover; height: 200px; width: 200px;">
+                    @endif
+
+                    <div class="d-flex justify-content-center align-items-center mt-3">
+                        <!-- Generate ID Form -->
+                        <form action="{{ route('students.generateID', $student->id) }}" method="GET">
+                            @csrf
+                            <button type="submit" class="btn btn-success mb-3 me-2 d-flex align-items-center">
+                                <i class='bx bxs-id-card me-1'></i>
+                                <span class="d-none d-sm-block">Generate ID</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <h5 class="fw-bold">{{ $student->student_fName }} {{ $student->student_lName }}</h5>
+
+                    <!-- Enrollment Status + Type -->
+                    <div class="mt-2 mb-3 text-center">
+                        <span class="fw-bold">
+                            Enrollment Status & Type for<br> Current School Year
+                            ({{ Carbon::now()->format('Y') }} - {{ Carbon::now()->addYear()->format('Y') }})
+                        </span><br>
+
+                        @if ($class && $class->pivot->enrollment_status)
+                            @php
+                                $status = $class->pivot->enrollment_status;
+                                $type = $class->pivot->enrollment_type ?? 'N/A';
+
+                                $badgeClass = match ($status) {
+                                    'enrolled' => 'bg-label-success fw-bold',
+                                    'archived' => 'bg-label-warning fw-bold',
+                                    default => 'bg-label-secondary fw-bold',
+                                };
+                            @endphp
+
+                            <span class="badge {{ $badgeClass }} px-3 py-2">
+                                {{ ucfirst($status) }}
+                            </span>
+                            <span class="badge bg-label-info fw-bold px-3 py-2">
+                                {{ ucfirst($type) }}
+                            </span>
                         @else
-                            <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                alt="Default Photo" class="img-thumbnail mb-3"
-                                style="object-fit: cover; height: 450px; width: 450px;">
+                            <span class="text-muted">N/A</span>
                         @endif
                     </div>
 
-                    <!-- Student Info Tabs -->
-                    <div class="col-md-8 mt-3 mb-3">
-                        <div class="nav-align-top mb-4">
+                    <div class="d-flex justify-content-center align-items-center mt-3">
+                        <!-- Back Button -->
+                        <a href="{{ session('back_url', url()->previous()) }}"
+                            class="btn btn-secondary me-2 d-flex align-items-center">
+                            <i class='bx bx-chevrons-left'></i>
+                            <span class="d-none d-sm-block">Back</span>
+                        </a>
+                        <!-- Edit Button -->
+                        <a href="" class="btn btn-warning me-2 d-flex align-items-center" data-bs-toggle="modal"
+                            data-bs-target="#editStudentModal">
+                            <i class='bx bx-edit me-1'></i>
+                            <span class="d-none d-sm-block">Edit</span>
+                        </a>
 
-                            <div class="tab-content">
-                                <!-- Profile Tab -->
-                                <div class="tab-pane fade show active" id="profile-tab" role="tabpanel">
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <h5 class="text-info fw-bold">Student Information</h5>
-                                            <tr>
-                                                <th class="text-primary">LRN</th>
-                                                <td>{{ $student->student_lrn }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Full Name</th>
-                                                <td>{{ $student->student_fName }}
-                                                    {{ $student->student_mName }}
-                                                    {{ $student->student_lName }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Grade Level</th>
-                                                <td>
-                                                    @if ($class)
-                                                        {{ $class->formatted_grade_level }} -
-                                                        {{ $class->section }}
-                                                    @else
-                                                        <span class="text-danger">Not enrolled in selected
-                                                            school year</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">School Year</th>
-                                                <td>{{ $schoolYear->school_year ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Date of Birth</th>
-                                                <td>{{ Carbon::parse($student->student_dob)->format('F j, Y') }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Sex</th>
-                                                <td>{{ ucfirst($student->student_sex) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Age</th>
-                                                <td>{{ Carbon::parse($student->student_dob)->age }} years old
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Place of Birth</th>
-                                                <td>{{ $student->address->pob }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Complete Address</th>
-                                                <td>
-                                                    {{ $student->address->house_no ?? 'N/A' }},
-                                                    {{ $student->address->street_name ?? 'N/A' }},
-                                                    {{ $student->address->barangay ?? 'N/A' }},
-                                                    {{ $student->address->municipality_city ?? 'N/A' }},
-                                                    {{ $student->address->province ?? 'N/A' }},
-                                                    {{ $student->address->zip_code ?? 'N/A' }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <!-- Parents Tab -->
-                                <div class="tab-pane fade" id="parents-tab" role="tabpanel">
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <th class="text-primary">Father's Name</th>
-                                                <td>{{ $student->parents->father_fName ?? 'N/A' }}
-                                                    {{ $student->parents->father_mName ?? 'N/A' }}
-                                                    {{ $student->parents->father_lName ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Father's Contact No.</th>
-                                                <td>{{ $student->parents->father_phone ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Mother's Name</th>
-                                                <td>{{ $student->parents->mother_fName ?? 'N/A' }}
-                                                    {{ $student->parents->mother_mName ?? 'N/A' }}
-                                                    {{ $student->parents->mother_lName ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Mother's Contact No.</th>
-                                                <td>{{ $student->parents->mother_phone ?? 'N/A' }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <!-- Emergency Tab -->
-                                <div class="tab-pane fade" id="emergency-tab" role="tabpanel">
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <th class="text-primary">Emergency Contact</th>
-                                                <td>{{ $student->parents->emergcont_fName ?? 'N/A' }}
-                                                    {{ $student->parents->emergcont_mName ?? 'N/A' }}
-                                                    {{ $student->parents->emergcont_lName ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-primary">Emergency Contact No.</th>
-                                                <td>{{ $student->parents->emergcont_phone ?? 'N/A' }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <!-- QR Code Tab -->
-                                <div class="tab-pane fade" id="qr-tab" role="tabpanel">
-                                    {!! QrCode::size(200)->generate(json_encode(['student_id' => $student->id])) !!}
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Edit Button -->
+                        <a href="" class="btn btn-danger me-2 d-flex align-items-center">
+                            <i class='bx bx-trash me-1'></i>
+                            <span class="d-none d-sm-block">Delete</span>
+                        </a>
                     </div>
-                    <!-- / Student Info Tabs -->
                 </div>
+            </div>
+
+            <!-- Right Tabs + Info -->
+            <div class="col-md-8">
+                @include('partials.student_tabs')
             </div>
         </div>
 
-        <hr class="my-5" />
+        <!-- Edit Student Modal -->
+        <div class="modal fade" id="editStudentModal" data-bs-backdrop="static" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <form class="modal-content" action="{{ route('update.student', ['id' => $student->id]) }}"
+                    id="editStudentForm" method="POST" enctype="multipart/form-data">
+                    @csrf
+
+                    <div class="modal-header">
+                        <h4 class="modal-title fw-bold text-primary">
+                            Edit {{ $student->student_fName }} {{ $student->student_lName }}'s Details
+                        </h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="row">
+                            <!-- Profile Photo Upload with Preview and Default -->
+                            <div class="row">
+                                <div class="col mt-4 mb-3 d-flex align-items-start align-items-sm-center gap-4">
+                                    <div class="mb-3">
+                                        @if ($student->student_photo)
+                                            <img id="photo-preview"
+                                                src="{{ asset('storage/' . $student->student_photo) }}"
+                                                alt="Profile Preview" width="100" height="100"
+                                                class="profile-preview" style="object-fit: cover; border-radius: 5%">
+                                        @else
+                                            <img id="photo-preview"
+                                                src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                alt="Profile Preview" width="100" height="100"
+                                                class="profile-preview" style="object-fit: cover; border-radius: 5%">
+                                        @endif
+                                    </div>
+
+                                    <div class="button-wrapper">
+                                        <label for="upload" class="btn btn-warning me-2 mb-2" tabindex="0">
+                                            <span class="d-none d-sm-block">Upload new photo</span>
+                                            <i class="bx bx-upload d-block d-sm-none"></i>
+
+                                            <input type="file" id="upload" name="student_profile_photo"
+                                                class="account-file-input" hidden accept="image/png, image/jpeg" />
+                                        </label>
+
+                                        <button type="button" class="btn btn-outline-secondary account-image-reset mb-2">
+                                            <i class="bx bx-reset d-block d-sm-none"></i>
+                                            <span class="d-none d-sm-block">Reset</span>
+                                        </button>
+
+                                        <p class="text-muted mb-0" style="font-size: 15px">Allowed JPG or PNG. Max
+                                            size of 2MB</p>
+                                    </div>
+                                </div>
+
+                                <!-- Enrollment Type Field -->
+                                <div class="col mb-2 mt-2">
+                                    @php
+                                        $currentClass = $student->class->first();
+                                        $enrollmentType = $currentClass ? $currentClass->pivot->enrollment_type : null;
+                                    @endphp
+
+                                    <label for="enrollment_type" class="form-label fw-bold">Enrollment Type</label>
+                                    <select name="enrollment_type" id="enrollment_type" class="form-select" required>
+                                        <option value="regular"
+                                            {{ old('enrollment_type', $enrollmentType) == 'regular' ? 'selected' : '' }}>
+                                            Regular</option>
+                                        <option value="transferee"
+                                            {{ old('enrollment_type', $enrollmentType) == 'transferee' ? 'selected' : '' }}>
+                                            Transferee</option>
+                                        <option value="returnee"
+                                            {{ old('enrollment_type', $enrollmentType) == 'returnee' ? 'selected' : '' }}>
+                                            Returnee</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr class="my-0" />
+
+                            <!-- LRN Field -->
+                            <div class="col mb-2 mt-3">
+                                <label for="student_lrn" class="form-label fw-bold">LRN (Learner's Refference
+                                    No.)</label>
+                                <input type="text" name="student_lrn" id="student_lrn" class="form-control"
+                                    list="datalistOptions" value="{{ $student->student_lrn }}" required />
+
+                                <datalist id="datalistOptions">
+                                    <option value="112828"></option>
+                                </datalist>
+                            </div>
+
+                            <!-- Grade Level Field -->
+                            <div class="col mb-2 mt-3">
+                                <label for="student_grade_level" class="form-label fw-bold">Grade
+                                    Level</label>
+                                @php
+                                    $studentClass = $student
+                                        ->class()
+                                        ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
+                                        ->first();
+                                @endphp
+
+                                <select name="student_grade_level" id="student_grade_level" class="form-select" required>
+                                    <option value="kindergarten"
+                                        {{ $studentClass && $studentClass->grade_level == 'kindergarten' ? 'selected' : '' }}>
+                                        Kindergarten</option>
+                                    <option value="grade1"
+                                        {{ $studentClass && $studentClass->grade_level == 'grade1' ? 'selected' : '' }}>
+                                        Grade 1</option>
+                                    <option value="grade2"
+                                        {{ $studentClass && $studentClass->grade_level == 'grade2' ? 'selected' : '' }}>
+                                        Grade 2</option>
+                                    <option value="grade3"
+                                        {{ $studentClass && $studentClass->grade_level == 'grade3' ? 'selected' : '' }}>
+                                        Grade 3</option>
+                                    <option value="grade4"
+                                        {{ $studentClass && $studentClass->grade_level == 'grade4' ? 'selected' : '' }}>
+                                        Grade 4</option>
+                                    <option value="grade5"
+                                        {{ $studentClass && $studentClass->grade_level == 'grade5' ? 'selected' : '' }}>
+                                        Grade 5</option>
+                                    <option value="grade6"
+                                        {{ $studentClass && $studentClass->grade_level == 'grade6' ? 'selected' : '' }}>
+                                        Grade 6</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Section Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_section" class="form-label fw-bold">Section</label>
+                                <select name="student_section" id="student_section" class="form-select" required>
+                                    @php
+                                        $studentSection = $student
+                                            ->class()
+                                            ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
+                                            ->first();
+                                    @endphp
+                                    <option
+                                        value="A"{{ $studentSection && $studentSection->section == 'A' ? 'selected' : '' }}>
+                                        Section A</option>
+                                    <option
+                                        value="B"{{ $studentSection && $studentSection->section == 'B' ? 'selected' : '' }}>
+                                        Section B</option>
+                                    <option
+                                        value="C"{{ $studentSection && $studentSection->section == 'C' ? 'selected' : '' }}>
+                                        Section C</option>
+                                    <option
+                                        value="D"{{ $studentSection && $studentSection->section == 'D' ? 'selected' : '' }}>
+                                        Section D</option>
+                                    <option
+                                        value="E"{{ $studentSection && $studentSection->section == 'E' ? 'selected' : '' }}>
+                                        Section E</option>
+                                    <option
+                                        value="F"{{ $studentSection && $studentSection->section == 'F' ? 'selected' : '' }}>
+                                        Section F</option>
+                                </select>
+                            </div>
+
+                            <!-- Gender Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_sex" class="form-label fw-bold">Gender</label>
+                                <select name="student_sex" id="student_sex" class="form-select" required>
+                                    <option value="male"{{ $student->student_sex == 'male' ? 'selected' : '' }}>
+                                        Male</option>
+                                    <option value="female"{{ $student->student_sex == 'female' ? 'selected' : '' }}>
+                                        Female</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+
+                            <!-- First Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_fName" class="form-label fw-bold">First
+                                    Name</label>
+                                <input type="text" name="student_fName" id="student_fName" class="form-control"
+                                    value="{{ $student->student_fName }}" required />
+                            </div>
+
+                            <!-- Middle Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_mName" class="form-label fw-bold">Middle
+                                    Name</label>
+                                <input type="text" name="student_mName" id="student_mName" class="form-control"
+                                    value="{{ $student->student_mName }}" />
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <!-- Last Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_lName" class="form-label fw-bold">Last Name</label>
+                                <input type="text" name="student_lName" id="student_lName" class="form-control"
+                                    value="{{ $student->student_lName }}" required />
+                            </div>
+
+                            <!-- Extension Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_extName" class="form-label fw-bold">Extension
+                                    Name</label>
+                                <input type="text" name="student_extName" id="student_extName" class="form-control"
+                                    value="{{ $student->student_extName }}" />
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <!-- Place of Birth Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_pob" class="form-label fw-bold">Place of Birth</label>
+                                <input type="text" name="student_pob" id="student_pob" class="form-control"
+                                    value="{{ $student->address->pob }}" />
+                            </div>
+
+                            <!-- Date of Birth Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="student_dob" class="form-label fw-bold">Date of Birth</label>
+                                <input class="form-control" name="student_dob" type="date"
+                                    value="{{ $student->student_dob }}" id="student_dob" />
+                            </div>
+                        </div>
+
+                        <hr class="my-0 mb-4 mt-4" />
+
+                        <!-- Student Addresses -->
+                        <h5 class="fw-bold mb-3 mt-3 text-primary">Student Address</h5>
+
+                        <div class="row">
+                            <!-- House No. Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="house_no" class="form-label fw-bold">House No.</label>
+                                <input type="text" name="house_no" id="house_no" class="form-control"
+                                    value="{{ $student->address->house_no }}" />
+                            </div>
+
+                            <!-- Street Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="street_name" class="form-label fw-bold">Street Name</label>
+                                <input type="text" name="street_name" id="street_name" class="form-control"
+                                    value="{{ $student->address->street_name }}" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Barangay Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="barangay" class="form-label fw-bold">Barangay</label>
+                                <input type="text" name="barangay" id="barangay" class="form-control"
+                                    value="{{ $student->address->barangay }}" />
+                            </div>
+
+                            <!-- Municipality Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="municipality_city" class="form-label fw-bold">Municipality/City</label>
+                                <input type="text" name="municipality_city" id="municipality_city"
+                                    class="form-control" value="{{ $student->address->municipality_city }}" />
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+                            <!-- Barangay Name Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="province" class="form-label fw-bold">Province</label>
+                                <input type="text" name="province" id="province" class="form-control"
+                                    value="{{ $student->address->province }}" />
+                            </div>
+
+                            <!-- Zip Code Field -->
+                            <div class="col mb-2 mt-2">
+                                <label for="zip_code" class="form-label fw-bold">Zip Code</label>
+                                <input type="text" name="zip_code" id="zip_code" class="form-control"
+                                    value="{{ $student->address->zip_code }}" />
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            onclick="handleCancel()">Cancel</button>
+                        <button type="submit" id="saveChangesBtn" class="btn btn-success">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- /Edit Student Modal -->
+
     </div>
     <!-- / Content wrapper -->
 
@@ -460,6 +659,22 @@
                     imagePreview.src = originalImageSrc;
                 });
             }
+
+            // Show success toast if session has success message
+            @if (session('success'))
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: "{{ session('success') }}",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                });
+            @endif
         });
     </script>
 

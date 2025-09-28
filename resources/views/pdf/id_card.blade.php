@@ -62,8 +62,8 @@
             position: relative;
             display: inline-block;
             /* flex-direction: column; */
-            align-items: center;
-            text-align: center;
+            /* align-items: center;
+            text-align: center; */
             margin: auto;
             margin-bottom: 10px;
             border: 1px solid #abd8fe;
@@ -118,6 +118,10 @@
         }
 
         .lrg-text {
+            font-size: 9px;
+        }
+
+        .xl-text {
             font-size: 10px;
         }
 
@@ -157,6 +161,10 @@
         .mt-1 {
             margin-top: 0.5rem;
         }
+
+        .text-muted {
+            color: #6c757d;
+        }
     </style>
 
 </head>
@@ -165,7 +173,7 @@
     <div class="a4-page">
         <div class="id-row">
             {{-- FRONT SIDE --}}
-            <div class="card"
+            <div class="card text-center"
                 style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/front_bg_id.png') }}');">
 
                 <img src="{{ public_path('assets/img/logo.png') }}" alt="Logo" class="school-logo">
@@ -181,14 +189,22 @@
                 @endphp
                 <img src="{{ $photoPath }}" alt="Student Photo" class="id-img">
 
-                <div class="fw-bold uppercase med-text">
+                <div class="fw-bold uppercase" style="font-size: 10px; margin-top: 4px;">
                     {{ $student->student_fName }} {{ $student->student_mName }} {{ $student->student_lName }}
                 </div>
 
-                <div class="small-text">
+                <div class="small-text" style="font-size: 7px;">
                     <p><strong>Date of Birth:</strong>
                         {{ \Carbon\Carbon::parse($student->student_dob)->format('F j, Y') }}</p>
-                    <p><strong>Address:</strong> {{ $student->address->barangay }}</p>
+                    <p>
+                        <strong>Address:</strong>
+                        {{ $student->address->house_no ?? 'N/A' }},
+                        {{ $student->address->street_name ?? 'N/A' }},
+                        {{ $student->address->barangay ?? 'N/A' }},
+                        {{ $student->address->municipality_city ?? 'N/A' }},
+                        {{ $student->address->province ?? 'N/A' }},
+                        {{ $student->address->zip_code ?? 'N/A' }}
+                    </p>
                 </div>
             </div>
 
@@ -196,18 +212,31 @@
             <div class="card"
                 style="background-image: url('{{ public_path('assetsDashboard/img/id_layout/back_bg_id.png') }}');">
 
-                <div class="fw-bold" style="font-size: 9px">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
+                <div class="fw-bold text-center lrg-text">IN CASE OF EMERGENCY PLEASE NOTIFY</div>
 
-                <div class="card-name med-text text-start">
-                    <p>Name: <strong>{{ $student->parents->emergcont_fName ?? 'N/A' }}
-                            {{ $student->parents->emergcont_lName ?? '' }}</strong></p>
-                    <p>Address: <strong>{{ $student->parents->barangay ?? 'N/A' }},
-                            {{ $student->parents->municipality_city ?? 'N/A' }},
-                            {{ $student->parents->province ?? 'N/A' }}</strong></p>
-                    <p>Contact No.: <strong>{{ $student->parents->emergcontPhone ?? 'N/A' }}</strong></p>
+                @php
+                    $parent = $student->parents->first();
+                @endphp
+
+                <div class="text-start" style="font-size: 7px;">
+                    <p>Name:
+                        <span class="lrg-text fw-bold">
+                            {{ $parent ? $parent->firstName . ' ' . $parent->middleName . ' ' . $parent->lastName : 'N/A' }}
+                        </span>
+                    </p>
+                    <p>Address:
+                        <span class="lrg-text fw-bold">
+                            {{ $parent && $parent->barangay ? $parent->barangay . ', ' . $parent->municipality_city . ', ' . $parent->province : 'N/A' }}
+                        </span>
+                    </p>
+                    <p>Contact No.:
+                        <span class="lrg-text fw-bold">
+                            {{ $parent->phone ?? 'N/A' }}
+                        </span>
+                    </p>
                 </div>
 
-                <table class="table">
+                <table class="table text-center">
                     <thead>
                         <tr>
                             <th>School Year</th>
@@ -224,12 +253,13 @@
                     </tbody>
                 </table>
 
-                <div class="qr mt-1 mb-3">
-                    <img src="data:image/svg+xml;base64,{{ $qrCode }}" style="width: 100%; height: auto; border: 1px solid #000; padding: 5px"
-                        alt="QR Code">
+                <div class="qr mt-1 mb-3 text-center">
+                    <img src="data:image/svg+xml;base64,{{ $qrCode }}"
+                        style="width: 100%; height: auto; border: 1px solid #000; padding: 5px" alt="QR Code">
                 </div>
 
-                <p class="text-center med-text mt-1">LRN:<strong> {{ $student->student_lrn }}</strong></p>
+                <p class="text-center mt-1 lrg-text">LRN:<strong> {{ $student->student_lrn }}</strong>
+                </p>
             </div>
         </div>
     </div>

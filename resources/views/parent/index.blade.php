@@ -140,8 +140,6 @@
         </tbody>
     </table> --}}
 
-@endsection
-
 <!-- / Content wrapper -->
 @endsection
 

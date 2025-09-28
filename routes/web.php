@@ -61,7 +61,7 @@ Route::delete('/userManagement/{id}/delete', [AdminController::class, 'deleteUse
     ->name('admin.user.delete')
     ->middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class]);
 
-// User Management - search students (AJAX)
+// For searching students thru tom selection - search students (AJAX)
 Route::get('/students/search', [StudentController::class, 'search'])->name('students.search');
 
 // View user info
@@ -296,6 +296,23 @@ Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name
 Route::get('/editStudentInfo/{id}', [TeacherController::class, 'editStudentInfo'])->name('teacher.edit.student');
 Route::post('/updateStudentInfo/{id}', [TeacherController::class, 'updateStudentInfo'])->name('teacher.update.student');
 
+// Payment Management (on Admin Dashboard)
+Route::get('payments/', [PaymentController::class, 'indexAdmin'])
+    ->name('admin.payments.index');
+
+Route::post('payments/create', [PaymentController::class, 'createAdmin'])
+    ->name('admin.payments.create');
+
+Route::get('payments/show/{paymentName}', [PaymentController::class, 'showAdmin'])
+    ->name('admin.payments.show');
+
+Route::put('payments/{id}/update', [PaymentController::class, 'update'])
+    ->name('teacher.payments.update');
+
+Route::get('/class-students/search', [StudentController::class, 'classStudentSearch'])
+    ->name('class-students.search');
+
+
 
 // Payment Management (on Teacher's Dashboard and Parent's Dashboard)
 
@@ -309,9 +326,6 @@ Route::prefix('teacher')->middleware(['auth'])->group(function () {
 
     Route::post('classes/{grade_level}/{section}/payments', [PaymentController::class, 'create'])
         ->name('teacher.payments.create');
-
-    Route::put('/teacher/payments/{id}/update', [PaymentController::class, 'update'])
-        ->name('teacher.payments.update');
 });
 
 // Parent routes
