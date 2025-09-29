@@ -220,56 +220,101 @@
         <!-- Payments Card -->
         <div class="card p-4 shadow-sm">
             @if ($first)
+                @php
+                    $totalExpected = $first->amount_due * count($payments);
+                    $totalCollected = $payments->sum('amount_paid');
+                @endphp
+
                 <div class="mb-4">
                     <h4 class="mb-2">Payment: {{ $paymentName }}</h4>
                     <div class="d-flex flex-wrap align-items-center text-muted small">
                         <strong>Amount Due:</strong> ₱{{ number_format($first->amount_due, 2) }}
                         <span class="mx-2">|</span>
                         <strong>Due Date:</strong> {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}
-                        @if (!empty($first->remarks))
-                            <span class="mx-2">|</span>
-                            <strong>Remarks:</strong> {{ $first->remarks }}
-                        @endif
+                        <span class="mx-2">|</span>
+                        <strong>Collected:</strong>
+                        ₱{{ number_format($totalCollected, 2) }}/₱{{ number_format($totalExpected, 2) }}
                     </div>
                 </div>
             @endif
 
             <!-- Filters -->
-            <div class="row g-2 mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <!-- Table Length Selector -->
-                    <div>
-                        <select id="tableLength" class="form-select">
-                            <option value="10" selected>10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
+            <div class="row g-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <!-- Left side: Table Length + Search -->
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Table Length Selector -->
+                        <div class="col-md-3">
+                            <select id="tableLength" class="form-select">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+
+                        <!-- Search Input -->
+                        <div class="col-md-12">
+                            <input type="text" name="search" class="form-control"
+                                placeholder="Search student or class...">
+                        </div>
+
+                        <form id="bulkPaymentForm" action="{{ route('admin.payments.bulkUpdate') }}" method="POST"
+                            class="d-flex gap-2 d-none">
+                            @csrf
+                            <div id="bulkPaymentIds"></div> <!-- Hidden inputs for selected payments -->
+
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary dropdown-toggle" type="button"
+                                    id="bulkPaymentDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Set Status
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="bulkPaymentDropdown">
+                                    <li>
+                                        <button type="submit" class="dropdown-item text-success"
+                                            onclick="setBulkPaymentStatus('paid', event)">Paid</button>
+                                    </li>
+                                    <li>
+                                        <button type="submit" class="dropdown-item text-warning"
+                                            onclick="setBulkPaymentStatus('partial', event)">Partial</button>
+                                    </li>
+                                    <li>
+                                        <button type="submit" class="dropdown-item text-danger"
+                                            onclick="setBulkPaymentStatus('unpaid', event)">Unpaid</button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </form>
                     </div>
 
-                    <div class="col-md-3">
-                        <input type="text" name="search" class="form-control" placeholder="Search student...">
-                    </div>
-                    <div class="col-md-3">
-                        <select name="status" class="form-select">
-                            <option value="">All Status</option>
-                            <option value="paid">Paid</option>
-                            <option value="partial">Partial</option>
-                            <option value="unpaid">Unpaid</option>
-                        </select>
+                    <div class="d-flex align-items-end gap-2">
+                        <!-- Right side: Status Filter -->
+                        <div class="col-md-12">
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="paid">Paid</option>
+                                <option value="partial">Partial</option>
+                                <option value="unpaid">Unpaid</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
             <!-- /Filters -->
+
+            <hr class="my-3" />
 
             <!-- Payments Table -->
             <div class="table-responsive">
                 <table id="paymentTable" class="table table-hover align-middle">
                     <thead class="table-primary text-center">
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAllPayments">
+                            </th>
                             <th style="width: 40px;">No.</th>
                             <th>Student</th>
-                            <th>Gender</th>
+                            <th>Class</th>
                             <th>Status</th>
                             <th>Amount Paid</th>
                             <th>Amount Due</th>
@@ -278,10 +323,18 @@
                     </thead>
                     <tbody>
                         @foreach ($payments as $p)
-                            <tr class="payment-row" data-name="{{ strtolower(optional($p->student)->full_name) }}"
+                            <tr class="payment-row
+                                @if ($p->status === 'paid') table-success
+                                @elseif($p->status === 'partial') table-warning @endif"
+                                data-name="{{ strtolower(optional($p->student)->full_name) }}"
                                 data-status="{{ $p->status }}" data-class="{{ $p->classStudent->class->id ?? '' }}"
+                                data-class-name="{{ strtolower(optional($p->classStudent->class)->formatted_grade_level . ' - ' . optional($p->classStudent->class)->section) }}"
+                                data-gender="{{ strtolower(optional($p->student)->student_sex) }}"
                                 data-year="{{ $p->schoolYear->school_year ?? '' }}">
 
+                                <td class="text-center">
+                                    <input type="checkbox" class="payment-checkbox" value="{{ $p->id }}">
+                                </td>
                                 <td class="text-center"></td> {{-- JS will number this --}}
                                 <td>
                                     <a href="#" data-bs-toggle="modal"
@@ -292,11 +345,30 @@
                                                 : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                 class="rounded-circle me-2"
                                                 style="width: 40px; height: 40px; object-fit: cover;">
-                                            <div>{{ $p->student->full_name ?? 'Unknown' }}</div>
+
+
+                                            <span>{{ $p->student->full_name ?? 'Unknown' }}</span>
+                                            @if ($p->student && $p->student->student_sex)
+                                                @if (strtolower($p->student->student_sex) === 'male')
+                                                    <i class="bx bx-male me-1 text-primary"></i>
+                                                @elseif (strtolower($p->student->student_sex) === 'female')
+                                                    <i class="bx bx-female me-1 text-danger"></i>
+                                                @else
+                                                    <span class="badge bg-secondary mt-1">—</span>
+                                                @endif
+                                            @endif
+
                                         </div>
                                     </a>
                                 </td>
-                                <td class="text-center">{{ ucfirst($p->student->student_sex) ?? '—' }}</td>
+                                <td class="text-center">
+                                    @if ($p->classStudent && $p->classStudent->class)
+                                        {{ ucfirst($p->classStudent->class->formatted_grade_level) }} -
+                                        {{ $p->classStudent->class->section }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td class="text-center">
                                     @if ($p->status === 'paid')
                                         <span class="badge bg-success">Paid</span>
@@ -326,7 +398,7 @@
                                                 data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
 
-                                        <form action="{{ route('teacher.payments.update', $p->id) }}" method="POST">
+                                        <form action="{{ route('admin.payments.update', $p->id) }}" method="POST">
                                             @csrf
                                             @method('PUT')
 
@@ -402,6 +474,7 @@
 @endsection
 
 @push('scripts')
+    <!-- Logout -->
     <script>
         // alert for logout
         function confirmLogout() {
@@ -437,6 +510,7 @@
         }
     </script>
 
+    <!-- Error Alert Message -->
     <script>
         @if ($errors->any())
             Swal.fire({
@@ -452,18 +526,21 @@
     </script>
 
     <!-- Pagination, Search, Filter Logic -->
+    <!-- Pagination, Search, Filter & Bulk Actions -->
     <script>
         let allPaymentRows = [];
         let currentPage = 1;
-        let rowsPerPage = 10; // default = 10
+        let rowsPerPage = 10;
         const visiblePayments = {};
+        const selectedPayments = new Set(); // track selected rows across pages
 
-        function paginatePayments(tableId, paginationId, maxVisiblePages = 10) {
+        // PAGINATION LOGIC
+        function paginatePayments(tableId, paginationId, maxVisiblePages = 5) {
             const pagination = document.getElementById(paginationId);
             const rows = visiblePayments[tableId] || [];
             const tbody = document.querySelector(`#${tableId} tbody`);
 
-            // remove any old "no results" row
+            // remove old "no results"
             const oldNoResults = document.querySelector("#noResultsRow");
             if (oldNoResults) oldNoResults.remove();
 
@@ -478,26 +555,27 @@
                 allPaymentRows.forEach(r => r.style.display = "none");
 
                 if (totalEntries > 0) {
-                    // show slice + add numbering
                     rows.slice(start, end).forEach((r, i) => {
                         r.style.display = "table-row";
-                        r.querySelector("td:first-child").textContent = start + i + 1;
+                        r.querySelector("td:nth-child(2)").textContent = start + i + 1;
+
+                        // restore checkbox selection
+                        const cb = r.querySelector(".payment-checkbox");
+                        cb.checked = selectedPayments.has(cb.value);
+                        r.classList.toggle("row-highlight", cb.checked);
                     });
                 } else {
-                    // insert "No results found"
                     const tr = document.createElement("tr");
                     tr.id = "noResultsRow";
-                    tr.innerHTML = `<td colspan="7" class="text-center text-muted">No results found</td>`;
+                    tr.innerHTML = `<td colspan="8" class="text-center text-muted">No results found</td>`;
                     tbody.appendChild(tr);
                 }
 
                 // update info
                 const tableInfo = document.getElementById("tableInfo");
-                if (totalEntries > 0) {
-                    tableInfo.textContent = `Showing ${start + 1} to ${end} of ${totalEntries} payments`;
-                } else {
-                    tableInfo.textContent = "Showing 0 to 0 of 0 payments";
-                }
+                tableInfo.textContent = totalEntries > 0 ?
+                    `Showing ${start + 1} to ${end} of ${totalEntries} payments` :
+                    "Showing 0 to 0 of 0 payments";
 
                 // build pagination
                 pagination.innerHTML = "";
@@ -523,78 +601,295 @@
                 next.innerHTML = `<a class="page-link text-primary" href="javascript:void(0);">&raquo;</a>`;
                 next.onclick = () => currentPage < totalPages && showPage(currentPage + 1);
                 pagination.appendChild(next);
+
+                // rebind checkbox events for current page
+                bindCheckboxEvents();
             }
 
             showPage(currentPage);
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
+        // FILTER LOGIC
+        function filterPayments() {
             const tableId = "paymentTable";
-            const paginationId = "paymentPagination";
-            allPaymentRows = Array.from(document.querySelectorAll("#paymentTable tbody tr.payment-row"));
-
-            visiblePayments[tableId] = allPaymentRows;
-            paginatePayments(tableId, paginationId);
-
-            // rows per page selector
-            document.getElementById("tableLength").addEventListener("change", function() {
-                rowsPerPage = parseInt(this.value);
-                currentPage = 1;
-                paginatePayments(tableId, paginationId);
-            });
-
-            // search + filters
             const searchInput = document.querySelector("input[name='search']");
             const statusSelect = document.querySelector("select[name='status']");
             const classSelect = document.querySelector("select[name='class_id']");
             const yearSelect = document.querySelector("select[name='school_year']");
 
-            function filterPayments() {
-                const query = searchInput.value.trim().toLowerCase();
-                const status = statusSelect.value;
-                const classId = classSelect ? classSelect.value : "";
-                const year = yearSelect ? yearSelect.value : "";
+            const query = searchInput.value.trim().toLowerCase();
+            const status = statusSelect.value;
+            const classId = classSelect ? classSelect.value : "";
+            const year = yearSelect ? yearSelect.value : "";
 
-                // 🔹 Save filter state
-                localStorage.setItem("paymentFilters", JSON.stringify({
-                    query,
-                    status,
-                    classId,
-                    year
-                }));
+            localStorage.setItem("paymentFilters", JSON.stringify({
+                query,
+                status,
+                classId,
+                year
+            }));
 
-                const filtered = allPaymentRows.filter(row => {
-                    const matchesSearch = query === "" || row.dataset.name.includes(query);
-                    const matchesStatus = status === "" || row.dataset.status === status;
-                    const matchesClass = classId === "" || row.dataset.class === classId;
-                    const matchesYear = year === "" || row.dataset.year === year;
-                    return matchesSearch && matchesStatus && matchesClass && matchesYear;
-                });
+            const filtered = allPaymentRows.filter(row => {
+                const name = row.dataset.name || "";
+                const className = row.dataset.className || "";
+                const gender = row.dataset.gender || "";
 
-                visiblePayments[tableId] = filtered;
-                currentPage = 1;
-                paginatePayments(tableId, paginationId);
-            }
+                const matchesSearch =
+                    query === "" ||
+                    name.includes(query) ||
+                    className.includes(query) ||
+                    gender.includes(query);
 
-            let searchTimeout;
-            searchInput.addEventListener("input", function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(filterPayments, 300);
+                const matchesStatus = status === "" || row.dataset.status === status;
+                const matchesClass = classId === "" || row.dataset.class === classId;
+                const matchesYear = year === "" || row.dataset.year === year;
+
+                return matchesSearch && matchesStatus && matchesClass && matchesYear;
             });
 
-            statusSelect.addEventListener("change", filterPayments);
-            if (classSelect) classSelect.addEventListener("change", filterPayments);
-            if (yearSelect) yearSelect.addEventListener("change", filterPayments);
+            visiblePayments[tableId] = filtered;
+            currentPage = 1;
+            paginatePayments(tableId, "paymentPagination");
+        }
 
-            // 🔹 Restore saved filters
+        // CHECKBOX & BULK ACTIONS
+        function bindCheckboxEvents() {
+            const selectAll = document.getElementById("selectAllPayments");
+            const bulkForm = document.getElementById("bulkPaymentForm");
+
+            function toggleBulkForm() {
+                const anyChecked = Array.from(document.querySelectorAll(".payment-checkbox"))
+                    .filter(cb => cb.closest("tr").style.display !== "none")
+                    .some(cb => cb.checked);
+
+                bulkForm.classList.toggle("d-none", !anyChecked);
+            }
+
+            function toggleRowHighlight(cb) {
+                const row = cb.closest("tr");
+                row.classList.toggle("row-highlight", cb.checked);
+            }
+
+            document.querySelectorAll(".payment-checkbox").forEach(cb => {
+                cb.onchange = () => {
+                    const val = cb.value;
+                    if (cb.checked) selectedPayments.add(val);
+                    else selectedPayments.delete(val);
+
+                    cb.closest("tr").classList.toggle("row-highlight", cb.checked && cb.closest("tr").style
+                        .display !== "none");
+
+                    // Update Select All checkbox
+                    const allCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"));
+                    selectAll.checked = allCheckboxes.length > 0 && allCheckboxes.every(cb => selectedPayments
+                        .has(cb.value));
+
+                    // Toggle bulk form
+                    const bulkForm = document.getElementById("bulkPaymentForm");
+                    bulkForm.classList.toggle("d-none", selectedPayments.size === 0);
+                };
+            });
+
+            // Select-All checkbox
+            selectAll.onchange = () => {
+                const allCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"));
+
+                allCheckboxes.forEach(cb => {
+                    cb.checked = selectAll.checked;
+                    const val = cb.value;
+                    if (cb.checked) selectedPayments.add(val);
+                    else selectedPayments.delete(val);
+
+                    // Highlight only if row is visible
+                    cb.closest("tr").classList.toggle("row-highlight", cb.checked && cb.closest("tr").style
+                        .display !== "none");
+                });
+
+                // Bulk form toggle based on whether at least one is selected
+                const bulkForm = document.getElementById("bulkPaymentForm");
+                bulkForm.classList.toggle("d-none", selectedPayments.size === 0);
+            };
+        }
+
+        // BULK STATUS
+        function setBulkPaymentStatus(status, event) {
+            event.preventDefault();
+            const bulkForm = document.getElementById("bulkPaymentForm");
+            const bulkIdsContainer = document.getElementById("bulkPaymentIds");
+
+            if (selectedPayments.size === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "No payments selected",
+                    text: "Please select at least one payment.",
+                    confirmButtonColor: "#3085d6"
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: `You are about to set ${selectedPayments.size} payment(s) to "${status.toUpperCase()}".`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: `Yes, set to ${status.toUpperCase()}`,
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    bulkIdsContainer.innerHTML = "";
+                    selectedPayments.forEach(val => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "payment_ids[]";
+                        input.value = val;
+                        bulkIdsContainer.appendChild(input);
+                    });
+
+                    const statusInput = document.createElement("input");
+                    statusInput.type = "hidden";
+                    statusInput.name = "status";
+                    statusInput.value = status;
+                    bulkIdsContainer.appendChild(statusInput);
+
+                    bulkForm.submit();
+                }
+            });
+        }
+
+        // DOM CONTENT LOADED
+        document.addEventListener("DOMContentLoaded", () => {
+            const tableId = "paymentTable";
+            allPaymentRows = Array.from(document.querySelectorAll("#paymentTable tbody tr.payment-row"));
+            visiblePayments[tableId] = allPaymentRows;
+
+            // restore filters
             const savedFilters = JSON.parse(localStorage.getItem("paymentFilters") || "{}");
+            const searchInput = document.querySelector("input[name='search']");
+            const statusSelect = document.querySelector("select[name='status']");
+            const classSelect = document.querySelector("select[name='class_id']");
+            const yearSelect = document.querySelector("select[name='school_year']");
+
             if (savedFilters.query) searchInput.value = savedFilters.query;
             if (savedFilters.status) statusSelect.value = savedFilters.status;
             if (classSelect && savedFilters.classId) classSelect.value = savedFilters.classId;
             if (yearSelect && savedFilters.year) yearSelect.value = savedFilters.year;
 
-            filterPayments(); // apply after restoring
+            filterPayments();
+
+            // event listeners
+            searchInput.addEventListener("input", () => setTimeout(filterPayments, 300));
+            statusSelect.addEventListener("change", filterPayments);
+            if (classSelect) classSelect.addEventListener("change", filterPayments);
+            if (yearSelect) yearSelect.addEventListener("change", filterPayments);
+
+            document.getElementById("tableLength").addEventListener("change", function() {
+                rowsPerPage = parseInt(this.value);
+                currentPage = 1;
+                paginatePayments(tableId, "paymentPagination");
+            });
         });
+    </script>
+
+    <!-- Select All & Bulk Actions -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const selectAll = document.getElementById("selectAllPayments");
+            const bulkForm = document.getElementById("bulkPaymentForm");
+            const bulkIdsContainer = document.getElementById("bulkPaymentIds");
+
+            function toggleBulkForm() {
+                const anyChecked = Array.from(document.querySelectorAll(".payment-checkbox"))
+                    .filter(cb => cb.closest("tr").style.display !== "none")
+                    .some(cb => cb.checked);
+
+                bulkForm.classList.toggle("d-none", !anyChecked);
+            }
+
+            function toggleRowHighlight(cb) {
+                const row = cb.closest("tr");
+                row.classList.toggle("row-highlight", cb.checked);
+            }
+
+            // Select-All checkbox
+            selectAll.addEventListener("change", () => {
+                const visibleCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"))
+                    .filter(cb => cb.closest("tr").style.display !== "none");
+
+                visibleCheckboxes.forEach(cb => {
+                    cb.checked = selectAll.checked;
+                    toggleRowHighlight(cb);
+                });
+
+                toggleBulkForm();
+            });
+
+            // Individual checkboxes
+            document.querySelectorAll(".payment-checkbox").forEach(cb => {
+                cb.addEventListener("change", () => {
+                    toggleRowHighlight(cb);
+
+                    const visibleCheckboxes = Array.from(document.querySelectorAll(
+                            ".payment-checkbox"))
+                        .filter(cb => cb.closest("tr").style.display !== "none");
+
+                    selectAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(
+                        cb => cb.checked);
+
+                    toggleBulkForm();
+                });
+            });
+        });
+
+        // Bulk status confirmation & submit
+        function setBulkPaymentStatus(status, event) {
+            event.preventDefault();
+
+            const bulkForm = document.getElementById("bulkPaymentForm");
+            const bulkIdsContainer = document.getElementById("bulkPaymentIds");
+            const selected = Array.from(document.querySelectorAll(".payment-checkbox:checked"));
+
+            if (selected.length === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "No payments selected",
+                    text: "Please select at least one payment.",
+                    confirmButtonColor: "#3085d6"
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: `You are about to set ${selected.length} payment(s) to "${status.toUpperCase()}".`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: `Yes, set to ${status.toUpperCase()}`,
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    bulkIdsContainer.innerHTML = "";
+                    selected.forEach(cb => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "payment_ids[]";
+                        input.value = cb.value;
+                        bulkIdsContainer.appendChild(input);
+                    });
+
+                    const statusInput = document.createElement("input");
+                    statusInput.type = "hidden";
+                    statusInput.name = "status";
+                    statusInput.value = status;
+                    bulkIdsContainer.appendChild(statusInput);
+
+                    bulkForm.submit();
+                }
+            });
+        }
     </script>
 @endpush
 
@@ -606,4 +901,12 @@
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
+
+
+    <style>
+        .row-highlight {
+            background-color: #e0f7fa !important;
+            /* light cyan highlight */
+        }
+    </style>
 @endpush

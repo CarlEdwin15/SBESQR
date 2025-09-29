@@ -307,7 +307,10 @@ Route::get('payments/show/{paymentName}', [PaymentController::class, 'showAdmin'
     ->name('admin.payments.show');
 
 Route::put('payments/{id}/update', [PaymentController::class, 'update'])
-    ->name('teacher.payments.update');
+    ->name('admin.payments.update');
+
+Route::post('payments/bulk-update', [PaymentController::class, 'bulkUpdate'])
+    ->name('admin.payments.bulkUpdate');
 
 Route::get('/class-students/search', [StudentController::class, 'classStudentSearch'])
     ->name('class-students.search');

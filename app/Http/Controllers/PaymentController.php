@@ -18,15 +18,13 @@ class PaymentController extends Controller
         $now = now();
         $year = $now->year;
 
-        // Cutoff is June 1 — if before June, school year starts last year; otherwise, current year
         $cutoff = $now->copy()->setMonth(6)->setDay(1);
         $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
 
         $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
         $nextSchoolYear    = ($currentYear + 1) . '-' . ($currentYear + 2);
 
-        // Fetch all saved school years from DB
-        $savedYears = \App\Models\SchoolYear::pluck('school_year')->toArray();
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
         $savedStartYears = array_map(fn($sy) => (int) substr($sy, 0, 4), $savedYears);
         $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
 
@@ -42,16 +40,22 @@ class PaymentController extends Controller
 
         usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
 
-        // Selected year (default to current school year)
         $selectedYear = $request->query('school_year', $currentSchoolYear);
-
-        // Selected class (optional filter)
         $selectedClass = $request->query('class_id');
 
-        // Get all classes (for dropdown)
-        $allClasses = Classes::with('teachers')->get();
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
 
-        // Query payments for that year and class if selected
+        // Count enrolled students per class
+        $allClasses = Classes::withCount(['classStudents as enrolled_count' => function ($q) use ($schoolYear) {
+            $q->where('school_year_id', $schoolYear->id)
+                ->where('enrollment_status', 'enrolled');
+        }])->get();
+
+        // Count total enrolled for "All Classes"
+        $totalEnrolled = ClassStudent::where('school_year_id', $schoolYear->id)
+            ->where('enrollment_status', 'enrolled')
+            ->count();
+
         $payments = Payment::with(['classStudent.student', 'classStudent.class', 'classStudent.schoolYear'])
             ->when($selectedYear, function ($query) use ($selectedYear) {
                 $query->whereHas('classStudent.schoolYear', function ($q) use ($selectedYear) {
@@ -64,25 +68,14 @@ class PaymentController extends Controller
                 });
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->get();
 
-        // Build flash message with school year + optional class
-        if ($selectedClass) {
-            $class = Classes::find($selectedClass);
-            if ($class) {
-                $message = 'Displaying Payment Records for '
-                    . strtoupper($class->formattedGradeLevel ?? $class->grade_level)
-                    . ' - ' . $class->section
-                    . ' for School Year ' . $selectedYear;
-            } else {
-                $message = 'Displaying Payment Records for All Classes for School Year ' . $selectedYear;
-            }
-        } else {
-            $message = 'Displaying Payment Records for All Classes for School Year ' . $selectedYear;
-        }
-
-        session()->flash('school_year_notice', $message);
-
+        session()->flash(
+            'school_year_notice',
+            $selectedClass
+                ? "Displaying Payment Records for selected class in SY {$selectedYear}"
+                : "Displaying Payment Records for All Classes in SY {$selectedYear}"
+        );
 
         return view('admin.payments.index', compact(
             'payments',
@@ -90,7 +83,8 @@ class PaymentController extends Controller
             'selectedYear',
             'currentYear',
             'allClasses',
-            'selectedClass'
+            'selectedClass',
+            'totalEnrolled'
         ));
     }
 
@@ -103,9 +97,8 @@ class PaymentController extends Controller
             'due_date'           => 'required|date',
             'class_student_ids'  => 'nullable|array',
             'class_student_ids.*' => 'exists:class_student,id',
-            'class_id'           => $request->filled('class_student_ids')
-                ? 'nullable|exists:classes,id'
-                : 'required|exists:classes,id',
+            'class_ids'          => 'nullable|array',
+            'class_ids.*'        => 'string', // can be "all" or a class ID
         ]);
 
         $schoolYear = SchoolYear::where('school_year', $request->school_year)->firstOrFail();
@@ -134,32 +127,43 @@ class PaymentController extends Controller
                 }
             }
         }
-        // Case 2: Payments for entire class
+        // Case 2: Payments for multiple classes OR "All Classes"
         else {
-            $classStudents = ClassStudent::where('class_id', $request->class_id)
-                ->where('school_year_id', $schoolYear->id)
-                ->where('enrollment_status', 'enrolled')
-                ->get();
+            $classIds = $request->class_ids ?? [];
 
-            foreach ($classStudents as $classStudent) {
-                Payment::firstOrCreate(
-                    [
-                        'class_student_id' => $classStudent->id,
-                        'payment_name'     => $request->payment_name,
-                    ],
-                    [
-                        'created_by'   => Auth::id(),
-                        'amount_due'   => $request->amount_due,
-                        'date_created' => now(),
-                        'due_date'     => $request->due_date,
-                    ]
-                );
+            if (in_array('all', $classIds)) {
+                // ✅ Only classes with enrolled students
+                $classIds = Classes::whereHas('classStudents', function ($q) use ($schoolYear) {
+                    $q->where('school_year_id', $schoolYear->id)
+                        ->where('enrollment_status', 'enrolled');
+                })->pluck('id')->toArray();
+            }
+
+            foreach ($classIds as $classId) {
+                $classStudents = ClassStudent::where('class_id', $classId)
+                    ->where('school_year_id', $schoolYear->id)
+                    ->where('enrollment_status', 'enrolled')
+                    ->get();
+
+                foreach ($classStudents as $classStudent) {
+                    Payment::firstOrCreate(
+                        [
+                            'class_student_id' => $classStudent->id,
+                            'payment_name'     => $request->payment_name,
+                        ],
+                        [
+                            'created_by'   => Auth::id(),
+                            'amount_due'   => $request->amount_due,
+                            'date_created' => now(),
+                            'due_date'     => $request->due_date,
+                        ]
+                    );
+                }
             }
         }
 
         return redirect()->route('admin.payments.index', [
             'school_year' => $request->school_year,
-            'class_id'    => $request->class_id,
         ])->with('success', 'Payment(s) created successfully.');
     }
 
@@ -238,6 +242,35 @@ class PaymentController extends Controller
         return back()->with('success', 'Payment updated successfully.');
     }
 
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'payment_ids'   => 'required|array',
+            'payment_ids.*' => 'exists:payments,id',
+            'status'        => 'required|in:paid,partial,unpaid',
+        ]);
+
+        $status = $request->input('status');
+
+        foreach ($request->input('payment_ids') as $id) {
+            $payment = Payment::find($id);
+            if (!$payment) continue;
+
+            $amountPaid = $payment->amount_paid ?? 0;
+            $amountDue  = $payment->amount_due;
+
+            if ($status === 'unpaid') {
+                $payment->update(['status' => 'unpaid', 'amount_paid' => 0, 'date_paid' => null]);
+            } elseif ($status === 'partial') {
+                $payment->update(['status' => 'partial', 'date_paid' => null]);
+            } else { // paid
+                $payment->update(['status' => 'paid', 'amount_paid' => $amountDue, 'date_paid' => now()]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Selected payments updated successfully.');
+    }
+
 
 
     // public function index(Request $request, $grade_level, $section)
@@ -249,7 +282,7 @@ class PaymentController extends Controller
     //         ->where('section', $section)
     //         ->firstOrFail();
 
-    //     // ✅ Fix: resolve the school year id properly
+    //     // Fix: resolve the school year id properly
     //     $payments = Payment::where('class_id', $class->id)
     //         ->when($selectedYear, function ($query) use ($selectedYear) {
     //             $query->whereHas('schoolYear', function ($q) use ($selectedYear) {

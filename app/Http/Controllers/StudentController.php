@@ -250,20 +250,20 @@ class StudentController extends Controller
             'student_pob' => 'required|string|max:255',
             'enrollment_status' => 'required|in:enrolled,not_enrolled,archived,graduated',
             'enrollment_type' => 'required|in:regular,transferee',
-            'student_parentEmail' => [
-                'nullable',
-                'string',
-                'max:255',
-                'email',
-                function ($attribute, $value, $fail) {
-                    if (!$value) return;
+            // 'student_parentEmail' => [
+            //     'nullable',
+            //     'string',
+            //     'max:255',
+            //     'email',
+            //     function ($attribute, $value, $fail) {
+            //         if (!$value) return;
 
-                    $user = User::where('email', $value)->first();
-                    if ($user && $user->role !== 'parent') {
-                        $fail('This email is already used for ' . $user->role . ' account ');
-                    }
-                },
-            ],
+            //         $user = User::where('email', $value)->first();
+            //         if ($user && $user->role !== 'parent') {
+            //             $fail('This email is already used for ' . $user->role . ' account ');
+            //         }
+            //     },
+            // ],
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 

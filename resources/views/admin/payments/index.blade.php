@@ -151,7 +151,7 @@
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                <a class="text-muted fw-light" href="{{ route('all.classes') }}">Payments</a> /
+                <a class="text-muted fw-light" href="{{ route('admin.payments.index') }}">Payments</a> /
             </span>
             All Payments
         </h4>
@@ -175,7 +175,7 @@
             }, 10000);
         </script>
 
-
+        {{-- Add Button & Classes Filter --}}
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-start">
                 {{-- <a href="{{ session('back_url', url()->previous()) }}"
@@ -230,7 +230,10 @@
                 </form>
             </div>
         </div>
+        {{-- /Add Button & Classes Filter --}}
 
+
+        {{-- Payment Card Content --}}
         <div class="card p-4 shadow-sm">
             <h4 class="fw-bold mb-4">
                 @if ($selectedClass)
@@ -295,61 +298,10 @@
                 </div>
             @endif
         </div>
+        {{-- /Payment Card Content --}}
 
     </div>
     <!-- Content wrapper -->
-
-    <!-- Add Payment By Batch/Class Modal -->
-    <div class="modal fade" id="addPaymentBatchModal" tabindex="-1" aria-labelledby="addPaymentBatchModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <form class="modal-content" action="{{ route('admin.payments.create') }}" method="POST">
-                @csrf
-                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
-
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold text-primary">Add Payment by Batch/Class</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-                    <div class="form-group mb-3">
-                        <label class="form-label">Payment Name</label>
-                        <input type="text" name="payment_name" class="form-control" required>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label">Amount Due</label>
-                        <input type="number" name="amount_due" class="form-control" step="0.01" required>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label">Due Date</label>
-                        <input type="date" name="due_date" class="form-control" required>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label">Class</label>
-                        <select name="class_id" id="classSelectBatch" class="tom-select" required>
-                            <option value="">-- Select Class --</option>
-                            @foreach ($allClasses as $class)
-                                <option value="{{ $class->id }}">
-                                    {{ $class->formattedGradeLevel ?? ucfirst($class->grade_level) }} -
-                                    {{ $class->section }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Create</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <!-- /Add Payment By Batch/Class Modal -->
 
     <!-- Add Payment for Specific Students Modal -->
     <div class="modal fade" id="addPaymentStudentsModal" tabindex="-1" aria-labelledby="addPaymentStudentsModalLabel"
@@ -398,6 +350,66 @@
     </div>
     <!-- /Add Payment for Specific Students Modal -->
 
+    <!-- Add Payment By Batch/Class Modal -->
+    <div class="modal fade" id="addPaymentBatchModal" tabindex="-1" aria-labelledby="addPaymentBatchModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <form class="modal-content" action="{{ route('admin.payments.create') }}" method="POST">
+                @csrf
+                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">Add Payment by Batch/Class</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Payment Name</label>
+                        <input type="text" name="payment_name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Amount Due</label>
+                        <input type="number" name="amount_due" class="form-control" step="0.01" required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" name="due_date" class="form-control" required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Classes</label>
+                        <select name="class_ids[]" id="classSelectBatch" class="tom-select" multiple required>
+                            <option value="all"
+                                {{ $totalEnrolled == 0 ? 'data-custom-class=text-danger disabled' : '' }}
+                                {{ $totalEnrolled == 0 ? 'disabled' : '' }}>
+                                All Classes
+                                ({{ $totalEnrolled > 0 ? $totalEnrolled . ' students' : 'No students enrolled' }})
+                            </option>
+                            @foreach ($allClasses as $class)
+                                <option value="{{ $class->id }}"
+                                    {{ $class->enrolled_count == 0 ? 'data-custom-class=text-danger' : '' }}
+                                    {{ $class->enrolled_count == 0 ? 'disabled' : '' }}>
+                                    {{ $class->formattedGradeLevel ?? ucfirst($class->grade_level) }} -
+                                    {{ $class->section }}
+                                    ({{ $class->enrolled_count > 0 ? $class->enrolled_count . ' students' : 'No students enrolled' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- /Add Payment By Batch/Class Modal -->
+
 @endsection
 
 @push('scripts')
@@ -434,6 +446,20 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        @if ($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Error',
+                html: `{!! implode('<br>', $errors->all()) !!}`,
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
     </script>
 
     <script>
@@ -504,10 +530,45 @@
 
             // TomSelect init for Batch/Class
             new TomSelect("#classSelectBatch", {
-                placeholder: "Select a Class"
+                plugins: ['remove_button'],
+                maxItems: null,
+                placeholder: "Select one or more classes (or All Classes)",
+                render: {
+                    option: function(data, escape) {
+                        let text = escape(data.text);
+                        let customClass = data.customClass ? data.customClass : '';
+                        let disabled = data.disabled ? 'opacity-50' : '';
+                        return `<div class="${customClass} ${disabled}">${text}</div>`;
+                    },
+                    item: function(data, escape) {
+                        let text = escape(data.text);
+                        let customClass = data.customClass ? data.customClass : '';
+                        return `<div class="${customClass}">${text}</div>`;
+                    }
+                },
+                onInitialize: function() {
+                    this.options = Object.fromEntries(Object.entries(this.options).map(([k, v]) => {
+                        let optionEl = this.input.querySelector(`option[value="${k}"]`);
+                        if (optionEl) {
+                            if (optionEl.dataset.customClass) {
+                                v.customClass = optionEl.dataset.customClass;
+                            }
+                            if (optionEl.disabled) {
+                                v.disabled = true;
+                            }
+                        }
+                        return [k, v];
+                    }));
+                },
+                onChange: function(values) {
+                    // ✅ If "all" is selected, remove any specific classes
+                    if (values.includes("all") && values.length > 1) {
+                        this.setValue(["all"]);
+                    }
+                }
             });
 
-            // 🔹 TomSelect init for Specific Students (AJAX search)
+            // TomSelect init for Specific Students (AJAX search)
             if (document.getElementById('classStudentSelectMulti')) {
                 new TomSelect('#classStudentSelectMulti', {
                     plugins: ['remove_button'],
@@ -535,20 +596,6 @@
                 });
             }
         });
-    </script>
-
-    <script>
-        @if ($errors->any())
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Error',
-                html: `{!! implode('<br>', $errors->all()) !!}`,
-                confirmButtonColor: '#dc3545',
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            });
-        @endif
     </script>
 @endpush
 
