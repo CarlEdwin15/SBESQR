@@ -157,7 +157,7 @@
         </h4>
 
         {{-- Notification when year is changed --}}
-        @if (session('school_year_notice'))
+        {{-- @if (session('school_year_notice'))
             <div class="alert alert-info alert-dismissible fade show mt-2 text-center text-primary fw-bold" role="alert"
                 id="school-year-alert">
                 {{ session('school_year_notice') }}
@@ -173,7 +173,7 @@
                     bsAlert.close();
                 }
             }, 10000);
-        </script>
+        </script> --}}
 
         {{-- Add Button & Classes Filter --}}
         <div class="d-flex justify-content-between align-items-center">
@@ -233,72 +233,164 @@
         {{-- /Add Button & Classes Filter --}}
 
 
-        {{-- Payment Card Content --}}
+        {{-- Payment Statistics Cards --}}
         <div class="card p-4 shadow-sm">
-            <h4 class="fw-bold mb-4">
-                @if ($selectedClass)
-                    @php
-                        $class = $allClasses->firstWhere('id', $selectedClass);
-                    @endphp
-                    Payment Records for {{ $class->formattedGradeLevel ?? ucfirst($class->grade_level) }} -
-                    {{ $class->section }}
-                    ({{ $selectedYear }})
-                @else
-                    Payment Records for All Classes ({{ $selectedYear }})
-                @endif
-            </h4>
-
-            @if ($payments->isEmpty())
-                <div class="alert alert-info mb-0">
-                    No payments found for this school year.
-                </div>
-            @else
-                <div class="row g-3">
-                    @foreach ($payments->groupBy('payment_name') as $paymentName => $groupedPayments)
+            <div class="card-body">
+                <h4 class="fw-bold mb-4">
+                    @if ($selectedClass)
                         @php
-                            $first = $groupedPayments->first();
-                            $totalStudents = $groupedPayments->count();
-                            $paidCount = $groupedPayments->where('status', 'paid')->count();
-                            $partialCount = $groupedPayments->where('status', 'partial')->count();
-                            $unpaidCount = $groupedPayments->where('status', 'unpaid')->count();
+                            $class = $allClasses->firstWhere('id', $selectedClass);
                         @endphp
+                        Payment Records for {{ $class->formattedGradeLevel ?? ucfirst($class->grade_level) }} -
+                        {{ $class->section }} ({{ $selectedYear }})
+                    @else
+                        Payment Records for All Classes ({{ $selectedYear }})
+                    @endif
+                </h4>
 
-                        <div class="col-md-4 col-lg-3">
-                            <a href="{{ route('admin.payments.show', [
-                                'paymentName' => $paymentName,
-                                'school_year' => $selectedYear,
-                                'class_id' => $selectedClass,
-                            ]) }}"
-                                class="text-decoration-none text-dark">
-                                <div class="card payment-card h-100">
-                                    <div class="card-body d-flex flex-column justify-content-between">
-                                        <div>
-                                            <h5 class="card-title fw-bold text-gradient mb-2">
-                                                {{ $paymentName }}
-                                            </h5>
-                                            <p class="mb-1"><strong>Amount Due:</strong>
-                                                ₱{{ number_format($first->amount_due, 2) }}</p>
-                                            <p class="mb-1"><strong>Due Date:</strong>
-                                                {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}</p>
-                                            <p class="mb-2"><strong>Created:</strong>
-                                                {{ \Carbon\Carbon::parse($first->date_created)->format('M d, Y') }}</p>
+                @if ($payments->isEmpty())
+                    <div class="text-center py-5">
+                        <i class="bi bi-credit-card-2-front text-info display-4"></i>
+                        <h5 class="mt-3 fw-bold text-secondary">No payments yet</h5>
+                        <p class="text-muted">Start by adding a new payment record for this class.</p>
+                    </div>
+                @else
+                    <div class="row g-4">
+                        @foreach ($payments->groupBy('payment_name') as $paymentName => $groupedPayments)
+                            @php
+                                $first = $groupedPayments->first();
+                                $totalStudents = $groupedPayments->count();
+                                $paidCount = $groupedPayments->where('status', 'paid')->count();
+                                $partialCount = $groupedPayments->where('status', 'partial')->count();
+                                $unpaidCount = $groupedPayments->where('status', 'unpaid')->count();
+
+                                // Gradient colors based on payment name
+                                $color1 = '#' . substr(md5($paymentName), 0, 6);
+                                $color2 = '#' . substr(md5(strrev($paymentName)), 0, 6);
+
+                                // Collections
+                                $totalExpected = $first->amount_due * $totalStudents;
+                                $totalCollected = $groupedPayments->sum('amount_paid');
+                                $percentage = $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100) : 0;
+                            @endphp
+
+                            <div class="col-md-4 col-sm-6">
+                                <div class="card payment-card border-0 shadow-lg rounded-4 h-100 overflow-hidden"
+                                    data-paid="{{ $paidCount }}" data-partial="{{ $partialCount }}"
+                                    data-unpaid="{{ $unpaidCount }}" data-total="{{ $totalStudents }}"
+                                    data-percentage="{{ $percentage }}">
+                                    <a href="{{ route('admin.payments.show', ['paymentName' => $paymentName, 'school_year' => $selectedYear, 'class_id' => $selectedClass]) }}"
+                                        class="text-decoration-none text-dark">
+
+                                        <!-- Card Header -->
+                                        <div class="card-header text-white border-0 position-relative"
+                                            style="background-color: {{ $color1 }}; height: 140px;">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <h4 class="card-title text-white fw-bold mb-1">{{ $paymentName }}</h4>
+                                            </div>
+                                            <div class="position-absolute bottom-0 start-0 p-3 w-100"
+                                                style="background: rgba(0, 0, 0, 0.2);">
+                                                <p class="text-white mb-1">
+                                                    <i class="bi bi-calendar-event me-1"></i> Due Date:
+                                                    {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}
+                                                </p>
+                                                <p class="text-white mb-0">
+                                                    <i class="bi bi-cash-coin me-1"></i> Amount:
+                                                    ₱{{ number_format($first->amount_due, 2) }}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div class="mt-3">
-                                            <span class="badge bg-success me-1">Paid: {{ $paidCount }}</span>
-                                            <span class="badge bg-warning text-dark me-1">Partial:
-                                                {{ $partialCount }}</span>
-                                            <span class="badge bg-danger me-1">Unpaid: {{ $unpaidCount }}</span>
-                                            <span class="badge bg-secondary">Total: {{ $totalStudents }}</span>
+                                    </a>
+
+                                    <!-- Card Body -->
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex flex-column align-items-center gap-1">
+                                                <h2 class="mb-2 fw-bold">{{ $totalStudents }}</h2>
+                                                <span>Total Students</span>
+                                            </div>
+                                            <div class="paymentStatisticsChart"></div>
+                                        </div>
+
+                                        <ul class="p-0 m-0">
+                                            <li class="d-flex mb-2 pb-1">
+                                                <div class="avatar flex-shrink-0 me-3">
+                                                    <span class="avatar-initial rounded bg-label-success"><i
+                                                            class="bx bx-check-double fs-4"></i></span>
+                                                </div>
+                                                <div
+                                                    class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                                                    <div class="me-2">
+                                                        <h6 class="mb-0">Paid</h6>
+                                                        <small class="text-muted">Fully Paid</small>
+                                                    </div>
+                                                    <div class="user-progress">
+                                                        <h4 class="fw-semibold">{{ $paidCount }}</h4>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="d-flex mb-2 pb-1">
+                                                <div class="avatar flex-shrink-0 me-3">
+                                                    <span class="avatar-initial rounded bg-label-warning text-dark"><i
+                                                            class="bx bx-file fs-4 text-warning"></i></span>
+                                                </div>
+                                                <div
+                                                    class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                                                    <div class="me-2">
+                                                        <h6 class="mb-0">Partial</h6>
+                                                        <small class="text-muted">Partially Paid</small>
+                                                    </div>
+                                                    <div class="user-progress">
+                                                        <h4 class="fw-semibold">{{ $partialCount }}</h4>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="d-flex">
+                                                <div class="avatar flex-shrink-0 me-3">
+                                                    <span class="avatar-initial rounded bg-label-danger"><i
+                                                            class="bx bx-error-circle fs-4"></i></span>
+                                                </div>
+                                                <div
+                                                    class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                                                    <div class="me-2">
+                                                        <h6 class="mb-0">Unpaid</h6>
+                                                        <small class="text-muted">Not Paid</small>
+                                                    </div>
+                                                    <div class="user-progress">
+                                                        <h4 class="fw-semibold">{{ $unpaidCount }}</h4>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+
+                                    <!-- Card Footer -->
+                                    <div
+                                        class="card-footer bg-light border-0 d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">Created on:
+                                            {{ \Carbon\Carbon::parse($first->created_at)->format('M d, Y') }}</span>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary rounded-circle"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
+                                                <li><a class="dropdown-item text-warning" href="#"><i
+                                                            class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i
+                                                            class="bi bi-trash me-2"></i>Delete</a></li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
         </div>
-        {{-- /Payment Card Content --}}
+        {{-- /Payment Statistics Cards --}}
 
     </div>
     <!-- Content wrapper -->
@@ -574,7 +666,7 @@
                     plugins: ['remove_button'],
                     maxItems: null,
                     placeholder: "Search enrolled students...",
-                    valueField: 'id', // now returns class_student.id
+                    valueField: 'id',
                     labelField: 'text',
                     searchField: 'text',
                     load: function(query, callback) {
@@ -582,24 +674,112 @@
                         fetch("{{ route('class-students.search') }}?q=" + encodeURIComponent(query))
                             .then(response => response.json())
                             .then(data => {
-                                callback(data.map(cs => ({
-                                    id: cs.id, // class_student.id
-                                    text: cs.student.student_lrn + " - " + cs
-                                        .student.student_fName + " " + cs.student
-                                        .student_lName
-                                })));
+                                callback(data.map(cs => {
+                                    let fullName = cs.student.student_fName + " " + cs
+                                        .student.student_lName;
+                                    let gradeSection = (cs.class.formatted_grade_level ?
+                                            " " + cs
+                                            .class.formatted_grade_level : "") +
+                                        (cs.class.section ? " - " + cs.class.section :
+                                            "");
+                                    return {
+                                        id: cs.id,
+                                        text: cs.student.student_lrn + " " + fullName +
+                                            " (" + gradeSection + ")"
+                                    };
+                                }));
                             }).catch(() => {
                                 callback();
                             });
-
                     }
                 });
+
             }
+        });
+    </script>
+
+    <!-- Donut Chart -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const config = {
+                colors: {
+                    success: '#28a745',
+                    warning: '#ffc107',
+                    danger: '#dc3545',
+                }
+            };
+            const cardColor = '#fff';
+            const headingColor = '#000';
+            const axisColor = '#888';
+
+            document.querySelectorAll('.payment-card').forEach(card => {
+                const chartEl = card.querySelector('.paymentStatisticsChart');
+                const paid = parseInt(card.dataset.paid);
+                const partial = parseInt(card.dataset.partial);
+                const unpaid = parseInt(card.dataset.unpaid);
+                const total = parseInt(card.dataset.total);
+
+                // Get percentage from card's badge or data attribute
+                const percentage = parseFloat(card.dataset.percentage);
+
+                if (chartEl) {
+                    const chartConfig = {
+                        chart: {
+                            height: 165,
+                            width: 130,
+                            type: 'donut'
+                        },
+                        labels: ['Paid', 'Partial', 'Unpaid'],
+                        series: [paid, partial, unpaid],
+                        colors: [config.colors.success, config.colors.warning, config.colors.danger],
+                        stroke: {
+                            width: 5,
+                            colors: cardColor
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        legend: {
+                            show: false
+                        },
+                        plotOptions: {
+                            pie: {
+                                donut: {
+                                    size: '75%',
+                                    labels: {
+                                        show: true,
+                                        value: {
+                                            fontSize: '1.5rem',
+                                            color: headingColor,
+                                            offsetY: -15
+                                        },
+                                        name: {
+                                            offsetY: 20
+                                        },
+                                        total: {
+                                            show: true,
+                                            fontSize: '0.8125rem',
+                                            color: axisColor,
+                                            label: 'Collected',
+                                            formatter: () => `${percentage}%`
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    new ApexCharts(chartEl, chartConfig).render();
+                }
+            });
         });
     </script>
 @endpush
 
 @push('styles')
+    <!-- Include ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
     <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
@@ -609,31 +789,51 @@
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
+        /* Payment Cards (same as subject cards) */
         .payment-card {
-            transition: all 0.35s ease;
-            border-radius: 1rem;
-            background-color: #ffffff;
-            border: 1px solid #f0f0f0;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            cursor: pointer;
         }
 
         .payment-card:hover {
-            transform: translateY(-10px) scale(1.04);
-            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.15);
-            background-color: #f8fbff;
+            transform: translateY(-6px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
 
-        /* Gradient text for titles */
-        .text-gradient {
-            background: linear-gradient(45deg, #007bff, #00c6ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        /* Avatar / Icon */
+        .avatar-wrapper i {
+            transition: transform 0.25s ease;
+            font-size: 2rem;
         }
 
-        /* Badge spacing */
+        .payment-card:hover .avatar-wrapper i {
+            transform: scale(1.2);
+        }
+
+        /* Badge styling */
         .payment-card .badge {
             font-size: 0.75rem;
             padding: 0.45em 0.65em;
             border-radius: 0.5rem;
+        }
+
+        /* Text truncation if needed */
+        .payment-card .card-title {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Dropdown polish */
+        .dropdown-menu {
+            border: none;
+            font-size: 14px;
+        }
+
+        .dropdown-item i {
+            font-size: 16px;
+            vertical-align: middle;
         }
 
         .ts-control {

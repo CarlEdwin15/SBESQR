@@ -35,39 +35,59 @@ class StudentController extends Controller
 
     public function classStudentSearch(Request $request)
     {
-        $term = $request->get('q');
+        $term = trim($request->get('q'));
 
         // Get default school year string
         $defaultSchoolYear = $this->getDefaultSchoolYear();
-
-        // Find the SchoolYear row (make sure the string matches your DB value)
-        $schoolYear = \App\Models\SchoolYear::where('school_year', $defaultSchoolYear)->first();
+        $schoolYear = SchoolYear::where('school_year', $defaultSchoolYear)->first();
 
         if (!$schoolYear) {
-            // fallback: return nothing instead of breaking
             return response()->json([]);
         }
 
-        // Query only enrolled students for that school year
-        $students = ClassStudent::with('student')
+        // Query enrolled students for that school year
+        $students = ClassStudent::with(['student', 'class'])
             ->where('school_year_id', $schoolYear->id)
             ->where('enrollment_status', 'enrolled')
-            ->whereHas('student', function ($q) use ($term) {
-                $q->where('student_lrn', 'like', "%{$term}%")
-                    ->orWhere('student_fName', 'like', "%{$term}%")
-                    ->orWhere('student_lName', 'like', "%{$term}%");
+            ->where(function ($q) use ($term) {
+                // 🔹 Student search
+                $q->whereHas('student', function ($studentQ) use ($term) {
+                    $studentQ->where('student_lrn', 'like', "%{$term}%")
+                        ->orWhereRaw("CONCAT(student_fName, ' ', student_lName) LIKE ?", ["%{$term}%"]);
+                })
+                    // 🔹 Class search (formatted grade level + section)
+                    ->orWhereHas('class', function ($classQ) use ($term) {
+                        $classQ->whereRaw("CONCAT(
+                        CASE grade_level
+                            WHEN 'kindergarten' THEN 'Kindergarten'
+                            WHEN 'grade1' THEN 'Grade 1'
+                            WHEN 'grade2' THEN 'Grade 2'
+                            WHEN 'grade3' THEN 'Grade 3'
+                            WHEN 'grade4' THEN 'Grade 4'
+                            WHEN 'grade5' THEN 'Grade 5'
+                            WHEN 'grade6' THEN 'Grade 6'
+                            ELSE grade_level
+                        END,
+                        ' - ',
+                        section
+                    ) LIKE ?", ["%{$term}%"]);
+                    });
             })
             ->limit(10)
             ->get();
 
         return response()->json($students->map(function ($cs) {
             return [
-                'id' => $cs->id, // 🔹 class_student.id
+                'id' => $cs->id,
                 'student' => [
                     'student_lrn'   => $cs->student->student_lrn,
                     'student_fName' => $cs->student->student_fName,
                     'student_lName' => $cs->student->student_lName,
-                ]
+                ],
+                'class' => [
+                    'formatted_grade_level' => $cs->class->formatted_grade_level ?? '',
+                    'section'               => $cs->class->section ?? '',
+                ],
             ];
         }));
     }
@@ -313,7 +333,7 @@ class StudentController extends Controller
                     'lastName'  => $request->student_fatherLName ?? $request->student_motherLName ?? 'Unknown',
                     'email'     => $request->student_parentEmail,
                     'role'      => 'parent',
-                    'password'  => bcrypt('default123'), // 🔹 or send invite to set password
+                    'password'  => bcrypt('default123'), // or send invite to set password
                     'phone'     => $request->student_fatherPhone ?? $request->student_motherPhone,
                 ]);
             }
@@ -518,17 +538,17 @@ class StudentController extends Controller
 
         $schoolYear = SchoolYear::find($schoolYearId);
 
-        // 🔹 Get all classes (class history)
+        // Get all classes (class history)
         $classHistory = $student->class()->with('advisers')->get();
 
-        // 🔹 Reorder so "enrolled" classes appear first, then by school_year_id desc
+        // Reorder so "enrolled" classes appear first, then by school_year_id desc
         $classHistory = $classHistory->sortByDesc(function ($classItem) {
             return $classItem->pivot->enrollment_status === 'enrolled' ? 2 : 1;
         })->sortByDesc(function ($classItem) {
             return $classItem->pivot->school_year_id;
         })->values();
 
-        // 🔹 Organize grades by class
+        // Organize grades by class
         $gradesByClass = [];
         foreach ($classHistory as $classItem) {
             $subjectsWithGrades = [];
@@ -555,7 +575,7 @@ class StudentController extends Controller
             $gradesByClass[$classItem->id] = $subjectsWithGrades;
         }
 
-        // 🔹 Get general averages per class
+        // Get general averages per class
         $generalAverages = $student->generalAverages()
             ->get()
             ->groupBy('class_id')

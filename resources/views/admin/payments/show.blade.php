@@ -166,8 +166,8 @@
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-2">
-                            <span class="avatar-initial rounded bg-label-secondary me-2 p-2">
-                                <i class="bx bx-user fs-4 text-dark"></i>
+                            <span class="avatar-initial rounded bg-label-primary me-2 p-2">
+                                <i class="bx bx-user fs-4 text-primary"></i>
                             </span>
                             <span class="fw-semibold text-primary">Total Students</span>
                         </div>
@@ -193,7 +193,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-2">
                             <span class="avatar-initial rounded bg-label-warning me-2 p-2">
-                                <i class="bx bx-file fs-4 text-dark"></i>
+                                <i class="bx bx-file fs-4 text-warning"></i>
                             </span>
                             <span class="fw-semibold text-warning">Partial</span>
                         </div>
@@ -226,7 +226,7 @@
                 @endphp
 
                 <div class="mb-4">
-                    <h4 class="mb-2">Payment: {{ $paymentName }}</h4>
+                    <h4 class="mb-2 fw-bold text-info">Payment Name: {{ $paymentName }}</h4>
                     <div class="d-flex flex-wrap align-items-center text-muted small">
                         <strong>Amount Due:</strong> ₱{{ number_format($first->amount_due, 2) }}
                         <span class="mx-2">|</span>
@@ -238,25 +238,40 @@
                 </div>
             @endif
 
+            <div class="d-flex justify-content-between align-items-center">
+                <!-- Search Input -->
+                <div class="col-md-6">
+                    <input type="text" name="search" class="form-control" placeholder="Search student or class...">
+                </div>
+
+                <div class="d-flex align-items-end gap-2">
+                    <!-- Right side: Status Filter -->
+                    <div class="col-md-12">
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partial</option>
+                            <option value="unpaid">Unpaid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
             <!-- Filters -->
-            <div class="row g-2">
+            <div class="row g-2 mb-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <!-- Left side: Table Length + Search -->
                     <div class="d-flex align-items-center gap-2">
                         <!-- Table Length Selector -->
-                        <div class="col-md-3">
+                        <div class="col-md-12">
                             <select id="tableLength" class="form-select">
                                 <option value="10" selected>10</option>
                                 <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                             </select>
-                        </div>
-
-                        <!-- Search Input -->
-                        <div class="col-md-12">
-                            <input type="text" name="search" class="form-control"
-                                placeholder="Search student or class...">
                         </div>
 
                         <form id="bulkPaymentForm" action="{{ route('admin.payments.bulkUpdate') }}" method="POST"
@@ -286,23 +301,9 @@
                             </div>
                         </form>
                     </div>
-
-                    <div class="d-flex align-items-end gap-2">
-                        <!-- Right side: Status Filter -->
-                        <div class="col-md-12">
-                            <select name="status" class="form-select">
-                                <option value="">All Status</option>
-                                <option value="paid">Paid</option>
-                                <option value="partial">Partial</option>
-                                <option value="unpaid">Unpaid</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
             </div>
             <!-- /Filters -->
-
-            <hr class="my-3" />
 
             <!-- Payments Table -->
             <div class="table-responsive">
@@ -310,7 +311,7 @@
                     <thead class="table-primary text-center">
                         <tr>
                             <th style="width: 40px;">
-                                <input type="checkbox" id="selectAllPayments">
+                                <input class="chkbox" type="checkbox" id="selectAllPayments">
                             </th>
                             <th style="width: 40px;">No.</th>
                             <th>Student</th>
@@ -385,7 +386,7 @@
                                 </td>
                             </tr>
 
-                            <!-- 🔹 Modal should be INSIDE loop -->
+                            <!--  Update Payment Modal -->
                             <div class="modal fade" id="editPaymentModal{{ $p->id }}" tabindex="-1"
                                 aria-labelledby="editPaymentLabel{{ $p->id }}" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
@@ -450,7 +451,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- /Modal -->
+                            <!-- /Update Payment Modal -->
                         @endforeach
                     </tbody>
                 </table>
@@ -525,7 +526,6 @@
         @endif
     </script>
 
-    <!-- Pagination, Search, Filter Logic -->
     <!-- Pagination, Search, Filter & Bulk Actions -->
     <script>
         let allPaymentRows = [];
@@ -812,6 +812,23 @@
                 row.classList.toggle("row-highlight", cb.checked);
             }
 
+            function updateSelectAllCheckbox() {
+                const visibleCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"))
+                    .filter(cb => cb.closest("tr").style.display !== "none");
+
+                selectAll.checked = visibleCheckboxes.length > 0 &&
+                    visibleCheckboxes.every(cb => cb.checked);
+            }
+
+            // Individual checkboxes
+            document.querySelectorAll(".payment-checkbox").forEach(cb => {
+                cb.addEventListener("change", () => {
+                    toggleRowHighlight(cb);
+                    updateSelectAllCheckbox();
+                    toggleBulkForm();
+                });
+            });
+
             // Select-All checkbox
             selectAll.addEventListener("change", () => {
                 const visibleCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"))
@@ -824,31 +841,15 @@
 
                 toggleBulkForm();
             });
-
-            // Individual checkboxes
-            document.querySelectorAll(".payment-checkbox").forEach(cb => {
-                cb.addEventListener("change", () => {
-                    toggleRowHighlight(cb);
-
-                    const visibleCheckboxes = Array.from(document.querySelectorAll(
-                            ".payment-checkbox"))
-                        .filter(cb => cb.closest("tr").style.display !== "none");
-
-                    selectAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(
-                        cb => cb.checked);
-
-                    toggleBulkForm();
-                });
-            });
         });
 
         // Bulk status confirmation & submit
         function setBulkPaymentStatus(status, event) {
             event.preventDefault();
 
-            const bulkForm = document.getElementById("bulkPaymentForm");
             const bulkIdsContainer = document.getElementById("bulkPaymentIds");
-            const selected = Array.from(document.querySelectorAll(".payment-checkbox:checked"));
+            const selected = Array.from(document.querySelectorAll(".payment-checkbox:checked"))
+                .filter(cb => cb.closest("tr").style.display !== "none");
 
             if (selected.length === 0) {
                 Swal.fire({
@@ -868,7 +869,10 @@
                 confirmButtonColor: "#3085d6",
                 cancelButtonColor: "#d33",
                 confirmButtonText: `Yes, set to ${status.toUpperCase()}`,
-                cancelButtonText: "Cancel"
+                cancelButtonText: "Cancel",
+                customClass: {
+                    container: 'my-swal-container'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     bulkIdsContainer.innerHTML = "";
@@ -886,7 +890,7 @@
                     statusInput.value = status;
                     bulkIdsContainer.appendChild(statusInput);
 
-                    bulkForm.submit();
+                    document.getElementById("bulkPaymentForm").submit();
                 }
             });
         }
@@ -907,6 +911,14 @@
         .row-highlight {
             background-color: #e0f7fa !important;
             /* light cyan highlight */
+        }
+
+        .chkbox {
+            cursor: pointer;
+        }
+
+        .payment-checkbox {
+            cursor: pointer;
         }
     </style>
 @endpush
