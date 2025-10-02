@@ -22,12 +22,11 @@ return new class extends Migration {
             $table->string('payment_name'); // e.g. "June Tuition"
             $table->decimal('amount_due', 10, 2);
 
-            $table->date('date_created'); // When it was posted
             $table->date('due_date');     // Deadline to pay
 
             // Student payment progress (handled by teacher)
             $table->decimal('amount_paid', 10, 2)->default(0);
-            $table->date('date_paid')->nullable();
+            // $table->date('date_paid')->nullable();
             $table->enum('status', ['unpaid', 'partial', 'paid'])->default('unpaid');
 
             $table->timestamps();
@@ -35,10 +34,25 @@ return new class extends Migration {
 
             $table->unique(['class_student_id', 'payment_name'], 'unique_payment_entry');
         });
+
+        Schema::create('payment_histories', function (Blueprint $table) {
+            $table->id();
+
+            // Link to the original payment
+            $table->foreignId('payment_id')->constrained('payments')->onDelete('cascade');
+
+            $table->foreignId('added_by')->constrained('users')->onDelete('cascade');
+
+            $table->decimal('amount_paid', 10, 2);
+            $table->datetime('payment_date')->default(now());
+
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('payment_histories');
         Schema::dropIfExists('payments');
     }
 };

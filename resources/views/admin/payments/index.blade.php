@@ -107,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
-                        <a href="" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">All Payments</div>
                         </a>
                     </li>
@@ -270,7 +270,11 @@
 
                                 // Collections
                                 $totalExpected = $first->amount_due * $totalStudents;
-                                $totalCollected = $groupedPayments->sum('amount_paid');
+
+                                $totalCollected = $groupedPayments->sum(function ($payment) {
+                                    return $payment->total_paid;
+                                });
+
                                 $percentage = $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100) : 0;
                             @endphp
 
@@ -364,7 +368,6 @@
                                         </ul>
                                     </div>
 
-
                                     <!-- Card Footer -->
                                     <div
                                         class="card-footer bg-light border-0 d-flex justify-content-between align-items-center">
@@ -376,10 +379,17 @@
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
-                                                <li><a class="dropdown-item text-warning" href="#"><i
-                                                            class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                <li><a class="dropdown-item text-danger" href="#"><i
-                                                            class="bi bi-trash me-2"></i>Delete</a></li>
+                                                <li><a class="dropdown-item text-warning" href="#">
+                                                        <i class="bi bi-pencil me-2"></i>Edit
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="javascript:void(0)"
+                                                        class="dropdown-item text-danger delete-payment"
+                                                        data-payment-name="{{ $paymentName }}">
+                                                        <i class="bi bi-trash me-2"></i>Delete
+                                                    </a>
+                                                </li>
                                             </ul>
                                         </div>
                                     </div>
@@ -398,7 +408,7 @@
     <!-- Add Payment for Specific Students Modal -->
     <div class="modal fade" id="addPaymentStudentsModal" tabindex="-1" aria-labelledby="addPaymentStudentsModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <form class="modal-content" action="{{ route('admin.payments.create') }}" method="POST">
                 @csrf
                 <input type="hidden" name="school_year" value="{{ $selectedYear }}">
@@ -445,7 +455,7 @@
     <!-- Add Payment By Batch/Class Modal -->
     <div class="modal fade" id="addPaymentBatchModal" tabindex="-1" aria-labelledby="addPaymentBatchModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <form class="modal-content" action="{{ route('admin.payments.create') }}" method="POST">
                 @csrf
                 <input type="hidden" name="school_year" value="{{ $selectedYear }}">
@@ -505,6 +515,7 @@
 @endsection
 
 @push('scripts')
+    <!-- Logout -->
     <script>
         // alert for logout
         function confirmLogout() {
@@ -540,6 +551,56 @@
         }
     </script>
 
+    <!-- Delete -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('.delete-payment');
+
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const paymentName = this.dataset.paymentName;
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: `You are about to delete all payments for "${paymentName}". This action cannot be undone.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Send DELETE request via fetch
+                            fetch(`{{ url('payments') }}/${encodeURIComponent(paymentName)}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Content-Type': 'application/json'
+                                    },
+                                })
+                                .then(response => {
+                                    if (response.ok) {
+                                        Swal.fire(
+                                            'Deleted!',
+                                            'Payment(s) have been deleted.',
+                                            'success'
+                                        ).then(() => location.reload());
+                                    } else {
+                                        Swal.fire(
+                                            'Error!',
+                                            'There was a problem deleting the payment(s).',
+                                            'error'
+                                        );
+                                    }
+                                });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+    <!-- Error -->
     <script>
         @if ($errors->any())
             Swal.fire({
@@ -554,6 +615,7 @@
         @endif
     </script>
 
+    <!-- Class Filter -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const classFilter = document.getElementById('classFilter');

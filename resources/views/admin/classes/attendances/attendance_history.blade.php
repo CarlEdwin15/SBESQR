@@ -107,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All Payments</div>
                         </a>
                     </li>

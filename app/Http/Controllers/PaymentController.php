@@ -6,10 +6,12 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Classes;
 use App\Models\ClassStudent;
+use App\Models\PaymentHistory;
 use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -120,7 +122,6 @@ class PaymentController extends Controller
                         [
                             'created_by'   => Auth::id(),
                             'amount_due'   => $request->amount_due,
-                            'date_created' => now(),
                             'due_date'     => $request->due_date,
                         ]
                     );
@@ -154,7 +155,6 @@ class PaymentController extends Controller
                         [
                             'created_by'   => Auth::id(),
                             'amount_due'   => $request->amount_due,
-                            'date_created' => now(),
                             'due_date'     => $request->due_date,
                         ]
                     );
@@ -173,16 +173,21 @@ class PaymentController extends Controller
         $selectedYear = $request->query('school_year');
         $selectedClass = $request->query('class_id');
 
-        // Unfiltered query for summary cards
-        $baseQuery = Payment::with(['student', 'classStudent.class', 'schoolYear'])
-            ->where('payment_name', $paymentName);
+        $baseQuery = Payment::with([
+            'student',
+            'classStudent.class',
+            'schoolYear',
+            'paymentHistories' => function ($q) {
+                $q->orderBy('payment_date', 'desc'); // 👈 latest first
+            },
+            'paymentHistories.addedBy'
+        ])->where('payment_name', $paymentName);
 
         $paidCount = (clone $baseQuery)->where('status', 'paid')->count();
         $partialCount = (clone $baseQuery)->where('status', 'partial')->count();
         $unpaidCount = (clone $baseQuery)->where('status', 'unpaid')->count();
         $totalCount = (clone $baseQuery)->count();
 
-        // Table data (no search/status filter here; JS handles that)
         $payments = (clone $baseQuery)
             ->join('class_student', 'payments.class_student_id', '=', 'class_student.id')
             ->join('students', 'class_student.student_id', '=', 'students.id')
@@ -210,66 +215,159 @@ class PaymentController extends Controller
         ));
     }
 
-    public function update(Request $request, $id)
+    public function addPayment(Request $request, $id)
     {
         $payment = Payment::findOrFail($id);
 
         $request->validate([
-            'amount_paid' => 'nullable|numeric|min:0',
+            'amount_paid' => 'required|numeric|min:0.01',
         ]);
 
-        $amountPaid = $request->amount_paid ?? 0;
-        $amountDue  = $payment->amount_due;
+        $amountPaid = $request->amount_paid;
+
+        // Prevent overpayment
+        $remainingBalance = $payment->amount_due - $payment->paymentHistories()->sum('amount_paid');
+        if ($amountPaid > $remainingBalance) {
+            return back()->withErrors(['amount_paid' => 'Payment exceeds remaining balance of ₱' . number_format($remainingBalance, 2)]);
+        }
+
+        // Record payment
+        PaymentHistory::create([
+            'payment_id'   => $payment->id,
+            'amount_paid'  => $amountPaid,
+            'payment_date' => now(),
+            'added_by'     => Auth::id(),
+        ]);
+
+        // Recalculate total paid
+        $totalPaid = $payment->paymentHistories()->sum('amount_paid');
 
         // Determine status automatically
-        if ($amountPaid <= 0) {
-            $status   = 'unpaid';
-            $datePaid = null;
-        } elseif ($amountPaid < $amountDue) {
-            $status   = 'partial';
-            $datePaid = null; // not fully paid yet
+        if ($totalPaid <= 0) {
+            $status = 'unpaid';
+        } elseif ($totalPaid < $payment->amount_due) {
+            $status = 'partial';
         } else {
-            $status   = 'paid';
-            $datePaid = now()->toDateString(); // full payment today
+            $status = 'paid';
+        }
+
+        // Update summary
+        $payment->update([
+            'total_paid' => $totalPaid,
+            'status'     => $status,
+        ]);
+
+        return redirect()
+            ->route('admin.payments.show', ['id' => $payment->id] + request()->query())
+            ->with('success', 'Payment added successfully.');
+    }
+
+    public function history($paymentName)
+    {
+        $payments = Payment::with('student', 'paymentHistories.addedBy')
+            ->where('payment_name', $paymentName)
+            ->orderBy('created_at', 'desc') // Order by latest payment first
+            ->get();
+
+        return response()->json($payments);
+    }
+
+    public function deleteHistory($id)
+    {
+        $history = PaymentHistory::findOrFail($id);
+        $payment = $history->payment; // parent payment
+
+        // Delete history entry
+        $history->delete();
+
+        // Recalculate total paid
+        $totalPaid = $payment->paymentHistories()->sum('amount_paid');
+
+        // Update status
+        if ($totalPaid <= 0) {
+            $status = 'unpaid';
+        } elseif ($totalPaid < $payment->amount_due) {
+            $status = 'partial';
+        } else {
+            $status = 'paid';
         }
 
         $payment->update([
-            'status'      => $status,
-            'amount_paid' => $amountPaid,
-            'date_paid'   => $datePaid,
+            'amount_paid' => $totalPaid,
+            'status' => $status,
         ]);
 
-        return back()->with('success', 'Payment updated successfully.');
+        return back()->with('success', 'Payment record deleted successfully.');
     }
 
-    public function bulkUpdate(Request $request)
+
+    public function bulkAddPayment(Request $request)
     {
         $request->validate([
             'payment_ids'   => 'required|array',
             'payment_ids.*' => 'exists:payments,id',
-            'status'        => 'required|in:paid,partial,unpaid',
+            'amount_paid'   => 'required|numeric|min:0.01',
+            'payment_date'  => 'required|date',
         ]);
 
-        $status = $request->input('status');
+        $invalidStudents = [];
 
-        foreach ($request->input('payment_ids') as $id) {
+        foreach ($request->payment_ids as $id) {
             $payment = Payment::find($id);
             if (!$payment) continue;
 
-            $amountPaid = $payment->amount_paid ?? 0;
-            $amountDue  = $payment->amount_due;
+            $remainingBalance = $payment->amount_due - $payment->paymentHistories()->sum('amount_paid');
 
-            if ($status === 'unpaid') {
-                $payment->update(['status' => 'unpaid', 'amount_paid' => 0, 'date_paid' => null]);
-            } elseif ($status === 'partial') {
-                $payment->update(['status' => 'partial', 'date_paid' => null]);
-            } else { // paid
-                $payment->update(['status' => 'paid', 'amount_paid' => $amountDue, 'date_paid' => now()]);
+            if ($request->amount_paid > $remainingBalance) {
+                $invalidStudents[] = $payment->student->full_name ?? "Student ID {$payment->id}";
             }
         }
 
-        return redirect()->back()->with('success', 'Selected payments updated successfully.');
+        if (!empty($invalidStudents)) {
+            return redirect()->back()->with(
+                'bulk_error',
+                'The following students exceed their balance: '
+                    . implode(', ', $invalidStudents)
+            );
+        }
+
+        // ✅ Continue if no invalid students
+        foreach ($request->payment_ids as $id) {
+            $payment = Payment::find($id);
+            if (!$payment) continue;
+
+            $payment->paymentHistories()->create([
+                'amount_paid'  => $request->amount_paid,
+                'payment_date' => $request->payment_date,
+                'added_by'     => Auth::id(),
+            ]);
+
+            $totalPaid = $payment->paymentHistories()->sum('amount_paid');
+            $status    = $totalPaid >= $payment->amount_due ? 'paid' : ($totalPaid > 0 ? 'partial' : 'unpaid');
+
+            $payment->update([
+                'total_paid' => $totalPaid,
+                'status'     => $status,
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->withInput()
+            ->with('success', 'Payments added successfully to selected students.');
     }
+
+    public function destroyAdmin($paymentName)
+    {
+        $deleted = Payment::where('payment_name', $paymentName)->delete();
+
+        if ($deleted) {
+            return response()->json(['message' => 'Payments deleted successfully.'], 200);
+        } else {
+            return response()->json(['message' => 'No payments found.'], 404);
+        }
+    }
+
 
 
 
@@ -364,7 +462,6 @@ class PaymentController extends Controller
     //             [
     //                 'created_by'   => Auth::id(),
     //                 'amount_due'   => $request->amount_due,
-    //                 'date_created' => now()->toDateString(), // match migration type
     //                 'due_date'     => $request->due_date,
     //                 'status'       => 'unpaid',
     //             ]

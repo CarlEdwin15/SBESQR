@@ -17,7 +17,6 @@ class Payment extends Model
         'date_created',
         'due_date',
         'amount_paid',
-        'date_paid',
         'status',
     ];
 
@@ -60,5 +59,40 @@ class Payment extends Model
             'class_student_id',
             'school_year_id'
         );
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(PaymentHistory::class);
+    }
+
+    public function getTotalPaidAttribute()
+    {
+        return $this->histories()->sum('amount_paid');
+    }
+
+    public function getRemainingAmountAttribute()
+    {
+        return max($this->amount_due - $this->total_paid, 0);
+    }
+
+    public function getStatusAttribute($value)
+    {
+        $totalPaid = $this->total_paid;
+        if ($totalPaid <= 0) return 'unpaid';
+        if ($totalPaid < $this->amount_due) return 'partial';
+        return 'paid';
+    }
+
+    public function paymentHistories()
+    {
+        return $this->hasMany(PaymentHistory::class, 'payment_id')
+            ->orderBy('payment_date', 'desc');
+    }
+
+    public function latestPaymentDate()
+    {
+        $latest = $this->paymentHistories()->latest('payment_date')->first();
+        return $latest ? $latest->payment_date : null;
     }
 }

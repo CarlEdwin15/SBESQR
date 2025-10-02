@@ -107,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
-                        <a href="" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">All Payments</div>
                         </a>
                     </li>
@@ -233,11 +233,13 @@
                         <strong>Due Date:</strong> {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}
                         <span class="mx-2">|</span>
                         <strong>Collected:</strong>
-                        ₱{{ number_format($totalCollected, 2) }}/₱{{ number_format($totalExpected, 2) }}
+                        ₱<span id="collectedValue">{{ number_format($totalCollected, 2) }}</span> /
+                        ₱<span id="expectedValue">{{ number_format($totalExpected, 2) }}</span>
                     </div>
                 </div>
             @endif
 
+            <!-- Search & Status Filter -->
             <div class="d-flex justify-content-between align-items-center">
                 <!-- Search Input -->
                 <div class="col-md-6">
@@ -245,7 +247,7 @@
                 </div>
 
                 <div class="d-flex align-items-end gap-2">
-                    <!-- Right side: Status Filter -->
+                    <!-- Status Filter -->
                     <div class="col-md-12">
                         <select name="status" class="form-select">
                             <option value="">All Status</option>
@@ -256,10 +258,11 @@
                     </div>
                 </div>
             </div>
+            <!-- /Search & Status Filter -->
 
             <hr class="my-3" />
 
-            <!-- Filters -->
+            <!-- Table Length, Bulk Add, & Payment History Button -->
             <div class="row g-2 mb-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <!-- Left side: Table Length + Search -->
@@ -274,36 +277,27 @@
                             </select>
                         </div>
 
-                        <form id="bulkPaymentForm" action="{{ route('admin.payments.bulkUpdate') }}" method="POST"
+                        <!-- Bulk Add Button -->
+                        <form id="bulkPaymentForm" action="{{ route('admin.payments.bulkAddPayment') }}" method="POST"
                             class="d-flex gap-2 d-none">
                             @csrf
                             <div id="bulkPaymentIds"></div> <!-- Hidden inputs for selected payments -->
 
-                            <div class="dropdown">
-                                <button class="btn btn-outline-primary dropdown-toggle" type="button"
-                                    id="bulkPaymentDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Set Status
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="bulkPaymentDropdown">
-                                    <li>
-                                        <button type="submit" class="dropdown-item text-success"
-                                            onclick="setBulkPaymentStatus('paid', event)">Paid</button>
-                                    </li>
-                                    <li>
-                                        <button type="submit" class="dropdown-item text-warning"
-                                            onclick="setBulkPaymentStatus('partial', event)">Partial</button>
-                                    </li>
-                                    <li>
-                                        <button type="submit" class="dropdown-item text-danger"
-                                            onclick="setBulkPaymentStatus('unpaid', event)">Unpaid</button>
-                                    </li>
-                                </ul>
-                            </div>
+                            <button type="button" class="btn btn-outline-primary" id="bulkAddPaymentBtn"
+                                data-bs-toggle="modal" data-bs-target="#bulkAddPaymentModal">
+                                Add Payment
+                            </button>
                         </form>
                     </div>
+
+                    <!-- Payment History Button -->
+                    <button type="button" class="btn btn-info d-flex align-items-center" id="paymentHistoryBtn"
+                        data-bs-toggle="modal" data-bs-target="#paymentHistoryModal">
+                        All Payments History
+                    </button>
                 </div>
             </div>
-            <!-- /Filters -->
+            <!-- /Table Length, Bulk Add, & Payment History Button -->
 
             <!-- Payments Table -->
             <div class="table-responsive">
@@ -319,7 +313,7 @@
                             <th>Status</th>
                             <th>Amount Paid</th>
                             <th>Amount Due</th>
-                            <th>Date Paid</th>
+                            <th>Last Payment Date</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -331,37 +325,40 @@
                                 data-status="{{ $p->status }}" data-class="{{ $p->classStudent->class->id ?? '' }}"
                                 data-class-name="{{ strtolower(optional($p->classStudent->class)->formatted_grade_level . ' - ' . optional($p->classStudent->class)->section) }}"
                                 data-gender="{{ strtolower(optional($p->student)->student_sex) }}"
-                                data-year="{{ $p->schoolYear->school_year ?? '' }}">
+                                data-year="{{ $p->schoolYear->school_year ?? '' }}"
+                                data-amount-paid="{{ $p->total_paid }}" data-amount-due="{{ $p->amount_due }}">
 
+                                <!-- Checkbox -->
                                 <td class="text-center">
                                     <input type="checkbox" class="payment-checkbox" value="{{ $p->id }}">
                                 </td>
-                                <td class="text-center"></td> {{-- JS will number this --}}
+
+                                <!-- Row Number (JS handles numbering) -->
+                                <td class="text-center"></td>
+
+                                <!-- Student Column -->
                                 <td>
                                     <a href="#" data-bs-toggle="modal"
-                                        data-bs-target="#editPaymentModal{{ $p->id }}">
+                                        data-bs-target="#addPaymentModal{{ $p->id }}">
                                         <div class="d-flex align-items-center">
                                             <img src="{{ $p->student && $p->student->student_photo
                                                 ? asset('assetsDashboard/img/student_profile_pictures/' . $p->student->student_photo)
                                                 : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                 class="rounded-circle me-2"
                                                 style="width: 40px; height: 40px; object-fit: cover;">
-
-
                                             <span>{{ $p->student->full_name ?? 'Unknown' }}</span>
                                             @if ($p->student && $p->student->student_sex)
                                                 @if (strtolower($p->student->student_sex) === 'male')
                                                     <i class="bx bx-male me-1 text-primary"></i>
                                                 @elseif (strtolower($p->student->student_sex) === 'female')
                                                     <i class="bx bx-female me-1 text-danger"></i>
-                                                @else
-                                                    <span class="badge bg-secondary mt-1">—</span>
                                                 @endif
                                             @endif
-
                                         </div>
                                     </a>
                                 </td>
+
+                                <!-- Class Column -->
                                 <td class="text-center">
                                     @if ($p->classStudent && $p->classStudent->class)
                                         {{ ucfirst($p->classStudent->class->formatted_grade_level) }} -
@@ -370,6 +367,8 @@
                                         —
                                     @endif
                                 </td>
+
+                                <!-- Status Column -->
                                 <td class="text-center">
                                     @if ($p->status === 'paid')
                                         <span class="badge bg-success">Paid</span>
@@ -379,84 +378,336 @@
                                         <span class="badge bg-danger">Unpaid</span>
                                     @endif
                                 </td>
-                                <td class="text-center">₱{{ number_format($p->amount_paid ?? 0, 2) }}</td>
-                                <td class="text-center">₱{{ number_format($p->amount_due ?? 0, 2) }}</td>
+
+                                <!-- Amount Paid -->
+                                <td class="text-center">₱{{ number_format($p->total_paid, 2) }}</td>
+
+                                <!-- Amount Due -->
+                                <td class="text-center">₱{{ number_format($p->amount_due, 2) }}</td>
+
+                                <!-- Last Payment Date -->
                                 <td class="text-center">
-                                    {{ $p->date_paid ? \Carbon\Carbon::parse($p->date_paid)->format('M d, Y') : '—' }}
+                                    {{ $p->latestPaymentDate() ? $p->latestPaymentDate()->format('M d, Y || h:i A') : '—' }}
                                 </td>
                             </tr>
-
-                            <!--  Update Payment Modal -->
-                            <div class="modal fade" id="editPaymentModal{{ $p->id }}" tabindex="-1"
-                                aria-labelledby="editPaymentLabel{{ $p->id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content shadow-lg">
-                                        <div class="modal-header bg-primary text-white">
-                                            <h5 class="modal-title" id="editPaymentLabel{{ $p->id }}">
-                                                Update Payment - {{ $p->student->full_name ?? 'Unknown' }}
-                                            </h5>
-                                            <button type="button" class="btn-close btn-close-white"
-                                                data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-
-                                        <form action="{{ route('admin.payments.update', $p->id) }}" method="POST">
-                                            @csrf
-                                            @method('PUT')
-
-                                            <div class="modal-body">
-                                                <!-- Amount Due (readonly) -->
-                                                <div class="mb-3">
-                                                    <label class="form-label">Amount Due</label>
-                                                    <input type="text" class="form-control"
-                                                        value="₱{{ number_format($p->amount_due, 2) }}" readonly>
-                                                </div>
-
-                                                <!-- Amount Paid -->
-                                                <div class="mb-3">
-                                                    <label for="amountPaid{{ $p->id }}" class="form-label">Amount
-                                                        to Pay</label>
-                                                    <input type="number" step="0.01" min="0"
-                                                        name="amount_paid" id="amountPaid{{ $p->id }}"
-                                                        value="{{ $p->amount_paid ?? 0 }}" class="form-control" required>
-                                                </div>
-
-                                                <!-- Remarks -->
-                                                <div class="mb-3">
-                                                    <label for="remarks{{ $p->id }}"
-                                                        class="form-label">Remarks</label>
-                                                    <textarea name="remarks" id="remarks{{ $p->id }}" rows="2" class="form-control">{{ $p->remarks }}</textarea>
-                                                </div>
-
-                                                <!-- Current Status -->
-                                                <div class="mb-2">
-                                                    <small class="text-muted">
-                                                        Current Status:
-                                                        @if ($p->status === 'paid')
-                                                            <span class="badge bg-success">Paid</span>
-                                                        @elseif ($p->status === 'partial')
-                                                            <span class="badge bg-warning text-dark">Partial</span>
-                                                        @else
-                                                            <span class="badge bg-danger">Unpaid</span>
-                                                        @endif
-                                                    </small>
-                                                </div>
-                                            </div>
-
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-light"
-                                                    data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-primary">Update Payment</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- /Update Payment Modal -->
                         @endforeach
                     </tbody>
                 </table>
+
+                @foreach ($payments as $p)
+                    <!-- Individual Add Payment Modal -->
+                    <div class="modal fade" id="addPaymentModal{{ $p->id }}" tabindex="-1"
+                        aria-labelledby="addPaymentLabel{{ $p->id }}" data-bs-backdrop="static"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content shadow-lg">
+
+                                <!-- Modal Body -->
+                                <form action="{{ route('admin.payments.add', $p->id) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="modal-body">
+
+                                        <!-- Student Info -->
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ $p->student && $p->student->student_photo
+                                                    ? asset('assetsDashboard/img/student_profile_pictures/' . $p->student->student_photo)
+                                                    : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                    class="rounded me-3"
+                                                    style="width: 70px; height: 70px; object-fit: cover;">
+                                                <div>
+                                                    <strong>{{ $p->student->full_name ?? 'Unknown' }}</strong><br>
+                                                    <strong>
+                                                        @if ($p->classStudent && $p->classStudent->class)
+                                                            {{ ucfirst($p->classStudent->class->formatted_grade_level) }} -
+                                                            {{ $p->classStudent->class->section }}
+                                                        @else
+                                                            —
+                                                        @endif
+                                                    </strong>
+                                                </div>
+                                            </div>
+                                            <!-- Jump to History -->
+                                            <button type="button" class="btn btn-info"
+                                                data-bs-target="#studentHistoryModal{{ $p->id }}"
+                                                data-bs-toggle="modal" data-bs-dismiss="modal">
+                                                <i class="bx bx-history me-1"></i> View History
+                                            </button>
+                                        </div>
+
+                                        <!-- Payment Progress -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Payment Progress</label>
+                                            <input type="text" class="form-control"
+                                                value="₱{{ number_format($p->total_paid, 2) }} / ₱{{ number_format($p->amount_due, 2) }}"
+                                                readonly>
+                                        </div>
+
+                                        <!-- Balance -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Remaining Balance</label>
+                                            <input type="text" class="form-control"
+                                                value="₱{{ number_format(max($p->amount_due - $p->total_paid, 0), 2) }}"
+                                                readonly>
+                                        </div>
+
+                                        <!-- Amount to Pay -->
+                                        <div class="mb-3">
+                                            <label for="amountPaid{{ $p->id }}" class="form-label">Amount
+                                                to Pay</label>
+                                            <input type="number" step="0.01" min="0" name="amount_paid"
+                                                id="amountPaid{{ $p->id }}" class="form-control"
+                                                data-balance="{{ max($p->amount_due - $p->total_paid, 0) }}" required>
+                                            <small class="text-muted">Maximum allowed:
+                                                ₱{{ number_format(max($p->amount_due - $p->total_paid, 0), 2) }}</small>
+                                        </div>
+
+                                        <!-- Current Status -->
+                                        <div class="mb-3">
+                                            <small class="text-muted">Current Status:
+                                                @if ($p->status === 'paid')
+                                                    <span class="badge bg-success">Paid</span>
+                                                @elseif ($p->status === 'partial')
+                                                    <span class="badge bg-warning text-dark">Partial</span>
+                                                @else
+                                                    <span class="badge bg-danger">Unpaid</span>
+                                                @endif
+                                            </small>
+                                        </div>
+
+                                        <hr>
+                                    </div>
+
+                                    <!-- Modal Footer -->
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Add Payment</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Student Payment History Modal -->
+                    <div class="modal fade" id="studentHistoryModal{{ $p->id }}" tabindex="-1"
+                        aria-labelledby="studentHistoryLabel{{ $p->id }}" data-bs-backdrop="static"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content shadow-lg">
+
+                                <div class="modal-body">
+                                    <!-- Student Info -->
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $p->student && $p->student->student_photo
+                                                ? asset('assetsDashboard/img/student_profile_pictures/' . $p->student->student_photo)
+                                                : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                class="rounded me-3"
+                                                style="width: 70px; height: 70px; object-fit: cover;">
+                                            <div>
+                                                <strong>{{ $p->student->full_name ?? 'Unknown' }}</strong><br>
+                                                <small class="text-muted">
+                                                    @if (strtolower($p->student->student_sex ?? '') === 'male')
+                                                        <i class="bx bx-male text-primary"></i> Male
+                                                    @elseif (strtolower($p->student->student_sex ?? '') === 'female')
+                                                        <i class="bx bx-female text-danger"></i> Female
+                                                    @endif
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <!-- Back to Add Payment -->
+                                        <button type="button" class="btn btn-primary"
+                                            data-bs-target="#addPaymentModal{{ $p->id }}" data-bs-toggle="modal"
+                                            data-bs-dismiss="modal">
+                                            <i class="bx bx-left-arrow-alt me-1"></i> Back to Payment
+                                        </button>
+                                    </div>
+
+                                    @if ($p->paymentHistories->count() > 0)
+                                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                            <table class="table table-sm table-hover align-middle">
+                                                <thead class="table-light">
+                                                    <tr class="text-center">
+                                                        <th>#</th>
+                                                        <th>Amount</th>
+                                                        <th>Date</th>
+                                                        <th>Added By</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($p->paymentHistories as $i => $history)
+                                                        <tr class="text-center">
+                                                            <td>{{ $i + 1 }}</td>
+                                                            <td>₱{{ number_format($history->amount_paid, 2) }}</td>
+                                                            <td>{{ $history->payment_date->format('M d, Y h:i A') }}
+                                                            </td>
+                                                            <td>{{ $history->addedBy->full_name ?? '—' }}</td>
+                                                            <td>
+                                                                <form
+                                                                    action="{{ route('admin.payments.history.delete', $history->id) }}"
+                                                                    method="POST"
+                                                                    onsubmit="return confirm('Delete this transaction?');">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </form>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @else
+                                        <p class="text-muted small mb-0">No payment history found.</p>
+                                    @endif
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
             <!-- /Payments Table -->
+
+
+
+            <!-- All Students Payment History Modal -->
+            <div class="modal fade" id="paymentHistoryModal" data-bs-backdrop="static" tabindex="-1"
+                aria-labelledby="paymentHistoryLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content shadow-lg">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="paymentHistoryLabel">All Payments History</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+
+                            <!-- Search & Filters -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <input type="text" id="historySearch" class="form-control w-50"
+                                    placeholder="Search student or added by...">
+
+                                <select id="historyLength" class="form-select w-auto">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+
+                            <!-- History Table -->
+                            <div class="table-responsive">
+                                <table id="historyTable" class="table table-hover">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>#</th>
+                                            <th>Student</th>
+                                            <th>Amount Paid</th>
+                                            <th>Payment Date</th>
+                                            <th>Added By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php
+                                            $allHistories = collect();
+                                            foreach ($payments as $payment) {
+                                                foreach ($payment->paymentHistories as $history) {
+                                                    $allHistories->push([
+                                                        'student' => $payment->student->full_name ?? 'Unknown',
+                                                        'amount' => $history->amount_paid,
+                                                        'date' => $history->payment_date,
+                                                        'addedBy' => $history->addedBy->full_name ?? '—',
+                                                    ]);
+                                                }
+                                            }
+                                            $allHistories = $allHistories->sortBy('date')->values();
+                                        @endphp
+
+                                        @forelse ($allHistories as $index => $h)
+                                            <tr class="history-row" data-student="{{ strtolower($h['student']) }}"
+                                                data-addedby="{{ strtolower($h['addedBy']) }}">
+                                                <td></td>
+                                                <td>{{ $h['student'] }}</td>
+                                                <td class="text-center">₱{{ number_format($h['amount'], 2) }}</td>
+                                                <td class="text-center">{{ $h['date']->format('M d, Y h:i A') }}</td>
+                                                <td class="text-center">{{ $h['addedBy'] }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted">No payment history
+                                                    found.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination Info + Controls -->
+                            <div class="d-flex justify-content-between align-items-center px-2 py-2 border-top">
+                                <div id="historyInfo" class="text-muted small"></div>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination mb-0" id="historyPagination"></ul>
+                                </nav>
+                            </div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /All Students Payment History Modal -->
+
+            <!-- Bulk Add Payment Modal -->
+            <div class="modal fade" id="bulkAddPaymentModal" data-bs-backdrop="static" tabindex="-1"
+                aria-labelledby="bulkAddPaymentLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="bulkAddPaymentLabel">Add Payment to Selected Students</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="bulkAddPaymentFormSubmit" action="{{ route('admin.payments.bulkAddPayment') }}"
+                            method="POST">
+                            @csrf
+                            <div id="bulkAddPaymentIds"></div> <!-- dynamic IDs -->
+
+                            <div class="modal-body">
+                                <p class="text-muted small">You are adding a payment to <span
+                                        id="bulkSelectedCount">0</span> students.</p>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Amount to Pay</label>
+                                    <input type="number" step="0.01" min="0" name="amount_paid"
+                                        class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Payment Date</label>
+                                    <input type="datetime-local" name="payment_date" class="form-control"
+                                        value="{{ now()->format('Y-m-d\TH:i') }}" required>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Confirm Payment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- /Bulk Add Payment Modal -->
 
             <!-- Pagination + Info -->
             <div class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
@@ -526,7 +777,7 @@
         @endif
     </script>
 
-    <!-- Pagination, Search, Filter & Bulk Actions -->
+    <!-- Pagination, Search, Filter & Bulk Actions for Payment Table-->
     <script>
         let allPaymentRows = [];
         let currentPage = 1;
@@ -895,6 +1146,236 @@
             });
         }
     </script>
+
+    <!-- Bulk Add Payment Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const bulkBtn = document.getElementById("bulkAddPaymentBtn"); // button that opens modal
+            const bulkIdsContainer = document.getElementById(
+                "bulkAddPaymentIds"); // hidden inputs container inside modal form
+            const bulkCount = document.getElementById("bulkSelectedCount"); // count text inside modal
+
+            if (bulkBtn) {
+                bulkBtn.addEventListener("click", () => {
+                    // reset IDs container
+                    bulkIdsContainer.innerHTML = "";
+
+                    // collect all selected checkboxes (even across paginated pages)
+                    const selected = Array.from(document.querySelectorAll(".payment-checkbox:checked"));
+                    bulkCount.textContent = selected.length;
+
+                    if (selected.length === 0) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "No payments selected",
+                            text: "Please select at least one student before adding a payment.",
+                            confirmButtonColor: "#3085d6"
+                        });
+                        // prevent modal from staying open
+                        const modal = bootstrap.Modal.getInstance(document.getElementById(
+                            "bulkAddPaymentModal"));
+                        if (modal) modal.hide();
+                        return;
+                    }
+
+                    // inject hidden inputs
+                    selected.forEach(cb => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "payment_ids[]";
+                        input.value = cb.value;
+                        bulkIdsContainer.appendChild(input);
+                    });
+                });
+            }
+        });
+    </script>
+
+    <!-- Pagination, Search, & Filter for Payment Histories -->
+    <script>
+        let allHistoryRows = [];
+        let visibleHistories = {};
+        let historyPage = 1;
+        let historyRowsPerPage = 10;
+
+        // PAGINATION for History
+        function paginateHistories(tableId, paginationId, maxVisiblePages = 5) {
+            const pagination = document.getElementById(paginationId);
+            const rows = visibleHistories[tableId] || [];
+            const tbody = document.querySelector(`#${tableId} tbody`);
+
+            // Remove old "No results" row if it exists
+            const noResultRow = tbody.querySelector(".no-results-row");
+            if (noResultRow) noResultRow.remove();
+
+            function showPage(page) {
+                const totalEntries = rows.length;
+                const totalPages = Math.max(1, Math.ceil(totalEntries / historyRowsPerPage));
+                historyPage = Math.min(Math.max(1, page), totalPages);
+                const start = (historyPage - 1) * historyRowsPerPage;
+                const end = Math.min(start + historyRowsPerPage, totalEntries);
+
+                // Hide all rows
+                allHistoryRows.forEach(r => r.style.display = "none");
+
+                if (totalEntries > 0) {
+                    rows.slice(start, end).forEach((r, i) => {
+                        r.style.display = "table-row";
+                        r.querySelector("td:first-child").textContent = start + i + 1;
+                    });
+                } else {
+                    // If no results, insert temporary row
+                    const tr = document.createElement("tr");
+                    tr.className = "no-results-row";
+                    tr.innerHTML = `<td colspan="5" class="text-center text-muted">No results found</td>`;
+                    tbody.appendChild(tr);
+                }
+
+                document.getElementById("historyInfo").textContent =
+                    totalEntries > 0 ?
+                    `Showing ${start + 1} to ${end} of ${totalEntries} histories` :
+                    "Showing 0 to 0 of 0 histories";
+
+                // Rebuild pagination
+                pagination.innerHTML = "";
+                const prev = document.createElement("li");
+                prev.className = `page-item ${historyPage === 1 ? 'disabled' : ''}`;
+                prev.innerHTML = `<a class="page-link" href="#">«</a>`;
+                prev.onclick = (e) => {
+                    e.preventDefault();
+                    if (historyPage > 1) showPage(historyPage - 1);
+                };
+                pagination.appendChild(prev);
+
+                let startPage = Math.max(1, historyPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const li = document.createElement("li");
+                    li.className = `page-item ${i === historyPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.onclick = (e) => {
+                        e.preventDefault();
+                        showPage(i);
+                    };
+                    pagination.appendChild(li);
+                }
+
+                const next = document.createElement("li");
+                next.className = `page-item ${historyPage === totalPages ? 'disabled' : ''}`;
+                next.innerHTML = `<a class="page-link" href="#">»</a>`;
+                next.onclick = (e) => {
+                    e.preventDefault();
+                    if (historyPage < totalPages) showPage(historyPage + 1);
+                };
+                pagination.appendChild(next);
+            }
+
+            showPage(historyPage);
+        }
+
+        // FILTER Histories
+        function filterHistories() {
+            const tableId = "historyTable";
+            const query = document.getElementById("historySearch").value.trim().toLowerCase();
+
+            const filtered = allHistoryRows.filter(row => {
+                const student = row.dataset.student || "";
+                const addedBy = row.dataset.addedby || "";
+                return query === "" || student.includes(query) || addedBy.includes(query);
+            });
+
+            visibleHistories[tableId] = filtered;
+            historyPage = 1;
+            paginateHistories(tableId, "historyPagination");
+        }
+
+        // INIT when modal opens
+        document.addEventListener("DOMContentLoaded", () => {
+            allHistoryRows = Array.from(document.querySelectorAll("#historyTable tbody tr.history-row"));
+            visibleHistories["historyTable"] = allHistoryRows;
+            filterHistories();
+
+            document.getElementById("historySearch").addEventListener("input", () => setTimeout(filterHistories,
+                300));
+            document.getElementById("historyLength").addEventListener("change", function() {
+                historyRowsPerPage = parseInt(this.value);
+                historyPage = 1;
+                paginateHistories("historyTable", "historyPagination");
+            });
+
+            // Re-init each time modal opens
+            const historyModal = document.getElementById("paymentHistoryModal");
+            historyModal.addEventListener("shown.bs.modal", () => {
+                filterHistories();
+            });
+        });
+    </script>
+
+    <!-- Add Payment Validation for preventing overpayment -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll("input[name='amount_paid']").forEach(input => {
+                input.addEventListener("input", () => {
+                    const maxBalance = parseFloat(input.dataset.balance);
+                    if (parseFloat(input.value) > maxBalance) {
+                        input.setCustomValidity("Payment exceeds remaining balance (₱" + maxBalance
+                            .toFixed(2) + ")");
+                    } else {
+                        input.setCustomValidity("");
+                    }
+                });
+            });
+        });
+    </script>
+
+    @if (session('bulk_error'))
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                Swal.fire({
+                    icon: "error",
+                    title: "Bulk Payment Failed",
+                    text: "{{ session('bulk_error') }}",
+                    confirmButtonColor: "#d33",
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                });
+            });
+        </script>
+    @endif
+
+    <!-- To calculate collected/expected collection dynamically -->
+    <script>
+        function updateCollected() {
+            let rows = document.querySelectorAll('.payment-row');
+            let totalCollected = 0;
+            let totalExpected = 0;
+
+            rows.forEach(row => {
+                let paid = parseFloat(row.dataset.amountPaid || 0);
+                let due = parseFloat(row.dataset.amountDue || 0);
+
+                totalCollected += paid;
+                totalExpected += due;
+            });
+
+            // update UI
+            document.getElementById('collectedValue').textContent = totalCollected.toLocaleString('en-PH', {
+                minimumFractionDigits: 2
+            });
+            document.getElementById('expectedValue').textContent = totalExpected.toLocaleString('en-PH', {
+                minimumFractionDigits: 2
+            });
+        }
+
+        // Run on page load
+        updateCollected();
+
+        // Optionally re-run after filtering, searching, adding/deleting payments
+        document.addEventListener('paymentsUpdated', updateCollected);
+    </script>
+
 @endpush
 
 @push('styles')
@@ -905,7 +1386,6 @@
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
-
 
     <style>
         .row-highlight {

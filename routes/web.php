@@ -303,14 +303,27 @@ Route::get('payments/', [PaymentController::class, 'indexAdmin'])
 Route::post('payments/create', [PaymentController::class, 'createAdmin'])
     ->name('admin.payments.create');
 
+Route::delete('payments/{payment}', [PaymentController::class, 'destroyAdmin'])
+    ->name('admin.payments.destroy');
+
+Route::put('/admin/payments/{id}/add', [PaymentController::class, 'addPayment'])->name('admin.payments.add');
+
+Route::get('/admin/payments/{paymentName}/history', [PaymentController::class, 'history'])->name('admin.payments.history');
+
+
+
 Route::get('payments/show/{paymentName}', [PaymentController::class, 'showAdmin'])
     ->name('admin.payments.show');
 
-Route::put('payments/{id}/update', [PaymentController::class, 'update'])
-    ->name('admin.payments.update');
+Route::delete('/payments/history/{id}', [PaymentController::class, 'deleteHistory'])
+    ->name('admin.payments.history.delete');
 
-Route::post('payments/bulk-update', [PaymentController::class, 'bulkUpdate'])
-    ->name('admin.payments.bulkUpdate');
+
+// Route::put('payments/{id}/update', [PaymentController::class, 'update'])
+//     ->name('admin.payments.update');
+
+Route::post('payments/bulk-add-payment', [PaymentController::class, 'bulkAddPayment'])
+    ->name('admin.payments.bulkAddPayment');
 
 Route::get('/class-students/search', [StudentController::class, 'classStudentSearch'])
     ->name('class-students.search');
