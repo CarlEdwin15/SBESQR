@@ -187,7 +187,8 @@
                 <!-- Add Payment Button -->
                 <!-- Add Payment Button -->
                 <button type="button" class="mb-3 d-flex align-items-center btn btn-primary" id="openAddPayment">
-                    + Add Payment
+                    <i class='bx bxs-plus-square me-1 align-items-center'></i>
+                    <span class="d-none d-sm-block">Add Payment</span>
                 </button>
             </div>
 

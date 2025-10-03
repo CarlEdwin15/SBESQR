@@ -87,7 +87,7 @@ class Payment extends Model
     public function paymentHistories()
     {
         return $this->hasMany(PaymentHistory::class, 'payment_id')
-            ->orderBy('payment_date', 'desc');
+            ->orderBy('payment_date');
     }
 
     public function latestPaymentDate()

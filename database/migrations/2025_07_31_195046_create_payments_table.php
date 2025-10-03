@@ -25,7 +25,7 @@ return new class extends Migration {
             $table->date('due_date');     // Deadline to pay
 
             // Student payment progress (handled by teacher)
-            $table->decimal('amount_paid', 10, 2)->default(0);
+            // $table->decimal('amount_paid', 10, 2)->default(0);
             // $table->date('date_paid')->nullable();
             $table->enum('status', ['unpaid', 'partial', 'paid'])->default('unpaid');
 

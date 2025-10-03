@@ -319,11 +319,19 @@ Route::delete('/payments/history/{id}', [PaymentController::class, 'deleteHistor
     ->name('admin.payments.history.delete');
 
 
-// Route::put('payments/{id}/update', [PaymentController::class, 'update'])
-//     ->name('admin.payments.update');
 
 Route::post('payments/bulk-add-payment', [PaymentController::class, 'bulkAddPayment'])
     ->name('admin.payments.bulkAddPayment');
+
+Route::post('/admin/payments/{paymentName}/add-students', [PaymentController::class, 'addStudents'])
+    ->name('admin.payments.addStudents');
+
+Route::get('/class-students/search/exclude-payment', [StudentController::class, 'classStudentSearchExcludePayment'])
+    ->name('class-students.search.exclude-payment');
+
+
+Route::post('payments/bulk-remove', [PaymentController::class, 'bulkRemoveStudents'])
+    ->name('admin.payments.bulkRemoveStudents');
 
 Route::get('/class-students/search', [StudentController::class, 'classStudentSearch'])
     ->name('class-students.search');

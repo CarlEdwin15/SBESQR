@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Classes;
 use App\Models\ClassStudent;
+use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentAddress;
 use App\Models\SchoolYear;
@@ -14,9 +15,11 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class StudentController extends Controller
 {
+    // For searching students (global)
     public function search(Request $request)
     {
         $term = $request->get('q');
@@ -33,6 +36,7 @@ class StudentController extends Controller
         return response()->json($students);
     }
 
+    // For searching students whose currently enrolled to current school year
     public function classStudentSearch(Request $request)
     {
         $term = trim($request->get('q'));
@@ -88,6 +92,57 @@ class StudentController extends Controller
                     'formatted_grade_level' => $cs->class->formatted_grade_level ?? '',
                     'section'               => $cs->class->section ?? '',
                 ],
+            ];
+        }));
+    }
+
+    // For searching students whose currently enrolled but not included to the selected payment
+    public function classStudentSearchExcludePayment(Request $request)
+    {
+        $term        = trim($request->get('q'));
+        $year        = $request->get('year');
+        $paymentName = $request->get('payment_name');
+
+        if (!$year || !$paymentName) {
+            Log::info("Missing year or payment name", compact('year', 'paymentName'));
+            return response()->json([]);
+        }
+
+        $schoolYear = SchoolYear::where('school_year', $year)->first();
+        if (!$schoolYear) {
+            Log::info("School year not found", ['year' => $year]);
+            return response()->json([]);
+        }
+
+        $excludedIds = Payment::where('payment_name', $paymentName)
+            ->pluck('class_student_id')
+            ->toArray();
+
+        Log::info("Excluded IDs", $excludedIds);
+
+        $students = ClassStudent::with(['student', 'class'])
+            ->where('school_year_id', $schoolYear->id)
+            ->where('enrollment_status', 'enrolled')
+            ->whereNotIn('id', $excludedIds)
+            ->when($term, function ($q) use ($term) {
+                $q->whereHas('student', function ($studentQ) use ($term) {
+                    $studentQ->where('student_lrn', 'like', "%{$term}%")
+                        ->orWhereRaw("CONCAT(student_fName, ' ', student_lName) LIKE ?", ["%{$term}%"]);
+                });
+            })
+            ->limit(10)
+            ->get();
+
+        Log::info("Found students", $students->pluck('id')->toArray());
+
+        return response()->json($students->map(function ($cs) {
+            return [
+                'id'   => $cs->id,
+                'text' => $cs->student->student_lrn . ' ' .
+                    $cs->student->student_fName . ' ' .
+                    $cs->student->student_lName .
+                    ' (' . ($cs->class->formatted_grade_level ?? '') .
+                    ($cs->class->section ? ' - ' . $cs->class->section : '') . ')',
             ];
         }));
     }

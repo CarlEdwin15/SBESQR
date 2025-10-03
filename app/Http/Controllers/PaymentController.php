@@ -170,15 +170,15 @@ class PaymentController extends Controller
 
     public function showAdmin(Request $request, $paymentName)
     {
-        $selectedYear = $request->query('school_year');
-        $selectedClass = $request->query('class_id');
+        $selectedYear = $request->input('school_year');
+        $selectedClass = $request->input('class_id');
 
         $baseQuery = Payment::with([
             'student',
             'classStudent.class',
             'schoolYear',
             'paymentHistories' => function ($q) {
-                $q->orderBy('payment_date', 'desc'); // 👈 latest first
+                $q->orderBy('payment_date'); // 👈 latest first
             },
             'paymentHistories.addedBy'
         ])->where('payment_name', $paymentName);
@@ -214,6 +214,87 @@ class PaymentController extends Controller
             'schoolYears'
         ));
     }
+
+
+    public function addStudents(Request $request, $paymentName)
+    {
+        $validated = $request->validate([
+            'class_student_ids'   => 'required|array|min:1',
+            'class_student_ids.*' => 'exists:class_student,id',
+            'school_year'         => 'required|string',
+            'amount_due'          => 'nullable|numeric|min:0',
+            'due_date'            => 'nullable|date',
+        ]);
+
+        $schoolYear = SchoolYear::where('school_year', $validated['school_year'])->firstOrFail();
+
+        // Determine amount and due date
+        $amountDue = $validated['amount_due'];
+        $dueDate   = $validated['due_date'];
+
+        if (!$amountDue || !$dueDate) {
+            $template = Payment::where('payment_name', $paymentName)
+                ->whereHas('classStudent', fn($q) => $q->where('school_year_id', $schoolYear->id))
+                ->first();
+
+            $amountDue ??= $template?->amount_due;
+            $dueDate   ??= $template?->due_date;
+        }
+
+        if (!$amountDue || !$dueDate) {
+            return back()->with('error', "Missing payment details. Please ensure a reference payment exists for '{$paymentName}' in {$validated['school_year']}.");
+        }
+
+        $added = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($validated, $paymentName, $schoolYear, $amountDue, $dueDate, &$added, &$skipped) {
+            foreach ($validated['class_student_ids'] as $csId) {
+                $classStudent = ClassStudent::where('id', $csId)
+                    ->where('school_year_id', $schoolYear->id)
+                    ->where('enrollment_status', 'enrolled')
+                    ->first();
+
+                if (!$classStudent) {
+                    $skipped++;
+                    continue;
+                }
+
+                $exists = Payment::withTrashed()
+                    ->where('payment_name', $paymentName)
+                    ->where('class_student_id', $classStudent->id)
+                    ->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    continue;
+                }
+
+                Payment::create([
+                    'payment_name'     => $paymentName,
+                    'class_student_id' => $classStudent->id,
+                    'amount_due'       => $amountDue,
+                    'due_date'         => $dueDate,
+                    'status'           => 'unpaid',
+                    'created_by'       => Auth::id(),
+                ]);
+
+                $added++;
+            }
+        });
+
+        $message = collect([
+            $added   ? "{$added} student(s) added" : null,
+            $skipped ? "{$skipped} student(s) skipped" : null,
+        ])->filter()->implode(' — ');
+
+        return redirect()->route('admin.payments.show', [
+            'paymentName' => $paymentName,
+            'school_year' => $validated['school_year'],
+            'class_id'    => $request->input('class_id'),
+        ])->with('success', $message ?: 'No students were added.');
+    }
+
 
     public function addPayment(Request $request, $id)
     {
@@ -258,7 +339,7 @@ class PaymentController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.payments.show', ['id' => $payment->id] + request()->query())
+            ->route('admin.payments.show', ['paymentName' => $payment->payment_name] + request()->query())
             ->with('success', 'Payment added successfully.');
     }
 
@@ -266,7 +347,7 @@ class PaymentController extends Controller
     {
         $payments = Payment::with('student', 'paymentHistories.addedBy')
             ->where('payment_name', $paymentName)
-            ->orderBy('created_at', 'desc') // Order by latest payment first
+            ->orderBy('created_at') // Order by latest payment first
             ->get();
 
         return response()->json($payments);
@@ -357,6 +438,20 @@ class PaymentController extends Controller
             ->with('success', 'Payments added successfully to selected students.');
     }
 
+    public function bulkRemoveStudents(Request $request)
+    {
+        $request->validate([
+            'payment_ids'   => 'required|array',
+            'payment_ids.*' => 'exists:payments,id',
+        ]);
+
+        $removed = Payment::whereIn('id', $request->payment_ids)->forceDelete();
+
+        return redirect()
+            ->back()
+            ->with('success', "{$removed} student(s) permanently removed from the payment list.");
+    }
+
     public function destroyAdmin($paymentName)
     {
         $deleted = Payment::where('payment_name', $paymentName)->delete();
@@ -366,6 +461,15 @@ class PaymentController extends Controller
         } else {
             return response()->json(['message' => 'No payments found.'], 404);
         }
+    }
+
+    public function getDefaultSchoolYear()
+    {
+        $now = now();
+        $year = $now->year;
+        $cutoff = now()->copy()->setMonth(6)->setDay(1);
+        $start = $now->lt($cutoff) ? $year - 1 : $year;
+        return $start . '-' . ($start + 1);
     }
 
 

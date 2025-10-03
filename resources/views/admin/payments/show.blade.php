@@ -225,16 +225,41 @@
                     $totalCollected = $payments->sum('amount_paid');
                 @endphp
 
-                <div class="mb-4">
-                    <h4 class="mb-2 fw-bold text-info">Payment Name: {{ $paymentName }}</h4>
-                    <div class="d-flex flex-wrap align-items-center text-muted small">
-                        <strong>Amount Due:</strong> ₱{{ number_format($first->amount_due, 2) }}
-                        <span class="mx-2">|</span>
-                        <strong>Due Date:</strong> {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}
-                        <span class="mx-2">|</span>
-                        <strong>Collected:</strong>
-                        ₱<span id="collectedValue">{{ number_format($totalCollected, 2) }}</span> /
-                        ₱<span id="expectedValue">{{ number_format($totalExpected, 2) }}</span>
+                <div class="mb-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-2 fw-bold text-info">Payment Name: {{ $paymentName }}</h4>
+                        <div class="d-flex flex-wrap align-items-center text-muted small">
+                            <strong>Amount Due:</strong> ₱{{ number_format($first->amount_due, 2) }}
+                            <span class="mx-2">|</span>
+                            <strong>Due Date:</strong> {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}
+                            <span class="mx-2">|</span>
+                            <strong>Collected:</strong>
+                            ₱<span id="collectedValue">{{ number_format($totalCollected, 2) }}</span> /
+                            ₱<span id="expectedValue">{{ number_format($totalExpected, 2) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Remove Button & Add Students Button -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <!-- Bulk Remove Button -->
+                        <form id="bulkRemoveForm" action="{{ route('admin.payments.bulkRemoveStudents') }}"
+                            method="POST" class="gap-2 d-none" style="flex-wrap: nowrap;">
+                            @csrf
+                            <div id="bulkRemoveIds"></div> <!-- Hidden inputs for selected removals -->
+
+                            <button type="button" class="btn btn-outline-danger d-flex align-items-center"
+                                id="bulkRemoveBtn">
+                                <i class='bx bx-user-x me-1'></i>
+                                <span class="d-none d-sm-block">Remove Students</span>
+                            </button>
+                        </form>
+
+                        <!-- Add Students Button -->
+                        <button type="button" class="btn btn-outline-success d-flex align-items-center"
+                            id="addStudentsBtn" data-bs-toggle="modal" data-bs-target="#addStudentsModal">
+                            <i class='bx bx-user-plus me-1'></i>
+                            <span class="d-none d-sm-block">Add Students</span>
+                        </button>
                     </div>
                 </div>
             @endif
@@ -262,42 +287,41 @@
 
             <hr class="my-3" />
 
-            <!-- Table Length, Bulk Add, & Payment History Button -->
+            <!-- Table Length, Bulk Add Payment, & Payment History Button -->
             <div class="row g-2 mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <!-- Left side: Table Length + Search -->
-                    <div class="d-flex align-items-center gap-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <!-- Left side: Table Length + Bulk Add -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
                         <!-- Table Length Selector -->
-                        <div class="col-md-12">
-                            <select id="tableLength" class="form-select">
-                                <option value="10" selected>10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                        </div>
+                        <select id="tableLength" class="form-select" style="width: auto;">
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
 
                         <!-- Bulk Add Button -->
                         <form id="bulkPaymentForm" action="{{ route('admin.payments.bulkAddPayment') }}" method="POST"
-                            class="d-flex gap-2 d-none">
+                            class="d-none">
                             @csrf
-                            <div id="bulkPaymentIds"></div> <!-- Hidden inputs for selected payments -->
-
-                            <button type="button" class="btn btn-outline-primary" id="bulkAddPaymentBtn"
-                                data-bs-toggle="modal" data-bs-target="#bulkAddPaymentModal">
-                                Add Payment
+                            <div id="bulkPaymentIds"></div>
+                            <button type="button" class="btn btn-outline-primary d-flex align-items-center"
+                                id="bulkAddPaymentBtn" data-bs-toggle="modal" data-bs-target="#bulkAddPaymentModal">
+                                <i class='bx bx-add-to-queue me-1'></i>
+                                <span class="d-none d-sm-block">Bulk Add Payment</span>
                             </button>
                         </form>
                     </div>
 
-                    <!-- Payment History Button -->
-                    <button type="button" class="btn btn-info d-flex align-items-center" id="paymentHistoryBtn"
-                        data-bs-toggle="modal" data-bs-target="#paymentHistoryModal">
-                        All Payments History
+                    <!-- Right side: Payment History Button -->
+                    <button type="button" class="btn btn-info d-flex align-items-center mt-2 mt-sm-0"
+                        id="paymentHistoryBtn" data-bs-toggle="modal" data-bs-target="#paymentHistoryModal">
+                        <i class='bx bx-credit-card me-1'></i>
+                        <span class="d-none d-sm-block">All Payments History</span>
                     </button>
                 </div>
             </div>
-            <!-- /Table Length, Bulk Add, & Payment History Button -->
+            <!-- /Table Length, Bulk Add Payment, & Payment History Button -->
 
             <!-- Payments Table -->
             <div class="table-responsive">
@@ -429,10 +453,11 @@
                                                 </div>
                                             </div>
                                             <!-- Jump to History -->
-                                            <button type="button" class="btn btn-info"
+                                            <button type="button" class="btn btn-info d-flex align-items-center"
                                                 data-bs-target="#studentHistoryModal{{ $p->id }}"
                                                 data-bs-toggle="modal" data-bs-dismiss="modal">
-                                                <i class="bx bx-history me-1"></i> View History
+                                                <i class="bx bx-history me-1"></i>
+                                                <span class="d-none d-sm-block">View History</span>
                                             </button>
                                         </div>
 
@@ -508,21 +533,31 @@
                                                 style="width: 70px; height: 70px; object-fit: cover;">
                                             <div>
                                                 <strong>{{ $p->student->full_name ?? 'Unknown' }}</strong><br>
-                                                <small class="text-muted">
-                                                    @if (strtolower($p->student->student_sex ?? '') === 'male')
-                                                        <i class="bx bx-male text-primary"></i> Male
-                                                    @elseif (strtolower($p->student->student_sex ?? '') === 'female')
-                                                        <i class="bx bx-female text-danger"></i> Female
+                                                <strong>
+                                                    @if ($p->classStudent && $p->classStudent->class)
+                                                        {{ ucfirst($p->classStudent->class->formatted_grade_level) }} -
+                                                        {{ $p->classStudent->class->section }}
+                                                    @else
+                                                        —
                                                     @endif
-                                                </small>
+                                                </strong>
                                             </div>
                                         </div>
                                         <!-- Back to Add Payment -->
-                                        <button type="button" class="btn btn-primary"
+                                        <button type="button" class="btn btn-primary d-flex align-items-center"
                                             data-bs-target="#addPaymentModal{{ $p->id }}" data-bs-toggle="modal"
                                             data-bs-dismiss="modal">
-                                            <i class="bx bx-left-arrow-alt me-1"></i> Back to Payment
+                                            <i class="bx bx-left-arrow-alt me-1"></i>
+                                            <span class="d-none d-sm-block">Back to Payment</span>
                                         </button>
+                                    </div>
+
+                                    <!-- Payment Progress (same as in Add Payment Modal) -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Total Payment Amount</label>
+                                        <input type="text" class="form-control"
+                                            value="₱{{ number_format($p->total_paid, 2) }} / ₱{{ number_format($p->amount_due, 2) }}"
+                                            readonly>
                                     </div>
 
                                     @if ($p->paymentHistories->count() > 0)
@@ -568,7 +603,8 @@
                                 </div>
 
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -673,8 +709,10 @@
                 aria-labelledby="bulkAddPaymentLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content shadow-lg">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title" id="bulkAddPaymentLabel">Add Payment to Selected Students</h5>
+                        <div class="modal-header">
+                            <h4 class="modal-title text-primary fw-bold" id="bulkAddPaymentLabel">Bulk Add Payment to
+                                Selected
+                                Students</h4>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <form id="bulkAddPaymentFormSubmit" action="{{ route('admin.payments.bulkAddPayment') }}"
@@ -683,8 +721,10 @@
                             <div id="bulkAddPaymentIds"></div> <!-- dynamic IDs -->
 
                             <div class="modal-body">
-                                <p class="text-muted small">You are adding a payment to <span
-                                        id="bulkSelectedCount">0</span> students.</p>
+                                <p class="text-muted">You are adding a payment to
+                                    <span class="text-danger" id="bulkSelectedCount">0</span>
+                                    <span class="text-danger">Students.</span>
+                                </p>
 
                                 <div class="mb-3">
                                     <label class="form-label">Amount to Pay</label>
@@ -700,7 +740,7 @@
                             </div>
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                 <button type="submit" class="btn btn-primary">Confirm Payment</button>
                             </div>
                         </form>
@@ -717,6 +757,48 @@
                 </nav>
             </div>
             <!-- /Pagination + Info -->
+
+            <!-- Add Students Modal -->
+            <div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content shadow-lg">
+                        <form action="{{ route('admin.payments.addStudents', $paymentName) }}" method="POST">
+                            @csrf
+
+                            {{-- Persist which school year and class filter the admin was on --}}
+                            <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+                            <input type="hidden" name="class_id" value="{{ $selectedClass ?? '' }}">
+
+                            {{-- Copy reference values from the first payment (if available) --}}
+                            <input type="hidden" name="amount_due" value="{{ optional($first)->amount_due ?? '' }}">
+                            <input type="hidden" name="due_date" value="{{ optional($first)->due_date ?? '' }}">
+
+                            <div class="modal-header">
+                                <h4 class="modal-title text-primary fw-bold">Add Students to Payment</h4>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Select Students (Enrolled in {{ $selectedYear }})</label>
+                                    <select name="class_student_ids[]" id="classStudentSelectMulti" class="tom-select"
+                                        multiple required>
+                                        {{-- Options filled dynamically via AJAX --}}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-success">Add Students</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- /Add Students Modal -->
+
 
         </div>
         <!-- /Payments Card -->
@@ -825,8 +907,8 @@
                 // update info
                 const tableInfo = document.getElementById("tableInfo");
                 tableInfo.textContent = totalEntries > 0 ?
-                    `Showing ${start + 1} to ${end} of ${totalEntries} payments` :
-                    "Showing 0 to 0 of 0 payments";
+                    `Showing ${start + 1} to ${end} of ${totalEntries} students` :
+                    "Showing 0 to 0 of 0 students";
 
                 // build pagination
                 pagination.innerHTML = "";
@@ -930,10 +1012,11 @@
                     cb.closest("tr").classList.toggle("row-highlight", cb.checked && cb.closest("tr").style
                         .display !== "none");
 
-                    // Update Select All checkbox
-                    const allCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"));
-                    selectAll.checked = allCheckboxes.length > 0 && allCheckboxes.every(cb => selectedPayments
-                        .has(cb.value));
+                    // Update Select All based on visible checkboxes only
+                    const visibleCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"))
+                        .filter(cb => cb.closest("tr").style.display !== "none");
+
+                    selectAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(c => c.checked);
 
                     // Toggle bulk form
                     const bulkForm = document.getElementById("bulkPaymentForm");
@@ -942,24 +1025,23 @@
             });
 
             // Select-All checkbox
-            selectAll.onchange = () => {
-                const allCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"));
+            selectAll.addEventListener("change", () => {
+                const visibleCheckboxes = Array.from(document.querySelectorAll(".payment-checkbox"))
+                    .filter(cb => cb.closest("tr").style.display !== "none"); // only visible
 
-                allCheckboxes.forEach(cb => {
+                visibleCheckboxes.forEach(cb => {
                     cb.checked = selectAll.checked;
                     const val = cb.value;
                     if (cb.checked) selectedPayments.add(val);
                     else selectedPayments.delete(val);
 
-                    // Highlight only if row is visible
-                    cb.closest("tr").classList.toggle("row-highlight", cb.checked && cb.closest("tr").style
-                        .display !== "none");
+                    cb.closest("tr").classList.toggle("row-highlight", cb.checked);
                 });
 
                 // Bulk form toggle based on whether at least one is selected
                 const bulkForm = document.getElementById("bulkPaymentForm");
                 bulkForm.classList.toggle("d-none", selectedPayments.size === 0);
-            };
+            });
         }
 
         // BULK STATUS
@@ -1150,17 +1232,13 @@
     <!-- Bulk Add Payment Script -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const bulkBtn = document.getElementById("bulkAddPaymentBtn"); // button that opens modal
-            const bulkIdsContainer = document.getElementById(
-                "bulkAddPaymentIds"); // hidden inputs container inside modal form
-            const bulkCount = document.getElementById("bulkSelectedCount"); // count text inside modal
+            const bulkBtn = document.getElementById("bulkAddPaymentBtn");
+            const bulkIdsContainer = document.getElementById("bulkAddPaymentIds");
+            const bulkCount = document.getElementById("bulkSelectedCount");
 
             if (bulkBtn) {
                 bulkBtn.addEventListener("click", () => {
-                    // reset IDs container
                     bulkIdsContainer.innerHTML = "";
-
-                    // collect all selected checkboxes (even across paginated pages)
                     const selected = Array.from(document.querySelectorAll(".payment-checkbox:checked"));
                     bulkCount.textContent = selected.length;
 
@@ -1171,14 +1249,12 @@
                             text: "Please select at least one student before adding a payment.",
                             confirmButtonColor: "#3085d6"
                         });
-                        // prevent modal from staying open
                         const modal = bootstrap.Modal.getInstance(document.getElementById(
                             "bulkAddPaymentModal"));
                         if (modal) modal.hide();
                         return;
                     }
 
-                    // inject hidden inputs
                     selected.forEach(cb => {
                         const input = document.createElement("input");
                         input.type = "hidden";
@@ -1188,6 +1264,74 @@
                     });
                 });
             }
+        });
+    </script>
+
+    <!-- Bulk Remove Payment Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const bulkFormAdd = document.getElementById("bulkPaymentForm");
+            const bulkFormRemove = document.getElementById("bulkRemoveForm");
+            const bulkRemoveBtn = document.getElementById("bulkRemoveBtn");
+            const bulkRemoveIds = document.getElementById("bulkRemoveIds");
+
+            if (bulkRemoveBtn) {
+                bulkRemoveBtn.addEventListener("click", () => {
+                    bulkRemoveIds.innerHTML = "";
+
+                    const selected = Array.from(document.querySelectorAll(".payment-checkbox:checked"))
+                        .filter(cb => cb.closest("tr").style.display !== "none"); // only visible
+
+                    if (selected.length === 0) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "No students selected",
+                            text: "Please select at least one student to remove.",
+                            confirmButtonColor: "#3085d6"
+                        });
+                        return;
+                    }
+
+                    // Ask confirmation via SweetAlert
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: `You are about to remove ${selected.length} student(s) from this payment list. This action cannot be undone.`,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#d33",
+                        cancelButtonColor: "#6c757d",
+                        confirmButtonText: "Yes, remove them",
+                        cancelButtonText: "Cancel"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // inject hidden inputs into form
+                            selected.forEach(cb => {
+                                const input = document.createElement("input");
+                                input.type = "hidden";
+                                input.name = "payment_ids[]";
+                                input.value = cb.value;
+                                bulkRemoveIds.appendChild(input);
+                            });
+
+                            bulkFormRemove.submit();
+                        }
+                    });
+                });
+            }
+
+            function toggleBulkForms() {
+                const anyChecked = Array.from(document.querySelectorAll(".payment-checkbox"))
+                    .some(cb => cb.checked);
+
+                bulkFormAdd.classList.toggle("d-none", !anyChecked);
+                bulkFormRemove.classList.toggle("d-none", !anyChecked);
+            }
+
+            document.querySelectorAll(".payment-checkbox").forEach(cb => {
+                cb.addEventListener("change", toggleBulkForms);
+            });
+
+            document.getElementById("selectAllPayments").addEventListener("change", toggleBulkForms);
         });
     </script>
 
@@ -1376,6 +1520,35 @@
         document.addEventListener('paymentsUpdated', updateCollected);
     </script>
 
+    <!-- Tom Select for adding students to a payment -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (document.getElementById('classStudentSelectMulti')) {
+                new TomSelect('#classStudentSelectMulti', {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Search enrolled students...",
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+
+                        const url = "{{ route('class-students.search.exclude-payment') }}" +
+                            "?q=" + encodeURIComponent(query) +
+                            "&year={{ $selectedYear }}" +
+                            "&payment_name={{ $paymentName }}";
+
+                        fetch(url)
+                            .then(response => response.json())
+                            .then(data => callback(data))
+                            .catch(() => callback());
+                    }
+                });
+            }
+        });
+    </script>
+
 @endpush
 
 @push('styles')
@@ -1399,6 +1572,22 @@
 
         .payment-checkbox {
             cursor: pointer;
+        }
+
+        .ts-control {
+            background-color: #e0f7fa;
+            border-color: #42a5f5;
+        }
+
+        .ts-control .item {
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 4px;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
         }
     </style>
 @endpush
