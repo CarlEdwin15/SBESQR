@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | Payments')
+@section('title', 'Admin | School Fees')
 
 @section('content')
 
@@ -103,12 +103,12 @@
             <li class="menu-item active open">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-wallet-alt"></i>
-                    <div>Payments</div>
+                    <div>School Fees</div>
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Payments</div>
+                            <div class="text-warning">All School Fees</div>
                         </a>
                     </li>
                 </ul>
@@ -154,7 +154,7 @@
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                 <a class="text-muted fw-light"
                     href="{{ route('admin.payments.index', ['school_year' => $selectedYear, 'class_id' => $selectedClass]) }}">
-                    Payments
+                    School Fees
                 </a> /
             </span>
             {{ $paymentName }}
@@ -227,7 +227,7 @@
 
                 <div class="mb-4 d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="mb-2 fw-bold text-info">Payment Name: {{ $paymentName }}</h4>
+                        <h4 class="mb-2 fw-bold text-info">School Fee Name: {{ $paymentName }}</h4>
                         <div class="d-flex flex-wrap align-items-center text-muted small">
                             <strong>Amount Due:</strong> ₱{{ number_format($first->amount_due, 2) }}
                             <span class="mx-2">|</span>

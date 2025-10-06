@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | Payments')
+@section('title', 'Admin | All School Fees')
 
 @section('content')
 
@@ -103,12 +103,12 @@
             <li class="menu-item active open">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-wallet-alt"></i>
-                    <div>Payments</div>
+                    <div>School Fees</div>
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Payments</div>
+                            <div class="text-warning">All School Fees</div>
                         </a>
                     </li>
                 </ul>
@@ -151,9 +151,9 @@
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                <a class="text-muted fw-light" href="{{ route('admin.payments.index') }}">Payments</a> /
+                <a class="text-muted fw-light" href="{{ route('admin.payments.index') }}">School Fees</a> /
             </span>
-            All Payments
+            All School Fees
         </h4>
 
         {{-- Notification when year is changed --}}
@@ -184,16 +184,17 @@
                     <span class="d-none d-sm-block">Back</span>
                 </a> --}}
 
-                <!-- Add Payment Button -->
-                <!-- Add Payment Button -->
-                <button type="button" class="mb-3 d-flex align-items-center btn btn-primary" id="openAddPayment">
-                    <i class='bx bxs-plus-square me-1 align-items-center'></i>
-                    <span class="d-none d-sm-block">Add Payment</span>
-                </button>
+                @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
+                    <!-- Add Payment Button -->
+                    <button type="button" class="mb-3 d-flex align-items-center btn btn-primary" id="openAddPayment">
+                        <i class='bx bxs-plus-square me-1 align-items-center'></i>
+                        <span class="d-none d-sm-block">Add School Fee</span>
+                    </button>
+                @endif
             </div>
 
             {{-- Classes & School Year Selection --}}
-            <div class="d-flex justify-content-end gap-2">
+            <div class="d-flex justify-content-end gap-2 mb-2">
 
                 {{-- Classes Filter (Tom Select) --}}
                 <form method="GET" action="{{ route('admin.payments.index') }}" style="min-width: 130px;">
@@ -242,10 +243,10 @@
                         @php
                             $class = $allClasses->firstWhere('id', $selectedClass);
                         @endphp
-                        Payment Records for {{ $class->formattedGradeLevel ?? ucfirst($class->grade_level) }} -
+                        School Fees for {{ $class->formattedGradeLevel ?? ucfirst($class->grade_level) }} -
                         {{ $class->section }} ({{ $selectedYear }})
                     @else
-                        Payment Records for All Classes ({{ $selectedYear }})
+                        School Fees for All Classes ({{ $selectedYear }})
                     @endif
                 </h4>
 
@@ -380,10 +381,6 @@
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
-                                                <li><a class="dropdown-item text-warning" href="#">
-                                                        <i class="bi bi-pencil me-2"></i>Edit
-                                                    </a>
-                                                </li>
                                                 <li>
                                                     <a href="javascript:void(0)"
                                                         class="dropdown-item text-danger delete-payment"
@@ -415,13 +412,13 @@
                 <input type="hidden" name="school_year" value="{{ $selectedYear }}">
 
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold text-primary">Add Payment for Specific Students</h5>
+                    <h5 class="modal-title fw-bold text-primary">Add School Fee for Specific Students</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
                     <div class="form-group mb-3">
-                        <label class="form-label">Payment Name</label>
+                        <label class="form-label">School Fee Name</label>
                         <input type="text" name="payment_name" class="form-control" required>
                     </div>
 
@@ -462,13 +459,13 @@
                 <input type="hidden" name="school_year" value="{{ $selectedYear }}">
 
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold text-primary">Add Payment by Batch/Class</h5>
+                    <h5 class="modal-title fw-bold text-primary">Add School Fee by Batch/Class</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
                     <div class="form-group mb-3">
-                        <label class="form-label">Payment Name</label>
+                        <label class="form-label">School Fee Name</label>
                         <input type="text" name="payment_name" class="form-control" required>
                     </div>
 

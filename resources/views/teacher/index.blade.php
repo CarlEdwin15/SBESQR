@@ -10,7 +10,7 @@
             <a href="{{ url('/home') }}" class="app-brand-link">
                 <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
                 <span class="app-brand-text menu-text fw-bolder text-warning" style="padding: 9px">Teacher's
-                    <span class="text-warning">Management</span>
+                    <span class="text-warning">Dashboard</span>
                 </span>
             </a>
         </div>
@@ -51,21 +51,6 @@
                     <li class="menu-item">
                         <a href="{{ route('teacher.myClasses') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">My Classes</div>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-
-            {{-- Payments sidebar --}}
-            <li class="menu-item">
-                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                    <div class="text-light">Payments</div>
-                </a>
-                <ul class="menu-sub">
-                    <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Payments</div>
                         </a>
                     </li>
                 </ul>

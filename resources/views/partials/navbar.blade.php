@@ -109,7 +109,7 @@
                         <hr class="dropdown-divider my-0">
                     </li>
                     <li>
-                        <a href="{{ route('announcements.index') }}"
+                        <a href=""
                             class="dropdown-item text-center text-primary fw-semibold py-2">
                             View all announcements
                         </a>
@@ -152,7 +152,7 @@
                                                 break;
                                             case 'parent':
                                                 $profilePhoto = asset(
-                                                    'assetsDashboard/img/profile_pictures/parents_default_profile.png',
+                                                    'assetsDashboard/img/profile_pictures/parent_default_profile.jpg',
                                                 );
                                                 break;
                                             default:

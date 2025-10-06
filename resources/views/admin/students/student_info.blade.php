@@ -109,12 +109,12 @@
             <li class="menu-item">
                 <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                     <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                    <div class="text-light">Payments</div>
+                    <div class="text-light">School Fees</div>
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Payments</div>
+                            <div class="text-light">All School Fees</div>
                         </a>
                     </li>
                 </ul>

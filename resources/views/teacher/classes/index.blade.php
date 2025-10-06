@@ -56,21 +56,6 @@
                 </ul>
             </li>
 
-            {{-- Payments sidebar --}}
-            <li class="menu-item">
-                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                    <div class="text-light">Payments</div>
-                </a>
-                <ul class="menu-sub">
-                    <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Payments</div>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-
             {{-- SMS Logs sidebar --}}
             <li class="menu-item">
                 <a href="" class="menu-link bg-dark text-light">

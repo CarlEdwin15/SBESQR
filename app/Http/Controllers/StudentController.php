@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Classes;
 use App\Models\ClassStudent;
+use App\Models\ClassSubject;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentAddress;
@@ -609,15 +610,25 @@ class StudentController extends Controller
             $subjectsWithGrades = [];
 
             foreach ($classItem->subjects as $subject) {
-                $quarters = $student->quarterlyGrades()
-                    ->where('class_id', $classItem->id)
-                    ->where('subject_id', $subject->id)
-                    ->get();
 
-                $final = $student->finalSubjectGrades()
-                    ->where('class_id', $classItem->id)
+                $classSubject = ClassSubject::where('class_id', $classItem->id)
                     ->where('subject_id', $subject->id)
                     ->first();
+
+                if ($classSubject) {
+                    $quarters = $student->quarterlyGrades()
+                        ->whereHas('quarter', function ($query) use ($classSubject) {
+                            $query->where('class_subject_id', $classSubject->id);
+                        })
+                        ->get();
+
+                    $final = $student->finalSubjectGrades()
+                        ->where('class_subject_id', $classSubject->id)
+                        ->first();
+                } else {
+                    $quarters = collect();
+                    $final = null;
+                }
 
                 $subjectsWithGrades[] = [
                     'subject' => $subject->subject_name,

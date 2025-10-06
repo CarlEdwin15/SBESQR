@@ -374,7 +374,6 @@ class PaymentController extends Controller
         }
 
         $payment->update([
-            'amount_paid' => $totalPaid,
             'status' => $status,
         ]);
 

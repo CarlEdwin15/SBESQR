@@ -103,12 +103,12 @@
             <li class="menu-item">
                 <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
                     <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                    <div class="text-light">Payments</div>
+                    <div class="text-light">School Fees</div>
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Payments</div>
+                            <div class="text-light">All School Fees</div>
                         </a>
                     </li>
                 </ul>
@@ -258,16 +258,16 @@
                                     <thead class="table-info">
                                         <tr class="text-center">
                                             <th style="width: 40px; text-align: center;">No.</th>
-                                            <th style="text-align: center;">Male || Name</th>
-                                            <th style="width: 160px; text-align: center;">Status</th>
+                                            <th style="width: 250px; text-align: center;">Male || Name</th>
+                                            <th style="width: 120px; text-align: center;">Status</th>
                                             <th style="width: 120px; text-align: center;">Time In</th>
                                             <th style="width: 120px; text-align: center;">Time Out</th>
-                                            <th style="width: 150px; text-align: center;">Date</th>
+                                            <th style="width: 120px; text-align: center;">Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @php $maleIndex = 1; @endphp
-                                        @foreach ($students->where('gender', 'Male')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
+                                        @foreach ($students->where('gender', 'male')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
                                             @php
                                                 $existing = $attendancesGrouped[$schedule->id][$student->id] ?? null;
                                                 $status = $existing->status ?? null;
@@ -317,16 +317,16 @@
                                     <thead class="table-danger">
                                         <tr class="text-center">
                                             <th style="width: 40px; text-align: center;">No.</th>
-                                            <th style="text-align: center;">Female || Name</th>
-                                            <th style="width: 160px; text-align: center;">Status</th>
+                                            <th style="width: 250px; text-align: center;">Female || Name</th>
+                                            <th style="width: 120px; text-align: center;">Status</th>
                                             <th style="width: 120px; text-align: center;">Time In</th>
                                             <th style="width: 120px; text-align: center;">Time Out</th>
-                                            <th style="width: 150px; text-align: center;">Date</th>
+                                            <th style="width: 120px; text-align: center;">Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @php $femaleIndex = 1; @endphp
-                                        @foreach ($students->where('gender', 'Female')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
+                                        @foreach ($students->where('gender', 'female')->sortBy(fn($s) => strtolower($s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName)) as $student)
                                             @php
                                                 $existing = $attendancesGrouped[$schedule->id][$student->id] ?? null;
                                                 $status = $existing->status ?? null;

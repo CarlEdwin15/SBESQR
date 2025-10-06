@@ -31,4 +31,16 @@ class QuarterlyGrade extends Model
     {
         return $this->belongsTo(ClassStudent::class);
     }
+
+    public function classSubject()
+    {
+        return $this->hasOneThrough(
+            ClassSubject::class,
+            Quarter::class,
+            'id', // foreign key on quarters
+            'id', // foreign key on class_subject
+            'quarter_id', // local key on quarterly_grades
+            'class_subject_id' // local key on quarters
+        );
+    }
 }

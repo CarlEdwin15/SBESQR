@@ -56,21 +56,6 @@
                 </ul>
             </li>
 
-            {{-- Payments sidebar --}}
-            <li class="menu-item">
-                <a href="javascript:void(0);" class="menu-link menu-toggle bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
-                    <div class="text-light">Payments</div>
-                </a>
-                <ul class="menu-sub">
-                    <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Payments</div>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-
             {{-- SMS Logs sidebar --}}
             <li class="menu-item">
                 <a href="" class="menu-link bg-dark text-light">
@@ -180,9 +165,9 @@
             <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold text-primary mb-0">{{ $grade }}</h5>
-                    <a href="" class="btn btn-success btn-sm">
+                    {{-- <a href="" class="btn btn-success btn-sm">
                         <i class="bx bx-printer"></i> Export
-                    </a>
+                    </a> --}}
                 </div>
 
                 <div class="table-responsive text-nowrap">

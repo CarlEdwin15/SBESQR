@@ -21,6 +21,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Models\Announcement;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -357,6 +358,26 @@ Route::prefix('parent')->middleware(['auth', 'role:parent'])->group(function () 
     Route::get('students/{student}/payments', [PaymentController::class, 'studentPayments'])->name('parent.payments.index');
     Route::post('payments/{payment}/pay', [PaymentController::class, 'pay'])->name('parent.payments.pay');
 });
+
+
+
+
+// PARENT DASHBOARD ROUTES
+Route::middleware(['auth', 'role:parent'])->group(function () {
+    Route::get('/parent/children/{id}', function ($id) {
+        $child = Student::with(['classStudents.class', 'schoolYears'])->findOrFail($id);
+        return view('parent.child-profile', compact('child'));
+    })->name('parent.children.show');
+});
+
+Route::get('/parent/children', [ParentController::class, 'children'])->name('parent.children.index');
+Route::get('/parent/school-fees', [ParentController::class, 'schoolFees'])->name('parent.school-fees.index');
+Route::get('/parent/announcements', [ParentController::class, 'announcements'])->name('parent.announcements.index');
+Route::get('/parent/sms-logs', [ParentController::class, 'smsLogs'])->name('parent.sms-logs.index');
+
+
+
+
 
 
 
