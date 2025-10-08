@@ -120,11 +120,15 @@ Route::post('/teacher_reassignment', [AdminController::class, 'reassignment'])->
 
 
 // Students Management (on ADMIN dashboard)
-Route::get('/addStudent', [StudentController::class, 'create'])->name('add.student');
+Route::get('/student-management', [StudentController::class, 'studentManagement'])->name('student.management');
 
 Route::post('/addStudent', [StudentController::class, 'store'])->name('store.student');
 
 Route::get('/showAllStudents', [StudentController::class, 'show'])->name('show.students');
+
+Route::post('/assignStudentClass', [StudentController::class, 'assignClass'])->name('assign.student.class');
+
+Route::get('/students/search/not-enrolled', [StudentController::class, 'searchNotEnrolled'])->name('students.search.not.enrolled');
 
 Route::get('/editStudent/{id}', [StudentController::class, 'edit'])->name('edit.student');
 

@@ -37,6 +37,39 @@ class StudentController extends Controller
         return response()->json($students);
     }
 
+    // For searching students NOT currently enrolled in the selected school year
+    public function searchNotEnrolled(Request $request)
+    {
+        $term = trim($request->get('q'));
+        $selectedYear = $request->get('school_year');
+
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
+
+        if (!$schoolYear) {
+            return response()->json([]);
+        }
+
+        // Only exclude students who are *actively enrolled* in this year
+        $enrolledIds = ClassStudent::where('school_year_id', $schoolYear->id)
+            ->where('enrollment_status', 'enrolled')
+            ->pluck('student_id')
+            ->toArray();
+
+        // Include students who are 'not_enrolled' or not yet in class_student for this year
+        $students = Student::query()
+            ->whereNotIn('id', $enrolledIds)
+            ->where(function ($q) use ($term) {
+                $q->where('student_lrn', 'like', "%{$term}%")
+                    ->orWhere('student_fName', 'like', "%{$term}%")
+                    ->orWhere('student_mName', 'like', "%{$term}%")
+                    ->orWhere('student_lName', 'like', "%{$term}%");
+            })
+            ->limit(10)
+            ->get(['id', 'student_lrn', 'student_fName', 'student_mName', 'student_lName']);
+
+        return response()->json($students);
+    }
+
     // For searching students whose currently enrolled to current school year
     public function classStudentSearch(Request $request)
     {
@@ -162,19 +195,29 @@ class StudentController extends Controller
 
         // Fetch all saved school years from DB
         $savedYears = SchoolYear::pluck('school_year')->toArray();
-        $savedStartYears = array_map(fn($sy) => (int)substr($sy, 0, 4), $savedYears);
-        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
 
-        $schoolYears = [];
-        for ($y = $minYear; $y <= $currentYear; $y++) {
-            $schoolYears[] = $y . '-' . ($y + 1);
-        }
+        // Determine current school year string
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
 
+        // Filter to include only saved years <= current school year
+        $schoolYears = collect($savedYears)
+            ->filter(function ($sy) use ($currentYear) {
+                $start = (int) substr($sy, 0, 4);
+                return $start <= $currentYear;
+            })
+            ->values()
+            ->toArray();
+
+        // Ensure current year is included if missing
         if (!in_array($currentSchoolYear, $schoolYears)) {
             $schoolYears[] = $currentSchoolYear;
         }
 
-        $schoolYears[] = $nextSchoolYear;
+        // Sort ascending
         usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
 
         $selectedYear = $request->query('school_year', $currentSchoolYear);
@@ -278,35 +321,61 @@ class StudentController extends Controller
         ));
     }
 
-    public function create()
+    public function assignClass(Request $request)
     {
-        $now = now();
-        $year = $now->year;
+        $validated = $request->validate([
+            'students' => 'required|array',
+            'students.*' => 'exists:students,id',
+            'grade_level' => 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6',
+            'section' => 'required|in:A,B,C,D,E,F',
+            'school_year' => 'required|exists:school_years,school_year',
+            'enrollment_type' => 'required|in:regular,transferee,returnee',
+        ]);
 
-        // Determine current school year
-        $cutoff = now()->copy()->setMonth(6)->setDay(1);
-        if ($now->lt($cutoff)) {
-            $currentYear = $year - 1;
-        } else {
-            $currentYear = $year;
+        $class = Classes::firstOrCreate([
+            'grade_level' => $validated['grade_level'],
+            'section' => $validated['section'],
+        ]);
+
+        $schoolYear = SchoolYear::where('school_year', $validated['school_year'])->firstOrFail();
+
+        foreach ($validated['students'] as $studentId) {
+            // Avoid duplicate enrollments in the same SY
+            DB::table('class_student')
+                ->where('student_id', $studentId)
+                ->where('school_year_id', $schoolYear->id)
+                ->delete();
+
+            DB::table('class_student')->insert([
+                'student_id' => $studentId,
+                'class_id' => $class->id,
+                'school_year_id' => $schoolYear->id,
+                'enrollment_status' => 'enrolled',
+                'enrollment_type' => $validated['enrollment_type'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
-        // Generate school year options
-        $schoolYears = [
-            ($currentYear - 1) . '-' . $currentYear,
-            $currentYear . '-' . ($currentYear + 1),
-            ($currentYear + 1) . '-' . ($currentYear + 2),
-        ];
+        return redirect()->back()->with('success', 'Selected students enrolled successfully!');
+    }
 
-        // Get selected school year from query, default to current
-        $selectedYear = request()->query('school_year', $currentYear . '-' . ($currentYear + 1));
+    public function studentManagement()
+    {
+        $students = Student::with(['classStudents' => function ($query) {
+            $query->latest('created_at');
+        }])->get();
 
-        // Optional flash message if just changed
-        if (request()->has('school_year')) {
-            session()->flash('school_year_notice', "Selected school year is: $selectedYear");
-        }
+        // Attach enrollment status (fallback to 'not_enrolled' if none found)
+        $students->each(function ($student) {
+            $latestEnrollment = $student->classStudents->first();
+            $student->status = $latestEnrollment->enrollment_status ?? 'not_enrolled';
+        });
 
-        return view('admin.students.addStudent', compact('schoolYears', 'selectedYear', 'currentYear'));
+        // Sort alphabetically by full name (using accessor)
+        $students = $students->sortBy('full_name', SORT_NATURAL | SORT_FLAG_CASE);
+
+        return view('admin.students.studentManagement', compact('students'));
     }
 
     public function store(Request $request)
@@ -317,8 +386,6 @@ class StudentController extends Controller
 
         $validatedData = $request->validate([
             'student_lrn' => ['required', 'string', 'max:12', 'regex:/^112828[0-9]{6}$/', 'unique:students,student_lrn'],
-            'student_grade_level' => 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6',
-            'student_section' => 'required|in:A,B,C,D,E,F',
             'student_fName' => 'required|string|max:255',
             'student_mName' => 'nullable|string|max:255',
             'student_lName' => 'required|string|max:255',
@@ -326,22 +393,6 @@ class StudentController extends Controller
             'student_dob' => 'nullable|date',
             'student_sex' => 'required|in:male,female',
             'student_pob' => 'required|string|max:255',
-            'enrollment_status' => 'required|in:enrolled,not_enrolled,archived,graduated',
-            'enrollment_type' => 'required|in:regular,transferee',
-            // 'student_parentEmail' => [
-            //     'nullable',
-            //     'string',
-            //     'max:255',
-            //     'email',
-            //     function ($attribute, $value, $fail) {
-            //         if (!$value) return;
-
-            //         $user = User::where('email', $value)->first();
-            //         if ($user && $user->role !== 'parent') {
-            //             $fail('This email is already used for ' . $user->role . ' account ');
-            //         }
-            //     },
-            // ],
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
         ], $messages);
 
@@ -379,52 +430,7 @@ class StudentController extends Controller
             'address_id' => $address->id,
         ]);
 
-        // Handle Parent User
-        if ($request->student_parentEmail) {
-            $parent = User::where('email', $request->student_parentEmail)
-                ->where('role', 'parent')
-                ->first();
-
-            if (!$parent) {
-                $parent = User::create([
-                    'firstName' => $request->student_fatherFName ?? $request->student_motherFName ?? 'Parent',
-                    'lastName'  => $request->student_fatherLName ?? $request->student_motherLName ?? 'Unknown',
-                    'email'     => $request->student_parentEmail,
-                    'role'      => 'parent',
-                    'password'  => bcrypt('default123'), // or send invite to set password
-                    'phone'     => $request->student_fatherPhone ?? $request->student_motherPhone,
-                ]);
-            }
-
-            // Attach to pivot
-            $student->parents()->syncWithoutDetaching([$parent->id]);
-        }
-
-        // Class
-        $class = Classes::firstOrCreate([
-            'grade_level' => $validatedData['student_grade_level'],
-            'section' => $validatedData['student_section'],
-        ]);
-
-        // School Year
-        $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
-        [$start, $end] = explode('-', $selectedSchoolYear);
-        $schoolYear = SchoolYear::firstOrCreate(
-            ['school_year' => $selectedSchoolYear],
-            [
-                'start_date' => "$start-06-01",
-                'end_date' => "$end-03-31",
-            ]
-        );
-
-        // Enroll student
-        $student->class()->attach($class->id, [
-            'school_year_id' => $schoolYear->id,
-            'enrollment_status' => 'enrolled',
-            'enrollment_type' => $validatedData['enrollment_type'],
-        ]);
-
-        return redirect()->route('add.student')->with('success', 'Student enrolled successfully!');
+        return redirect()->route('student.management')->with('success', 'Student added successfully! You can now assign them to a class.');
     }
 
     public function edit(Request $request, $id)
@@ -668,33 +674,43 @@ class StudentController extends Controller
         ));
     }
 
-    public function unenroll($id)
+    public function unenroll(Request $request, $id)
     {
         $student = Student::findOrFail($id);
 
-        // Get the current school year
-        $currentSchoolYear = $this->getDefaultSchoolYear();
-        $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
+        // 🧩 Determine target school year (either passed in request or default)
+        $schoolYearString = $request->input('school_year') ?? $this->getDefaultSchoolYear();
 
-        if (!$currentSchoolYearRecord) {
-            return redirect()->back()->with('error', 'Current school year not found.');
+        $schoolYear = SchoolYear::where('school_year', $schoolYearString)->first();
+
+        if (!$schoolYear) {
+            return redirect()->back()->with('error', 'Selected school year not found.');
         }
 
-        // Update the enrollment status to 'not_enrolled' for the current school year
-        $updated = DB::table('class_student')
+        // 🧩 Find the class_student pivot entry for this student & school year
+        $classStudent = DB::table('class_student')
             ->where('student_id', $student->id)
-            ->where('school_year_id', $currentSchoolYearRecord->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->first();
+
+        if (!$classStudent) {
+            return redirect()->back()->with('error', 'Student is not enrolled in the selected school year.');
+        }
+
+        // 🧩 Unenroll student (preserve record, but mark as not enrolled)
+        DB::table('class_student')
+            ->where('student_id', $student->id)
+            ->where('school_year_id', $schoolYear->id)
             ->update([
-                'class_id' => null, // Remove class association
+                'class_id' => null, // remove class link
                 'enrollment_status' => 'not_enrolled',
+                'enrollment_type' => null,
                 'updated_at' => now(),
             ]);
 
-        if ($updated === 0) {
-            return redirect()->back()->with('error', 'Student is not enrolled in the current school year.');
-        }
-
-        return redirect()->route('show.students')->with('success', 'Student unenrolled successfully!');
+        return redirect()
+            ->route('show.students', ['school_year' => $schoolYear->school_year])
+            ->with('success', "{$student->student_fName} {$student->student_lName} has been unenrolled from {$schoolYear->school_year}.");
     }
 
     public function showPromotionView(Request $request)

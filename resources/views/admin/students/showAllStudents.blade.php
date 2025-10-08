@@ -2,7 +2,6 @@
 
 @section('title', 'Admin | All Students')
 
-
 @section('content')
 
     <!-- Menu -->
@@ -54,12 +53,12 @@
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Students</div>
+                            <div class="text-warning">Student Enrollment</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Enrollment</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
@@ -168,11 +167,20 @@
 
         <div class="row mb-3 align-items-center">
             {{-- Search Bar --}}
-            <div class="col-md-6 d-flex justify-content-start">
+            <div class="col-md-6 d-flex justify-content-start gap-2">
                 <div class="d-flex align-items-center w-100" style="max-width: 400px;">
                     <i class="bx bx-search fs-4 lh-0 me-2"></i>
                     <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
                         placeholder="Search..." aria-label="Search..." />
+                </div>
+
+                <!-- Enrolled Student Button trigger modal -->
+                <div class="d-flex align-items-center w-100">
+                    <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+                        data-bs-target="#registerModal">
+                        <i class='bx bx-user-plus me-2'></i>
+                        <span class="d-none d-sm-block">Enroll Student</span>
+                    </button>
                 </div>
             </div>
 
@@ -245,11 +253,11 @@
                         </thead>
                         <tbody>
                             @forelse ($students->sortBy([
-                                                                                                                ['student_lName', 'asc'],
-                                                                                                                ['student_fName', 'asc'],
-                                                                                                                ['student_mName', 'asc'],
-                                                                                                                ['student_extName', 'asc'],
-                                                                                                                ]) as $student)
+                                                                                                                                            ['student_lName', 'asc'],
+                                                                                                                                            ['student_fName', 'asc'],
+                                                                                                                                            ['student_mName', 'asc'],
+                                                                                                                                            ['student_extName', 'asc'],
+                                                                                                                                            ]) as $student)
                                 <tr class="student-row"
                                     data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                     data-section="{{ strtolower(optional($student->class->first())->section) }}"
@@ -326,14 +334,17 @@
                                                         <i class="bx bx-edit-alt me-1"></i> Edit
                                                     </a> --}}
                                                     <button type="button" class="dropdown-item text-danger"
-                                                        onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}')">
+                                                        onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}', '{{ $selectedYear }}')">
                                                         <i class="bx bx-user-x me-1"></i> Unenroll
                                                     </button>
+
                                                     <form id="unenroll-form-{{ $student->id }}"
                                                         action="{{ route('unenroll.student', $student->id) }}"
                                                         method="POST" style="display: none;">
                                                         @csrf
                                                         @method('DELETE')
+                                                        <input type="hidden" name="school_year"
+                                                            value="{{ $selectedYear }}">
                                                     </form>
                                                 @endif
                                             </div>
@@ -349,8 +360,8 @@
                     </table>
                 </div>
 
-                <!-- Pagination for this grade -->
-                <div class="d-flex justify-content-start px-3 py-2 border-top">
+                <!-- Pagination & Info for this grade -->
+                <div class="d-flex justify-content-end align-items-center flex-wrap px-3 py-2 border-top gap-2">
                     <nav aria-label="Page navigation">
                         <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
                     </nav>
@@ -363,6 +374,91 @@
 
     </div>
     <!-- / Content wrapper -->
+
+    <!-- Enroll Students Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" action="{{ route('assign.student.class') }}">
+                    @csrf
+                    <div class="modal-header text-white">
+                        <h4 class="modal-title text-info fw-bold" id="registerModalLabel">Enroll Students</h4>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <!-- School Year -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">School Year</label>
+                                <select name="school_year" id="enroll_school_year" class="form-select" required disabled>
+                                    @foreach ($schoolYears as $year)
+                                        <option value="{{ $year }}" @selected($year == $selectedYear)>
+                                            {{ $year }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="hidden" name="school_year" value="{{ $selectedYear }}">
+                            </div>
+
+                            <!-- Enrollment Type -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Enrollment Type</label>
+                                <select name="enrollment_type" id="enroll_type" class="form-select" required>
+                                    <option value="regular">Regular</option>
+                                    <option value="transferee">Transferee</option>
+                                    <option value="returnee">Returnee</option>
+                                </select>
+                            </div>
+
+                            <!-- Grade Level -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Grade Level</label>
+                                <select name="grade_level" id="enroll_grade" class="form-select" required>
+                                    <option value="">Select Grade</option>
+                                    <option value="kindergarten">Kindergarten</option>
+                                    <option value="grade1">Grade 1</option>
+                                    <option value="grade2">Grade 2</option>
+                                    <option value="grade3">Grade 3</option>
+                                    <option value="grade4">Grade 4</option>
+                                    <option value="grade5">Grade 5</option>
+                                    <option value="grade6">Grade 6</option>
+                                </select>
+                            </div>
+
+                            <!-- Section -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Section</label>
+                                <select name="section" id="enroll_section" class="form-select" required>
+                                    <option value="">Select Section</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                    <option value="E">E</option>
+                                    <option value="F">F</option>
+                                </select>
+                            </div>
+
+                            <!-- Select Students -->
+                            <div class="col-12 mt-3">
+                                <label class="form-label fw-bold">Select Students to Enroll</label>
+                                <select id="enroll_students" name="students[]" multiple required></select>
+                                <small class="form-text text-muted">Search and select one or more students by name or
+                                    LRN.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Enroll Selected Students</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Enroll Students Modal -->
 
 @endsection
 
@@ -565,7 +661,7 @@
         }
     </script>
 
-    <script>
+    {{-- <script>
         // alert after a success edit or delete of teacher's info
         @if (session('success'))
             Swal.fire({
@@ -578,7 +674,7 @@
                 }
             });
         @endif
-    </script>
+    </script> --}}
 
     <script>
         // alert for logout
@@ -634,6 +730,50 @@
             previewImg.src = defaultImage;
         });
     </script>
+
+    {{-- Initialize TomSelect for Enrolling Students --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const schoolYearSelect = document.getElementById('enroll_school_year');
+
+            if (document.getElementById('enroll_students')) {
+                new TomSelect('#enroll_students', {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Search students by name or LRN...",
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+
+                        const selectedYear = schoolYearSelect.value;
+
+                        if (!selectedYear) {
+                            alert('Please select a school year first.');
+                            return callback();
+                        }
+
+                        // ✅ send both q (query) and school_year to controller
+                        const url = "{{ route('students.search.not.enrolled') }}" +
+                            "?q=" + encodeURIComponent(query) +
+                            "&school_year=" + encodeURIComponent(selectedYear);
+
+                        fetch(url)
+                            .then(response => response.json())
+                            .then(data => {
+                                callback(data.map(student => ({
+                                    id: student.id,
+                                    text: student.student_lrn + " - " + student
+                                        .student_fName + " " + student.student_mName + " " + student.student_lName
+                                })));
+                            })
+                            .catch(() => callback());
+                    }
+                });
+            }
+        });
+    </script>
 @endpush
 
 @push('styles')
@@ -656,6 +796,24 @@
         #noResultsMessage {
             margin-top: 1rem;
             font-weight: 500;
+        }
+
+        .ts-control {
+            background-color: #e0f7fa;
+            border-color: #42a5f5;
+        }
+
+        .ts-control .item {
+            background-color: #4dd0e1;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 4px;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
         }
     </style>
 @endpush

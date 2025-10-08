@@ -58,7 +58,7 @@
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('add.student') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
