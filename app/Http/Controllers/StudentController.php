@@ -115,7 +115,9 @@ class StudentController extends Controller
             return response()->json([]);
         }
 
-        $excludedIds = Payment::where('payment_name', $paymentName)
+        // Get IDs of students who already have this payment (including soft-deleted)
+        $excludedIds = Payment::withTrashed()
+            ->where('payment_name', $paymentName)
             ->pluck('class_student_id')
             ->toArray();
 

@@ -17,47 +17,41 @@ class GoogleController extends Controller
 
     public function handleGoogleCallback()
     {
-        $googleUser = Socialite::driver('google')->user();
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Exception $e) {
+            return redirect()->route('error.not_authorized');
+        }
 
         $email     = $googleUser->getEmail();
         $firstName = $googleUser->user['given_name'] ?? '';
         $lastName  = $googleUser->user['family_name'] ?? '';
-        // $avatar    = $googleUser->getAvatar(); // no ui-avatars fallback
 
         // 1. Find existing user by email and allowed roles
         $user = User::where('email', $email)
             ->whereIn('role', ['teacher', 'admin', 'parent'])
             ->first();
 
-        if ($user) {
-            // Only update profile photo if it's empty AND Google provided one
-            if (!$user->profile_photo) {
-                $user->update(['profile_photo']);
-            }
-
-            Auth::login($user);
-            return redirect()->route('home');
+        // 2. If user is not found, redirect to 401_not_authorized
+        if (!$user) {
+            return redirect()->route('error.not_authorized');
         }
 
-        // 2. If no user exists, create a parent by default
-        $defaultAvatar = match ('parent') {
-            'admin' => asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg'),
-            'teacher' => asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg'),
-            'parent' => asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg'),
-            default => asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg'),
-        };
+        // 3. Check user status before login
+        if (in_array($user->status, ['inactive', 'suspended', 'banned'])) {
+            switch ($user->status) {
+                case 'inactive':
+                    return redirect()->route('error.inactive');
+                case 'suspended':
+                    return redirect()->route('error.suspended');
+                case 'banned':
+                    return redirect()->route('error.banned');
+            }
+        }
 
-        $user = User::create([
-            'firstName'     => $firstName ?: 'Parent',
-            'lastName'      => $lastName ?: 'User',
-            'email'         => $email,
-            'role'          => 'parent',
-            'status'        => 'active',
-            'password'      => bcrypt(Str::random(16)), // random password, not used for Google login
-            'profile_photo' => $defaultAvatar,
-        ]);
-
+        // 4. Log in authorized, active user
         Auth::login($user);
+
         return redirect()->route('home');
     }
 }

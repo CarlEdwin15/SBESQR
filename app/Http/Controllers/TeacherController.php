@@ -1323,12 +1323,25 @@ class TeacherController extends Controller
 
         $schoolYear = SchoolYear::find($schoolYearId);
 
+        // ✅ Fetch and reorder classes (latest/current first)
         $classHistory = $student->class()
-            ->with(['schoolYear', 'advisers' => function ($q) {
-                $q->wherePivot('role', 'adviser');
-            }])
-            ->orderBy('school_year_id', 'asc')
+            ->with([
+                'schoolYear',
+                'advisers' => function ($q) {
+                    $q->wherePivot('role', 'adviser');
+                }
+            ])
             ->get();
+
+        // ✅ Sort: enrolled first, then by latest school_year_id
+        $classHistory = $classHistory
+            ->sortByDesc(function ($classItem) {
+                return $classItem->pivot->enrollment_status === 'enrolled' ? 2 : 1;
+            })
+            ->sortByDesc(function ($classItem) {
+                return $classItem->pivot->school_year_id;
+            })
+            ->values();
 
         // 🔹 Prepare storage
         $gradesByClass = [];
@@ -1385,7 +1398,6 @@ class TeacherController extends Controller
                 $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
                 $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
 
-                // Save or update in DB
                 \App\Models\GeneralAverage::updateOrCreate(
                     [
                         'student_id' => $student->id,

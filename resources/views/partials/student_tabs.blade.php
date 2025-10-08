@@ -18,6 +18,12 @@
             <span class="d-none d-sm-block">Parents</span>
         </button>
     </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#attendances">
+            <i class="bx bx-calendar-check me-1"></i>
+            <span class="d-none d-sm-block">Attendances</span>
+        </button>
+    </li>
 </ul>
 
 <div class="card shadow">
@@ -229,16 +235,248 @@
 
             <!-- Parents -->
             <div class="tab-pane fade" id="parents">
-                <h5 class="fw-bold text-primary mb-3">Parents</h5>
-                @forelse ($student->parents as $parent)
-                    <div class="p-2 border rounded-3 mb-2">
-                        <strong>{{ $parent->full_name }}</strong><br>
-                        <small class="text-muted">{{ $parent->email }}</small>
-                    </div>
-                @empty
-                    <p class="text-muted">No parents linked.</p>
-                @endforelse
+                <h5 class="fw-bold text-primary mb-4">Linked Parents
+                </h5>
+
+                <div class="row g-3">
+                    @forelse ($student->parents as $parent)
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body text-center p-4">
+                                    <!-- Profile Photo -->
+                                    @if ($parent->profile_photo)
+                                        <img src="{{ asset('storage/' . $parent->profile_photo) }}"
+                                            alt="Parent Photo" class="rounded-circle mb-3 shadow-sm"
+                                            style="object-fit: cover; width: 100px; height: 100px;">
+                                    @else
+                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg') }}"
+                                            alt="Default Photo" class="rounded-circle mb-3 shadow-sm"
+                                            style="object-fit: cover; width: 100px; height: 100px;">
+                                    @endif
+
+                                    <!-- Name -->
+                                    <h6 class="fw-bold mb-1">{{ $parent->full_name }}</h6>
+
+                                    <!-- Role / Type -->
+                                    @if ($parent->parent_type)
+                                        <span class="badge bg-label-primary mb-2 text-capitalize">
+                                            {{ $parent->parent_type }}
+                                        </span>
+                                    @endif
+
+                                    <!-- Contact Info -->
+                                    <div class="small text-muted mb-1">
+                                        <i class="bx bx-envelope me-1"></i> {{ $parent->email ?? 'No email' }}
+                                    </div>
+
+                                    @if ($parent->phone)
+                                        <div class="small text-muted">
+                                            <i class="bx bx-phone me-1"></i> {{ $parent->phone }}
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <!-- Footer Info -->
+                                <div class="card-footer bg-light text-center py-2">
+                                    <small class="text-muted">
+                                        Last seen: {{ $parent->last_seen ?? 'Not available' }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12">
+                            <div class="alert alert-secondary text-center">
+                                <i class="bx bx-info-circle me-1"></i>
+                                No parents linked to this student.
+                            </div>
+                        </div>
+                    @endforelse
+                </div>
             </div>
+
+            <!-- Attendances -->
+            <div class="tab-pane fade" id="attendances">
+                <h5 class="fw-bold text-primary mb-3">Attendance Calendar</h5>
+
+                @php
+                    use Carbon\Carbon;
+
+                    $attendanceRecords = $student
+                        ->attendances()
+                        ->with(['schoolYear', 'class', 'schedule']) // ✅ use schedule, not subject
+                        ->get()
+                        ->map(function ($att) {
+                            $subject = $att->schedule->subject_name ?? 'N/A';
+                            $startTime = $att->schedule->start_time
+                                ? Carbon::parse($att->schedule->start_time)->format('g:i A')
+                                : null;
+                            $endTime = $att->schedule->end_time
+                                ? Carbon::parse($att->schedule->end_time)->format('g:i A')
+                                : null;
+
+                            $formattedTime = $startTime && $endTime ? "($startTime - $endTime)" : '';
+
+                            // Tooltip format similar to admin/teacher attendance
+                            $tooltip = strtoupper($att->status ?? 'ABSENT') . " | {$subject} | {$formattedTime}";
+
+                            return [
+                                'date' => Carbon::parse($att->date)->toDateString(),
+                                'status' => ucfirst($att->status ?? 'Absent'),
+                                'remarks' => $tooltip,
+                            ];
+                        });
+                @endphp
+
+                @if ($attendanceRecords->isEmpty())
+                    <div class="alert alert-secondary text-center">
+                        No attendance records found for this student.
+                    </div>
+                @else
+                    <div class="table-responsive p-2">
+                        <div id="attendanceCalendar" class="p-2 border rounded bg-light shadow-sm"></div>
+                    </div>
+                @endif
+            </div>
+
         </div>
     </div>
+
 </div>
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('attendanceCalendar');
+            if (!calendarEl) return;
+
+            // Determine if we’re on a small screen
+            function isMobile() {
+                return window.innerWidth <= 576; // Bootstrap "sm" breakpoint
+            }
+
+            // Map statuses to icons (mobile) and colors
+            const statusMap = {
+                'present': {
+                    label: '✓',
+                    color: '#198754'
+                }, // success
+                'absent': {
+                    label: '✕',
+                    color: '#dc3545'
+                }, // danger
+                'late': {
+                    label: 'L',
+                    color: '#ffc107'
+                }, // warning
+                'excused': {
+                    label: 'E',
+                    color: '#6c757d'
+                }, // secondary
+                'default': {
+                    label: '-',
+                    color: '#6c757d'
+                } // fallback
+            };
+
+            // Load event data from Blade
+            const events = [
+                @foreach ($attendanceRecords as $record)
+                    {
+                        title: "{{ $record['status'] }}",
+                        start: "{{ $record['date'] }}",
+                        status: "{{ strtolower($record['status']) }}",
+                        remarks: "{{ $record['remarks'] }}",
+                    },
+                @endforeach
+            ];
+
+            // Function to transform events depending on screen size
+            function formatEvents(mobile) {
+                return events.map(e => {
+                    const map = statusMap[e.status] || statusMap.default;
+                    return {
+                        title: mobile ? map.label : e.title,
+                        start: e.start,
+                        color: map.color,
+                        textColor: '#fff',
+                        extendedProps: {
+                            remarks: e.remarks
+                        }
+                    };
+                });
+            }
+
+            let calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                },
+                events: formatEvents(isMobile()),
+
+                eventDidMount: function(info) {
+                    if (info.event.extendedProps.remarks) {
+                        new bootstrap.Tooltip(info.el, {
+                            title: info.event.extendedProps.remarks,
+                            placement: 'top',
+                            trigger: 'hover',
+                            container: 'body'
+                        });
+                    }
+                },
+
+                eventContent: function(arg) {
+                    return {
+                        html: `<div style="display:flex;justify-content:center;align-items:center;height:100%;">${arg.event.title}</div>`
+                    };
+                }
+            });
+
+            calendar.render();
+
+            // Re-render calendar on tab show
+            document.querySelector('[data-bs-target="#attendances"]')
+                ?.addEventListener('shown.bs.tab', () => calendar.updateSize());
+
+            // ✅ Re-render on window resize to toggle between text ↔ symbols
+            window.addEventListener('resize', () => {
+                calendar.removeAllEvents();
+                calendar.addEventSource(formatEvents(isMobile()));
+                calendar.render();
+            });
+        });
+    </script>
+@endpush
+
+@push('styles')
+    <!-- Bootstrap 5 Calendar (FullCalendar) -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+
+    <style>
+        @media (max-width: 576px) {
+            #attendanceCalendar .fc-daygrid-day-number {
+                font-size: 0.75rem;
+            }
+
+            #attendanceCalendar .fc-event-title {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+@endpush
+
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+
+    <style>
+        #attendanceCalendar td.fc-daygrid-day.fc-day-today>.fc-daygrid-day-frame {
+            background-color: var(--bs-info, #0d6efd) !important;
+            color: #fff !important;
+        }
+    </style>
+@endpush

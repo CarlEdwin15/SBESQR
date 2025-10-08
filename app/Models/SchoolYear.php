@@ -27,7 +27,7 @@ class SchoolYear extends Model
     public function students()
     {
         return $this->belongsToMany(Student::class, 'class_student', 'class_id', 'student_id')
-            ->withPivot('enrollement_status', 'enrollment_type', 'school_year_id')
+            ->withPivot('enrollment_status', 'enrollment_type', 'school_year_id')
             ->withTimestamps();
     }
 

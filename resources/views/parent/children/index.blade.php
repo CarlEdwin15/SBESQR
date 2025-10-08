@@ -83,81 +83,122 @@
 
     <!-- Content Wrapper -->
     <div class="container-xxl container-p-y">
+        <h4 class="fw-bold py-3 mb-4 text-warning">
+            <span class="text-muted fw-light">
+                <a class="text-muted fw-light" href="{{ url('/home') }}">Dashboard / </a>
+            </span> My Children
+        </h4>
 
         <!-- Parent Dashboard Layout -->
-        <div class="row">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="row">
 
-            @php
-                use Illuminate\Support\Facades\Auth;
+                    @php
+                        use Illuminate\Support\Facades\Auth;
 
-                // Get the currently logged-in parent
-                $parent = Auth::user();
+                        // Get the currently logged-in parent
+                        $parent = Auth::user();
 
-                // Get their children via the relationship
-                $children = $parent->children()->with('classStudents.class', 'schoolYears')->get();
-            @endphp
+                        // Get their children via the relationship
+                        $children = $parent->children()->with('classStudents.class', 'schoolYears')->get();
+                    @endphp
 
-            <div class="col-12 mb-4">
-                <h4 class="fw-bold mb-3">👨‍👩‍👧‍👦 My Children</h4>
-            </div>
-
-            @if ($children->isEmpty())
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        You have no children linked to your account yet.
+                    <div class="col-12 mb-4">
+                        <h4 class="fw-bold mb-3">My Children</h4>
                     </div>
-                </div>
-            @else
-                @foreach ($children as $child)
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div class="card-body d-flex align-items-center">
-                                <img src="{{ $child->student_photo ? asset('storage/' . $child->student_photo) : asset('images/default-avatar.png') }}"
-                                    alt="Student Photo" class="rounded-circle me-3" width="70" height="70"
-                                    style="object-fit: cover;">
 
-                                <div>
-                                    <h5 class="mb-1 fw-semibold">{{ $child->full_name }}</h5>
-                                    <small class="text-muted">
-                                        <i class="{{ $child->sex_icon }}"></i>
-                                        {{ ucfirst($child->gender ?? 'N/A') }}
-                                    </small>
-                                    <br>
-
-                                    @php
-                                        $latestClass = optional($child->classStudents->last())->class;
-                                    @endphp
-
-                                    @if ($latestClass)
-                                        <small class="text-secondary">
-                                            {{ $latestClass->formatted_grade_level }} - Section
-                                            {{ $latestClass->section }}
-                                        </small>
-                                    @else
-                                        <small class="text-secondary">No class assigned yet</small>
-                                    @endif
-
-                                    <br>
-                                    <small class="text-muted">
-                                        LRN: {{ $child->student_lrn }}
-                                    </small>
-                                </div>
-                            </div>
-
-                            <div class="card-footer bg-transparent border-0 text-end">
-                                <a href="{{ route('parent.children.show', $child->id) }}"
-                                    class="btn btn-sm btn-outline-primary">
-                                    View Profile
-                                </a>
+                    @if ($children->isEmpty())
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                You have no children linked to your account yet.
                             </div>
                         </div>
-                    </div>
-                @endforeach
-            @endif
+                    @else
+                        @foreach ($children as $child)
+                            @php
+                                $latestClass = optional($child->classStudents->last())->class;
+                                $photo = $child->student_photo
+                                    ? asset('storage/' . $child->student_photo)
+                                    : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
+                            @endphp
 
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <!-- Entire card is clickable -->
+                                <a href="{{ route('parent.children.show', $child->id) }}"
+                                    class="text-decoration-none text-dark">
+                                    <div
+                                        class="card h-100 border-0 shadow-sm rounded-4 student-card position-relative overflow-hidden">
+
+                                        <!-- Card Hover Accent -->
+                                        <div
+                                            class="position-absolute top-0 start-0 w-100 h-100 bg-gradient-warning opacity-0 hover-overlay">
+                                        </div>
+
+                                        <div class="card-body d-flex align-items-center p-3">
+                                            <img src="{{ $photo }}" alt="Student Photo"
+                                                class="rounded-circle me-3 shadow-sm border border-3 border-warning"
+                                                width="110" height="110" style="object-fit: cover;">
+
+                                            <div class="flex-grow-1">
+                                                <h5 class="mb-1 fw-semibold text-dark">{{ $child->full_name }}</h5>
+                                                <small class="text-muted d-block mb-1">
+                                                    <i class="{{ $child->sex_icon }}"></i>
+                                                    {{ ucfirst($child->gender ?? 'N/A') }}
+                                                </small>
+
+                                                @if ($latestClass)
+                                                    <small class="text-secondary d-block mb-1">
+                                                        {{ $latestClass->formatted_grade_level }} - Section
+                                                        {{ $latestClass->section }}
+                                                    </small>
+                                                @else
+                                                    <small class="text-secondary d-block mb-1">No class assigned yet</small>
+                                                @endif
+
+                                                <small class="text-muted">LRN: {{ $child->student_lrn }}</small>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </a>
+                            </div>
+                        @endforeach
+                    @endif
+
+                </div>
+            </div>
         </div>
         <!-- /Parent Dashboard Layout -->
 
     </div>
     <!-- /Content Wrapper -->
 @endsection
+
+@push('styles')
+    <style>
+        .student-card {
+            transition: all 0.25s ease-in-out;
+            cursor: pointer;
+            background-color: #fff;
+        }
+
+        .student-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 0.8rem 1.5rem rgba(0, 0, 0, 0.1);
+        }
+
+        .student-card:hover .hover-overlay {
+            opacity: 0.05;
+            transition: opacity 0.3s ease;
+        }
+
+        .student-card img {
+            transition: transform 0.3s ease;
+        }
+
+        .student-card:hover img {
+            transform: scale(1.05);
+        }
+    </style>
+@endpush

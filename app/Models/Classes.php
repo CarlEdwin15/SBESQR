@@ -61,7 +61,8 @@ class Classes extends Model
 
     public function schoolYear()
     {
-        return $this->belongsTo(SchoolYear::class, 'school_year_id');
+        return $this->belongsToMany(SchoolYear::class, 'class_student', 'class_id', 'school_year_id')
+            ->withTimestamps();
     }
 
     /** ✅ Correct: class → class_subject pivot */

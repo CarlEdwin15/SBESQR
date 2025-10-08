@@ -228,7 +228,7 @@
                 <div class="mb-4 d-flex justify-content-between align-items-center">
                     <div>
                         <h4 class="mb-2 fw-bold text-info">School Fee Name: {{ $paymentName }}</h4>
-                        <div class="d-flex flex-wrap align-items-center text-muted small">
+                        <div class="d-flex flex-wrap align-items-center text-muted">
                             <strong>Amount Due:</strong> ₱{{ number_format($first->amount_due, 2) }}
                             <span class="mx-2">|</span>
                             <strong>Due Date:</strong> {{ \Carbon\Carbon::parse($first->due_date)->format('M d, Y') }}
@@ -366,7 +366,7 @@
                                         data-bs-target="#addPaymentModal{{ $p->id }}">
                                         <div class="d-flex align-items-center">
                                             <img src="{{ $p->student && $p->student->student_photo
-                                                ? asset('assetsDashboard/img/student_profile_pictures/' . $p->student->student_photo)
+                                                ? asset('storage/' . $p->student->student_photo)
                                                 : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                 class="rounded-circle me-2"
                                                 style="width: 40px; height: 40px; object-fit: cover;">

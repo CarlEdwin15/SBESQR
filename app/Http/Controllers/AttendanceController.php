@@ -342,4 +342,16 @@ class AttendanceController extends Controller
             ]
         );
     }
+
+    // public function fetchMonth($studentId, $schoolYearId, $classId, $year, $month)
+    // {
+    //     $attendances = \App\Models\Attendance::where('student_id', $studentId)
+    //         ->where('school_year_id', $schoolYearId)
+    //         ->where('class_id', $classId)
+    //         ->whereYear('date', $year)
+    //         ->whereMonth('date', $month)
+    //         ->get();
+
+    //     return view('partials.attendance_calendar', compact('attendances', 'year', 'month'));
+    // }
 }

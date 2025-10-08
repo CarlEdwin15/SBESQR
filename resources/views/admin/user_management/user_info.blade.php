@@ -417,8 +417,11 @@
                                             <div class="accordion" id="teacherClassAccordion">
                                                 @php
                                                     // Move current school year to the top
-                                                    $currentSchoolYear = now()->format('Y') . '-' . now()->addYear()->format('Y');
-                                                    $sortedClassesByYear = $classesByYear->sortKeysUsing(function ($key) use ($currentSchoolYear) {
+                                                    $currentSchoolYear =
+                                                        now()->format('Y') . '-' . now()->addYear()->format('Y');
+                                                    $sortedClassesByYear = $classesByYear->sortKeysUsing(function (
+                                                        $key,
+                                                    ) use ($currentSchoolYear) {
                                                         return $key === $currentSchoolYear ? -1 : 1;
                                                     });
                                                 @endphp
@@ -543,6 +546,9 @@
                                         <i class="bx bx-reset d-block d-sm-none"></i>
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
+
+                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent" value="0">
+
                                     <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                 </div>
                             </div>
@@ -633,6 +639,9 @@
                                         <i class="bx bx-reset d-block d-sm-none"></i>
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
+
+                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent" value="0">
+
                                     <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                 </div>
                             </div>
@@ -803,23 +812,26 @@
                         <div class="row mb-3">
                             <div class="col d-flex align-items-center gap-4">
                                 <div>
-                                    <img id="photo-preview-edit"
+                                    <img id="photo-preview-parent"
                                         src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg') }}"
                                         width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius:5%;">
                                 </div>
                                 <div class="button-wrapper">
-                                    <label for="upload-edit" class="btn btn-warning mb-2">
+                                    <label for="upload-parent" class="btn btn-warning mb-2">
                                         <span class="d-none d-sm-block">Upload new photo</span>
                                         <i class="bx bx-upload d-block d-sm-none"></i>
-                                        <input type="file" name="profile_photo" id="upload-edit" hidden
+                                        <input type="file" name="profile_photo" id="upload-parent" hidden
                                             accept="image/png, image/jpeg">
                                     </label>
                                     <button type="button" class="btn btn-outline-secondary account-image-reset mb-2"
-                                        id="reset-photo-edit">
+                                        id="reset-photo-parent">
                                         <i class="bx bx-reset d-block d-sm-none"></i>
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
+
+                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent" value="0">
+
                                     <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                 </div>
                             </div>
@@ -1012,27 +1024,48 @@
 
     <!-- Profile photo preview & reset for all roles -->
     <script>
-        ['teacher', 'admin', 'parent'].forEach(role => {
-            // Determine input, preview, and reset IDs based on role
-            // Note: Adjust IDs if they differ in your markup (e.g., 'upload-edit' for parent)
-            const uploadInput = document.getElementById(role === 'parent' ? 'upload-edit' : `upload`);
-            const previewImg = document.getElementById(role === 'parent' ? 'photo-preview-edit' : 'photo-preview');
-            const resetBtn = document.getElementById(role === 'parent' ? 'reset-photo-edit' : 'reset-photo');
+        const roles = [{
+                role: 'admin',
+                upload: 'upload',
+                preview: 'photo-preview',
+                reset: 'reset-photo'
+            },
+            {
+                role: 'teacher',
+                upload: 'upload-edit',
+                preview: 'photo-preview-edit',
+                reset: 'reset-photo-edit'
+            },
+            {
+                role: 'parent',
+                upload: 'upload-parent',
+                preview: 'photo-preview-parent',
+                reset: 'reset-photo-parent'
+            }
+        ];
+
+        roles.forEach(({
+            role,
+            upload,
+            preview,
+            reset
+        }) => {
+            const uploadInput = document.getElementById(upload);
+            const previewImg = document.getElementById(preview);
+            const resetBtn = document.getElementById(reset);
             const defaultImage = `/assetsDashboard/img/profile_pictures/${role}_default_profile.jpg`;
 
             if (uploadInput && previewImg && resetBtn) {
-                // Preview new image
-                uploadInput.addEventListener('change', function(e) {
+                uploadInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
                         const reader = new FileReader();
-                        reader.onload = e => previewImg.src = e.target.result;
+                        reader.onload = (event) => (previewImg.src = event.target.result);
                         reader.readAsDataURL(file);
                     }
                 });
 
-                // Reset to default
-                resetBtn.addEventListener('click', function() {
+                resetBtn.addEventListener('click', () => {
                     uploadInput.value = '';
                     previewImg.src = defaultImage;
                 });

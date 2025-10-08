@@ -57,7 +57,12 @@ class Student extends Model
 
     public function payments()
     {
-        return $this->hasMany(Payment::class, 'student_id');
+        return $this->hasManyThrough(
+            Payment::class,
+            ClassStudent::class,
+            'student_id',
+            'class_student_id'
+        );
     }
 
     public function quarterlyGrades()

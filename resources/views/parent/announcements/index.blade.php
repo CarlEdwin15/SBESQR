@@ -83,7 +83,11 @@
 
     <!-- Content Wrapper -->
     <div class="container-xxl container-p-y">
-
+        <h4 class="fw-bold py-3 mb-4 text-warning">
+            <span class="text-muted fw-light">
+            <a class="text-muted fw-light" href="{{ url('/home') }}">Dashboard / </a>
+            </span> Announcements
+        </h4>
 
     </div>
     <!-- /Content Wrapper -->

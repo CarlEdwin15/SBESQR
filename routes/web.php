@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Auth;
 // ADMIN DASHBOARD ROUTES
 
 // Error routes
+Route::view('/error/not_authorized', 'errors.401_not_authorized')->name('error.not_authorized');
 Route::view('/error/inactive', 'errors.423_inactive')->name('error.inactive');
 Route::view('/error/suspended', 'errors.402_suspended')->name('error.suspended');
 Route::view('/error/banned', 'errors.403_banned')->name('error.banned');
@@ -371,7 +372,15 @@ Route::middleware(['auth', 'role:parent'])->group(function () {
 });
 
 Route::get('/parent/children', [ParentController::class, 'children'])->name('parent.children.index');
+Route::get('/parent/children/{id}', [ParentController::class, 'showChild'])->name('parent.children.show');
+Route::get('/student/{student}/attendance/{schoolYearId}/{classId}/{year}/{month}', [AttendanceController::class, 'fetchMonth'])
+    ->name('attendance.fetchMonth');
+
+
 Route::get('/parent/school-fees', [ParentController::class, 'schoolFees'])->name('parent.school-fees.index');
+
+
+
 Route::get('/parent/announcements', [ParentController::class, 'announcements'])->name('parent.announcements.index');
 Route::get('/parent/sms-logs', [ParentController::class, 'smsLogs'])->name('parent.sms-logs.index');
 
