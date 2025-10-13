@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassStudent;
 use App\Models\Payment;
+use App\Models\PaymentHistory;
+use App\Models\PaymentRequest;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ParentController extends Controller
 {
@@ -161,14 +165,40 @@ class ParentController extends Controller
         ));
     }
 
-    public function schoolFees()
+    public function schoolFees(Request $request)
     {
         $parent = Auth::user();
+        $now = now();
+        $year = $now->year;
 
-        // Get all children of this parent
-        $children = $parent->children()->with('classStudents.payments')->get();
+        // Determine current school year
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear    = ($currentYear + 1) . '-' . ($currentYear + 2);
 
-        // Collect all payments via class_student
+        // Fetch available school years
+        $savedYears = \App\Models\SchoolYear::pluck('school_year')->toArray();
+        $savedStartYears = array_map(fn($sy) => (int) substr($sy, 0, 4), $savedYears);
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+        $schoolYears[] = $nextSchoolYear;
+
+        // Sort ascending by start year
+        usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
+
+        // Selected school year (default = current)
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+
+        // Fetch payments only for the selected school year
         $payments = Payment::whereIn('class_student_id', function ($query) use ($parent) {
             $query->select('class_student.id')
                 ->from('class_student')
@@ -181,10 +211,139 @@ class ParentController extends Controller
                 'classStudent.schoolYear',
                 'histories',
             ])
+            ->whereHas('classStudent.schoolYear', function ($q) use ($selectedYear) {
+                $q->where('school_year', $selectedYear);
+            })
             ->orderBy('due_date', 'asc')
             ->get();
 
-        return view('parent.school_fees.index', compact('payments', 'children'));
+        return view('parent.school_fees.index', compact('payments', 'schoolYears', 'selectedYear', 'currentYear'));
+    }
+
+    public function showSchoolFee($paymentName, Request $request)
+    {
+        $parent = Auth::user();
+
+        // Selected school year (default = current)
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+
+        // Selected class filter
+        $selectedClass = $request->query('class_id', null);
+
+        // Fetch payments matching the criteria
+        $paymentsQuery = Payment::where('payment_name', $paymentName)
+            ->whereIn('class_student_id', function ($query) use ($parent) {
+                $query->select('class_student.id')
+                    ->from('class_student')
+                    ->join('student_parent', 'student_parent.student_id', '=', 'class_student.student_id')
+                    ->where('student_parent.parent_id', $parent->id);
+            })
+            ->whereHas('classStudent.schoolYear', function ($q) use ($selectedYear) {
+                $q->where('school_year', $selectedYear);
+            });
+
+        if ($selectedClass) {
+            $paymentsQuery->whereHas('classStudent.class', function ($q) use ($selectedClass) {
+                $q->where('id', $selectedClass);
+            });
+        }
+
+        $payments = $paymentsQuery
+            ->with([
+                'classStudent.student',
+                'classStudent.class',
+                'classStudent.schoolYear',
+                'histories',
+            ])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        // Fetch classes for the selected school year that have payments
+        $classes = ClassStudent::whereIn('id', function ($query) use ($parent, $selectedYear) {
+            $query->select('class_student.class_id')
+                ->from('class_student')
+                ->join('student_parent', 'student_parent.student_id', '=', 'class_student.student_id')
+                ->join('school_years', 'school_years.id', '=', 'class_student.school_year_id')
+                ->where('student_parent.parent_id', $parent->id)
+                ->where('school_years.school_year', $selectedYear);
+        })->get();
+        return view('parent.school_fees.show', compact('payments', 'paymentName', 'selectedYear', 'selectedClass', 'classes'));
+    }
+
+    public function addPayment(Request $request, $paymentId)
+    {
+        $request->validate([
+            'amount_paid' => 'required|numeric|min:1',
+            'payment_method' => 'required|in:cash_on_hand,gcash',
+            'gcash_reference' => 'nullable|string',
+            'gcash_receipt' => 'nullable|image|max:2048',
+        ]);
+
+        $parent = Auth::user();
+        $payment = Payment::findOrFail($paymentId);
+
+        // Ensure parent is linked to this student
+        $isAuthorized = DB::table('student_parent')
+            ->join('class_student', 'student_parent.student_id', '=', 'class_student.student_id')
+            ->where('student_parent.parent_id', $parent->id)
+            ->where('class_student.id', $payment->class_student_id)
+            ->exists();
+
+        if (!$isAuthorized) {
+            abort(403, 'Unauthorized payment request.');
+        }
+
+        // Handle receipt upload
+        $receiptPath = null;
+        if ($request->hasFile('gcash_receipt')) {
+            $receiptPath = $request->file('gcash_receipt')->store('receipts', 'public');
+        }
+
+        // Create payment request
+        PaymentRequest::create([
+            'payment_id' => $payment->id,
+            'parent_id' => $parent->id,
+            'amount_paid' => $request->amount_paid,
+            'payment_method' => $request->payment_method,
+            'reference_number' => $request->gcash_reference ?? null,
+            'receipt_image' => $receiptPath,
+            'status' => 'pending',
+            'requested_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Your payment request has been submitted and is pending review.');
+    }
+
+    public function reviewPaymentRequest($id, Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:approve,deny',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $paymentRequest = PaymentRequest::findOrFail($id);
+        $paymentRequest->status = $request->action === 'approve' ? 'approved' : 'denied';
+        $paymentRequest->admin_remarks = $request->remarks;
+        $paymentRequest->reviewed_at = now();
+        $paymentRequest->save();
+
+        if ($request->action === 'approve') {
+            // Create official payment history
+            PaymentHistory::create([
+                'payment_id' => $paymentRequest->payment_id,
+                'payment_method' => $paymentRequest->payment_method,
+                'added_by' => Auth::id(),
+                'amount_paid' => $paymentRequest->amount_paid,
+                'payment_date' => now(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Payment request has been ' . $paymentRequest->status . '.');
     }
 
     public function smsLogs()

@@ -7,15 +7,16 @@ use App\Models\Student;
 use App\Models\Classes;
 use App\Models\ClassStudent;
 use App\Models\PaymentHistory;
+use App\Models\PaymentRequest;
 use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class PaymentController extends Controller
+class SchoolFeeController extends Controller
 {
-    public function indexAdmin(Request $request)
+    public function index(Request $request)
     {
         $now = now();
         $year = $now->year;
@@ -79,7 +80,7 @@ class PaymentController extends Controller
                 : "Displaying Payment Records for All Classes in SY {$selectedYear}"
         );
 
-        return view('admin.payments.index', compact(
+        return view('admin.school-fees.index', compact(
             'payments',
             'schoolYears',
             'selectedYear',
@@ -90,7 +91,7 @@ class PaymentController extends Controller
         ));
     }
 
-    public function createAdmin(Request $request)
+    public function create(Request $request)
     {
         $request->validate([
             'school_year'        => 'required|string',
@@ -133,7 +134,7 @@ class PaymentController extends Controller
             $classIds = $request->class_ids ?? [];
 
             if (in_array('all', $classIds)) {
-                // ✅ Only classes with enrolled students
+                // Only classes with enrolled students
                 $classIds = Classes::whereHas('classStudents', function ($q) use ($schoolYear) {
                     $q->where('school_year_id', $schoolYear->id)
                         ->where('enrollment_status', 'enrolled');
@@ -162,13 +163,13 @@ class PaymentController extends Controller
             }
         }
 
-        return redirect()->route('admin.payments.index', [
+        return redirect()->route('admin.school-fees.index', [
             'school_year' => $request->school_year,
         ])->with('success', 'Payment(s) created successfully.');
     }
 
 
-    public function showAdmin(Request $request, $paymentName)
+    public function show(Request $request, $paymentName)
     {
         $selectedYear = $request->input('school_year');
         $selectedClass = $request->input('class_id');
@@ -200,7 +201,7 @@ class PaymentController extends Controller
         $classes = Classes::all();
         $schoolYears = SchoolYear::all();
 
-        return view('admin.payments.show', compact(
+        return view('admin.school-fees.show', compact(
             'payments',
             'first',
             'paidCount',
@@ -288,7 +289,7 @@ class PaymentController extends Controller
             $skipped ? "{$skipped} student(s) skipped" : null,
         ])->filter()->implode(' — ');
 
-        return redirect()->route('admin.payments.show', [
+        return redirect()->route('admin.school-fees.show', [
             'paymentName' => $paymentName,
             'school_year' => $validated['school_year'],
             'class_id'    => $request->input('class_id'),
@@ -302,6 +303,7 @@ class PaymentController extends Controller
 
         $request->validate([
             'amount_paid' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|in:cash_on_hand,gcash,credit_card',
         ]);
 
         $amountPaid = $request->amount_paid;
@@ -312,34 +314,25 @@ class PaymentController extends Controller
             return back()->withErrors(['amount_paid' => 'Payment exceeds remaining balance of ₱' . number_format($remainingBalance, 2)]);
         }
 
-        // Record payment
+        // Record payment with method
         PaymentHistory::create([
-            'payment_id'   => $payment->id,
-            'amount_paid'  => $amountPaid,
-            'payment_date' => now(),
-            'added_by'     => Auth::id(),
+            'payment_id'      => $payment->id,
+            'amount_paid'     => $amountPaid,
+            'payment_method'  => $request->payment_method,
+            'payment_date'    => now(),
+            'added_by'        => Auth::id(),
         ]);
 
-        // Recalculate total paid
+        // Recalculate total
         $totalPaid = $payment->paymentHistories()->sum('amount_paid');
+        $status = $totalPaid >= $payment->amount_due ? 'paid' : ($totalPaid > 0 ? 'partial' : 'unpaid');
 
-        // Determine status automatically
-        if ($totalPaid <= 0) {
-            $status = 'unpaid';
-        } elseif ($totalPaid < $payment->amount_due) {
-            $status = 'partial';
-        } else {
-            $status = 'paid';
-        }
-
-        // Update summary
         $payment->update([
-            'total_paid' => $totalPaid,
-            'status'     => $status,
+            'status' => $status,
         ]);
 
         return redirect()
-            ->route('admin.payments.show', ['paymentName' => $payment->payment_name] + request()->query())
+            ->route('admin.school-fees.show', ['paymentName' => $payment->payment_name] + request()->query())
             ->with('success', 'Payment added successfully.');
     }
 
@@ -388,6 +381,7 @@ class PaymentController extends Controller
             'payment_ids.*' => 'exists:payments,id',
             'amount_paid'   => 'required|numeric|min:0.01',
             'payment_date'  => 'required|date',
+            'payment_method' => 'required|in:cash_on_hand,gcash,credit_card', // new
         ]);
 
         $invalidStudents = [];
@@ -411,24 +405,22 @@ class PaymentController extends Controller
             );
         }
 
-        // ✅ Continue if no invalid students
+        // Save with payment method
         foreach ($request->payment_ids as $id) {
             $payment = Payment::find($id);
             if (!$payment) continue;
 
             $payment->paymentHistories()->create([
-                'amount_paid'  => $request->amount_paid,
-                'payment_date' => $request->payment_date,
-                'added_by'     => Auth::id(),
+                'amount_paid'     => $request->amount_paid,
+                'payment_date'    => $request->payment_date,
+                'payment_method'  => $request->payment_method,
+                'added_by'        => Auth::id(),
             ]);
 
             $totalPaid = $payment->paymentHistories()->sum('amount_paid');
             $status    = $totalPaid >= $payment->amount_due ? 'paid' : ($totalPaid > 0 ? 'partial' : 'unpaid');
 
-            $payment->update([
-                'total_paid' => $totalPaid,
-                'status'     => $status,
-            ]);
+            $payment->update(['status' => $status]);
         }
 
         return redirect()
@@ -451,7 +443,7 @@ class PaymentController extends Controller
             ->with('success', "{$removed} student(s) permanently removed from the payment list.");
     }
 
-    public function destroyAdmin($paymentName)
+    public function destroy($paymentName)
     {
         $deleted = Payment::where('payment_name', $paymentName)->delete();
 
@@ -462,6 +454,112 @@ class PaymentController extends Controller
         }
     }
 
+    public function paymentRequest(Request $request)
+    {
+        $request->validate([
+            'payment_id' => 'required|exists:payments,id',
+            'amount_paid' => 'required|numeric|min:1',
+            'payment_method' => 'required|in:cash_on_hand,gcash',
+            'gcash_reference' => 'nullable|string',
+            'gcash_receipt' => 'nullable|image|max:2048',
+        ]);
+
+        $payment = Payment::findOrFail($request->payment_id);
+        $parent = Auth::user();
+
+        // Prevent overpayment
+        $remainingBalance = $payment->amount_due - $payment->paymentHistories()->sum('amount_paid');
+        if ($request->amount_paid > $remainingBalance) {
+            return back()->withErrors(['amount_paid' => 'Payment exceeds remaining balance of ₱' . number_format($remainingBalance, 2)]);
+        }
+
+        // Handle receipt upload if GCash
+        $receiptPath = null;
+        if ($request->payment_method === 'gcash' && $request->hasFile('gcash_receipt')) {
+            $receiptPath = $request->file('gcash_receipt')->store('receipts', 'public');
+        }
+
+        // Create payment request
+        \App\Models\PaymentRequest::create([
+            'payment_id' => $payment->id,
+            'parent_id' => $parent->id,
+            'amount_paid' => $request->amount_paid,
+            'payment_method' => $request->payment_method,
+            'reference_number' => $request->gcash_reference,
+            'receipt_image' => $receiptPath,
+            'status' => 'pending',
+            'requested_at' => now(),
+        ]);
+
+        return back()->with('success', 'Payment request submitted successfully. Awaiting admin review.');
+    }
+
+    public function viewRequests()
+    {
+        $paymentRequests = PaymentRequest::with(['payment.student', 'payment.classStudent.class', 'parent'])
+            ->orderByDesc('requested_at')
+            ->get();
+
+        // Add defaults
+        $selectedYear = now()->year;
+        $selectedClass = null;
+        $paymentName = 'Payment Requests';
+
+        return view('admin.school-fees.payment-request', compact(
+            'paymentRequests',
+            'selectedYear',
+            'selectedClass',
+            'paymentName'
+        ));
+    }
+
+    // Approve a payment request
+    public function approveRequest($id, Request $request)
+    {
+        $paymentRequest = PaymentRequest::with('payment')->findOrFail($id);
+
+        // Prevent double approval
+        if ($paymentRequest->status !== 'pending') {
+            return back()->with('error', 'This request has already been reviewed.');
+        }
+
+        // Create a payment history record
+        PaymentHistory::create([
+            'payment_id' => $paymentRequest->payment_id,
+            'payment_method' => $paymentRequest->payment_method,
+            'added_by' => Auth::id(),
+            'amount_paid' => $paymentRequest->amount_paid,
+            'payment_date' => now(),
+        ]);
+
+        // Update the request status
+        $paymentRequest->update([
+            'status' => 'approved',
+            'admin_remarks' => $request->admin_remarks,
+            'reviewed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Payment request approved and recorded in history.');
+    }
+
+    // Deny a payment request
+    public function denyRequest($id, Request $request)
+    {
+        $paymentRequest = PaymentRequest::findOrFail($id);
+
+        if ($paymentRequest->status !== 'pending') {
+            return back()->with('error', 'This request has already been reviewed.');
+        }
+
+        $paymentRequest->update([
+            'status' => 'denied',
+            'admin_remarks' => $request->admin_remarks,
+            'reviewed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Payment request denied.');
+    }
+
     public function getDefaultSchoolYear()
     {
         $now = now();
@@ -470,113 +568,4 @@ class PaymentController extends Controller
         $start = $now->lt($cutoff) ? $year - 1 : $year;
         return $start . '-' . ($start + 1);
     }
-
-
-
-
-    // public function index(Request $request, $grade_level, $section)
-    // {
-    //     $selectedYear = $request->input('school_year');
-
-    //     $class = Classes::with('students')
-    //         ->where('grade_level', $grade_level)
-    //         ->where('section', $section)
-    //         ->firstOrFail();
-
-    //     // Fix: resolve the school year id properly
-    //     $payments = Payment::where('class_id', $class->id)
-    //         ->when($selectedYear, function ($query) use ($selectedYear) {
-    //             $query->whereHas('schoolYear', function ($q) use ($selectedYear) {
-    //                 $q->where('school_year', $selectedYear); // adjust column name (e.g., "year" or "name")
-    //             });
-    //         })
-    //         ->get();
-
-    //     return view('teacher.classes.payments.index', compact('class', 'payments', 'selectedYear'));
-    // }
-
-    // public function show(Request $request, $grade_level, $section, $paymentName)
-    // {
-    //     $selectedYear = $request->input('school_year');
-
-    //     // find class
-    //     $class = Classes::where('grade_level', $grade_level)
-    //         ->where('section', $section)
-    //         ->firstOrFail();
-
-    //     // decode just in case (Laravel usually decodes already)
-    //     $paymentName = urldecode($paymentName);
-
-    //     // fetch payments that match this payment name, for the class, and optionally the school year
-    //     $payments = Payment::with('student')
-    //         ->where('class_id', $class->id)
-    //         ->where('payment_name', $paymentName)
-    //         ->when($selectedYear, function ($query) use ($selectedYear) {
-    //             $query->whereHas('schoolYear', function ($q) use ($selectedYear) {
-    //                 // adjust the column name in the SchoolYear model/table as needed
-    //                 $q->where('school_year', $selectedYear);
-    //             });
-    //         })
-    //         ->get();
-
-    //     // if desired, fail if no payments found for given name
-    //     // abort(404) OR just show an empty table. I'll allow empty view and pass data.
-    //     $first = $payments->first();
-
-    //     $totalStudents = $payments->count();
-    //     $paidCount     = $payments->where('status', 'paid')->count();
-    //     $partialCount  = $payments->where('status', 'partial')->count();
-    //     $unpaidCount   = $payments->where('status', 'unpaid')->count();
-
-    //     return view('teacher.classes.payments.show', compact(
-    //         'class',
-    //         'selectedYear',
-    //         'payments',
-    //         'first',
-    //         'paymentName',
-    //         'totalStudents',
-    //         'paidCount',
-    //         'partialCount',
-    //         'unpaidCount'
-    //     ));
-    // }
-
-    // public function create(Request $request, $grade_level, $section)
-    // {
-    //     $request->validate([
-    //         'payment_name' => 'required|string|max:255',
-    //         'amount_due'   => 'required|numeric|min:0',
-    //         'due_date'     => 'required|date',
-    //     ]);
-
-    //     $class = Classes::with('students')
-    //         ->where('grade_level', $grade_level)
-    //         ->where('section', $section)
-    //         ->firstOrFail();
-
-    //     foreach ($class->students as $student) {
-    //         Payment::firstOrCreate(
-    //             [
-    //                 'class_id'       => $class->id,
-    //                 'school_year_id' => $student->pivot->school_year_id,
-    //                 'student_id'     => $student->id,
-    //                 'payment_name'   => $request->payment_name,
-    //             ],
-    //             [
-    //                 'created_by'   => Auth::id(),
-    //                 'amount_due'   => $request->amount_due,
-    //                 'due_date'     => $request->due_date,
-    //                 'status'       => 'unpaid',
-    //             ]
-    //         );
-    //     }
-
-    //     return redirect()->route('teacher.payments.index', [
-    //         'grade_level' => $grade_level,
-    //         'section'     => $section,
-    //         'school_year' => $request->input('school_year'),
-    //     ])->with('success', 'Payment created successfully for all students.');
-    // }
-
-
 }

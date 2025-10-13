@@ -9,8 +9,9 @@ class PaymentHistory extends Model
     protected $fillable = [
         'payment_id',
         'amount_paid',
-        'payment_date', // renamed from date_paid
+        'payment_date',
         'added_by',
+        'payment_method',
     ];
 
     protected $casts = [
@@ -25,5 +26,14 @@ class PaymentHistory extends Model
     public function addedBy()
     {
         return $this->belongsTo(User::class, 'added_by');
+    }
+
+    public function getPaymentMethodNameAttribute()
+    {
+        return match ($this->payment_method) {
+            'cash_on_hand' => 'Cash on Hand',
+            'gcash' => 'GCash',
+            default => '—',
+        };
     }
 }

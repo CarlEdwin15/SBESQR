@@ -37,7 +37,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -51,12 +51,12 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Students</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
@@ -106,7 +106,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -164,12 +164,7 @@
             $totalStudents = \App\Models\Student::count();
             $totalTeachers = \App\Models\User::where('role', 'teacher')->count();
             $totalClasses = \App\Models\Classes::count();
-
-            // Newly enrolled students within current school year
-            $newlyEnrolledStudents = \App\Models\Student::whereBetween('created_at', [
-                $schoolYearStart,
-                $schoolYearEnd,
-            ])->count();
+            $totalUsers = \App\Models\User::count();
         @endphp
 
         <div class="container-xxl container-p-y">
@@ -228,18 +223,18 @@
                     </div>
                 </div>
 
-                <!-- Newly Enrolled Card -->
+                <!-- Total Users Card -->
                 <div class="col-6 col-md-3">
                     <div class="card h-100 card-hover">
-                        <a href="{{ route('show.students') }}" class="card-body">
+                        <a href="{{ route('admin.user.management') }}" class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between">
                                 <div class="avatar flex-shrink-0">
-                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/newStudent.png') }}"
-                                        alt="Newly Enrolled" class="rounded" />
+                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/total_users.png') }}"
+                                        alt="Total Users" class="rounded" />
                                 </div>
                             </div>
-                            <span class="fw-semibold d-block mb-1 text-primary">Newly Enrolled</span>
-                            <h3 class="card-title mb-2">{{ $newlyEnrolledStudents }}</h3>
+                            <span class="fw-semibold d-block mb-1 text-primary">Total Users</span>
+                            <h3 class="card-title mb-2">{{ $totalUsers }}</h3>
                         </a>
                     </div>
                 </div>

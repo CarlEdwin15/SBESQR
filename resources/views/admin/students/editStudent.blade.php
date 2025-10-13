@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -107,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -150,7 +150,7 @@
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
+                <a class="text-muted fw-light" href="{{ route('student.management') }}">Students / </a>
             </span> Edit Student's Information
         </h4>
 

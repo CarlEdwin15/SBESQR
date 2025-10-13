@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -52,12 +52,12 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Students</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
@@ -99,7 +99,7 @@
                 </ul>
             </li>
 
-            {{-- Payments sidebar --}}
+            {{-- School Fees sidebar --}}
             <li class="menu-item active open">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-wallet-alt"></i>
@@ -107,8 +107,14 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">All School Fees</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-item">
+                        <a href="{{ route('admin.payment.requests') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Payment Requests</div>
                         </a>
                     </li>
                 </ul>
@@ -151,7 +157,7 @@
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
-                <a class="text-muted fw-light" href="{{ route('admin.payments.index') }}">School Fees</a> /
+                <a class="text-muted fw-light" href="{{ route('admin.school-fees.index') }}">School Fees</a> /
             </span>
             All School Fees
         </h4>
@@ -197,7 +203,7 @@
             <div class="d-flex justify-content-end gap-2 mb-2">
 
                 {{-- Classes Filter (Tom Select) --}}
-                <form method="GET" action="{{ route('admin.payments.index') }}" style="min-width: 130px;">
+                <form method="GET" action="{{ route('admin.school-fees.index') }}" style="min-width: 130px;">
                     <input type="hidden" name="school_year" value="{{ $selectedYear }}">
                     <select id="classFilter" name="class_id" autocomplete="off">
                         <option value="">All Classes</option>
@@ -211,7 +217,7 @@
                 </form>
 
                 {{-- School Year Filter (Tom Select) --}}
-                <form method="GET" action="{{ route('admin.payments.index') }}" style="min-width: 100px;">
+                <form method="GET" action="{{ route('admin.school-fees.index') }}" style="min-width: 100px;">
                     <input type="hidden" name="class_id" value="{{ $selectedClass }}">
                     <select id="yearFilter" name="school_year" autocomplete="off">
                         @foreach ($schoolYears as $year)
@@ -223,7 +229,7 @@
                 </form>
 
                 <!-- "Now" button -->
-                <form method="GET" action="{{ route('admin.payments.index') }}">
+                <form method="GET" action="{{ route('admin.school-fees.index') }}">
                     <input type="hidden" name="school_year" value="{{ $currentYear . '-' . ($currentYear + 1) }}">
                     <input type="hidden" name="class_id" value="{{ request('class_id') }}">
                     <button type="submit" class="btn btn-sm btn-primary" style="height: 38px;">
@@ -284,7 +290,7 @@
                                     data-paid="{{ $paidCount }}" data-partial="{{ $partialCount }}"
                                     data-unpaid="{{ $unpaidCount }}" data-total="{{ $totalStudents }}"
                                     data-percentage="{{ $percentage }}">
-                                    <a href="{{ route('admin.payments.show', ['paymentName' => $paymentName, 'school_year' => $selectedYear, 'class_id' => $selectedClass]) }}"
+                                    <a href="{{ route('admin.school-fees.show', ['paymentName' => $paymentName, 'school_year' => $selectedYear, 'class_id' => $selectedClass]) }}"
                                         class="text-decoration-none text-dark">
 
                                         <!-- Card Header -->

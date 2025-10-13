@@ -53,5 +53,19 @@ return [
         'from' => env('TWILIO_PHONE'),
     ],
 
+    'itexmo' => [
+        'code' => env('ITEXMO_CODE'),
+        'password' => env('ITEXMO_PASSWORD'),
+        'sender_id' => env('ITEXMO_SENDER_ID'),
+    ],
+
+    'semaphore' => [
+        'api_key' => env('SEMAPHORE_API_KEY'),
+        'sender'  => env('SEMAPHORE_SENDER'),
+    ],
+
+    'philsms' => [
+        'token' => env('PHILSMS_TOKEN'),
+    ],
 
 ];

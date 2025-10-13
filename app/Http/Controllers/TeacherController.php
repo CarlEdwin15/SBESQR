@@ -13,12 +13,14 @@ use App\Models\SchoolYear;
 use App\Models\QuarterlyGrade;
 use App\Models\Subject;
 use App\Services\TwilioService;
+use App\Services\ItexmoService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf; // make sure barryvdh/laravel-dompdf is installed
+use Illuminate\Support\Facades\Storage;
 
 
 class TeacherController extends Controller
@@ -668,11 +670,13 @@ class TeacherController extends Controller
             ]);
         }
 
+        // Fetch student
         $student = Student::find($studentId);
         if (!$student) {
-            return response()->json(['success' => false, 'message' => 'Student not found']);
+            return response()->json(['success' => false, 'message' => 'Student not found.']);
         }
 
+        // Verify class
         $class = Classes::where('grade_level', $grade_level)
             ->where('section', $section)
             ->first();
@@ -681,7 +685,7 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'Class not found.']);
         }
 
-        // Check if student is enrolled in the current school year (in any class)
+        // Check if student is enrolled this school year
         $enrolledThisYear = DB::table('class_student')
             ->where('student_id', $student->id)
             ->where('school_year_id', $schoolYear->id)
@@ -695,20 +699,19 @@ class TeacherController extends Controller
             ]);
         }
 
-        // Then check if student is in the scanned class
+        // Check if student belongs to the scanned class
         $studentInClass = $class->students()
             ->where('students.id', $student->id)
             ->wherePivot('school_year_id', $schoolYear->id)
             ->exists();
 
         if (!$studentInClass) {
-            // Log unauthorized scan attempt
             Log::warning('Unauthorized QR scan attempt (Wrong class)', [
                 'student_id' => $student->id,
                 'student_name' => $student->full_name,
                 'scanned_class' => $grade_level . ' - ' . $section,
                 'actual_class_id' => $student->class_id,
-                'timestamp' => now()->toDateTimeString()
+                'timestamp' => now()->toDateTimeString(),
             ]);
 
             return response()->json([
@@ -717,12 +720,13 @@ class TeacherController extends Controller
             ]);
         }
 
+        // Verify schedule
         $schedule = Schedule::find($scheduleId);
         if (!$schedule) {
             return response()->json(['success' => false, 'message' => 'Schedule not found.']);
         }
 
-        // Resolve school year
+        // Reconfirm school year
         $schoolYear = SchoolYear::where('school_year', $request->input('school_year', $this->getDefaultSchoolYear()))
             ->orWhere('id', $request->input('school_year'))
             ->first();
@@ -731,12 +735,12 @@ class TeacherController extends Controller
             return response()->json(['success' => false, 'message' => 'School year not found.']);
         }
 
-        // Check if attendance already exists
+        // Check for duplicate attendance record
         $existing = Attendance::where([
             'student_id' => $student->id,
             'schedule_id' => $schedule->id,
             'school_year_id' => $schoolYear->id,
-            'date' => $date
+            'date' => $date,
         ])->first();
 
         if ($existing) {
@@ -746,18 +750,20 @@ class TeacherController extends Controller
             ]);
         }
 
+        // Determine attendance status
         $now = now();
         $startTime = Carbon::parse($schedule->start_time);
         $endTime = Carbon::parse($schedule->end_time);
         $graceLimit = ($graceMinutes === -1) ? $endTime : $startTime->copy()->addMinutes($graceMinutes);
 
-        $status = $now->lte($graceLimit) ? 'present' : ($now->gt($endTime) ? 'absent' : 'late');
+        $status = $now->lte($graceLimit)
+            ? 'present'
+            : ($now->gt($endTime) ? 'absent' : 'late');
 
-        // Debug
         Log::debug("Now: $now | Start: $startTime | End: $endTime | Grace: $graceLimit | Status: $status");
 
-        // Mark new attendance
-        Attendance::create([
+        // Record attendance
+        $attendance = Attendance::create([
             'student_id' => $student->id,
             'schedule_id' => $schedule->id,
             'school_year_id' => $schoolYear->id,
@@ -769,25 +775,52 @@ class TeacherController extends Controller
             'time_out' => $customTimeout ?? $schedule->end_time,
         ]);
 
-        // Send SMS to parent
-        // if ($student->parent_id) {
-        //     $parent = DB::table('parent_info')->where('id', $student->parent_id)->first();
+        $parents = $student->parents()->whereNotNull('phone')->get();
+        $timeIn = Carbon::parse($attendance->time_in)->format('h:i A');
+        $timeOut = Carbon::parse($attendance->time_out)->format('h:i A');
+        $formattedDate = Carbon::parse($attendance->date)->format('M d, Y');
 
-        //     if ($parent) {
-        //         // Correct fallback: mother > father > emergency contact
-        //         $recipientPhone = $parent->mother_phone
-        //             ?? $parent->father_phone
-        //             ?? $parent->emergcont_phone;
+        if ($parents->count() > 0) {
+            // $semaphore = new \App\Services\SemaphoreService();
+            $philsms = new \App\Services\PhilSmsService();
 
-        //         if ($recipientPhone) {
-        //             $twilio = new TwilioService();
-        //             $message = "Hello! Your child {$student->student_fName} {$student->student_lName} has been marked as {$status} today (" . now()->format('M d, Y h:i A') . ").";
-        //             $twilio->sendSMS($recipientPhone, $message);
-        //         } else {
-        //             Log::warning("No valid parent/emergency phone found for student ID {$student->id}");
-        //         }
-        //     }
-        // }
+
+            // Collect all parent numbers
+            $numbers = [];
+            foreach ($parents as $parent) {
+                $phone = $parent->phone;
+
+                $phone = preg_replace('/[^0-9]/', '', $phone); // Remove non-numeric
+                if (str_starts_with($phone, '0')) {
+                    $phone = '+63' . substr($phone, 1);
+                } elseif (str_starts_with($phone, '63')) {
+                    $phone = '+' . $phone;
+                } elseif (!str_starts_with($phone, '+63')) {
+                    $phone = '+63' . $phone; // fallback
+                }
+
+                $numbers[] = $phone;
+            }
+
+            // Build message
+            foreach ($parents as $parent) {
+                $message = "Hello {$parent->firstName}! "
+                    . "Your child {$student->student_fName} {$student->student_lName} "
+                    . "was marked as {$status} today ({$formattedDate}) "
+                    . "with Time In: {$timeIn} and Time Out: {$timeOut}. "
+                    . "- {$schedule->subject_name} Class";
+
+                // Send SMS
+                // $sent = $semaphore->sendSMS($parent->phone, $message);
+                $sent = $philsms->sendSMS($parent->phone, $message);
+
+                if (!$sent) {
+                    Log::warning("Failed to send SMS to parent {$parent->id} ({$parent->phone})");
+                }
+            }
+        } else {
+            Log::warning("No parent phone number found for student ID {$student->id}");
+        }
 
         return response()->json([
             'success' => true,
@@ -1049,33 +1082,69 @@ class TeacherController extends Controller
             ->where('id', $subject_id)
             ->firstOrFail();
 
-        $quarters = $classSubject->quarters()->pluck('id', 'quarter'); // [quarter => id]
+        // [quarterNumber => quarterId]
+        $quarters = $classSubject->quarters()->pluck('id', 'quarter')->toArray();
 
         foreach ($request->input('grades', []) as $studentId => $gradeData) {
-            $quarterGrades = [];
 
-            // Loop quarters 1–4
-            foreach ([1, 2, 3, 4] as $q) {
-                if (isset($gradeData["q$q"])) {
-                    $grade = $gradeData["q$q"];
-
-                    QuarterlyGrade::updateOrCreate(
-                        [
-                            'student_id' => $studentId,
-                            'quarter_id' => $quarters[$q] ?? null,
-                        ],
-                        [
-                            'final_grade' => $grade,
-                        ]
-                    );
-
-                    $quarterGrades[] = $grade;
-                }
+            // Make sure $gradeData is an array (defensive)
+            if (!is_array($gradeData)) {
+                continue;
             }
 
-            // Auto-compute final average
-            if (count($quarterGrades) > 0) {
-                $finalAverage = round(array_sum($quarterGrades) / count($quarterGrades), 2);
+            foreach ([1, 2, 3, 4] as $q) {
+                $quarterId = $quarters[$q] ?? null;
+                if (!$quarterId) continue;
+
+                // IMPORTANT: only act if the input for this quarter was actually submitted
+                // (disabled inputs are NOT submitted and so will NOT have this key)
+                if (!array_key_exists("q{$q}", $gradeData)) {
+                    // input not present in POST -> do nothing (preserve DB value)
+                    continue;
+                }
+
+                $grade = $gradeData["q{$q}"];
+
+                // If the submitted value is empty string or null -> delete this quarter record
+                if ($grade === null || $grade === '') {
+                    QuarterlyGrade::where('student_id', $studentId)
+                        ->where('quarter_id', $quarterId)
+                        ->delete();
+                    continue;
+                }
+
+                // Otherwise validate/cast numeric and save
+                if (!is_numeric($grade)) {
+                    // skip invalid non-numeric input; optionally you could throw/collect errors
+                    continue;
+                }
+
+                $gradeValue = round(floatval($grade), 2);
+                // optional clamp:
+                $gradeValue = max(0, min(100, $gradeValue));
+
+                QuarterlyGrade::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'quarter_id' => $quarterId,
+                    ],
+                    [
+                        'final_grade' => $gradeValue,
+                    ]
+                );
+            }
+
+            // Recalculate final average based on remaining quarterly grades in DB
+            $quarterIds = array_values($quarters); // ensure values-only for whereIn
+            $existingGrades = QuarterlyGrade::whereIn('quarter_id', $quarterIds)
+                ->where('student_id', $studentId)
+                ->pluck('final_grade')
+                ->filter(fn($g) => $g !== null && $g !== '')
+                ->map(fn($g) => floatval($g))
+                ->toArray();
+
+            if (count($existingGrades) > 0) {
+                $finalAverage = round(array_sum($existingGrades) / count($existingGrades), 2);
 
                 FinalSubjectGrade::updateOrCreate(
                     [
@@ -1084,13 +1153,18 @@ class TeacherController extends Controller
                     ],
                     [
                         'final_grade' => $finalAverage,
-                        'remarks' => $finalAverage >= 75 ? 'passed' : 'failed',
+                        'remarks'     => $finalAverage >= 75 ? 'passed' : 'failed',
                     ]
                 );
+            } else {
+                // No quarterly grades remain — delete final subject grade
+                FinalSubjectGrade::where('student_id', $studentId)
+                    ->where('class_subject_id', $classSubject->id)
+                    ->delete();
             }
         }
 
-        return back()->with('success', 'Grades saved successfully!');
+        return back()->with('success');
     }
 
     public function deleteGrade(Request $request, $grade_level, $section, $subject_id, $student_id, $quarter)
@@ -1323,7 +1397,7 @@ class TeacherController extends Controller
 
         $schoolYear = SchoolYear::find($schoolYearId);
 
-        // ✅ Fetch and reorder classes (latest/current first)
+        // Fetch and reorder classes (latest/current first)
         $classHistory = $student->class()
             ->with([
                 'schoolYear',
@@ -1333,7 +1407,7 @@ class TeacherController extends Controller
             ])
             ->get();
 
-        // ✅ Sort: enrolled first, then by latest school_year_id
+        // Sort: enrolled first, then by latest school_year_id
         $classHistory = $classHistory
             ->sortByDesc(function ($classItem) {
                 return $classItem->pivot->enrollment_status === 'enrolled' ? 2 : 1;
@@ -1527,7 +1601,7 @@ class TeacherController extends Controller
 
         // Render PDF: A4 landscape and show two pages side-by-side
         $pdf = Pdf::loadView('pdf.student_report_card', $data)
-            ->setPaper('letter', 'landscape');
+            ->setPaper('A4', 'landscape');
 
         // stream download
         $filename = "Report_Card(SF9){$student->student_lName}_{$student->student_fName}_{$data['schoolYear']->school_year}.pdf";

@@ -135,7 +135,7 @@
 
             <div class="row">
                 <!-- Male Table -->
-                <div class="col-md-6">
+                <div class="col-md-6 table-responsive mb-4">
                     <table class="table table-hover table-bordered" id="studentTable">
                         <thead class="table-info">
                             <tr class="text-center">
@@ -181,7 +181,7 @@
                 <!-- /Male Table -->
 
                 <!-- Female Table -->
-                <div class="col-md-6">
+                <div class="col-md-6 table-responsive">
                     <table class="table table-bordered" id="studentTable">
                         <thead class="table-danger">
                             <tr class="text-center">

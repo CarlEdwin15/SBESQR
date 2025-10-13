@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -52,12 +52,12 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Students</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
@@ -107,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">All School Fees</div>
                         </a>
                     </li>
@@ -153,7 +153,7 @@
             <span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard</a> /
                 <a class="text-muted fw-light"
-                    href="{{ route('admin.payments.index', ['school_year' => $selectedYear, 'class_id' => $selectedClass]) }}">
+                    href="{{ route('admin.school-fees.index', ['school_year' => $selectedYear, 'class_id' => $selectedClass]) }}">
                     School Fees
                 </a> /
             </span>
@@ -337,6 +337,7 @@
                             <th>Status</th>
                             <th>Amount Paid</th>
                             <th>Amount Due</th>
+                            <th>Latest Payment Method</th>
                             <th>Last Payment Date</th>
                         </tr>
                     </thead>
@@ -409,6 +410,11 @@
                                 <!-- Amount Due -->
                                 <td class="text-center">₱{{ number_format($p->amount_due, 2) }}</td>
 
+                                <!-- Last Payment Method -->
+                                <td class="text-center">
+                                    {{ $p->latestPaymentMethod() ?? '—' }}
+                                </td>
+
                                 <!-- Last Payment Date -->
                                 <td class="text-center">
                                     {{ $p->latestPaymentDate() ? $p->latestPaymentDate()->format('M d, Y || h:i A') : '—' }}
@@ -426,7 +432,6 @@
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content shadow-lg">
 
-                                <!-- Modal Body -->
                                 <form action="{{ route('admin.payments.add', $p->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
@@ -452,39 +457,75 @@
                                                     </strong>
                                                 </div>
                                             </div>
-                                            <!-- Jump to History -->
+
                                             <button type="button" class="btn btn-info d-flex align-items-center"
                                                 data-bs-target="#studentHistoryModal{{ $p->id }}"
                                                 data-bs-toggle="modal" data-bs-dismiss="modal">
-                                                <i class="bx bx-history me-1"></i>
-                                                <span class="d-none d-sm-block">View History</span>
+                                                <i class="bx bx-history me-1"></i> View History
                                             </button>
                                         </div>
 
                                         <!-- Payment Progress -->
                                         <div class="mb-3">
-                                            <label class="form-label">Payment Progress</label>
+                                            <label class="form-label fw-semibold">Payment Progress</label>
                                             <input type="text" class="form-control"
                                                 value="₱{{ number_format($p->total_paid, 2) }} / ₱{{ number_format($p->amount_due, 2) }}"
                                                 readonly>
                                         </div>
 
-                                        <!-- Balance -->
+                                        <!-- Remaining Balance -->
                                         <div class="mb-3">
-                                            <label class="form-label">Remaining Balance</label>
+                                            <label class="form-label fw-semibold">Remaining Balance</label>
                                             <input type="text" class="form-control"
                                                 value="₱{{ number_format(max($p->amount_due - $p->total_paid, 0), 2) }}"
                                                 readonly>
                                         </div>
 
-                                        <!-- Amount to Pay -->
+                                        <!-- Hidden field to store the selected method -->
+                                        <input type="hidden" name="payment_method"
+                                            id="hidden_payment_method_{{ $p->id }}" value="cash_on_hand">
+
+                                        <!-- Payment Method -->
+                                        {{-- <div class="mb-3">
+                                            <label class="form-label fw-semibold">Payment Method</label>
+                                            <div class="d-flex flex-wrap gap-3">
+                                                <label
+                                                    class="payment-option p-3 border rounded-3 d-flex align-items-center gap-2">
+                                                    <input type="radio" name="payment_method_{{ $p->id }}"
+                                                        value="cash_on_hand" checked>
+                                                    <i class="bx bx-money text-success fs-4"></i> Cash on Hand
+                                                </label>
+
+                                                <label
+                                                    class="payment-option p-3 border rounded-3 d-flex align-items-center gap-2">
+                                                    <input type="radio" name="payment_method_{{ $p->id }}"
+                                                        value="gcash">
+                                                    <i class="bx bxl-paypal text-primary fs-4"></i> GCash
+                                                </label>
+
+                                                <label
+                                                    class="payment-option p-3 border rounded-3 d-flex align-items-center gap-2">
+                                                    <input type="radio" name="payment_method_{{ $p->id }}"
+                                                        value="credit_card">
+                                                    <i class="bx bx-credit-card text-warning fs-4"></i> Credit Card
+                                                </label>
+                                            </div>
+                                        </div> --}}
+
+                                        <!-- GCash Section -->
+                                        <div id="gcash_section_{{ $p->id }}" class="d-none mb-3">
+                                            <label class="form-label fw-semibold">GCash Reference No.</label>
+                                            <input type="text" name="gcash_ref" class="form-control"
+                                                placeholder="Enter GCash reference number (optional)">
+                                        </div>
+
+                                        <!-- Amount -->
                                         <div class="mb-3">
-                                            <label for="amountPaid{{ $p->id }}" class="form-label">Amount
-                                                to Pay</label>
-                                            <input type="number" step="0.01" min="0" name="amount_paid"
-                                                id="amountPaid{{ $p->id }}" class="form-control"
-                                                data-balance="{{ max($p->amount_due - $p->total_paid, 0) }}" required>
-                                            <small class="text-muted">Maximum allowed:
+                                            <label class="form-label fw-semibold">Amount to Pay</label>
+                                            <input type="number" step="0.01" name="amount_paid" class="form-control"
+                                                min="0.01" max="{{ max($p->amount_due - $p->total_paid, 0) }}"
+                                                required>
+                                            <small class="text-muted">Max:
                                                 ₱{{ number_format(max($p->amount_due - $p->total_paid, 0), 2) }}</small>
                                         </div>
 
@@ -500,17 +541,73 @@
                                                 @endif
                                             </small>
                                         </div>
-
-                                        <hr>
                                     </div>
 
-                                    <!-- Modal Footer -->
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary"
                                             data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-primary">Add Payment</button>
+                                        <button type="submit" class="btn btn-primary">Confirm Payment</button>
                                     </div>
                                 </form>
+
+                                {{-- <form action="{{ route('admin.payments.add', $p->id) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+
+                                    <!-- Hidden field to store the selected method -->
+                                    <input type="hidden" name="payment_method"
+                                        id="hidden_payment_method_{{ $p->id }}" value="cash_on_hand">
+
+                                    <div class="modal-body">
+                                        <!-- Payment Method -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Payment Method</label>
+                                            <div class="d-flex flex-wrap gap-3">
+                                                <label
+                                                    class="payment-option p-3 border rounded-3 d-flex align-items-center gap-2">
+                                                    <input type="radio" name="payment_method_{{ $p->id }}"
+                                                        value="cash_on_hand" checked>
+                                                    <i class="bx bx-money text-success fs-4"></i> Cash on Hand
+                                                </label>
+
+                                                <label
+                                                    class="payment-option p-3 border rounded-3 d-flex align-items-center gap-2">
+                                                    <input type="radio" name="payment_method_{{ $p->id }}"
+                                                        value="gcash">
+                                                    <i class="bx bxl-paypal text-primary fs-4"></i> GCash
+                                                </label>
+
+                                                <label
+                                                    class="payment-option p-3 border rounded-3 d-flex align-items-center gap-2">
+                                                    <input type="radio" name="payment_method_{{ $p->id }}"
+                                                        value="credit_card">
+                                                    <i class="bx bx-credit-card text-warning fs-4"></i> Credit Card
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- GCash Section -->
+                                        <div id="gcash_section_{{ $p->id }}" class="d-none mb-3">
+                                            <label class="form-label fw-semibold">GCash Reference No.</label>
+                                            <input type="text" name="gcash_ref" class="form-control"
+                                                placeholder="Enter GCash reference number (optional)">
+                                        </div>
+
+                                        <!-- Amount -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Amount to Pay</label>
+                                            <input type="number" step="0.01" name="amount_paid" class="form-control"
+                                                min="0.01" max="{{ max($p->amount_due - $p->total_paid, 0) }}"
+                                                required>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Confirm Payment</button>
+                                    </div>
+                                </form> --}}
                             </div>
                         </div>
                     </div>
@@ -567,6 +664,7 @@
                                                     <tr class="text-center">
                                                         <th>#</th>
                                                         <th>Amount</th>
+                                                        <th>Payment Method</th>
                                                         <th>Date</th>
                                                         <th>Added By</th>
                                                         <th>Action</th>
@@ -577,8 +675,8 @@
                                                         <tr class="text-center">
                                                             <td>{{ $i + 1 }}</td>
                                                             <td>₱{{ number_format($history->amount_paid, 2) }}</td>
-                                                            <td>{{ $history->payment_date->format('M d, Y h:i A') }}
-                                                            </td>
+                                                            <td>{{ $history->payment_method_name }}</td>
+                                                            <td>{{ $history->payment_date->format('M d, Y h:i A') }}</td>
                                                             <td>{{ $history->addedBy->full_name ?? '—' }}</td>
                                                             <td>
                                                                 <form
@@ -614,7 +712,6 @@
             <!-- /Payments Table -->
 
 
-
             <!-- All Students Payment History Modal -->
             <div class="modal fade" id="paymentHistoryModal" data-bs-backdrop="static" tabindex="-1"
                 aria-labelledby="paymentHistoryLabel" aria-hidden="true">
@@ -648,6 +745,7 @@
                                             <th>#</th>
                                             <th>Student</th>
                                             <th>Amount Paid</th>
+                                            <th>Payment Method</th>
                                             <th>Payment Date</th>
                                             <th>Added By</th>
                                         </tr>
@@ -660,6 +758,7 @@
                                                     $allHistories->push([
                                                         'student' => $payment->student->full_name ?? 'Unknown',
                                                         'amount' => $history->amount_paid,
+                                                        'method' => $history->payment_method_name,
                                                         'date' => $history->payment_date,
                                                         'addedBy' => $history->addedBy->full_name ?? '—',
                                                     ]);
@@ -674,6 +773,7 @@
                                                 <td></td>
                                                 <td>{{ $h['student'] }}</td>
                                                 <td class="text-center">₱{{ number_format($h['amount'], 2) }}</td>
+                                                <td class="text-center">{{ $h['method'] }}</td>
                                                 <td class="text-center">{{ $h['date']->format('M d, Y h:i A') }}</td>
                                                 <td class="text-center">{{ $h['addedBy'] }}</td>
                                             </tr>
@@ -710,30 +810,32 @@
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content shadow-lg">
                         <div class="modal-header">
-                            <h4 class="modal-title text-primary fw-bold" id="bulkAddPaymentLabel">Bulk Add Payment to
-                                Selected
-                                Students</h4>
+                            <h4 class="modal-title text-primary fw-bold" id="bulkAddPaymentLabel">Bulk Add Payment</h4>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
+
                         <form id="bulkAddPaymentFormSubmit" action="{{ route('admin.payments.bulkAddPayment') }}"
                             method="POST">
                             @csrf
-                            <div id="bulkAddPaymentIds"></div> <!-- dynamic IDs -->
+                            <div id="bulkAddPaymentIds"></div>
 
                             <div class="modal-body">
                                 <p class="text-muted">You are adding a payment to
-                                    <span class="text-danger" id="bulkSelectedCount">0</span>
-                                    <span class="text-danger">Students.</span>
+                                    <span class="text-danger" id="bulkSelectedCount">0</span> Students.
                                 </p>
 
+                                <!-- Hidden field to store the selected method -->
+                                <input type="hidden" name="payment_method"
+                                    id="hidden_payment_method_{{ $p->id }}" value="cash_on_hand">
+
                                 <div class="mb-3">
-                                    <label class="form-label">Amount to Pay</label>
+                                    <label class="form-label fw-semibold">Amount to Pay</label>
                                     <input type="number" step="0.01" min="0" name="amount_paid"
                                         class="form-control" required>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Payment Date</label>
+                                    <label class="form-label fw-semibold">Payment Date</label>
                                     <input type="datetime-local" name="payment_date" class="form-control"
                                         value="{{ now()->format('Y-m-d\TH:i') }}" required>
                                 </div>
@@ -759,7 +861,7 @@
             <!-- /Pagination + Info -->
 
             <!-- Add Students Modal -->
-            <div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content shadow-lg">
                         <form action="{{ route('admin.payments.addStudents', $paymentName) }}" method="POST">
@@ -774,7 +876,7 @@
                             <input type="hidden" name="due_date" value="{{ optional($first)->due_date ?? '' }}">
 
                             <div class="modal-header">
-                                <h4 class="modal-title text-primary fw-bold">Add Students to Payment</h4>
+                                <h4 class="modal-title text-primary fw-bold">Add Students to School Fee</h4>
                                 <button type="button" class="btn-close btn-close-white"
                                     data-bs-dismiss="modal"></button>
                             </div>
@@ -798,7 +900,6 @@
                 </div>
             </div>
             <!-- /Add Students Modal -->
-
 
         </div>
         <!-- /Payments Card -->
@@ -1229,6 +1330,104 @@
         }
     </script>
 
+    <!-- Individual Add Payment Confirmation -->
+    <script>
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+
+            // Match any form posting to /admin/payments/add/{id}
+            if (form.action.includes('admin/payments/add')) {
+                e.preventDefault();
+
+                const amountInput = form.querySelector('input[name="amount_paid"]');
+                const amount = amountInput ? parseFloat(amountInput.value || 0) : 0;
+
+                if (!amount || amount <= 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Invalid Amount',
+                        text: 'Please enter a valid payment amount before confirming.',
+                        confirmButtonColor: '#dc3545',
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Confirm Payment?',
+                    text: `You are about to record a payment of ₱${amount.toFixed(2)}.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#06D001',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, confirm payment',
+                    cancelButtonText: 'Cancel',
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Bulk Add Payment Confirmation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const bulkForm = document.getElementById('bulkAddPaymentFormSubmit');
+
+            if (bulkForm) {
+                bulkForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const amount = parseFloat(this.querySelector('input[name="amount_paid"]').value || 0);
+                    const count = parseInt(document.getElementById('bulkSelectedCount')?.textContent ||
+                        '0');
+
+                    if (!amount || amount <= 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Invalid Amount',
+                            text: 'Please enter a valid amount before confirming.',
+                            confirmButtonColor: '#dc3545',
+                        });
+                        return;
+                    }
+
+                    if (count === 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'No Students Selected',
+                            text: 'Please select at least one student before adding a payment.',
+                            confirmButtonColor: '#dc3545',
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Confirm Bulk Payment?',
+                        html: `You are about to record a payment of <b>₱${amount.toFixed(2)}</b> for <b>${count}</b> student(s).`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#06D001',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, confirm all',
+                        cancelButtonText: 'Cancel',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            this.submit();
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+
     <!-- Bulk Add Payment Script -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -1264,6 +1463,34 @@
                     });
                 });
             }
+        });
+    </script>
+
+    <!-- Dynamic Payment Method Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('[id^="addPaymentModal"]').forEach(modal => {
+                const modalId = modal.id.replace('addPaymentModal', '');
+                const radios = modal.querySelectorAll(`input[name="payment_method_${modalId}"]`);
+                const gcashSection = document.getElementById(`gcash_section_${modalId}`);
+                const hiddenInput = document.getElementById(`hidden_payment_method_${modalId}`);
+
+                radios.forEach(radio => {
+                    radio.addEventListener("change", function() {
+                        // Update hidden input
+                        hiddenInput.value = this.value;
+
+                        // Show/hide GCash section
+                        gcashSection.classList.toggle("d-none", this.value !== "gcash");
+
+                        // Highlight selection
+                        radios.forEach(r => r.closest('.payment-option').classList.remove(
+                            'border-primary', 'bg-primary-subtle'));
+                        this.closest('.payment-option').classList.add('border-primary',
+                            'bg-primary-subtle');
+                    });
+                });
+            });
         });
     </script>
 

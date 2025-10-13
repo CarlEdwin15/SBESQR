@@ -1,4 +1,4 @@
-@extends('./layouts.main')
+@extends('layouts.main')
 
 @section('title', 'Teacher | Subjects')
 
@@ -304,8 +304,9 @@
                                             @if ($canEdit)
                                                 <input type="number"
                                                     name="grades[{{ $student->id }}][q{{ $q }}]"
-                                                    class="form-control quarter-input" value="{{ $grade }}"
-                                                    min="0" max="100" step="0.01">
+                                                    class="form-control quarter-input quarter-{{ $q }}"
+                                                    value="{{ $grade }}" min="0" max="100"
+                                                    step="0.01" disabled>
                                             @else
                                                 <span>{{ $grade }}</span>
                                             @endif
@@ -389,6 +390,7 @@
     </script>
 
     <script>
+        // Live update final grades and remarks when inputs change
         document.addEventListener("DOMContentLoaded", function() {
             function updateFinalGrade(row) {
                 const inputs = row.querySelectorAll(".quarter-input");
@@ -405,7 +407,7 @@
                     }
                 });
 
-                // ✅ Only show final if all 4 quarters are filled
+                // Only show final if all 4 quarters are filled
                 if (count === 4) {
                     const avg = (total / 4).toFixed(2);
                     finalGradeEl.textContent = avg;
@@ -439,7 +441,7 @@
                 updateFinalGrade(input.closest("tr")); // run once
             });
 
-            // ✅ Fixed: select form correctly
+            // Fixed: select form correctly
             const gradeForm = document.querySelector(".save-grades-form");
             if (gradeForm) {
                 gradeForm.addEventListener("submit", function(e) {
@@ -478,11 +480,14 @@
                                 .then(response => {
                                     if (response.ok) {
                                         Swal.fire({
+                                            toast: true,
+                                            position: 'top-end',
                                             title: "Success!",
                                             text: "Grades have been saved.",
                                             icon: "success",
-                                            timer: 2000,
                                             showConfirmButton: false,
+                                            timer: 3000,
+                                            timerProgressBar: true,
                                             customClass: {
                                                 container: "my-swal-container"
                                             }
@@ -525,7 +530,7 @@
                 if (!this.dataset.quarter) return; // skip if not editable
 
                 const quarter = this.dataset.quarter;
-                const inputs = document.querySelectorAll(`.quarter-${quarter}`);
+                const inputs = document.querySelectorAll(`input.quarter-${quarter}`);
                 const columnCells = document.querySelectorAll(
                     `th[data-quarter="${quarter}"], td:nth-child(${parseInt(quarter) + 3})`
                 );
@@ -551,7 +556,7 @@
                             th.classList.add("text-dark");
                             th.classList.remove("text-muted");
 
-                            // ✅ Highlight the entire column
+                            // Highlight the entire column
                             columnCells.forEach(cell => cell.classList.add("active-quarter"));
                         }
                     });
@@ -573,7 +578,7 @@
                             th.classList.remove("text-success");
                             th.classList.add("text-muted");
 
-                            // ✅ Remove highlight
+                            // Remove highlight
                             columnCells.forEach(cell => cell.classList.remove("active-quarter"));
                         }
                     });

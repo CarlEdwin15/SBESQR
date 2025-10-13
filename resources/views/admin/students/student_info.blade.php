@@ -44,7 +44,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -58,12 +58,12 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All Students</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-warning">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
@@ -113,7 +113,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -157,7 +157,7 @@
         <h4 class="fw-bold py-3 mb-4 text-warning">
             <span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
+                <a class="text-muted fw-light" href="{{ route('student.management') }}">Students / </a>
             </span> Student Information
         </h4>
 
@@ -201,36 +201,34 @@
 
                     <h5 class="fw-bold">{{ $student->student_fName }} {{ $student->student_lName }}</h5>
 
-                    <!-- Enrollment Status + Type -->
+                    <!-- Student Status Display -->
                     <div class="mt-2 mb-3 text-center">
-                        <span class="fw-bold">
-                            Enrollment Status & Type for<br> Current School Year
-                            ({{ Carbon::now()->format('Y') }} - {{ Carbon::now()->addYear()->format('Y') }})
-                        </span><br>
+                        <span class="fw-bold">Student Status</span><br>
 
-                        @if ($class && $class->pivot->enrollment_status)
-                            @php
-                                $status = $class->pivot->enrollment_status;
-                                $type = $class->pivot->enrollment_type ?? 'N/A';
+                        @php
+                            $displayStatus = match ($studentStatus) {
+                                'enrolled' => 'Active',
+                                'graduated' => 'Graduated',
+                                'archived', 'not_enrolled' => 'Inactive',
+                                default => ucfirst($studentStatus),
+                            };
 
-                                $badgeClass = match ($status) {
-                                    'enrolled' => 'bg-label-success fw-bold',
-                                    'archived' => 'bg-label-warning fw-bold',
-                                    default => 'bg-label-secondary fw-bold',
-                                };
-                            @endphp
+                            $badgeClass = match ($displayStatus) {
+                                'Active' => 'bg-label-success fw-bold',
+                                'Inactive' => 'bg-label-secondary fw-bold',
+                                'Graduated' => 'bg-label-info fw-bold',
+                                default => 'bg-label-warning fw-bold',
+                            };
+                        @endphp
 
-                            <span class="badge {{ $badgeClass }} px-3 py-2">
-                                {{ ucfirst($status) }}
-                            </span>
-                            <span class="badge bg-label-info fw-bold px-3 py-2">
-                                {{ ucfirst($type) }}
-                            </span>
-                        @else
-                            <span class="text-muted">N/A</span>
+                        <span class="badge {{ $badgeClass }} px-3 py-2">{{ $displayStatus }}</span><br>
+
+                        @if (!empty($statusInfo))
+                            <small class="text-muted d-block mt-1">{{ $statusInfo }}</small>
                         @endif
                     </div>
 
+                    <!-- Action Buttons -->
                     <div class="d-flex justify-content-center align-items-center mt-3">
                         <!-- Back Button -->
                         <a href="{{ session('back_url', url()->previous()) }}"
@@ -245,11 +243,17 @@
                             <span class="d-none d-sm-block">Edit</span>
                         </a>
 
-                        <!-- Edit Button -->
-                        <a href="" class="btn btn-danger me-2 d-flex align-items-center">
-                            <i class='bx bx-trash me-1'></i>
-                            <span class="d-none d-sm-block">Delete</span>
-                        </a>
+                        <!-- Delete Button -->
+                        <form action="{{ route('delete.student', $student->id) }}" method="POST"
+                            class="d-inline delete-student-form">
+                            @csrf
+                            @method('DELETE')
+                            <button type="button"
+                                class="btn btn-danger me-2 d-flex align-items-center delete-student-btn">
+                                <i class='bx bx-trash me-1'></i>
+                                <span class="d-none d-sm-block">Delete</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -704,5 +708,38 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteForms = document.querySelectorAll('.delete-student-form');
+
+            deleteForms.forEach(form => {
+                const deleteButton = form.querySelector('.delete-student-btn');
+
+                deleteButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This action will permanently delete the student's record and related data.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonColor: '#d33',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true,
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+        });
     </script>
 @endpush

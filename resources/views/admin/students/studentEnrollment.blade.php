@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | All Students')
+@section('title', 'Admin | Student Enrollment')
 
 @section('content')
 
@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -51,24 +51,19 @@
                     <div>Students</div>
                 </a>
                 <ul class="menu-sub">
+                    <li class="menu-item">
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
+                        </a>
+                    </li>
                     <li class="menu-item active">
                         <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">Student Enrollment</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Management</div>
-                        </a>
-                    </li>
-                    <li class="menu-item">
                         <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Promotion</div>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="" class="menu-link bg-dark text-light">
-                            <div class="text-light">Graduated Students</div>
                         </a>
                     </li>
                 </ul>
@@ -112,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -155,8 +150,8 @@
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                <a class="text-muted fw-light" href="{{ route('show.students') }}">Students / </a>
-            </span> All Students
+                <a class="text-muted fw-light" href="{{ route('student.management') }}">Students / </a>
+            </span> Student Enrollment
         </h4>
 
         <div class="text-center mb-3">

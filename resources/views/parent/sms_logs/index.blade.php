@@ -92,3 +92,34 @@
     </div>
     <!-- /Content Wrapper -->
 @endsection
+
+@push('scripts')
+    <script>
+        // logout confirmation
+        function confirmLogout() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You want to log out?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, log out!",
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: "Logged out Successfully!",
+                        icon: "success",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    document.getElementById('logout-form').submit();
+                }
+            });
+        }
+    </script>
+@endpush

@@ -88,12 +88,12 @@ class StudentController extends Controller
             ->where('school_year_id', $schoolYear->id)
             ->where('enrollment_status', 'enrolled')
             ->where(function ($q) use ($term) {
-                // 🔹 Student search
+                // Student search
                 $q->whereHas('student', function ($studentQ) use ($term) {
                     $studentQ->where('student_lrn', 'like', "%{$term}%")
                         ->orWhereRaw("CONCAT(student_fName, ' ', student_lName) LIKE ?", ["%{$term}%"]);
                 })
-                    // 🔹 Class search (formatted grade level + section)
+                    // Class search (formatted grade level + section)
                     ->orWhereHas('class', function ($classQ) use ($term) {
                         $classQ->whereRaw("CONCAT(
                         CASE grade_level
@@ -310,7 +310,7 @@ class StudentController extends Controller
             });
         }
 
-        return view('admin.students.showAllStudents', compact(
+        return view('admin.students.studentEnrollment', compact(
             'groupedStudents',
             'schoolYears',
             'selectedYear',
@@ -362,20 +362,50 @@ class StudentController extends Controller
 
     public function studentManagement()
     {
-        $students = Student::with(['classStudents' => function ($query) {
-            $query->latest('created_at');
-        }])->get();
+        // Determine the current school year
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
 
-        // Attach enrollment status (fallback to 'not_enrolled' if none found)
-        $students->each(function ($student) {
-            $latestEnrollment = $student->classStudents->first();
-            $student->status = $latestEnrollment->enrollment_status ?? 'not_enrolled';
+        $schoolYear = SchoolYear::where('school_year', $currentSchoolYear)->first();
+        $schoolYearId = optional($schoolYear)->id;
+
+        // Get students with their latest enrollments and related data
+        $students = Student::with([
+            'address',
+            'classStudents.schoolYear' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            }
+        ])->get();
+
+        $students->each(function ($student) use ($schoolYearId) {
+            // Find the enrollment for the *current* school year first
+            $currentEnrollment = $student->classStudents
+                ->firstWhere('school_year_id', $schoolYearId);
+
+            if ($currentEnrollment) {
+                $student->status = $currentEnrollment->enrollment_status;
+            } else {
+                // Fallback to their most recent record if not currently enrolled
+                $latestEnrollment = $student->classStudents->sortByDesc('created_at')->first();
+                $student->status = $latestEnrollment->enrollment_status ?? 'not_enrolled';
+            }
+
+            // Determine graduated school year
+            $graduatedRecord = $student->classStudents->firstWhere('enrollment_status', 'graduated');
+            if ($graduatedRecord && $graduatedRecord->schoolYear) {
+                $student->graduated_school_year = $graduatedRecord->schoolYear->school_year;
+            } else {
+                $student->graduated_school_year = null;
+            }
         });
 
-        // Sort alphabetically by full name (using accessor)
+        // Sort alphabetically
         $students = $students->sortBy('full_name', SORT_NATURAL | SORT_FLAG_CASE);
 
-        return view('admin.students.studentManagement', compact('students'));
+        return view('admin.students.studentManagement', compact('students', 'schoolYearId'));
     }
 
     public function store(Request $request)
@@ -596,68 +626,119 @@ class StudentController extends Controller
     {
         $schoolYearId = $request->query('school_year');
 
-        $student = Student::with(['address', 'parents'])->findOrFail($id);
+        $student = Student::with(['address', 'parents', 'classStudents.schoolYear', 'class'])->findOrFail($id);
 
         $class = $student->class()->where('school_year_id', $schoolYearId)->first();
-
         $schoolYear = SchoolYear::find($schoolYearId);
 
-        // Get all classes (class history)
-        $classHistory = $student->class()->with('advisers')->get();
+        // Determine status
+        $latestEnrollment = $student->classStudents()->latest()->first();
+        $studentStatus = $latestEnrollment->enrollment_status ?? 'not_enrolled';
 
-        // Reorder so "enrolled" classes appear first, then by school_year_id desc
-        $classHistory = $classHistory->sortByDesc(function ($classItem) {
-            return $classItem->pivot->enrollment_status === 'enrolled' ? 2 : 1;
-        })->sortByDesc(function ($classItem) {
-            return $classItem->pivot->school_year_id;
-        })->values();
+        // Determine additional info
+        $statusInfo = null;
 
-        // Organize grades by class
+        if ($studentStatus === 'enrolled' && $class) {
+            $grade = $class->formatted_grade_level ?? null;
+            $section = $class->section ?? null;
+            $gradeSection = $grade ? $grade . ($section ? ' - ' . $section : '') : null;
+
+            $statusInfo = $gradeSection
+                ? "{$gradeSection} for SY {$schoolYear->school_year}"
+                : "For SY {$schoolYear->school_year}";
+        } elseif (in_array($studentStatus, ['archived', 'not_enrolled'])) {
+            $lastEnrollment = $student->classStudents()
+                ->where('enrollment_status', 'enrolled')
+                ->latest()
+                ->first();
+
+            $lastSY = $lastEnrollment?->schoolYear?->school_year;
+            $statusInfo = $lastSY ? "Last Enrolled: {$lastSY}" : 'No recent enrollment';
+        } elseif ($studentStatus === 'graduated') {
+            $graduatedRecord = $student->classStudents()
+                ->where('enrollment_status', 'graduated')
+                ->latest()
+                ->first();
+
+            $gradSY = $graduatedRecord?->schoolYear?->school_year;
+            $statusInfo = $gradSY ? "Graduated: {$gradSY}" : 'Graduation year not recorded';
+        }
+
+        // --- Class history (for grade tabs) ---
+        $classHistory = $student->class()
+            ->with(['schoolYear', 'advisers' => function ($q) {
+                $q->wherePivot('role', 'adviser');
+            }])
+            ->get();
+
+        $classHistory = $classHistory
+            ->sortByDesc(fn($c) => $c->pivot->enrollment_status === 'enrolled' ? 2 : 1)
+            ->sortByDesc(fn($c) => $c->pivot->school_year_id)
+            ->values();
+
+        // --- Grades per class ---
         $gradesByClass = [];
+        $generalAverages = [];
+
         foreach ($classHistory as $classItem) {
+            $classSubjects = $classItem->classSubjects()
+                ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
+                    $q->where('student_id', $student->id);
+                }])
+                ->where('school_year_id', $classItem->pivot->school_year_id)
+                ->get();
+
             $subjectsWithGrades = [];
+            $finalGrades = [];
 
-            foreach ($classItem->subjects as $subject) {
+            foreach ($classSubjects as $classSubject) {
+                $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
+                    return [
+                        'quarter' => $quarter->quarter,
+                        'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
+                    ];
+                });
 
-                $classSubject = ClassSubject::where('class_id', $classItem->id)
-                    ->where('subject_id', $subject->id)
-                    ->first();
+                $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
 
-                if ($classSubject) {
-                    $quarters = $student->quarterlyGrades()
-                        ->whereHas('quarter', function ($query) use ($classSubject) {
-                            $query->where('class_subject_id', $classSubject->id);
-                        })
-                        ->get();
+                $finalAverage = null;
+                $remarks = null;
 
-                    $final = $student->finalSubjectGrades()
-                        ->where('class_subject_id', $classSubject->id)
-                        ->first();
-                } else {
-                    $quarters = collect();
-                    $final = null;
+                if ($allQuartersHaveGrades) {
+                    $grades = $quarters->pluck('grade')->all();
+                    $finalAverage = round(array_sum($grades) / 4, 2);
+                    $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
+                    $finalGrades[] = $finalAverage;
                 }
 
                 $subjectsWithGrades[] = [
-                    'subject' => $subject->subject_name,
+                    'subject' => $classSubject->subject->name,
                     'quarters' => $quarters,
-                    'final_average' => $final->final_grade ?? null,
-                    'remarks' => $final->remarks ?? null,
+                    'final_average' => $finalAverage,
+                    'remarks' => $remarks,
                 ];
             }
 
             $gradesByClass[$classItem->id] = $subjectsWithGrades;
+
+            // General Average
+            $totalSubjects = count($classSubjects);
+            $completedSubjects = count($finalGrades);
+
+            if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
+                $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+                $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
+
+                $generalAverages[$classItem->id] = [
+                    'general_average' => $generalAverage,
+                    'remarks' => $remarks,
+                ];
+            } else {
+                $generalAverages[$classItem->id] = null;
+            }
         }
 
-        // Get general averages per class
-        $generalAverages = $student->generalAverages()
-            ->get()
-            ->groupBy('class_id')
-            ->map(function ($items) {
-                return $items->first();
-            });
-
-        // Store the previous URL, but avoid self-loop
+        // Store back URL
         $previous = url()->previous();
         if ($previous !== $request->fullUrl()) {
             session(['back_url' => $previous]);
@@ -670,8 +751,27 @@ class StudentController extends Controller
             'schoolYearId',
             'classHistory',
             'gradesByClass',
-            'generalAverages'
+            'generalAverages',
+            'studentStatus',
+            'statusInfo'
         ));
+    }
+
+    public function delete($id)
+    {
+        $student = Student::findOrFail($id);
+
+        // Delete related records
+        $student->parents()->detach();
+        $student->class()->detach();
+        $student->classStudents()->delete();
+        $student->payments()->delete();
+        $student->address()->delete();
+
+        // Finally, delete the student
+        $student->delete();
+
+        return redirect()->route('student.management')->with('success', 'Student and all related records have been deleted.');
     }
 
     public function unenroll(Request $request, $id)

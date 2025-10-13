@@ -39,7 +39,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">Teacher's Class Management</div>
+                            <div class="text-warning">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -53,12 +53,12 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Students</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
@@ -108,7 +108,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -152,7 +152,7 @@
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
                 <a class="text-muted fw-light" href="{{ route('show.teachers') }}">Teachers / </a>
-            </span> Teacher's Class Management
+            </span> Teacher Management
         </h4>
 
         {{-- Notification when year is changed --}}
@@ -621,7 +621,7 @@
         {{-- Teacher Management Table --}}
         <div class="card shadow-sm">
             <div class="card-body">
-                <h3 class="card-title mb-3 fw-bold text-center">Teacher's Class Management</h3>
+                <h3 class="card-title mb-3 fw-bold text-center">Teacher Management</h3>
 
                 <!-- Search & Filters -->
                 <div class="row g-2 mb-3 align-items-center">

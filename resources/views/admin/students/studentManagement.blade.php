@@ -38,7 +38,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -51,14 +51,14 @@
                     <div>Students</div>
                 </a>
                 <ul class="menu-sub">
-                    <li class="menu-item">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Enrollment</div>
-                        </a>
-                    </li>
                     <li class="menu-item active">
                         <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">Student Management</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
                     <li class="menu-item">
@@ -107,7 +107,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -170,13 +170,13 @@
                 </div>
             @endif
 
-            <!-- Student Management Table -->
+            <!-- Student Management Card -->
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h3 class="card-title mb-3 fw-bold">Student Management</h3>
 
                     <!-- Search & Filters -->
-                    <div class="row g-2 mb-3  justify-content-between align-items-center">
+                    <div class="row g-2 mb-3 justify-content-between align-items-center">
                         <div class="col-md-4 col-sm-6">
                             <input type="text" class="form-control" placeholder="Search students..."
                                 id="studentSearch">
@@ -194,44 +194,23 @@
 
                     <hr class="my-4" />
 
-                    <!-- Table length + bulk actions -->
+                    <!-- Table length -->
                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <!-- Table length -->
-                            <div>
-                                <select id="tableLength" class="form-select">
-                                    <option value="10" selected>10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                            </div>
-
-                            <!-- Bulk Action Example -->
-                            <form id="bulkActionForm" class="d-flex gap-2 d-none">
-                                <div id="bulkStudentIds"></div>
-                                <div class="dropdown d-inline-block">
-                                    <button class="btn btn-outline-primary dropdown-toggle" type="button"
-                                        id="bulkStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Set Status
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="bulkStatusDropdown">
-                                        <li><button type="submit" class="dropdown-item text-success"
-                                                data-status="enrolled">
-                                                Enroll</button></li>
-                                    </ul>
-                                </div>
-                            </form>
+                        <div>
+                            <select id="tableLength" class="form-select">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
                         </div>
 
-                        <!-- Add Student -->
-                        <div class="d-flex gap-2">
-                            <!-- Add Student Button -->
+                        <!-- Add Student Button -->
+                        <div>
                             <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
                                 data-bs-target="#addStudentModal">
                                 <i class="bx bx-user-plus me-1"></i> Add Student
                             </button>
-
                         </div>
                     </div>
 
@@ -240,37 +219,45 @@
                         <table class="table table-hover align-middle" id="studentTable">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th style="width: 1%;">
-                                        <input class="form-check-input me-1" type="checkbox" id="selectAll">
+                                    <th style="width: 1%"></th>
+                                    <th class="text-start" style="width: 20%;">Full Name</th>
+                                    <th style="width: 5%;">LRN</th>
+                                    <th style="width: 5%;">Status</th>
+                                    <th style="width: 5%;">Age</th>
+                                    <th style="width: 20%; display: none;" id="graduatedYearHeader">School Year Graduated
                                     </th>
-                                    <th class="text-start" style="width: 40%;">Full Name</th>
-                                    <th style="width: 20%;">Status</th>
-                                    <th style="width: 20%;">Date Enrolled</th>
+                                    <th style="width: 20%;">Address</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($students as $student)
-                                    <tr class="student-row text-center" data-id="{{ $student->id }}"
-                                        data-name="{{ strtolower($student->full_name) }}"
+                                    <tr class="student-row text-center" data-name="{{ strtolower($student->full_name) }}"
                                         data-status="{{ strtolower($student->status) }}">
-                                        <td>
-                                            <input type="checkbox" class="student-checkbox form-check-input me-1"
-                                                value="{{ $student->id }}">
-                                        </td>
+                                        <td></td>
                                         <td class="text-start">
                                             <div class="d-flex align-items-center">
-                                                @if ($student->student_photo)
-                                                    <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                        alt="Profile Photo" width="35" height="35"
-                                                        class="rounded-circle me-2">
-                                                @else
-                                                    <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                        alt="No Profile" width="35" height="35"
-                                                        class="rounded-circle me-2">
-                                                @endif
-                                                <span>{{ $student->full_name }}</span>
+                                                <a href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}"
+                                                    class="d-flex align-items-center text-decoration-none"
+                                                    style="gap: 0.5rem;">
+                                                    @if ($student->student_photo)
+                                                        <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                            alt="Profile Photo" width="35" height="35"
+                                                            class="rounded-circle">
+                                                    @else
+                                                        <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                            alt="No Profile" width="35" height="35"
+                                                            class="rounded-circle">
+                                                    @endif
+
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="fw-semibold">{{ $student->full_name }}</span>
+                                                        <i class="{{ $student->sex_icon }} ms-2"
+                                                            style="font-size: 1rem; {{ strtolower($student->sex_icon) === 'bx-male-sign' ? 'color:#0dcaf0;' : 'color:#dc3545;' }}"></i>
+                                                    </div>
+                                                </a>
                                             </div>
                                         </td>
+                                        <td>{{ $student->student_lrn ?? '-' }}</td>
                                         <td>
                                             @php
                                                 $displayStatus = match ($student->status) {
@@ -292,7 +279,32 @@
                                                 {{ $displayStatus }}
                                             </span>
                                         </td>
-                                        <td>{{ $student->created_at->format('M d, Y') }}</td>
+                                        <td>
+                                            @if ($student->student_dob)
+                                                {{ \Carbon\Carbon::parse($student->student_dob)->age }} years old
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td class="graduated-year-cell" style="display: none;">
+                                            @if ($student->status === 'graduated')
+                                                {{ $student->graduated_school_year ?? '-' }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td class="text-start">
+                                            @if ($student->address)
+                                                {{ $student->address->house_no ? $student->address->house_no . ', ' : '' }}
+                                                {{ $student->address->street_name ? $student->address->street_name . ', ' : '' }}
+                                                {{ $student->address->barangay ? $student->address->barangay . ', ' : '' }}
+                                                {{ $student->address->municipality_city ? $student->address->municipality_city . ', ' : '' }}
+                                                {{ $student->address->province ? $student->address->province . ', ' : '' }}
+                                                {{ $student->address->zip_code ?? '' }}
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -308,6 +320,7 @@
                     </div>
                 </div>
             </div>
+            <!-- /Student Management Card -->
         </div>
 
         <div class="content-backdrop fade"></div>
@@ -676,15 +689,12 @@
             const pagination = document.getElementById("studentPagination");
             const tableLengthSelect = document.getElementById("tableLength");
             const tableInfo = document.getElementById("tableInfo");
-            const selectAll = document.getElementById("selectAll");
-            const checkboxes = document.querySelectorAll(".student-checkbox");
-            const bulkForm = document.getElementById("bulkActionForm");
 
             let currentPage = 1;
             let rowsPerPage = parseInt(tableLengthSelect.value);
-            let filteredRows = [...rows]; // keep track of all rows that match filters
+            let filteredRows = [...rows];
 
-            // --- Filtering logic ---
+            // Filter rows by name and status
             function filterRows() {
                 const search = searchInput.value.toLowerCase();
                 const status = statusFilter.value;
@@ -693,16 +703,15 @@
                     const name = row.dataset.name;
                     const rawStatus = row.dataset.status;
 
-                    // Normalize database status → display status
                     let displayStatus;
-                    if (rawStatus === 'enrolled') displayStatus = 'active';
-                    else if (rawStatus === 'graduated') displayStatus = 'graduated';
-                    else if (rawStatus === 'archived' || rawStatus === 'not_enrolled') displayStatus =
-                        'inactive';
+                    if (rawStatus === "enrolled") displayStatus = "active";
+                    else if (rawStatus === "graduated") displayStatus = "graduated";
+                    else if (["archived", "not_enrolled"].includes(rawStatus)) displayStatus = "inactive";
                     else displayStatus = rawStatus;
 
                     const matchesSearch = name.includes(search);
                     const matchesStatus = !status || displayStatus === status;
+
                     return matchesSearch && matchesStatus;
                 });
 
@@ -710,16 +719,16 @@
                 renderTable();
             }
 
-            // --- Table render + pagination logic ---
+            // Render table + pagination
             function renderTable() {
                 const totalRows = filteredRows.length;
                 const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
                 currentPage = Math.max(1, Math.min(currentPage, totalPages));
 
-                // Hide all rows first
+                // Hide all rows
                 rows.forEach(r => (r.style.display = "none"));
 
-                // Show only rows for current page
+                // Show only current page rows
                 const start = (currentPage - 1) * rowsPerPage;
                 const end = start + rowsPerPage;
                 filteredRows.slice(start, end).forEach(r => (r.style.display = ""));
@@ -733,15 +742,11 @@
                     if (endPage - startPage + 1 < maxVisible)
                         startPage = Math.max(1, endPage - maxVisible + 1);
 
-                    // Prev button
                     pagination.appendChild(createPageItem("«", currentPage > 1, () => {
-                        if (currentPage > 1) {
-                            currentPage--;
-                            renderTable();
-                        }
+                        currentPage--;
+                        renderTable();
                     }));
 
-                    // Page numbers
                     for (let i = startPage; i <= endPage; i++) {
                         pagination.appendChild(createPageItem(i, true, () => {
                             currentPage = i;
@@ -749,22 +754,22 @@
                         }, i === currentPage));
                     }
 
-                    // Next button
                     pagination.appendChild(createPageItem("»", currentPage < totalPages, () => {
-                        if (currentPage < totalPages) {
-                            currentPage++;
-                            renderTable();
-                        }
+                        currentPage++;
+                        renderTable();
                     }));
                 }
 
-                // Info text
+                // Table info
                 const startRow = totalRows === 0 ? 0 : start + 1;
                 const endRow = Math.min(end, totalRows);
                 tableInfo.textContent = `Showing ${startRow}-${endRow} of ${totalRows} students`;
+
+                // Reapply graduated column visibility after rendering
+                toggleGraduatedColumn();
             }
 
-            // Helper: create pagination button
+            // Create pagination button
             function createPageItem(label, enabled, onClick, active = false) {
                 const li = document.createElement("li");
                 li.className = "page-item " + (active ? "active" : "") + (!enabled ? " disabled" : "");
@@ -780,32 +785,28 @@
                 return li;
             }
 
-            // --- Bulk Checkbox Logic ---
-            selectAll.addEventListener("change", function() {
-                checkboxes.forEach(cb => (cb.checked = selectAll.checked));
-                toggleBulkForm();
-            });
+            // Show/hide "School Year Graduated" column
+            function toggleGraduatedColumn() {
+                const graduatedHeader = document.getElementById("graduatedYearHeader");
+                const graduatedCells = document.querySelectorAll(".graduated-year-cell");
 
-            checkboxes.forEach(cb => cb.addEventListener("change", toggleBulkForm));
-
-            function toggleBulkForm() {
-                const selected = document.querySelectorAll(".student-checkbox:checked");
-                bulkForm.classList.toggle("d-none", selected.length === 0);
-
-                const idsContainer = document.getElementById("bulkStudentIds");
-                idsContainer.innerHTML = "";
-                selected.forEach(cb => {
-                    const input = document.createElement("input");
-                    input.type = "hidden";
-                    input.name = "student_ids[]";
-                    input.value = cb.value;
-                    idsContainer.appendChild(input);
-                });
+                if (statusFilter.value === "graduated") {
+                    graduatedHeader.style.display = "";
+                    graduatedCells.forEach(cell => cell.style.display = "");
+                } else {
+                    graduatedHeader.style.display = "none";
+                    graduatedCells.forEach(cell => cell.style.display = "none");
+                }
             }
 
-            // --- Event listeners ---
+            // Event listeners
             searchInput.addEventListener("input", filterRows);
-            statusFilter.addEventListener("change", filterRows);
+
+            statusFilter.addEventListener("change", function() {
+                filterRows();
+                toggleGraduatedColumn();
+            });
+
             tableLengthSelect.addEventListener("change", () => {
                 rowsPerPage = parseInt(tableLengthSelect.value);
                 renderTable();

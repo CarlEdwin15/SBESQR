@@ -1,4 +1,4 @@
-@extends('./layouts.main')
+@extends('layouts.main')
 
 @section('title', 'Admin | User Info')
 
@@ -37,7 +37,7 @@
                 <ul class="menu-sub">
                     <li class="menu-item">
                         <a href="{{ route('show.teachers') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Teacher's Class Management</div>
+                            <div class="text-light">Teacher Management</div>
                         </a>
                     </li>
                 </ul>
@@ -51,12 +51,12 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">All Students</div>
+                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                            <div class="text-light">Student Management</div>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{ route('student.management') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('show.students') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">Student Enrollment</div>
                         </a>
                     </li>
@@ -106,7 +106,7 @@
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item">
-                        <a href="{{ route('admin.payments.index') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-light">All School Fees</div>
                         </a>
                     </li>
@@ -485,23 +485,63 @@
                                 <!-- Parent Children -->
                                 @if ($user->role === 'parent')
                                     <div class="tab-pane fade" id="students">
-                                        <h5 class="fw-bold text-primary mb-3">Children</h5>
+                                        <h5 class="fw-bold text-primary mb-4">Children</h5>
 
-                                        @if ($students->isEmpty())
-                                            <p class="text-muted">No children linked to this parent.</p>
-                                        @else
-                                            <ul class="list-group">
-                                                @foreach ($students as $student)
-                                                    <li class="list-group-item">
-                                                        <strong>{{ $student->student_fName }}
-                                                            {{ $student->student_lName }}</strong><br>
-                                                        <small>LRN: {{ $student->student_lrn }}</small>
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        @endif
+                                        <div class="row g-3">
+                                            @forelse ($students as $student)
+                                                <div class="col-md-6 col-lg-4">
+                                                    <div class="card shadow-sm border-0 h-100">
+                                                        <div class="card-body text-center p-4">
+                                                            <!-- Profile Photo -->
+                                                            @if ($student->student_profile)
+                                                                <img src="{{ asset('storage/' . $student->student_profile) }}"
+                                                                    alt="Student Photo"
+                                                                    class="rounded-circle mb-3 shadow-sm"
+                                                                    style="object-fit: cover; width: 100px; height: 100px;">
+                                                            @else
+                                                                <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                                    alt="Default Student Photo"
+                                                                    class="rounded-circle mb-3 shadow-sm"
+                                                                    style="object-fit: cover; width: 100px; height: 100px;">
+                                                            @endif
+
+                                                            <!-- Name -->
+                                                            <h6 class="fw-bold mb-1">
+                                                                {{ $student->student_fName }}
+                                                                {{ $student->student_lName }}
+                                                            </h6>
+
+                                                            <!-- Student Info -->
+                                                            <div class="small text-muted mb-1">
+                                                                <i class="bx bx-id-card me-1"></i>
+                                                                LRN: {{ $student->student_lrn ?? 'Not available' }}
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Footer Info -->
+                                                        {{-- <div class="card-footer bg-light text-center py-2">
+                                                            <small class="text-muted">
+                                                                {{ $student->gender ? ucfirst($student->gender) : 'No gender info' }}
+                                                                @if ($student->dob)
+                                                                    • DOB:
+                                                                    {{ \Carbon\Carbon::parse($student->dob)->format('M d, Y') }}
+                                                                @endif
+                                                            </small>
+                                                        </div> --}}
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <div class="col-12">
+                                                    <div class="alert alert-secondary text-center">
+                                                        <i class="bx bx-info-circle me-1"></i>
+                                                        No children linked to this parent.
+                                                    </div>
+                                                </div>
+                                            @endforelse
+                                        </div>
                                     </div>
                                 @endif
+
                             </div>
                         </div>
                     </div>
@@ -547,7 +587,7 @@
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
 
-                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent" value="0">
+                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-admin" value="0">
 
                                     <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                 </div>
@@ -640,7 +680,8 @@
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
 
-                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent" value="0">
+                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent"
+                                        value="0">
 
                                     <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                 </div>
@@ -830,7 +871,8 @@
                                         <span class="d-none d-sm-block">Reset</span>
                                     </button>
 
-                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent" value="0">
+                                    <input type="hidden" name="reset_photo" id="reset-photo-flag-parent"
+                                        value="0">
 
                                     <p class="text-muted mb-0">Allowed JPG or PNG. Max size of 2MB</p>
                                 </div>
@@ -1028,19 +1070,22 @@
                 role: 'admin',
                 upload: 'upload',
                 preview: 'photo-preview',
-                reset: 'reset-photo'
+                reset: 'reset-photo',
+                flag: 'reset-photo-flag-admin'
             },
             {
                 role: 'teacher',
                 upload: 'upload-edit',
                 preview: 'photo-preview-edit',
-                reset: 'reset-photo-edit'
+                reset: 'reset-photo-edit',
+                flag: 'reset-photo-flag-parent'
             },
             {
                 role: 'parent',
                 upload: 'upload-parent',
                 preview: 'photo-preview-parent',
-                reset: 'reset-photo-parent'
+                reset: 'reset-photo-parent',
+                flag: 'reset-photo-flag-parent'
             }
         ];
 
@@ -1048,11 +1093,13 @@
             role,
             upload,
             preview,
-            reset
+            reset,
+            flag
         }) => {
             const uploadInput = document.getElementById(upload);
             const previewImg = document.getElementById(preview);
             const resetBtn = document.getElementById(reset);
+            const flagInput = document.getElementById(flag);
             const defaultImage = `/assetsDashboard/img/profile_pictures/${role}_default_profile.jpg`;
 
             if (uploadInput && previewImg && resetBtn) {
@@ -1060,7 +1107,10 @@
                     const file = e.target.files[0];
                     if (file) {
                         const reader = new FileReader();
-                        reader.onload = (event) => (previewImg.src = event.target.result);
+                        reader.onload = (event) => {
+                            previewImg.src = event.target.result;
+                            if (flagInput) flagInput.value = '0';
+                        };
                         reader.readAsDataURL(file);
                     }
                 });
@@ -1068,6 +1118,7 @@
                 resetBtn.addEventListener('click', () => {
                     uploadInput.value = '';
                     previewImg.src = defaultImage;
+                    if (flagInput) flagInput.value = '1';
                 });
             }
         });

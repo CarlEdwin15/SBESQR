@@ -15,7 +15,7 @@ use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SchoolFeeController;
 use Illuminate\Support\Facades\Broadcast;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
@@ -124,7 +124,7 @@ Route::get('/student-management', [StudentController::class, 'studentManagement'
 
 Route::post('/addStudent', [StudentController::class, 'store'])->name('store.student');
 
-Route::get('/showAllStudents', [StudentController::class, 'show'])->name('show.students');
+Route::get('/studentEnrollment', [StudentController::class, 'show'])->name('show.students');
 
 Route::post('/assignStudentClass', [StudentController::class, 'assignClass'])->name('assign.student.class');
 
@@ -137,6 +137,8 @@ Route::post('/updateStudent/{id}', [StudentController::class, 'update'])->name('
 Route::delete('/unenrollStudent/{id}', [StudentController::class, 'unenroll'])->name('unenroll.student');
 
 Route::get('/student-info/{id}', [StudentController::class, 'showStudentInfo'])->name('student.info');
+
+Route::delete('/deleteStudent/{id}', [StudentController::class, 'delete'])->name('delete.student');
 
 // View students eligible for promotion
 Route::get('/promote-students', [StudentController::class, 'showPromotionView'])->name('students.promote.view');
@@ -303,40 +305,46 @@ Route::get('/editStudentInfo/{id}', [TeacherController::class, 'editStudentInfo'
 Route::post('/updateStudentInfo/{id}', [TeacherController::class, 'updateStudentInfo'])->name('teacher.update.student');
 
 // Payment Management (on Admin Dashboard)
-Route::get('payments/', [PaymentController::class, 'indexAdmin'])
-    ->name('admin.payments.index');
+Route::get('payments/', [SchoolFeeController::class, 'index'])
+    ->name('admin.school-fees.index');
 
-Route::post('payments/create', [PaymentController::class, 'createAdmin'])
+Route::post('payments/create', [SchoolFeeController::class, 'create'])
     ->name('admin.payments.create');
 
-Route::delete('payments/{payment}', [PaymentController::class, 'destroyAdmin'])
+Route::delete('payments/{payment}', [SchoolFeeController::class, 'destroy'])
     ->name('admin.payments.destroy');
 
-Route::put('/admin/payments/{id}/add', [PaymentController::class, 'addPayment'])->name('admin.payments.add');
+Route::put('/admin/payments/{id}/add', [SchoolFeeController::class, 'addPayment'])->name('admin.payments.add');
 
-Route::get('/admin/payments/{paymentName}/history', [PaymentController::class, 'history'])->name('admin.payments.history');
+Route::get('/admin/payments/{paymentName}/history', [SchoolFeeController::class, 'history'])->name('admin.payments.history');
+
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::get('/payment-requests', [SchoolFeeController::class, 'viewRequests'])->name('admin.payment.requests');
+    Route::post('/payment-requests/{id}/approve', [SchoolFeeController::class, 'approveRequest'])->name('admin.payment.requests.approve');
+    Route::post('/payment-requests/{id}/deny', [SchoolFeeController::class, 'denyRequest'])->name('admin.payment.requests.deny');
+});
 
 
 
-Route::get('payments/show/{paymentName}', [PaymentController::class, 'showAdmin'])
-    ->name('admin.payments.show');
+Route::get('payments/show/{paymentName}', [SchoolFeeController::class, 'show'])
+    ->name('admin.school-fees.show');
 
-Route::delete('/payments/history/{id}', [PaymentController::class, 'deleteHistory'])
+Route::delete('/payments/history/{id}', [SchoolFeeController::class, 'deleteHistory'])
     ->name('admin.payments.history.delete');
 
 
 
-Route::post('payments/bulk-add-payment', [PaymentController::class, 'bulkAddPayment'])
+Route::post('payments/bulk-add-payment', [SchoolFeeController::class, 'bulkAddPayment'])
     ->name('admin.payments.bulkAddPayment');
 
-Route::post('/admin/payments/{paymentName}/add-students', [PaymentController::class, 'addStudents'])
+Route::post('/admin/payments/{paymentName}/add-students', [SchoolFeeController::class, 'addStudents'])
     ->name('admin.payments.addStudents');
 
 Route::get('/class-students/search/exclude-payment', [StudentController::class, 'classStudentSearchExcludePayment'])
     ->name('class-students.search.exclude-payment');
 
 
-Route::post('payments/bulk-remove', [PaymentController::class, 'bulkRemoveStudents'])
+Route::post('payments/bulk-remove', [SchoolFeeController::class, 'bulkRemoveStudents'])
     ->name('admin.payments.bulkRemoveStudents');
 
 Route::get('/class-students/search', [StudentController::class, 'classStudentSearch'])
@@ -348,20 +356,20 @@ Route::get('/class-students/search', [StudentController::class, 'classStudentSea
 
 // Teacher routes (consistent grade_level + section)
 Route::prefix('teacher')->middleware(['auth'])->group(function () {
-    Route::get('classes/{grade_level}/{section}/payments', [PaymentController::class, 'index'])
+    Route::get('classes/{grade_level}/{section}/payments', [SchoolFeeController::class, 'index'])
         ->name('teacher.payments.index');
 
-    Route::get('classes/{grade_level}/{section}/payments/{paymentName}', [PaymentController::class, 'show'])
+    Route::get('classes/{grade_level}/{section}/payments/{paymentName}', [SchoolFeeController::class, 'show'])
         ->name('teacher.payments.show');
 
-    Route::post('classes/{grade_level}/{section}/payments', [PaymentController::class, 'create'])
+    Route::post('classes/{grade_level}/{section}/payments', [SchoolFeeController::class, 'create'])
         ->name('teacher.payments.create');
 });
 
 // Parent routes
 Route::prefix('parent')->middleware(['auth', 'role:parent'])->group(function () {
-    Route::get('students/{student}/payments', [PaymentController::class, 'studentPayments'])->name('parent.payments.index');
-    Route::post('payments/{payment}/pay', [PaymentController::class, 'pay'])->name('parent.payments.pay');
+    Route::get('students/{student}/payments', [SchoolFeeController::class, 'studentPayments'])->name('parent.payments.index');
+    Route::post('payments/{payment}/pay', [SchoolFeeController::class, 'pay'])->name('parent.payments.pay');
 });
 
 
@@ -382,6 +390,9 @@ Route::get('/student/{student}/attendance/{schoolYearId}/{classId}/{year}/{month
 
 
 Route::get('/parent/school-fees', [ParentController::class, 'schoolFees'])->name('parent.school-fees.index');
+Route::get('/parent/school-fees/{paymentName}', [ParentController::class, 'showSchoolFee'])->name('parent.school-fees.show');
+Route::post('/parent/payment/{id}/add', [ParentController::class, 'addPayment'])->name('parent.addPayment');
+
 
 
 

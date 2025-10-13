@@ -203,7 +203,6 @@ class AdminController extends Controller
                 ]);
             }
 
-            return redirect()->route('admin.user.management')->with('success', ucfirst($user->role) . ' added successfully.');
         }
 
         return redirect()->route('admin.user.management')->with('success', ucfirst($user->role) . ' added successfully.');
@@ -265,6 +264,11 @@ class AdminController extends Controller
                 Storage::disk('public')->delete($user->profile_photo);
             }
             $validated['profile_photo'] = $path;
+        } elseif ($request->reset_photo == '1') {
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
+            }
+            $validated['profile_photo'] = null; // clear in DB
         }
 
         $user->update($validated);

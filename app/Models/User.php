@@ -166,7 +166,7 @@ class User extends Authenticatable
         }
 
         // Remove spaces, dashes, and parentheses just in case
-        $phone = preg_replace('/[^0-9+]/', '', $value);
+        $phone = preg_replace('/[^0-9]/', '', $value);
 
         // If it starts with 09 → convert to +639
         if (preg_match('/^09\d{9}$/', $phone)) {

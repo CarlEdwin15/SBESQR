@@ -139,7 +139,11 @@
                                         @else
                                             <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
                                                 <h5 class="fw-bold text-primary">Grades</h5>
-                                                @if (request()->is('teacher/*'))
+                                                @php
+                                                    $user = auth()->user();
+                                                @endphp
+
+                                                @if ($user && ($user->role === 'teacher' || $user->role === 'admin'))
                                                     <!-- Teacher-only export button -->
                                                     <a href="{{ route('teacher.student.card', [
                                                         'student_id' => $student->id,

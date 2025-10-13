@@ -21,7 +21,6 @@ return new class extends Migration {
             // Payment details
             $table->string('payment_name'); // e.g. "June Tuition"
             $table->decimal('amount_due', 10, 2);
-
             $table->date('due_date');     // Deadline to pay
 
             // Student payment progress (handled by teacher)
@@ -40,11 +39,29 @@ return new class extends Migration {
 
             // Link to the original payment
             $table->foreignId('payment_id')->constrained('payments')->onDelete('cascade');
-
+            $table->enum('payment_method', ['cash_on_hand', 'gcash', 'credit_card'])->default('cash_on_hand');
             $table->foreignId('added_by')->constrained('users')->onDelete('cascade');
 
             $table->decimal('amount_paid', 10, 2);
             $table->datetime('payment_date')->default(now());
+
+            $table->timestamps();
+        });
+
+        Schema::create('payment_requests', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('payment_id')->constrained('payments')->onDelete('cascade');
+            $table->foreignId('parent_id')->constrained('users')->onDelete('cascade');
+
+            $table->decimal('amount_paid', 10, 2);
+            $table->enum('payment_method', ['cash_on_hand', 'gcash']);
+            $table->string('reference_number')->nullable();
+            $table->string('receipt_image')->nullable(); // for proof upload
+            $table->enum('status', ['pending', 'approved', 'denied'])->default('pending');
+            $table->text('admin_remarks')->nullable();
+            $table->datetime('requested_at')->default(now());
+            $table->datetime('reviewed_at')->nullable();
 
             $table->timestamps();
         });
