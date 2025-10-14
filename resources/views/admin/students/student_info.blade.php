@@ -190,7 +190,7 @@
 
                     <div class="d-flex justify-content-center align-items-center mt-3">
                         <!-- Generate ID Form -->
-                        <form action="{{ route('students.generateID', $student->id) }}" method="GET">
+                        <form action="{{ route('students.previewID', $student->id) }}" method="GET" target="_blank">
                             @csrf
                             <button type="submit" class="btn btn-success mb-3 me-2 d-flex align-items-center">
                                 <i class='bx bxs-id-card me-1'></i>

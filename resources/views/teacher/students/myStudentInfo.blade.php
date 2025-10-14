@@ -59,14 +59,6 @@
                 </ul>
             </li>
 
-            {{-- SMS Logs sidebar --}}
-            <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
-                    <i class="bx bx-message-check me-3 text-light"></i>
-                    <div class="text-light">SMS Logs</div>
-                </a>
-            </li>
-
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
                 <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">

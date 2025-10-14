@@ -151,7 +151,7 @@ Route::post('/promote-students', [StudentController::class, 'promoteStudents'])-
 // ID Management (on ADMIN dashboard)
 Route::get('/students/{id}/generate-id', [IdController::class, 'generateID'])->name('students.generateID');
 
-Route::get('/students/{id}/download-id', [IdController::class, 'downloadID'])->name('students.downloadID');
+Route::get('/students/{id}/preview-id', [IdController::class, 'previewID'])->name('students.previewID');
 
 
 // Class Management (on ADMIN dashboard)

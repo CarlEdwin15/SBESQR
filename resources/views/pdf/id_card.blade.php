@@ -23,9 +23,9 @@
 
         .a4-page {
             width: 100%;
-            height: 100%;
             padding: 1cm;
             box-sizing: border-box;
+            page-break-after: auto;
         }
 
         .id-row {

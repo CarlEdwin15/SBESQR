@@ -16,46 +16,11 @@
             color: #000;
         }
 
-        .page {
-            width: 100%;
-            height: 100%;
-            display: table;
-            table-layout: fixed;
-            page-break-after: always;
-            justify-content: space-between;
-        }
-
-        .column {
-            display: table-cell;
-            width: 49%;
-            vertical-align: top;
-            padding-left: 2mm;
-            /* normal outer space */
-            padding-right: 12mm;
-            /* ✅ more space toward the middle */
-            box-sizing: border-box;
-        }
-
-        .column:last-child {
-            padding-left: 15mm;
-            /* ✅ more space toward the middle */
-            padding-right: 5mm;
-            /* normal outer space */
-        }
-
         h3,
         h4,
         h5,
         p {
             margin: 2px 0;
-        }
-
-        .center {
-            text-align: center;
-        }
-
-        .bold {
-            font-weight: bold;
         }
 
         table {
@@ -70,42 +35,95 @@
             padding: 3px 4px;
         }
 
-        .no-border th,
-        .no-border td {
+        table.no-border td,
+        table.no-border th {
             border: none;
         }
+
+        /* ============================= */
+        /* ====== CLASS STYLES A–Z ===== */
+        /* ============================= */
 
         .attendance-table {
             text-align: center;
             margin-bottom: 15px;
         }
 
+        .attendance-table .attendance-row td {
+            height: 28px;
+        }
+
         .attendance-table th {
-            background-color: #b3c6ff;
+            background-color: #d7e1ff;
             color: #000;
             font-weight: bold;
         }
 
-        .signature-block {
-            margin-top: 20px;
-            font-size: 11px;
+        .attendance-title {
+            margin-bottom: 13px;
+            /* Increase or decrease as needed */
         }
 
-        .signature-line {
+        .bold {
+            font-weight: bold;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .column {
+            display: table-cell;
+            width: 49%;
+            vertical-align: top;
+            padding-left: 2mm;
+            padding-right: 12mm;
+            box-sizing: border-box;
+        }
+
+        .column:last-child {
+            padding-left: 15mm;
+            padding-right: 5mm;
+        }
+
+        .descriptors-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 8px;
-            margin-bottom: 8px;
+            font-size: 13px;
         }
 
-        .spacing {
-            margin-top: 15px;
+        .descriptors-table td:first-child {
+            width: 45%;
+            text-align: left;
+            padding-left: 8px;
         }
 
-        .small {
-            font-size: 9px;
+        .descriptors-table td:last-child {
+            width: 30%;
+            text-align: center;
         }
 
-        .right {
-            text-align: right;
+        .descriptors-table td:nth-child(2) {
+            width: 25%;
+            text-align: center;
+        }
+
+        .descriptors-table th {
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 6px;
+        }
+
+        .descriptors-table th,
+        .descriptors-table td {
+            border: none;
+            padding: 4px 0;
+        }
+
+        .descriptors-table th:first-child {
+            text-align: left;
+            padding-left: 8px;
         }
 
         .markings-table table {
@@ -121,41 +139,157 @@
             padding: 2px 4px;
         }
 
-        table.no-border td,
-        table.no-border th {
+        .no-border th,
+        .no-border td {
             border: none;
         }
 
-        .attendance-table .attendance-row td {
-            height: 28px;
+        .non-numerical-rating {
+            width: 80%;
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .non-numerical-rating th,
+        .non-numerical-rating td {
+            border: none;
+            padding: 3px 4px;
+            vertical-align: middle;
+        }
+
+        .non-numerical-rating th:first-child,
+        .non-numerical-rating td:first-child {
+            width: 40%;
+            text-align: center;
+        }
+
+        .non-numerical-rating th:last-child,
+        .non-numerical-rating td:last-child {
+            width: 60%;
+            text-align: left;
+            padding-left: 10px;
+        }
+
+        .non-numerical-rating th {
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 5px;
+        }
+
+        .page {
+            width: 100%;
+            height: 100%;
+            display: table;
+            table-layout: fixed;
+            page-break-after: always;
+            justify-content: space-between;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        .progress-table td {
+            height: 20px;
+            /* was 30px */
+            padding: 2px 3px;
+            /* less padding for tighter spacing */
+            vertical-align: middle;
+        }
+
+        .progress-table th {
+            background-color: #d7e1ff;
+            color: #000;
+            font-weight: bold;
+            text-align: center;
+            height: 22px;
+            /* was 28px */
+            padding: 2px 3px;
+            /* reduce padding to lessen total height */
+            vertical-align: middle;
+        }
+
+        .progress-table th:first-child,
+        .values-table th:first-child {
+            border-top-left-radius: 4px;
+        }
+
+        .progress-table th:last-child,
+        .values-table th:last-child {
+            border-top-right-radius: 4px;
+        }
+
+        .progress-table tr:first-child th {
+            height: 18px;
+            padding: 1px 3px;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .signature-block {
+            margin-top: 20px;
+            font-size: 11px;
+        }
+
+        .signature-block .bold.center {
+            margin-bottom: 18px !important;
         }
 
         .signature-block .line {
             margin-left: 30px;
-            /* adjust spacing: try 8–15px */
             display: inline-block;
         }
 
         .signature-block p {
             margin-bottom: 15px;
-            /* Adjust spacing between each signature line */
         }
 
         .signature-block p.bold {
             margin-bottom: 6px;
-            /* Slightly smaller margin after the title line */
         }
 
-        /* Adjust spacing below "Attendance Record" label */
-        .attendance-title {
-            margin-bottom: 13px;
-            /* Increase or decrease as needed */
+        .signature-line {
+            margin-top: 8px;
+            margin-bottom: 8px;
         }
 
-        /* Adjust spacing below "PARENT/GUARDIAN’S SIGNATURE" label */
-        .signature-block .bold.center {
-            margin-bottom: 18px !important;
-            /* Make spacing more distinct */
+        .small {
+            font-size: 9px;
+        }
+
+        .spacing {
+            margin-top: 15px;
+        }
+
+        .values-table td {
+            height: 30px;
+            vertical-align: top;
+            padding: 6px 4px;
+        }
+
+        .values-table td:first-child {
+            width: 22%;
+        }
+
+        .values-table td:nth-child(2) {
+            width: 48%;
+        }
+
+        .values-table td:nth-child(n+3) {
+            text-align: center;
+            width: 7%;
+        }
+
+        .values-table th {
+            background-color: #d7e1ff;
+            color: #000;
+            font-weight: bold;
+            text-align: center;
+            height: 28px;
+            vertical-align: middle;
         }
     </style>
 </head>
@@ -171,7 +305,7 @@
         <div class="column">
             <div style="margin-bottom: 70px">
                 <p class="bold center attendance-title" style="font-size: 16px;">Attendance Record</p>
-                <table class="attendance-table">
+                <table class="attendance-table" style="font-size: 12px">
 
                     <tr>
                         <th></th>
@@ -364,30 +498,30 @@
             </div>
 
             <table class="no-border" style="width: 100%; font-size: 11px; margin-top: 5px;">
-    <!-- Row 1: Admitted in -->
-    <tr>
-        <td style="width: 18%;">Admitted in:</td>
-        <td style="border-bottom: 1px solid #000; width: 82%;"></td>
-    </tr>
+                <!-- Row 1: Admitted in -->
+                <tr>
+                    <td style="width: 18%;">Admitted in:</td>
+                    <td style="border-bottom: 1px solid #000; width: 82%;"></td>
+                </tr>
 
-    <!-- Row 2: Date (shorter underline, adjusted height and spacing) -->
-    <tr>
-        <td style="width: 5%;">Date:</td>
-        <td>
-            <div style="width: 40%; border-bottom: 1px solid #000; height: 14px; margin-top: 2px;"></div>
-        </td>
-    </tr>
+                <!-- Row 2: Date (shorter underline, adjusted height and spacing) -->
+                <tr>
+                    <td style="width: 5%;">Date:</td>
+                    <td>
+                        <div style="width: 40%; border-bottom: 1px solid #000; height: 14px; margin-top: 2px;"></div>
+                    </td>
+                </tr>
 
-    <!-- Row 3: Signature aligned right -->
-    <tr>
-        <td colspan="2" style="padding-top: 8px; text-align: right;">
-            <div style="display: inline-block; text-align: center;">
-                __________________________________<br>
-                Principal
-            </div>
-        </td>
-    </tr>
-</table>
+                <!-- Row 3: Signature aligned right -->
+                <tr>
+                    <td colspan="2" style="padding-top: 8px; text-align: right;">
+                        <div style="display: inline-block; text-align: center;">
+                            __________________________________<br>
+                            Principal
+                        </div>
+                    </td>
+                </tr>
+            </table>
 
         </div>
     </div>
@@ -399,24 +533,26 @@
 
         {{-- LEFT SIDE: Report on Learning Progress --}}
         <div class="column">
-            <h3 class="center">Grade {{ optional($class)->formatted_grade_level ?? '' }}</h3>
-            <h4 class="center">REPORT ON LEARNING PROGRESS AND ACHIEVEMENT</h4>
+            <p style="font-size: 20px; font-weight: bold; margin-bottom: 15px;">
+                {{ optional($class)->formatted_grade_level ?? '' }}</p>
+            <p class="center" style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">REPORT ON LEARNING
+                PROGRESS AND ACHIEVEMENT</p>
 
-            <table>
-                <tr>
+            <table class="progress-table" style="margin-bottom: 20px">
+                <tr style="font-size: 13px">
                     <th rowspan="2">Learning Areas</th>
                     <th colspan="4" class="center">Quarter</th>
                     <th rowspan="2">Final Rating</th>
                     <th rowspan="2">Remarks</th>
                 </tr>
-                <tr>
+                <tr style="font-size: 13px">
                     <th>1</th>
                     <th>2</th>
                     <th>3</th>
                     <th>4</th>
                 </tr>
                 @foreach ($subjects as $s)
-                    <tr>
+                    <tr style="font-size: 13px">
                         <td>{{ $s['subject'] }}</td>
                         <td class="center">{{ $s['quarters']->firstWhere('quarter', 1)['grade'] ?? '' }}</td>
                         <td class="center">{{ $s['quarters']->firstWhere('quarter', 2)['grade'] ?? '' }}</td>
@@ -426,44 +562,44 @@
                         <td class="center">{{ $s['remarks'] ?? '' }}</td>
                     </tr>
                 @endforeach
-                <tr>
-                    <td class="bold">General Average</td>
-                    <td colspan="4"></td>
-                    <td class="center bold">{{ $generalAverage ?? '' }}</td>
-                    <td class="center">{{ $generalRemarks ?? '' }}</td>
+                <tr style="font-size: 13px; font-weight: bold;">
+                    <td style="border: none;"></td>
+                    <td class="center" colspan="4">General Average</td>
+                    <td class="center">{{ $generalAverage ?? '' }}</td>
+                    <td style="border: none;"></td>
                 </tr>
             </table>
 
             <div class="spacing">
-                <table class="no-border small">
+                <table class="descriptors-table">
                     <tr>
-                        <th class="center">Descriptors</th>
-                        <th class="center">Grading Scale</th>
-                        <th class="center">Remarks</th>
+                        <th>Descriptors</th>
+                        <th>Grading Scale</th>
+                        <th>Remarks</th>
                     </tr>
                     <tr>
                         <td>Outstanding</td>
-                        <td class="center">90–100</td>
+                        <td>90–100</td>
                         <td>Passed</td>
                     </tr>
                     <tr>
                         <td>Very Satisfactory</td>
-                        <td class="center">85–89</td>
+                        <td>85–89</td>
                         <td>Passed</td>
                     </tr>
                     <tr>
                         <td>Satisfactory</td>
-                        <td class="center">80–84</td>
+                        <td>80–84</td>
                         <td>Passed</td>
                     </tr>
                     <tr>
                         <td>Fairly Satisfactory</td>
-                        <td class="center">75–79</td>
+                        <td>75–79</td>
                         <td>Passed</td>
                     </tr>
                     <tr>
                         <td>Did Not Meet Expectations</td>
-                        <td class="center">Below 75</td>
+                        <td>Below 75</td>
                         <td>Failed</td>
                     </tr>
                 </table>
@@ -472,12 +608,19 @@
 
         {{-- RIGHT SIDE: Report on Learner’s Observed Values --}}
         <div class="column">
-            <h4 class="center">REPORT ON LEARNER’S OBSERVED VALUES</h4>
-            <table>
+            <p class="center" style="font-size: 14px; font-weight: bold; margin-top: 43px; margin-bottom: 15px;">
+                REPORT ON LEARNER’S OBSERVED VALUES</p>
+            <table class="values-table" style="font-size: 13px">
                 <tr>
-                    <th>Core Values</th>
-                    <th>Behavior Statements</th>
-                    <th colspan="4" class="center">Quarter</th>
+                    <th rowspan="2">Core Values</th>
+                    <th rowspan="2">Behavior Statements</th>
+                    <th colspan="4" class="center" style="height: 10px;">Quarter</th>
+                </tr>
+                <tr>
+                    <th class="center">1</th>
+                    <th class="center">2</th>
+                    <th class="center">3</th>
+                    <th class="center">4</th>
                 </tr>
                 <tr>
                     <td>1. Maka-Diyos</td>
@@ -514,26 +657,26 @@
                 </tr>
             </table>
 
-            <div class="spacing small markings-table">
-                <table class="no-border small">
+            <div class="spacing markings-table">
+                <table class="non-numerical-rating no-border" style="font-size: 13px">
                     <tr>
-                        <th class="center" style="width: 40%;">Marking</th>
-                        <th class="center">Non-Numerical Rating</th>
+                        <th>Marking</th>
+                        <th>Non-Numerical Rating</th>
                     </tr>
                     <tr>
-                        <td class="center">AO</td>
+                        <td>AO</td>
                         <td>Always Observed</td>
                     </tr>
                     <tr>
-                        <td class="center">SO</td>
+                        <td>SO</td>
                         <td>Sometimes Observed</td>
                     </tr>
                     <tr>
-                        <td class="center">RO</td>
+                        <td>RO</td>
                         <td>Rarely Observed</td>
                     </tr>
                     <tr>
-                        <td class="center">NO</td>
+                        <td>NO</td>
                         <td>Not Observed</td>
                     </tr>
                 </table>

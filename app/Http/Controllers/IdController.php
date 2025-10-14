@@ -23,11 +23,10 @@ class IdController extends Controller
         return view('admin.students.generate_id', compact('student'));
     }
 
-    public function downloadID($id)
+    public function previewID($id)
     {
         $student = Student::findOrFail($id);
 
-        // Create QR Code as base64 SVG for PDF
         $qrCode = base64_encode(
             QrCode::format('svg')
                 ->size(150)
@@ -37,7 +36,8 @@ class IdController extends Controller
         $pdf = Pdf::loadView('pdf.id_card', compact('student', 'qrCode'))
             ->setPaper('A4', 'portrait');
 
-        return $pdf->download($student->student_fName . '_' . $student->student_lName . '_ID.pdf');
+        $filename = "{$student->student_fName}_{$student->student_lName}_ID.pdf";
+        return $pdf->stream($filename);
     }
 
 
@@ -64,5 +64,4 @@ class IdController extends Controller
     {
         //
     }
-
 }

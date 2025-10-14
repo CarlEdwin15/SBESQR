@@ -165,10 +165,12 @@
                 style="margin: auto; margin-bottom: 10px; margin-left: 10px" class="btn btn-danger mt-3">Back</a>
 
             <!-- Generate ID Form -->
-            <form action="{{ route('students.downloadID', $student->id) }}" method="GET">
+            <form action="{{ route('students.previewID', $student->id) }}" method="GET" target="_blank">
                 @csrf
                 <button type="submit" class="btn btn-success"
-                    style="margin: auto; margin-bottom: 10px; margin-left: 10px">Download ID</button>
+                    style="margin: auto; margin-bottom: 10px; margin-left: 10px">
+                    Download ID
+                </button>
             </form>
         </div>
 
