@@ -10,8 +10,14 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use Maatwebsite\Excel\DefaultValueBinder;
 
-class StudentsImport implements ToCollection
+class StudentsImport extends DefaultValueBinder implements ToCollection, WithCustomCsvSettings, WithCustomValueBinder
+
 {
     public int $imported = 0;
     public int $skipped = 0;
@@ -82,7 +88,25 @@ class StudentsImport implements ToCollection
                         break;
                     }
                 }
+
+                // Inside your foreach ($aliases ...) after mapping $data
+                if (!empty($data['lrn'])) {
+                    $data['lrn'] = trim((string)$data['lrn']);
+
+                    // If the CSV caused Excel to save LRN as float/scientific notation
+                    if (is_numeric($data['lrn']) && strlen($data['lrn']) < 12) {
+                        // Fix any truncated numeric
+                        $data['lrn'] = sprintf('%.0f', $data['lrn']);
+                    }
+
+                    // Convert scientific notation (e.g., 1.12828E+11)
+                    if (preg_match('/^[0-9]\.?[0-9]*E[+-]?[0-9]+$/i', $data['lrn'])) {
+                        $data['lrn'] = number_format((float)$data['lrn'], 0, '', '');
+                    }
+                }
             }
+
+            Log::info('Raw LRN read from CSV:', ['lrn' => $data['lrn']]);
 
             // Required field validation
             if (empty($data['lrn']) || empty($data['first_name']) || empty($data['last_name'])) {
@@ -90,6 +114,9 @@ class StudentsImport implements ToCollection
                 Log::warning("Skipped row {$i}: missing required fields", $data);
                 continue;
             }
+
+            // 🧹 Clean up LRN (remove hidden Excel quote or whitespace)
+            $data['lrn'] = ltrim(trim($data['lrn']), "'\"");
 
             $sex = strtolower($data['sex'] ?? '');
             if (!in_array($sex, ['male', 'female'])) {
@@ -142,7 +169,7 @@ class StudentsImport implements ToCollection
                     'student_mName' => $data['middle_name'] ?? null,
                     'student_lName' => $data['last_name'],
                     'student_extName' => $data['extension_name'] ?? null,
-                    'student_dob' => $dob, // ✅ fixed
+                    'student_dob' => $dob, // fixed
                     'student_sex' => $sex,
                     'qr_code' => uniqid('QR'),
                     'address_id' => $address->id,
@@ -156,5 +183,28 @@ class StudentsImport implements ToCollection
                 Log::error("Error importing row {$i}: " . $e->getMessage(), $data);
             }
         }
+    }
+
+    public function getCsvSettings(): array
+    {
+        return [
+            'input_encoding' => 'UTF-8',
+            'delimiter' => ',',
+            'enclosure' => '"',
+            'escape_character' => '\\',
+            // This line disables auto type conversion (prevents numbers becoming floats)
+            'contiguous' => false,
+        ];
+    }
+
+    public function bindValue(Cell $cell, $value)
+    {
+        // Force the LRN column (and any numeric-like strings) to be text
+        if ($cell->getColumn() === 'A' || preg_match('/^1[0-9]{11}$/', $value)) {
+            $cell->setValueExplicit($value, DataType::TYPE_STRING);
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
     }
 }

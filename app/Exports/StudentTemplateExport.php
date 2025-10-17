@@ -17,7 +17,8 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
     {
         return [
             [
-                '112828123456',
+                // 🧠 Prepend an apostrophe so CSV keeps the exact digits
+                "'112828123456",
                 'Juan',
                 'Santos',
                 'Dela Cruz',
@@ -57,7 +58,7 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
 
     public function styles(Worksheet $sheet)
     {
-        // Insert title/instructions row
+        // Instructions title
         $sheet->insertNewRowBefore(1, 2);
         $sheet->mergeCells('A1:N1');
         $sheet->setCellValue('A1', 'STUDENT IMPORT TEMPLATE — Do NOT change column headers below. Fill in your data starting from Row 3.');
@@ -68,7 +69,7 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
                 'bold' => true,
                 'size' => 12,
                 'color' => ['argb' => 'FF1B5E20'],
-                'name' => 'Aptos Display', // Sans-serif
+                'name' => 'Aptos Display',
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -78,7 +79,7 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
         ]);
         $sheet->getRowDimension(1)->setRowHeight(30);
 
-        // Header row styling
+        // Header styling
         $sheet->getStyle('2')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -92,7 +93,7 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFE8F5E9'], // Light green
+                'startColor' => ['argb' => 'FFE8F5E9'],
             ],
             'borders' => [
                 'allBorders' => [
@@ -101,17 +102,14 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
                 ],
             ],
         ]);
+
         $sheet->getRowDimension(2)->setRowHeight(25);
 
-        // Apply consistent alignment, wrapping, and font to all data cells
+        // All data cells centered
         $highestColumn = $sheet->getHighestColumn();
         $highestRow = $sheet->getHighestRow();
-
         $sheet->getStyle("A1:{$highestColumn}{$highestRow}")->applyFromArray([
-            'font' => [
-                'name' => 'Aptos Display',
-                'size' => 10,
-            ],
+            'font' => ['name' => 'Aptos Display', 'size' => 10],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical'   => Alignment::VERTICAL_CENTER,
@@ -119,17 +117,10 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
             ],
         ]);
 
-        // Borders for first few rows (title + headers + sample row)
-        $sheet->getStyle('A1:N3')->applyFromArray([
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['argb' => 'FFAAAAAA'],
-                ],
-            ],
-        ]);
+        // ✅ Force text format for LRN column
+        $sheet->getStyle('A3:A100')->getNumberFormat()->setFormatCode('@');
 
-        // Date column formatting
+        // Date column format
         $sheet->getStyle('F3:F100')->getNumberFormat()->setFormatCode('yyyy-mm-dd');
 
         return [];
