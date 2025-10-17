@@ -775,52 +775,85 @@ class TeacherController extends Controller
             'time_out' => $customTimeout ?? $schedule->end_time,
         ]);
 
-        $parents = $student->parents()->whereNotNull('phone')->get();
-        $timeIn = Carbon::parse($attendance->time_in)->format('h:i A');
-        $timeOut = Carbon::parse($attendance->time_out)->format('h:i A');
-        $formattedDate = Carbon::parse($attendance->date)->format('M d, Y');
+        // $parents = $student->parents()->whereNotNull('phone')->get();
+        // $timeIn = Carbon::parse($attendance->time_in)->format('h:i A');
+        // $timeOut = Carbon::parse($attendance->time_out)->format('h:i A');
+        // $formattedDate = Carbon::parse($attendance->date)->format('M d, Y');
+        // $currentClass = "{$class->grade_level} - {$class->section}";
 
-        if ($parents->count() > 0) {
-            // $semaphore = new \App\Services\SemaphoreService();
-            $philsms = new \App\Services\PhilSmsService();
+        // if ($parents->count() > 0) {
+        //     $semaphore = new \App\Services\SemaphoreService();
 
+        //     // Collect all parent numbers
+        //     $numbers = [];
+        //     foreach ($parents as $parent) {
+        //         $phone = $parent->phone;
 
-            // Collect all parent numbers
-            $numbers = [];
-            foreach ($parents as $parent) {
-                $phone = $parent->phone;
+        //         $phone = preg_replace('/[^0-9]/', '', $phone); // Remove non-numeric
+        //         if (str_starts_with($phone, '0')) {
+        //             $phone = '+63' . substr($phone, 1);
+        //         } elseif (str_starts_with($phone, '63')) {
+        //             $phone = '+' . $phone;
+        //         } elseif (!str_starts_with($phone, '+63')) {
+        //             $phone = '+63' . $phone; // fallback
+        //         }
 
-                $phone = preg_replace('/[^0-9]/', '', $phone); // Remove non-numeric
-                if (str_starts_with($phone, '0')) {
-                    $phone = '+63' . substr($phone, 1);
-                } elseif (str_starts_with($phone, '63')) {
-                    $phone = '+' . $phone;
-                } elseif (!str_starts_with($phone, '+63')) {
-                    $phone = '+63' . $phone; // fallback
-                }
+        //         $numbers[] = $phone;
+        //     }
 
-                $numbers[] = $phone;
-            }
+        //     // Build and send message depending on status
+        //     foreach ($parents as $parent) {
+        //         $studentFullName = "{$student->student_fName} {$student->student_lName}";
 
-            // Build message
-            foreach ($parents as $parent) {
-                $message = "Hello {$parent->firstName}! "
-                    . "Your child {$student->student_fName} {$student->student_lName} "
-                    . "was marked as {$status} today ({$formattedDate}) "
-                    . "with Time In: {$timeIn} and Time Out: {$timeOut}. "
-                    . "- {$schedule->subject_name} Class";
+        //         switch ($status) {
+        //             case 'present':
+        //                 $message = "Dear {$parent->firstName}, "
+        //                     . "We are pleased to inform you that your child, {$studentFullName}, "
+        //                     . "enrolled in {$currentClass}, has attended the ({$formattedDate}) {$schedule->subject_name} class. "
+        //                     . "The recorded Time In is {$timeIn}, and the scheduled Time Out is {$timeOut}. "
+        //                     . "Thank you for your continued support.";
+        //                 break;
 
-                // Send SMS
-                // $sent = $semaphore->sendSMS($parent->phone, $message);
-                $sent = $philsms->sendSMS($parent->phone, $message);
+        //             case 'late':
+        //                 $message = "Dear {$parent->firstName}, "
+        //                     . "Please be informed that your child, {$studentFullName}, "
+        //                     . "enrolled in {$currentClass}, arrived late for today's ({$formattedDate}) {$schedule->subject_name} class. "
+        //                     . "The recorded Time In is {$timeIn}, and the scheduled Time Out is {$timeOut}. "
+        //                     . "Kindly remind your child of the importance of punctuality. Thank you.";
+        //                 break;
 
-                if (!$sent) {
-                    Log::warning("Failed to send SMS to parent {$parent->id} ({$parent->phone})");
-                }
-            }
-        } else {
-            Log::warning("No parent phone number found for student ID {$student->id}");
-        }
+        //             case 'absent':
+        //                 $message = "Dear {$parent->firstName}, "
+        //                     . "This is to inform you that your child, {$studentFullName}, "
+        //                     . "enrolled in {$currentClass}, was marked as ABSENT for today's ({$formattedDate}) {$schedule->subject_name} class. "
+        //                     . "If your child was unable to attend due to a valid reason, please notify the school adviser. Thank you.";
+        //                 break;
+
+        //             case 'excused':
+        //                 $message = "Dear {$parent->firstName}, "
+        //                     . "Please be advised that your child, {$studentFullName}, "
+        //                     . "enrolled in {$currentClass}, has been marked as EXCUSED for today's ({$formattedDate}) {$schedule->subject_name} class. "
+        //                     . "The school acknowledges the reason provided for the absence. Thank you for keeping us informed.";
+        //                 break;
+
+        //             default:
+        //                 $message = "Dear {$parent->firstName}, "
+        //                     . "This is to inform you that your child, {$studentFullName}, "
+        //                     . "enrolled in {$currentClass}, has been marked as '{$status}' for today's ({$formattedDate}) {$schedule->subject_name} class.";
+        //                 break;
+        //         }
+
+        //         // Send via queued SMS job
+        //         \App\Jobs\SendAttendanceSMS::dispatchAfterResponse($student, $status, $schedule, $attendance);
+        //         $sent = true;
+
+        //         if (!$sent) {
+        //             Log::warning("Failed to send SMS to parent {$parent->id} ({$parent->phone})");
+        //         }
+        //     }
+        // } else {
+        //     Log::warning("No parent phone number found for student ID {$student->id}");
+        // }
 
         return response()->json([
             'success' => true,
@@ -856,32 +889,69 @@ class TeacherController extends Controller
             ]);
         }
 
+        // Fetch student
         $student = Student::find($studentId);
         if (!$student) {
-            return response()->json(['success' => false, 'message' => 'Student not found']);
+            return response()->json(['success' => false, 'message' => 'Student not found.']);
         }
 
+        // Fetch schedule
         $schedule = Schedule::find($scheduleId);
         if (!$schedule) {
-            return response()->json(['success' => false, 'message' => 'Schedule not found']);
+            return response()->json(['success' => false, 'message' => 'Schedule not found.']);
         }
 
-        // Ensure attendance is specific to school year
-        $attendance = Attendance::updateOrCreate(
-            [
-                'student_id' => $student->id,
-                'schedule_id' => $schedule->id,
-                'school_year_id' => $schoolYear->id, // 🔄 Match QR attendance condition
-                'date' => $date
-            ],
-            [
-                'status' => $status,
-                'teacher_id' => Auth::id(),
-                'class_id' => $schedule->class_id,
-                'time_in' => now()->format('H:i:s'),
-                'time_out' => $customTimeout ?? $schedule->end_time,
-            ]
-        );
+        // Fetch the class linked to this schedule
+        $class = Classes::find($schedule->class_id);
+        if (!$class) {
+            return response()->json(['success' => false, 'message' => 'Class not found.']);
+        }
+
+        // Check if student is enrolled in this class for the current school year
+        $enrolledThisYear = DB::table('class_student')
+            ->where('student_id', $student->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->where('class_id', $class->id)
+            ->where('enrollment_status', 'enrolled')
+            ->exists();
+
+        if (!$enrolledThisYear) {
+            return response()->json([
+                'success' => false,
+                'message' => '⛔ Student is not enrolled in this class for the selected school year.'
+            ]);
+        }
+
+        // Prevent duplicate attendance entries for same schedule/date
+        $existing = Attendance::where([
+            'student_id' => $student->id,
+            'schedule_id' => $schedule->id,
+            'school_year_id' => $schoolYear->id,
+            'date' => $date,
+        ])->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => '⚠️ Attendance already recorded for this student and schedule.'
+            ]);
+        }
+
+        // Record attendance
+        $attendance = Attendance::create([
+            'student_id' => $student->id,
+            'schedule_id' => $schedule->id,
+            'school_year_id' => $schoolYear->id,
+            'date' => $date,
+            'status' => $status,
+            'teacher_id' => Auth::id(),
+            'class_id' => $class->id,
+            'time_in' => now()->format('H:i:s'),
+            'time_out' => $customTimeout ?? $schedule->end_time,
+        ]);
+
+        // Dispatch the same SMS job as the QR scanner does
+        // \App\Jobs\SendAttendanceSMS::dispatchAfterResponse($student, $status, $schedule, $attendance);
 
         return response()->json([
             'success' => true,
@@ -973,6 +1043,42 @@ class TeacherController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Subject created successfully!');
+    }
+
+    public function deleteSubject(Request $request, $grade_level, $section, $subject_id)
+    {
+        $schoolYear = SchoolYear::where('school_year', $request->query('school_year', $this->getDefaultSchoolYear()))
+            ->firstOrFail();
+
+        $class = $this->getClass($grade_level, $section);
+        $teacherId = Auth::id();
+
+        // Check if the classSubject exists
+        $classSubject = ClassSubject::where('id', $subject_id)
+            ->where('class_id', $class->id)
+            ->where('school_year_id', $schoolYear->id)
+            ->firstOrFail();
+
+        // Only the assigned teacher or the adviser can delete it
+        $adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivot('role', 'adviser')
+            ->first();
+
+        if ($classSubject->teacher_id !== $teacherId && (!$adviser || $adviser->id !== $teacherId)) {
+            return back()->with('error', 'You are not authorized to delete this subject.');
+        }
+
+        // Delete subject
+        $classSubject->delete();
+
+        return redirect()
+            ->route('teacher.myClassSubject', [
+                'grade_level' => $grade_level,
+                'section' => $section,
+                'school_year' => $schoolYear->school_year,
+            ])
+            ->with('success', 'Subject deleted successfully.');
     }
 
     public function viewSubject(Request $request, $grade_level, $section, $subject_id)

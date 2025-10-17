@@ -205,12 +205,47 @@
                             </select>
                         </div>
 
-                        <!-- Add Student Button -->
-                        <div>
-                            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
+                        <!-- Add Student & Import Excel Buttons -->
+                        <div class="d-flex gap-2 mb-3">
+                            <!-- Add Student Button -->
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#addStudentModal">
                                 <i class="bx bx-user-plus me-1"></i> Add Student
                             </button>
+
+                            <!-- Import Excel Button -->
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                data-bs-target="#importExcelModal">
+                                <i class="bx bx-file me-1"></i> Import Excel
+                            </button>
+
+                            <!-- Download Sample Template -->
+                            <div class="btn-group">
+                                <button class="btn btn-label-secondary dropdown-toggle me-4" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <i class="bx bx-export icon-xs"></i>
+                                        <span class="d-none d-sm-inline-block">Export</span>
+                                    </span>
+                                </button>
+                                <ul class="dropdown-menu shadow">
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center"
+                                            href="{{ route('students.downloadTemplate', ['format' => 'excel']) }}">
+                                            <i class="bx bxs-file-export me-2"></i> Excel (.xlsx)
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center"
+                                            href="{{ route('students.downloadTemplate', ['format' => 'csv']) }}">
+                                            <i class="bx bx-file me-2"></i> CSV (.csv)
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
@@ -495,6 +530,94 @@
             </div>
         </div>
     </div>
+    <!-- /Add Student Modal -->
+
+    <!-- Import Students via Excel Modal -->
+    <div class="modal fade" id="importExcelModal" tabindex="-1" data-bs-backdrop="static"
+        aria-labelledby="importExcelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form action="{{ route('students.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+
+                    <!-- Modal Header -->
+                    <div class="modal-header text-white">
+                        <h5 class="modal-title fw-bold text-info" id="importExcelModalLabel">
+                            Import Students via Excel
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="modal-body">
+                        <!-- File Upload Section -->
+                        <div class="mb-4">
+                            <label for="excel_file" class="form-label fw-bold">Select Excel File</label>
+                            <input type="file" name="excel_file" id="excel_file" class="form-control" required
+                                accept=".xlsx,.xls,.csv">
+                            <small class="text-muted">
+                                Allowed formats: <strong>.xlsx, .xls, .csv</strong>
+                            </small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Instructions Section -->
+                        <div>
+                            <h6 class="fw-bold text-primary mb-3">
+                                <i class="bx bx-info-circle me-1"></i> Excel Format Guide
+                            </h6>
+
+                            <div class="alert alert-light border shadow-sm small">
+                                <p class="mb-2">Ensure your Excel file includes these column headers exactly as shown:
+                                </p>
+                                <ul class="list-unstyled ms-3 mb-0">
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>lrn</b> – Required, 12 digits
+                                        starting with <code>112828</code></li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>first_name</b> – Required</li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>middle_name</b> – Optional</li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>last_name</b> – Required</li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>extension_name</b> – Optional
+                                    </li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>dob</b> – Optional (Format:
+                                        <code>YYYY-MM-DD</code>)
+                                    </li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>sex</b> – Required
+                                        (<code>male</code> or <code>female</code>)</li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>place_of_birth</b> – Optional
+                                    </li>
+                                    <li><i class="bx bx-chevron-right text-success"></i> <b>house_no</b>,
+                                        <b>street_name</b>, <b>barangay</b>, <b>municipality_city</b>, <b>province</b>,
+                                        <b>zip_code</b> – Optional
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="mt-3 text-muted small">
+                                💡 Tip: You can
+                                <a href="{{ route('students.downloadTemplate') }}" class="fw-bold text-success">
+                                    download the sample Excel template
+                                </a>
+                                and fill it out for easy importing.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bx bx-x me-1"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success fw-bold">
+                            <i class="bx bx-upload me-1"></i> Import Students
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- /Import Students via Excel Modal -->
 
 @endsection
 
@@ -694,13 +817,14 @@
             let rowsPerPage = parseInt(tableLengthSelect.value);
             let filteredRows = [...rows];
 
-            // Filter rows by name and status
+            // Filter rows by name, LRN, and status
             function filterRows() {
                 const search = searchInput.value.toLowerCase();
                 const status = statusFilter.value;
 
                 filteredRows = rows.filter(row => {
                     const name = row.dataset.name;
+                    const lrn = row.querySelector("td:nth-child(3)").textContent.toLowerCase();
                     const rawStatus = row.dataset.status;
 
                     let displayStatus;
@@ -709,7 +833,7 @@
                     else if (["archived", "not_enrolled"].includes(rawStatus)) displayStatus = "inactive";
                     else displayStatus = rawStatus;
 
-                    const matchesSearch = name.includes(search);
+                    const matchesSearch = name.includes(search) || lrn.includes(search);
                     const matchesStatus = !status || displayStatus === status;
 
                     return matchesSearch && matchesStatus;
@@ -816,4 +940,22 @@
             filterRows();
         });
     </script>
+@endpush
+
+@push('styles')
+    <style>
+        .btn-label-secondary {
+            background-color: #f5f5f9;
+            border: 1px solid #dcdcdc;
+            color: #333;
+        }
+
+        .btn-label-secondary:hover {
+            background-color: #e8e8ee;
+        }
+
+        .dropdown-menu a i {
+            font-size: 1rem;
+        }
+    </style>
 @endpush

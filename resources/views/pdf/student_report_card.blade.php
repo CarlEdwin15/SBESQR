@@ -554,18 +554,30 @@
                 @foreach ($subjects as $s)
                     <tr style="font-size: 13px">
                         <td>{{ $s['subject'] }}</td>
-                        <td class="center">{{ $s['quarters']->firstWhere('quarter', 1)['grade'] ?? '' }}</td>
-                        <td class="center">{{ $s['quarters']->firstWhere('quarter', 2)['grade'] ?? '' }}</td>
-                        <td class="center">{{ $s['quarters']->firstWhere('quarter', 3)['grade'] ?? '' }}</td>
-                        <td class="center">{{ $s['quarters']->firstWhere('quarter', 4)['grade'] ?? '' }}</td>
-                        <td class="center">{{ $s['final'] ?? '' }}</td>
+                        <td class="center">
+                            {{ isset($s['quarters']->firstWhere('quarter', 1)['grade']) ? round($s['quarters']->firstWhere('quarter', 1)['grade']) : '' }}
+                        </td>
+                        <td class="center">
+                            {{ isset($s['quarters']->firstWhere('quarter', 2)['grade']) ? round($s['quarters']->firstWhere('quarter', 2)['grade']) : '' }}
+                        </td>
+                        <td class="center">
+                            {{ isset($s['quarters']->firstWhere('quarter', 3)['grade']) ? round($s['quarters']->firstWhere('quarter', 3)['grade']) : '' }}
+                        </td>
+                        <td class="center">
+                            {{ isset($s['quarters']->firstWhere('quarter', 4)['grade']) ? round($s['quarters']->firstWhere('quarter', 4)['grade']) : '' }}
+                        </td>
+                        <td class="center">
+                            {{ isset($s['final']) ? round($s['final']) : '' }}
+                        </td>
                         <td class="center">{{ $s['remarks'] ?? '' }}</td>
                     </tr>
                 @endforeach
                 <tr style="font-size: 13px; font-weight: bold;">
                     <td style="border: none;"></td>
                     <td class="center" colspan="4">General Average</td>
-                    <td class="center">{{ $generalAverage ?? '' }}</td>
+                    <td class="center">
+                        {{ isset($generalAverage) ? round($generalAverage) : '' }}
+                    </td>
                     <td style="border: none;"></td>
                 </tr>
             </table>

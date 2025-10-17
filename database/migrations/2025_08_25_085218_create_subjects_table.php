@@ -49,7 +49,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('quarter_id')->constrained('quarters')->onDelete('cascade');
-            $table->unsignedTinyInteger('final_grade', 5, 2)->nullable();
+            $table->unsignedTinyInteger('final_grade')->nullable();
             $table->timestamps();
 
             $table->unique(['student_id', 'quarter_id'], 'unique_student_per_quarter');
@@ -59,7 +59,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('class_subject_id')->constrained('class_subject')->onDelete('cascade');
-            $table->unsignedTinyInteger('final_grade', 5, 2)->nullable();
+            $table->unsignedTinyInteger('final_grade')->nullable();
             $table->enum('remarks', ['passed', 'failed'])->nullable();
             $table->timestamps();
 
@@ -70,7 +70,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
-            $table->unsignedTinyInteger('general_average', 5, 2)->nullable();
+            $table->unsignedTinyInteger('general_average')->nullable();
             $table->enum('remarks', ['passed', 'failed'])->nullable();
             $table->timestamps();
 

@@ -124,6 +124,11 @@ Route::get('/student-management', [StudentController::class, 'studentManagement'
 
 Route::post('/addStudent', [StudentController::class, 'store'])->name('store.student');
 
+Route::get('students/import', [StudentController::class, 'showImportForm'])->name('students.showImportForm');
+Route::post('students/import', [StudentController::class, 'import'])->name('students.import');
+Route::get('/students/download-template', [StudentController::class, 'downloadTemplate'])
+    ->name('students.downloadTemplate');
+
 Route::get('/studentEnrollment', [StudentController::class, 'show'])->name('show.students');
 
 Route::post('/assignStudentClass', [StudentController::class, 'assignClass'])->name('assign.student.class');
@@ -188,8 +193,10 @@ Route::middleware('auth')->prefix('announcements')->name('announcements.')->grou
     Route::get('/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('edit');
     Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('update');
     Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
-    Route::post('upload-image', [AnnouncementController::class, 'uploadImage'])->name('uploadImage');
 });
+
+Route::post('/announcements/upload-image', [AnnouncementController::class, 'uploadImage'])
+    ->name('announcements.uploadImage');
 
 // Show ajax notification
 Route::get('/announcements/{id}/show-ajax', [AnnouncementController::class, 'showAjax'])
@@ -247,6 +254,10 @@ Route::post('/teacher/attendance/qr-mark', [TeacherController::class, 'markAtten
 
 Route::post('/teacher/manual-attendance', [TeacherController::class, 'markManualAttendance'])->name('teacher.markManualAttendance');
 
+// for auto-mark absent
+Route::post('/attendance/auto-mark-absent', [AttendanceController::class, 'autoMarkAbsent'])
+    ->name('attendance.autoMarkAbsent');
+
 // Export SF2 (Teacher's Dashboard)
 Route::get('/teacher-export-attendance', function () {
     $controller = app(AttendanceController::class);
@@ -272,6 +283,12 @@ Route::get(
     '/teacher/class/{grade_level}/{section}/subjects/{subject_id}/view',
     [TeacherController::class, 'viewSubject']
 )->name('teacher.subjects.view');
+
+// Delete subject from a class
+Route::delete(
+    '/teacher/class/{grade_level}/{section}/subjects/{subject_id}/delete',
+    [TeacherController::class, 'deleteSubject']
+)->name('teacher.subjects.delete');
 
 
 // Export Student Report Card grades in the student info view

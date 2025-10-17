@@ -185,7 +185,7 @@
                                                                 </td>
                                                                 <td class="text-center">
                                                                     @if ($item['final_average'] !== null)
-                                                                        <strong>{{ $item['final_average'] }}</strong>
+                                                                        <strong>{{ round($item['final_average']) }}</strong>
                                                                     @else
                                                                         <span class="text-muted">-</span>
                                                                     @endif
@@ -214,7 +214,7 @@
                                                     class="p-3 rounded-3 border bg-light d-flex justify-content-between">
                                                     <span class="fw-bold">General Average:</span>
                                                     <span>
-                                                        <strong>{{ $ga['general_average'] }}</strong>
+                                                        <strong>{{ round($ga['general_average']) }}</strong>
                                                         @if ($ga['remarks'] === 'passed')
                                                             <span class="badge bg-label-success ms-2">Passed</span>
                                                         @else
@@ -308,7 +308,7 @@
 
                     $attendanceRecords = $student
                         ->attendances()
-                        ->with(['schoolYear', 'class', 'schedule']) // ✅ use schedule, not subject
+                        ->with(['schoolYear', 'class', 'schedule'])
                         ->get()
                         ->map(function ($att) {
                             $subject = $att->schedule->subject_name ?? 'N/A';
@@ -447,7 +447,7 @@
             document.querySelector('[data-bs-target="#attendances"]')
                 ?.addEventListener('shown.bs.tab', () => calendar.updateSize());
 
-            // ✅ Re-render on window resize to toggle between text ↔ symbols
+            // Re-render on window resize to toggle between text ↔ symbols
             window.addEventListener('resize', () => {
                 calendar.removeAllEvents();
                 calendar.addEventSource(formatEvents(isMobile()));

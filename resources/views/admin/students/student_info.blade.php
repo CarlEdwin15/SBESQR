@@ -316,35 +316,13 @@
                                             size of 2MB</p>
                                     </div>
                                 </div>
-
-                                <!-- Enrollment Type Field -->
-                                <div class="col mb-2 mt-2">
-                                    @php
-                                        $currentClass = $student->class->first();
-                                        $enrollmentType = $currentClass ? $currentClass->pivot->enrollment_type : null;
-                                    @endphp
-
-                                    <label for="enrollment_type" class="form-label fw-bold">Enrollment Type</label>
-                                    <select name="enrollment_type" id="enrollment_type" class="form-select" required>
-                                        <option value="regular"
-                                            {{ old('enrollment_type', $enrollmentType) == 'regular' ? 'selected' : '' }}>
-                                            Regular</option>
-                                        <option value="transferee"
-                                            {{ old('enrollment_type', $enrollmentType) == 'transferee' ? 'selected' : '' }}>
-                                            Transferee</option>
-                                        <option value="returnee"
-                                            {{ old('enrollment_type', $enrollmentType) == 'returnee' ? 'selected' : '' }}>
-                                            Returnee</option>
-                                    </select>
-                                </div>
                             </div>
 
                             <hr class="my-0" />
 
                             <!-- LRN Field -->
                             <div class="col mb-2 mt-3">
-                                <label for="student_lrn" class="form-label fw-bold">LRN (Learner's Refference
-                                    No.)</label>
+                                <label for="student_lrn" class="form-label fw-bold">LRN (Learner's Reference No.)</label>
                                 <input type="text" name="student_lrn" id="student_lrn" class="form-control"
                                     list="datalistOptions" value="{{ $student->student_lrn }}" required />
 
@@ -353,109 +331,35 @@
                                 </datalist>
                             </div>
 
-                            <!-- Grade Level Field -->
-                            <div class="col mb-2 mt-3">
-                                <label for="student_grade_level" class="form-label fw-bold">Grade
-                                    Level</label>
-                                @php
-                                    $studentClass = $student
-                                        ->class()
-                                        ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
-                                        ->first();
-                                @endphp
-
-                                <select name="student_grade_level" id="student_grade_level" class="form-select" required>
-                                    <option value="kindergarten"
-                                        {{ $studentClass && $studentClass->grade_level == 'kindergarten' ? 'selected' : '' }}>
-                                        Kindergarten</option>
-                                    <option value="grade1"
-                                        {{ $studentClass && $studentClass->grade_level == 'grade1' ? 'selected' : '' }}>
-                                        Grade 1</option>
-                                    <option value="grade2"
-                                        {{ $studentClass && $studentClass->grade_level == 'grade2' ? 'selected' : '' }}>
-                                        Grade 2</option>
-                                    <option value="grade3"
-                                        {{ $studentClass && $studentClass->grade_level == 'grade3' ? 'selected' : '' }}>
-                                        Grade 3</option>
-                                    <option value="grade4"
-                                        {{ $studentClass && $studentClass->grade_level == 'grade4' ? 'selected' : '' }}>
-                                        Grade 4</option>
-                                    <option value="grade5"
-                                        {{ $studentClass && $studentClass->grade_level == 'grade5' ? 'selected' : '' }}>
-                                        Grade 5</option>
-                                    <option value="grade6"
-                                        {{ $studentClass && $studentClass->grade_level == 'grade6' ? 'selected' : '' }}>
-                                        Grade 6</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Section Field -->
-                            <div class="col mb-2 mt-2">
-                                <label for="student_section" class="form-label fw-bold">Section</label>
-                                <select name="student_section" id="student_section" class="form-select" required>
-                                    @php
-                                        $studentSection = $student
-                                            ->class()
-                                            ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
-                                            ->first();
-                                    @endphp
-                                    <option
-                                        value="A"{{ $studentSection && $studentSection->section == 'A' ? 'selected' : '' }}>
-                                        Section A</option>
-                                    <option
-                                        value="B"{{ $studentSection && $studentSection->section == 'B' ? 'selected' : '' }}>
-                                        Section B</option>
-                                    <option
-                                        value="C"{{ $studentSection && $studentSection->section == 'C' ? 'selected' : '' }}>
-                                        Section C</option>
-                                    <option
-                                        value="D"{{ $studentSection && $studentSection->section == 'D' ? 'selected' : '' }}>
-                                        Section D</option>
-                                    <option
-                                        value="E"{{ $studentSection && $studentSection->section == 'E' ? 'selected' : '' }}>
-                                        Section E</option>
-                                    <option
-                                        value="F"{{ $studentSection && $studentSection->section == 'F' ? 'selected' : '' }}>
-                                        Section F</option>
-                                </select>
-                            </div>
-
                             <!-- Gender Field -->
                             <div class="col mb-2 mt-2">
                                 <label for="student_sex" class="form-label fw-bold">Gender</label>
                                 <select name="student_sex" id="student_sex" class="form-select" required>
-                                    <option value="male"{{ $student->student_sex == 'male' ? 'selected' : '' }}>
-                                        Male</option>
-                                    <option value="female"{{ $student->student_sex == 'female' ? 'selected' : '' }}>
-                                        Female</option>
+                                    <option value="male"{{ $student->student_sex == 'male' ? 'selected' : '' }}>Male
+                                    </option>
+                                    <option value="female"{{ $student->student_sex == 'female' ? 'selected' : '' }}>Female
+                                    </option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="row">
-
                             <!-- First Name Field -->
                             <div class="col mb-2 mt-2">
-                                <label for="student_fName" class="form-label fw-bold">First
-                                    Name</label>
+                                <label for="student_fName" class="form-label fw-bold">First Name</label>
                                 <input type="text" name="student_fName" id="student_fName" class="form-control"
                                     value="{{ $student->student_fName }}" required />
                             </div>
 
                             <!-- Middle Name Field -->
                             <div class="col mb-2 mt-2">
-                                <label for="student_mName" class="form-label fw-bold">Middle
-                                    Name</label>
+                                <label for="student_mName" class="form-label fw-bold">Middle Name</label>
                                 <input type="text" name="student_mName" id="student_mName" class="form-control"
                                     value="{{ $student->student_mName }}" />
                             </div>
-
                         </div>
 
                         <div class="row">
-
                             <!-- Last Name Field -->
                             <div class="col mb-2 mt-2">
                                 <label for="student_lName" class="form-label fw-bold">Last Name</label>
@@ -465,16 +369,13 @@
 
                             <!-- Extension Name Field -->
                             <div class="col mb-2 mt-2">
-                                <label for="student_extName" class="form-label fw-bold">Extension
-                                    Name</label>
+                                <label for="student_extName" class="form-label fw-bold">Extension Name</label>
                                 <input type="text" name="student_extName" id="student_extName" class="form-control"
                                     value="{{ $student->student_extName }}" />
                             </div>
-
                         </div>
 
                         <div class="row">
-
                             <!-- Place of Birth Field -->
                             <div class="col mb-2 mt-2">
                                 <label for="student_pob" class="form-label fw-bold">Place of Birth</label>
@@ -489,6 +390,93 @@
                                     value="{{ $student->student_dob }}" id="student_dob" />
                             </div>
                         </div>
+
+                        @if ($displayStatus !== 'Inactive')
+                            <hr class="my-0 mb-4 mt-4" />
+
+                            <!-- Student Class -->
+                            <h5 class="fw-bold mb-3 mt-3 text-primary">Class</h5>
+
+                            <!-- Enrollment Type, Grade Level, Section -->
+                            <div class="row mt-3">
+                                @php
+                                    $currentClass = $student->class->first();
+                                    $enrollmentType = $currentClass ? $currentClass->pivot->enrollment_type : null;
+                                    $studentClass = $student
+                                        ->class()
+                                        ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
+                                        ->first();
+                                    $studentSection = $studentClass;
+                                @endphp
+
+                                <div class="col mb-2">
+                                    <label for="enrollment_type" class="form-label fw-bold">Enrollment Type</label>
+                                    <select name="enrollment_type" id="enrollment_type" class="form-select" required>
+                                        <option value="regular"
+                                            {{ old('enrollment_type', $enrollmentType) == 'regular' ? 'selected' : '' }}>
+                                            Regular</option>
+                                        <option value="transferee"
+                                            {{ old('enrollment_type', $enrollmentType) == 'transferee' ? 'selected' : '' }}>
+                                            Transferee</option>
+                                        <option value="returnee"
+                                            {{ old('enrollment_type', $enrollmentType) == 'returnee' ? 'selected' : '' }}>
+                                            Returnee</option>
+                                    </select>
+                                </div>
+
+                                <div class="col mb-2">
+                                    <label for="student_grade_level" class="form-label fw-bold">Grade Level</label>
+                                    <select name="student_grade_level" id="student_grade_level" class="form-select"
+                                        required>
+                                        <option value="kindergarten"
+                                            {{ $studentClass && $studentClass->grade_level == 'kindergarten' ? 'selected' : '' }}>
+                                            Kindergarten</option>
+                                        <option value="grade1"
+                                            {{ $studentClass && $studentClass->grade_level == 'grade1' ? 'selected' : '' }}>
+                                            Grade 1</option>
+                                        <option value="grade2"
+                                            {{ $studentClass && $studentClass->grade_level == 'grade2' ? 'selected' : '' }}>
+                                            Grade 2</option>
+                                        <option value="grade3"
+                                            {{ $studentClass && $studentClass->grade_level == 'grade3' ? 'selected' : '' }}>
+                                            Grade 3</option>
+                                        <option value="grade4"
+                                            {{ $studentClass && $studentClass->grade_level == 'grade4' ? 'selected' : '' }}>
+                                            Grade 4</option>
+                                        <option value="grade5"
+                                            {{ $studentClass && $studentClass->grade_level == 'grade5' ? 'selected' : '' }}>
+                                            Grade 5</option>
+                                        <option value="grade6"
+                                            {{ $studentClass && $studentClass->grade_level == 'grade6' ? 'selected' : '' }}>
+                                            Grade 6</option>
+                                    </select>
+                                </div>
+
+                                <div class="col mb-2">
+                                    <label for="student_section" class="form-label fw-bold">Section</label>
+                                    <select name="student_section" id="student_section" class="form-select" required>
+                                        <option value="A"
+                                            {{ $studentSection && $studentSection->section == 'A' ? 'selected' : '' }}>
+                                            Section A</option>
+                                        <option value="B"
+                                            {{ $studentSection && $studentSection->section == 'B' ? 'selected' : '' }}>
+                                            Section B</option>
+                                        <option value="C"
+                                            {{ $studentSection && $studentSection->section == 'C' ? 'selected' : '' }}>
+                                            Section C</option>
+                                        <option value="D"
+                                            {{ $studentSection && $studentSection->section == 'D' ? 'selected' : '' }}>
+                                            Section D</option>
+                                        <option value="E"
+                                            {{ $studentSection && $studentSection->section == 'E' ? 'selected' : '' }}>
+                                            Section E</option>
+                                        <option value="F"
+                                            {{ $studentSection && $studentSection->section == 'F' ? 'selected' : '' }}>
+                                            Section F</option>
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
 
                         <hr class="my-0 mb-4 mt-4" />
 
@@ -525,11 +513,10 @@
                                 <input type="text" name="municipality_city" id="municipality_city"
                                     class="form-control" value="{{ $student->address->municipality_city }}" />
                             </div>
-
                         </div>
 
                         <div class="row">
-                            <!-- Barangay Name Field -->
+                            <!-- Province Field -->
                             <div class="col mb-2 mt-2">
                                 <label for="province" class="form-label fw-bold">Province</label>
                                 <input type="text" name="province" id="province" class="form-control"

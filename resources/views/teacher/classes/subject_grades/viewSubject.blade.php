@@ -222,7 +222,7 @@
                                             count(array_filter($quarterGrades, fn($g) => $g !== null)) === 4;
 
                                         $finalAverage = $allQuartersHaveGrades
-                                            ? round(array_sum($quarterGrades) / 4, 2)
+                                            ? round(array_sum($quarterGrades) / 4)
                                             : '';
 
                                         $remarks = $allQuartersHaveGrades
@@ -232,8 +232,8 @@
                                             : '';
                                     @endphp
 
-                                    <td><span class="final-grade fw-bold">{{ $finalAverage }}</span></td>
-                                    <td><span class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
+                                    <td class="text-center"><span class="final-grade fw-bold">{{ $finalAverage }}</span></td>
+                                    <td class="text-center"><span class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
                                     </td>
                                 </tr>
                             @endforeach
@@ -319,7 +319,7 @@
                                             count(array_filter($quarterGrades, fn($g) => $g !== null)) === 4;
 
                                         $finalAverage = $allQuartersHaveGrades
-                                            ? round(array_sum($quarterGrades) / 4, 2)
+                                            ? round(array_sum($quarterGrades) / 4)
                                             : '';
 
                                         $remarks = $allQuartersHaveGrades
@@ -329,8 +329,8 @@
                                             : '';
                                     @endphp
 
-                                    <td><span class="final-grade fw-bold">{{ $finalAverage }}</span></td>
-                                    <td><span class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
+                                    <td class="text-center"><span class="final-grade fw-bold">{{ $finalAverage }}</span></td>
+                                    <td class="text-center"><span class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
                                     </td>
                                 </tr>
                             @endforeach
@@ -401,7 +401,7 @@
 
                 // Only show final if all 4 quarters are filled
                 if (count === 4) {
-                    const avg = (total / 4).toFixed(2);
+                    const avg = Math.round(total / 4);
                     finalGradeEl.textContent = avg;
 
                     if (avg >= 75) {

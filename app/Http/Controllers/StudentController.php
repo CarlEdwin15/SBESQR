@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\StudentTemplateExport;
 use App\Models\Classes;
 use App\Models\ClassStudent;
 use App\Models\ClassSubject;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\StudentsImport;
 
 class StudentController extends Controller
 {
@@ -461,6 +464,41 @@ class StudentController extends Controller
         ]);
 
         return redirect()->route('student.management')->with('success', 'Student added successfully! You can now assign them to a class.');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            $import = new \App\Imports\StudentsImport();
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('excel_file'));
+
+            $summary = "✅ Imported: {$import->imported}";
+            if ($import->duplicates > 0) $summary .= " | ⚠️ Duplicates: {$import->duplicates}";
+            if ($import->skipped > 0) $summary .= " | 🚫 Skipped: {$import->skipped}";
+
+            return redirect()
+                ->route('student.management')
+                ->with('success', $summary);
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('student.management')
+                ->with('error', 'Failed to import students. Error: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate(Request $request)
+    {
+        $format = $request->get('format', 'excel'); // default to Excel
+
+        if ($format === 'csv') {
+            return Excel::download(new StudentTemplateExport, 'student_template.csv', \Maatwebsite\Excel\Excel::CSV);
+        }
+
+        return Excel::download(new StudentTemplateExport, 'student_template.xlsx');
     }
 
     public function edit(Request $request, $id)
