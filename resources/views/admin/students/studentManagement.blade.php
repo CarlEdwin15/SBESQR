@@ -146,6 +146,12 @@
     </aside>
     <!-- / Menu -->
 
+    @if (session('error'))
+        <script>
+            alert("{{ session('error') }}");
+        </script>
+    @endif
+
     <!-- Content wrapper -->
     <div class="content-wrapper">
 
@@ -182,8 +188,16 @@
                                 id="studentSearch">
                         </div>
 
-                        <div class="col-md-2 col-sm-3">
-                            <select id="statusFilter" class="form-select">
+                        <div class="col-md-5 col-sm-6 d-flex gap-2 justify-content-end">
+                            <!-- Bulk Delete Button (moved here, left of status filter) -->
+                            <button type="button" class="btn btn-danger d-flex align-items-center" id="bulkDeleteBtn"
+                                style="display: none; opacity: 0;">
+                                <i class="bx bx-user-x me-1"></i>
+                                <span class="d-none d-sm-block">Delete Selected</span>
+                            </button>
+
+                            <!-- Status Filter -->
+                            <select id="statusFilter" class="form-select" style="max-width: 180px;">
                                 <option value="">All Status</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -207,45 +221,27 @@
 
                         <!-- Add Student & Import Excel Buttons -->
                         <div class="d-flex gap-2 mb-3">
+
                             <!-- Add Student Button -->
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#addStudentModal">
-                                <i class="bx bx-user-plus me-1"></i> Add Student
+                            <button type="button" class="btn btn-primary d-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                <i class="bx bx-user-plus me-1"></i> <span
+                                    class="align-items-center d-none d-sm-block">Add Student</span>
                             </button>
 
                             <!-- Import Excel Button -->
-                            <button type="button" class="btn btn-success" data-bs-toggle="modal"
-                                data-bs-target="#importExcelModal">
-                                <i class="bx bx-file me-1"></i> Import Excel
+                            <button type="button" class="btn btn-success d-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#importExcelModal">
+                                <i class="bx bx-file me-1"></i> <span
+                                    class="align-items-center d-none d-sm-block">Import</span>
                             </button>
 
-                            <!-- Download Sample Template -->
-                            <div class="btn-group">
-                                <button class="btn btn-label-secondary dropdown-toggle me-4" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span class="d-flex align-items-center gap-2">
-                                        <i class="bx bx-export icon-xs"></i>
-                                        <span class="d-none d-sm-inline-block">Export</span>
-                                    </span>
-                                </button>
-                                <ul class="dropdown-menu shadow">
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center"
-                                            href="{{ route('students.downloadTemplate', ['format' => 'excel']) }}">
-                                            <i class="bx bxs-file-export me-2"></i> Excel (.xlsx)
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center"
-                                            href="{{ route('students.downloadTemplate', ['format' => 'csv']) }}">
-                                            <i class="bx bx-file me-2"></i> CSV (.csv)
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                </ul>
-                            </div>
+                            <!-- Download Excel Template Button -->
+                            <a href="{{ route('students.downloadTemplate') }}"
+                                class="btn btn-label-secondary me-4 d-flex align-items-center">
+                                <i class="bx bx-export me-1"></i> <span
+                                    class="align-items-center d-none d-sm-block">Download Template</span>
+                            </a>
                         </div>
                     </div>
 
@@ -254,7 +250,9 @@
                         <table class="table table-hover align-middle" id="studentTable">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th style="width: 1%"></th>
+                                    <th style="width: 1%;">
+                                        <input type="checkbox" id="selectAllStudents" style="cursor: pointer;">
+                                    </th>
                                     <th class="text-start" style="width: 20%;">Full Name</th>
                                     <th style="width: 5%;">LRN</th>
                                     <th style="width: 5%;">Status</th>
@@ -267,8 +265,11 @@
                             <tbody>
                                 @foreach ($students as $student)
                                     <tr class="student-row text-center" data-name="{{ strtolower($student->full_name) }}"
-                                        data-status="{{ strtolower($student->status) }}">
-                                        <td></td>
+                                        data-status="{{ strtolower($student->status) }}" data-id="{{ $student->id }}">
+                                        <td>
+                                            <input type="checkbox" class="student-checkbox" value="{{ $student->id }}"
+                                                style="cursor: pointer;">
+                                        </td>
                                         <td class="text-start">
                                             <div class="d-flex align-items-center">
                                                 <a href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}"
@@ -553,7 +554,7 @@
                     <div class="modal-body">
                         <!-- File Upload Section -->
                         <div class="mb-4">
-                            <label for="excel_file" class="form-label fw-bold">Select Excel File</label>
+                            <label for="excel_file" class="form-label fw-bold">Select File</label>
                             <input type="file" name="excel_file" id="excel_file" class="form-control" required
                                 accept=".xlsx,.xls,.csv">
                             <small class="text-muted">
@@ -808,24 +809,37 @@
             const searchInput = document.getElementById("studentSearch");
             const statusFilter = document.getElementById("statusFilter");
             const table = document.getElementById("studentTable");
-            const rows = Array.from(table.querySelectorAll("tbody tr"));
             const pagination = document.getElementById("studentPagination");
             const tableLengthSelect = document.getElementById("tableLength");
             const tableInfo = document.getElementById("tableInfo");
+            const selectAllCheckbox = document.getElementById("selectAllStudents");
+            const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
 
             let currentPage = 1;
             let rowsPerPage = parseInt(tableLengthSelect.value);
-            let filteredRows = [...rows];
+            let rows = []; // will hold current DOM rows
+            let filteredRows = []; // rows after applying search/status
 
-            // Filter rows by name, LRN, and status
+            // Refresh rows collection from DOM (call after DOM changes like deletion)
+            function refreshRowCollections() {
+                rows = Array.from(table.querySelectorAll("tbody tr"));
+            }
+
+            // Utility: return the checkbox element inside a row (or null)
+            function getRowCheckbox(row) {
+                return row.querySelector(".student-checkbox");
+            }
+
+            // ---- Filtering ----
             function filterRows() {
-                const search = searchInput.value.toLowerCase();
+                const search = searchInput.value.trim().toLowerCase();
                 const status = statusFilter.value;
 
+                // Rebuild filteredRows from the current DOM rows
                 filteredRows = rows.filter(row => {
-                    const name = row.dataset.name;
-                    const lrn = row.querySelector("td:nth-child(3)").textContent.toLowerCase();
-                    const rawStatus = row.dataset.status;
+                    const name = (row.dataset.name || "").toLowerCase();
+                    const lrn = (row.querySelector("td:nth-child(3)")?.textContent || "").toLowerCase();
+                    const rawStatus = (row.dataset.status || "").toLowerCase();
 
                     let displayStatus;
                     if (rawStatus === "enrolled") displayStatus = "active";
@@ -833,67 +847,77 @@
                     else if (["archived", "not_enrolled"].includes(rawStatus)) displayStatus = "inactive";
                     else displayStatus = rawStatus;
 
-                    const matchesSearch = name.includes(search) || lrn.includes(search);
+                    const matchesSearch = (name.includes(search) || lrn.includes(search));
                     const matchesStatus = !status || displayStatus === status;
 
                     return matchesSearch && matchesStatus;
                 });
 
+                // Reset page to 1 when filters change
                 currentPage = 1;
                 renderTable();
             }
 
-            // Render table + pagination
+            // ---- Rendering ----
             function renderTable() {
                 const totalRows = filteredRows.length;
-                const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+                const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+                // Clamp currentPage to valid range
                 currentPage = Math.max(1, Math.min(currentPage, totalPages));
 
-                // Hide all rows
-                rows.forEach(r => (r.style.display = "none"));
+                // Hide all rows (from the current DOM rows)
+                rows.forEach(r => r.style.display = "none");
 
-                // Show only current page rows
+                // Compute start/end and display current page rows
                 const start = (currentPage - 1) * rowsPerPage;
                 const end = start + rowsPerPage;
-                filteredRows.slice(start, end).forEach(r => (r.style.display = ""));
+                const pageRows = filteredRows.slice(start, end);
+                pageRows.forEach(r => r.style.display = "");
 
-                // Build pagination
-                pagination.innerHTML = "";
-                if (totalPages > 1) {
-                    const maxVisible = 5;
-                    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-                    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-                    if (endPage - startPage + 1 < maxVisible)
-                        startPage = Math.max(1, endPage - maxVisible + 1);
-
-                    pagination.appendChild(createPageItem("«", currentPage > 1, () => {
-                        currentPage--;
-                        renderTable();
-                    }));
-
-                    for (let i = startPage; i <= endPage; i++) {
-                        pagination.appendChild(createPageItem(i, true, () => {
-                            currentPage = i;
-                            renderTable();
-                        }, i === currentPage));
-                    }
-
-                    pagination.appendChild(createPageItem("»", currentPage < totalPages, () => {
-                        currentPage++;
-                        renderTable();
-                    }));
-                }
-
-                // Table info
+                // Update table info
                 const startRow = totalRows === 0 ? 0 : start + 1;
                 const endRow = Math.min(end, totalRows);
                 tableInfo.textContent = `Showing ${startRow}-${endRow} of ${totalRows} students`;
 
-                // Reapply graduated column visibility after rendering
+                // Rebuild pagination
+                renderPagination(totalPages);
+
+                // Graduated column toggle
                 toggleGraduatedColumn();
+
+                // Reset select all for visible page and update delete button
+                selectAllCheckbox.checked = false;
+                updateBulkDeleteState();
             }
 
-            // Create pagination button
+            function renderPagination(totalPages) {
+                pagination.innerHTML = "";
+                if (totalPages <= 1) return;
+
+                const maxVisible = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                if (endPage - startPage + 1 < maxVisible)
+                    startPage = Math.max(1, endPage - maxVisible + 1);
+
+                pagination.appendChild(createPageItem("«", currentPage > 1, () => {
+                    currentPage--;
+                    renderTable();
+                }));
+
+                for (let i = startPage; i <= endPage; i++) {
+                    pagination.appendChild(createPageItem(i, true, () => {
+                        currentPage = i;
+                        renderTable();
+                    }, i === currentPage));
+                }
+
+                pagination.appendChild(createPageItem("»", currentPage < totalPages, () => {
+                    currentPage++;
+                    renderTable();
+                }));
+            }
+
             function createPageItem(label, enabled, onClick, active = false) {
                 const li = document.createElement("li");
                 li.className = "page-item " + (active ? "active" : "") + (!enabled ? " disabled" : "");
@@ -901,7 +925,7 @@
                 a.className = "page-link";
                 a.href = "#";
                 a.textContent = label;
-                a.addEventListener("click", (e) => {
+                a.addEventListener("click", e => {
                     e.preventDefault();
                     if (enabled) onClick();
                 });
@@ -909,7 +933,6 @@
                 return li;
             }
 
-            // Show/hide "School Year Graduated" column
             function toggleGraduatedColumn() {
                 const graduatedHeader = document.getElementById("graduatedYearHeader");
                 const graduatedCells = document.querySelectorAll(".graduated-year-cell");
@@ -923,21 +946,229 @@
                 }
             }
 
-            // Event listeners
-            searchInput.addEventListener("input", filterRows);
+            // ---- Checkboxes & Bulk Delete UI ----
 
-            statusFilter.addEventListener("change", function() {
+            // Start hidden
+            bulkDeleteBtn.style.display = "none";
+            bulkDeleteBtn.style.opacity = "0";
+
+            // Compute visible checkbox elements on the current page
+            function getVisibleCheckboxesOnPage() {
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const pageRows = filteredRows.slice(start, end);
+                return pageRows.map(r => getRowCheckbox(r)).filter(Boolean);
+            }
+
+            function updateBulkDeleteState() {
+                const visibleCheckboxes = getVisibleCheckboxesOnPage();
+                const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+
+                if (checkedCount > 0) {
+                    bulkDeleteBtn.style.display = "inline-flex";
+                    setTimeout(() => {
+                        bulkDeleteBtn.style.opacity = "1";
+                    }, 10);
+                } else {
+                    bulkDeleteBtn.style.opacity = "0";
+                    setTimeout(() => {
+                        bulkDeleteBtn.style.display = "none";
+                    }, 300);
+                }
+            }
+
+            // Select-all only applies to visible page checkboxes
+            selectAllCheckbox.addEventListener("change", function() {
+                const visibleCheckboxes = getVisibleCheckboxesOnPage();
+                visibleCheckboxes.forEach(cb => (cb.checked = selectAllCheckbox.checked));
+                updateBulkDeleteState();
+            });
+
+            // Use event delegation for checkbox changes inside the table (works for dynamic rows)
+            table.addEventListener("change", function(e) {
+                if (e.target && e.target.classList && e.target.classList.contains("student-checkbox")) {
+                    // if any checkbox unchecked, uncheck header selectAll
+                    if (!e.target.checked) selectAllCheckbox.checked = false;
+                    // if all visible are checked, set selectAll true
+                    const visibleCheckboxes = getVisibleCheckboxesOnPage();
+                    if (visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => cb.checked)) {
+                        selectAllCheckbox.checked = true;
+                    }
+                    updateBulkDeleteState();
+                }
+            });
+
+            // ---- Bulk delete with refresh ----
+            bulkDeleteBtn.addEventListener("click", function() {
+                // collect ALL selected ids across the table (not only visible)
+                const selectedIds = Array.from(document.querySelectorAll(".student-checkbox:checked")).map(
+                    cb => cb.value);
+                if (selectedIds.length === 0) return;
+
+                Swal.fire({
+                    title: `Delete ${selectedIds.length} selected student(s)?`,
+                    text: "This action cannot be undone.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, delete them",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        fetch(`{{ route('students.bulkDelete') }}`, {
+                                method: "DELETE",
+                                headers: {
+                                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    ids: selectedIds
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                Swal.fire({
+                                    title: "Deleted!",
+                                    text: data.message,
+                                    icon: "success",
+                                    timer: 1500,
+                                    showConfirmButton: false,
+                                    customClass: {
+                                        container: 'my-swal-container'
+                                    }
+                                });
+
+                                // Animate remove for rows currently in DOM (others will be removed when we refresh)
+                                selectedIds.forEach(id => {
+                                    const row = document.querySelector(
+                                        `tr[data-id="${id}"]`);
+                                    if (row) {
+                                        row.style.transition = "opacity 0.35s ease";
+                                        row.style.opacity = "0";
+                                    }
+                                });
+
+                                // Wait for animations then actually remove and refresh
+                                setTimeout(() => {
+                                    selectedIds.forEach(id => {
+                                        const row = document.querySelector(
+                                            `tr[data-id="${id}"]`);
+                                        if (row) row.remove();
+                                    });
+
+                                    // Refresh our rows collection from DOM, reapply filters and render
+                                    refreshRowCollections();
+                                    filterRows
+                                        (); // this will call renderTable() and keep pagination/info correct
+                                }, 400);
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                Swal.fire({
+                                    title: "Error!",
+                                    text: "Something went wrong while deleting students.",
+                                    icon: "error",
+                                    customClass: {
+                                        container: 'my-swal-container'
+                                    }
+                                });
+                            });
+                    }
+                });
+            });
+
+            // ---- Event bindings for filters/pagination/length ----
+            searchInput.addEventListener("input", () => {
+                // any typing should reset to page 1 and update
+                filterRows();
+            });
+
+            statusFilter.addEventListener("change", () => {
                 filterRows();
                 toggleGraduatedColumn();
             });
 
-            tableLengthSelect.addEventListener("change", () => {
-                rowsPerPage = parseInt(tableLengthSelect.value);
+            tableLengthSelect.addEventListener("change", function() {
+                rowsPerPage = parseInt(this.value) || 10;
+                currentPage = 1;
                 renderTable();
             });
 
-            // Initial render
+            // ---- Initialize collections and render ----
+            refreshRowCollections();
             filterRows();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('#importExcelModal form');
+            const fileInput = document.querySelector('#excel_file');
+
+            form.addEventListener('submit', function(e) {
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert('⚠️ Please select a file before importing.');
+                    e.preventDefault();
+                    return;
+                }
+
+                // Allowed formats
+                const allowedExtensions = ['xlsx', 'xls', 'csv'];
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(ext)) {
+                    alert('❌ Invalid file type. Please upload a .xlsx, .xls, or .csv file.');
+                    e.preventDefault();
+                    return;
+                }
+
+                // File size limit (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('⚠️ File is too large. Please upload a file smaller than 5MB.');
+                    e.preventDefault();
+                    return;
+                }
+
+                // Optional quick feedback
+                const btn = form.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bx bx-loader bx-spin me-1"></i> Validating...';
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (session('success'))
+                Swal.fire({
+                    title: "Import Complete",
+                    html: `{!! session('success') !!}` +
+                        `{!! session('import_errors')
+                            ? '<hr><div style="text-align:left;max-height:250px;overflow-y:auto;font-size:14px;color:#d33;"><b>Error Details:</b><br>' .
+                                session('import_errors') .
+                                '</div>'
+                            : '' !!}`,
+                    icon: "{{ session('import_errors') ? 'warning' : 'success' }}",
+                    width: 600,
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                });
+            @elseif (session('error'))
+                Swal.fire({
+                    title: "Import Error",
+                    html: `{!! session('error') !!}`,
+                    icon: "error",
+                    width: 500,
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                });
+            @endif
         });
     </script>
 @endpush
@@ -956,6 +1187,10 @@
 
         .dropdown-menu a i {
             font-size: 1rem;
+        }
+
+        #bulkDeleteBtn {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
     </style>
 @endpush

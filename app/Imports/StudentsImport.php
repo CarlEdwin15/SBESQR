@@ -5,206 +5,165 @@ namespace App\Imports;
 use App\Models\Student;
 use App\Models\StudentAddress;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Carbon\Carbon;
+use Maatwebsite\Excel\Concerns\OnEachRow;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use Maatwebsite\Excel\Row;
 use Maatwebsite\Excel\DefaultValueBinder;
+use Carbon\Carbon;
+use Exception;
 
-class StudentsImport extends DefaultValueBinder implements ToCollection, WithCustomCsvSettings, WithCustomValueBinder
-
+class StudentsImport extends DefaultValueBinder implements
+    OnEachRow,
+    WithChunkReading,
+    WithBatchInserts,
+    WithCustomCsvSettings,
+    WithCustomValueBinder
 {
     public int $imported = 0;
     public int $skipped = 0;
     public int $duplicates = 0;
+    public array $errors = [];
 
-    public function collection(Collection $rows)
+    public function onRow(Row $row): void
     {
-        if ($rows->isEmpty()) {
-            Log::warning('Excel file is empty.');
+        $excelRow = $row->getIndex(); // 👈 actual Excel row number
+        $r = $row->toArray();
+
+        // Skip title (row 1), header (row 2), and empty rows
+        if ($excelRow <= 2 || count(array_filter($r)) === 0) {
             return;
         }
 
-        // Step 1: Find the header row
-        $headerRowIndex = $rows->search(function ($row) {
-            return collect($row)->contains(function ($cell) {
-                return strtolower(trim($cell)) === 'lrn';
-            });
-        });
+        $headers = [
+            'lrn',
+            'first_name',
+            'middle_name',
+            'last_name',
+            'extension_name',
+            'dob',
+            'sex',
+            'place_of_birth',
+            'house_no',
+            'street_name',
+            'barangay',
+            'municipality_city',
+            'province',
+            'zip_code'
+        ];
 
-        if ($headerRowIndex === false) {
-            Log::error('No header row containing "lrn" found.');
+        $data = [];
+        foreach ($headers as $index => $key) {
+            $data[$key] = trim((string)($r[$index] ?? ''));
+        }
+
+        // Required fields
+        if (empty($data['lrn']) || empty($data['first_name']) || empty($data['last_name'])) {
+            $this->skipped++;
+            $this->errors[] = "Row {$excelRow}: Missing required field(s) — LRN, First Name, and Last Name are required.";
             return;
         }
 
-        $headerRow = $rows[$headerRowIndex]->toArray();
-
-        // Step 2: Normalize headers
-        $headers = [];
-        foreach ($headerRow as $index => $header) {
-            $headers[$index] = strtolower(trim($header));
+        // Normalize LRN
+        $data['lrn'] = ltrim(trim($data['lrn']), "'\"");
+        if (preg_match('/^[0-9]\.?[0-9]*E[+-]?[0-9]+$/i', $data['lrn'])) {
+            $data['lrn'] = number_format((float)$data['lrn'], 0, '', '');
         }
 
-        // Step 3: Process all rows after the header
-        for ($i = $headerRowIndex + 1; $i < $rows->count(); $i++) {
-            $row = $rows[$i]->toArray();
-            $r = [];
+        // Validate LRN pattern
+        if (!preg_match('/^112828\d{6}$/', $data['lrn'])) {
+            $this->skipped++;
+            $this->errors[] = "Row {$excelRow}: Invalid LRN '{$data['lrn']}'. LRN must be 12-digits numeric starting with 112828, and should not contain any letters or other characters.";
+            return;
+        }
 
-            // Map header to value
-            foreach ($headers as $index => $key) {
-                if (!empty($key)) {
-                    $r[$key] = trim((string)($row[$index] ?? ''));
-                }
+        // Validate sex
+        $sex = strtolower($data['sex']);
+        if (!in_array($sex, ['male', 'female'])) {
+            $this->skipped++;
+            $this->errors[] = "Row {$excelRow}: Invalid Sex value '{$data['sex']}'. Use 'male' or 'female'.";
+            return;
+        }
+
+        // Check duplicates
+        if (Student::where('student_lrn', $data['lrn'])->exists()) {
+            $this->duplicates++;
+            $this->errors[] = "Row {$excelRow}: Duplicate LRN '{$data['lrn']}' — already exists.";
+            return;
+        }
+
+        // Convert DOB safely
+        $dob = null;
+        try {
+            if (is_numeric($data['dob'])) {
+                $dob = Carbon::instance(ExcelDate::excelToDateTimeObject($data['dob']))->format('Y-m-d');
+            } elseif (!empty($data['dob'])) {
+                $dob = Carbon::parse($data['dob'])->format('Y-m-d');
             }
-
-            // Flexible column aliases
-            $aliases = [
-                'lrn' => ['lrn', 'student_lrn', 'learner reference no', 'learner_ref_no'],
-                'first_name' => ['first_name', 'firstname', 'first name'],
-                'middle_name' => ['middle_name', 'middlename', 'middle name'],
-                'last_name' => ['last_name', 'lastname', 'last name'],
-                'extension_name' => ['extension_name', 'suffix', 'ext'],
-                'dob' => ['dob', 'birthdate', 'date_of_birth'],
-                'sex' => ['sex', 'gender'],
-                'place_of_birth' => ['place_of_birth', 'birthplace'],
-                'house_no' => ['house_no', 'house number'],
-                'street_name' => ['street_name', 'street'],
-                'barangay' => ['barangay', 'brgy'],
-                'municipality_city' => ['municipality_city', 'city', 'municipality'],
-                'province' => ['province', 'prov'],
-                'zip_code' => ['zip_code', 'zipcode', 'zip'],
-            ];
-
-            $data = [];
-            foreach ($aliases as $mainKey => $possibleKeys) {
-                foreach ($possibleKeys as $alias) {
-                    if (array_key_exists($alias, $r)) {
-                        $data[$mainKey] = $r[$alias];
-                        break;
-                    }
-                }
-
-                // Inside your foreach ($aliases ...) after mapping $data
-                if (!empty($data['lrn'])) {
-                    $data['lrn'] = trim((string)$data['lrn']);
-
-                    // If the CSV caused Excel to save LRN as float/scientific notation
-                    if (is_numeric($data['lrn']) && strlen($data['lrn']) < 12) {
-                        // Fix any truncated numeric
-                        $data['lrn'] = sprintf('%.0f', $data['lrn']);
-                    }
-
-                    // Convert scientific notation (e.g., 1.12828E+11)
-                    if (preg_match('/^[0-9]\.?[0-9]*E[+-]?[0-9]+$/i', $data['lrn'])) {
-                        $data['lrn'] = number_format((float)$data['lrn'], 0, '', '');
-                    }
-                }
-            }
-
-            Log::info('Raw LRN read from CSV:', ['lrn' => $data['lrn']]);
-
-            // Required field validation
-            if (empty($data['lrn']) || empty($data['first_name']) || empty($data['last_name'])) {
-                $this->skipped++;
-                Log::warning("Skipped row {$i}: missing required fields", $data);
-                continue;
-            }
-
-            // 🧹 Clean up LRN (remove hidden Excel quote or whitespace)
-            $data['lrn'] = ltrim(trim($data['lrn']), "'\"");
-
-            $sex = strtolower($data['sex'] ?? '');
-            if (!in_array($sex, ['male', 'female'])) {
-                $this->skipped++;
-                Log::warning("Skipped row {$i}: invalid sex value", $data);
-                continue;
-            }
-
-            if (Student::where('student_lrn', $data['lrn'])->exists()) {
-                $this->duplicates++;
-                Log::info("Duplicate LRN found: {$data['lrn']}");
-                continue;
-            }
-
-            // 🧠 Fix: Robust DOB conversion
+        } catch (Exception $e) {
             $dob = null;
-            if (!empty($data['dob'])) {
-                try {
-                    // Case 1: Excel numeric date serial
-                    if (is_numeric($data['dob'])) {
-                        $dob = Carbon::instance(ExcelDate::excelToDateTimeObject($data['dob']))->format('Y-m-d');
-                    }
-                    // Case 2: String formats (YYYY-MM-DD, MM/DD/YYYY, etc.)
-                    else {
-                        $dob = Carbon::parse($data['dob'])->format('Y-m-d');
-                    }
-                } catch (\Exception $e) {
-                    Log::warning("Invalid DOB format at row {$i}: {$data['dob']}");
-                    $dob = null;
-                }
-            }
-
-            // Step 4: Insert into DB
-            DB::beginTransaction();
-            try {
-                $address = StudentAddress::create([
-                    'house_no' => $data['house_no'] ?? null,
-                    'street_name' => $data['street_name'] ?? null,
-                    'barangay' => $data['barangay'] ?? null,
-                    'municipality_city' => $data['municipality_city'] ?? null,
-                    'province' => $data['province'] ?? null,
-                    'country' => 'Philippines',
-                    'pob' => $data['place_of_birth'] ?? null,
-                    'zip_code' => $data['zip_code'] ?? null,
-                ]);
-
-                Student::create([
-                    'student_lrn' => $data['lrn'],
-                    'student_fName' => $data['first_name'],
-                    'student_mName' => $data['middle_name'] ?? null,
-                    'student_lName' => $data['last_name'],
-                    'student_extName' => $data['extension_name'] ?? null,
-                    'student_dob' => $dob, // fixed
-                    'student_sex' => $sex,
-                    'qr_code' => uniqid('QR'),
-                    'address_id' => $address->id,
-                ]);
-
-                DB::commit();
-                $this->imported++;
-            } catch (\Exception $e) {
-                DB::rollBack();
-                $this->skipped++;
-                Log::error("Error importing row {$i}: " . $e->getMessage(), $data);
-            }
         }
+
+        // Transactional insert
+        DB::beginTransaction();
+        try {
+            $address = StudentAddress::create([
+                'house_no' => $data['house_no'] ?: null,
+                'street_name' => $data['street_name'] ?: null,
+                'barangay' => $data['barangay'] ?: null,
+                'municipality_city' => $data['municipality_city'] ?: null,
+                'province' => $data['province'] ?: null,
+                'country' => 'Philippines',
+                'pob' => $data['place_of_birth'] ?: null,
+                'zip_code' => $data['zip_code'] ?: null,
+            ]);
+
+            Student::create([
+                'student_lrn' => $data['lrn'],
+                'student_fName' => $data['first_name'],
+                'student_mName' => $data['middle_name'] ?: null,
+                'student_lName' => $data['last_name'],
+                'student_extName' => $data['extension_name'] ?: null,
+                'student_dob' => $dob,
+                'student_sex' => $sex,
+                'qr_code' => uniqid('QR'),
+                'address_id' => $address->id,
+            ]);
+
+            DB::commit();
+            $this->imported++;
+        } catch (Exception $e) {
+            DB::rollBack();
+            $this->skipped++;
+            $this->errors[] = "Row {$excelRow}: Database error — " . $e->getMessage();
+        }
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
+    }
+    public function batchSize(): int
+    {
+        return 500;
     }
 
     public function getCsvSettings(): array
     {
-        return [
-            'input_encoding' => 'UTF-8',
-            'delimiter' => ',',
-            'enclosure' => '"',
-            'escape_character' => '\\',
-            // This line disables auto type conversion (prevents numbers becoming floats)
-            'contiguous' => false,
-        ];
+        return ['input_encoding' => 'UTF-8', 'delimiter' => ',', 'enclosure' => '"', 'escape_character' => '\\'];
     }
 
     public function bindValue(Cell $cell, $value)
     {
-        // Force the LRN column (and any numeric-like strings) to be text
-        if ($cell->getColumn() === 'A' || preg_match('/^1[0-9]{11}$/', $value)) {
+        if ($cell->getColumn() === 'A') {
             $cell->setValueExplicit($value, DataType::TYPE_STRING);
             return true;
         }
-
         return parent::bindValue($cell, $value);
     }
 }

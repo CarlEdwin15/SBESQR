@@ -145,6 +145,8 @@ Route::get('/student-info/{id}', [StudentController::class, 'showStudentInfo'])-
 
 Route::delete('/deleteStudent/{id}', [StudentController::class, 'delete'])->name('delete.student');
 
+Route::delete('/deleteStudents/bulk', [StudentController::class, 'bulkDelete'])->name('students.bulkDelete');
+
 // View students eligible for promotion
 Route::get('/promote-students', [StudentController::class, 'showPromotionView'])->name('students.promote.view');
 

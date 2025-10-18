@@ -6,19 +6,19 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSize
+class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, ShouldAutoSize, WithCustomCsvSettings
 {
     public function array(): array
     {
         return [
             [
-                // 🧠 Prepend an apostrophe so CSV keeps the exact digits
-                "'112828123456",
+                "112828123456",
                 'Juan',
                 'Santos',
                 'Dela Cruz',
@@ -56,14 +56,28 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
         ];
     }
 
+    public function getCsvSettings(): array
+    {
+        return [
+            'delimiter' => ',',
+            'enclosure' => '"',
+            'line_ending' => "\r\n",
+            'use_bom' => true,
+            'include_separator_line' => false,
+            'excel_compatibility' => true,
+        ];
+    }
+
     public function styles(Worksheet $sheet)
     {
-        // Instructions title
-        $sheet->insertNewRowBefore(1, 2);
+        // Insert only ONE new row before the first data row
+        $sheet->insertNewRowBefore(1, 1);
+
+        // Merge A1:N1 for the title
         $sheet->mergeCells('A1:N1');
         $sheet->setCellValue('A1', 'STUDENT IMPORT TEMPLATE — Do NOT change column headers below. Fill in your data starting from Row 3.');
 
-        // Title styling
+        // Style for Title Row (Row 1)
         $sheet->getStyle('A1')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -79,7 +93,7 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
         ]);
         $sheet->getRowDimension(1)->setRowHeight(30);
 
-        // Header styling
+        // Style for Header Row (Row 2)
         $sheet->getStyle('2')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -93,7 +107,7 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFE8F5E9'],
+                'startColor' => ['argb' => 'FFE8F5E9'], // light green bg
             ],
             'borders' => [
                 'allBorders' => [
@@ -102,13 +116,14 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
                 ],
             ],
         ]);
-
         $sheet->getRowDimension(2)->setRowHeight(25);
 
-        // All data cells centered
+        // Extend style for the rest of the sheet
         $highestColumn = $sheet->getHighestColumn();
-        $highestRow = $sheet->getHighestRow();
-        $sheet->getStyle("A1:{$highestColumn}{$highestRow}")->applyFromArray([
+        $maxRows = 200; // adjust if needed
+        $styleRange = "A1:{$highestColumn}{$maxRows}";
+
+        $sheet->getStyle($styleRange)->applyFromArray([
             'font' => ['name' => 'Aptos Display', 'size' => 10],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -117,11 +132,19 @@ class StudentTemplateExport implements FromArray, WithHeadings, WithStyles, Shou
             ],
         ]);
 
-        // ✅ Force text format for LRN column
-        $sheet->getStyle('A3:A100')->getNumberFormat()->setFormatCode('@');
+        // Format certain columns
+        $sheet->getStyle("A3:A{$maxRows}")->getNumberFormat()->setFormatCode('@'); // LRN as text
+        $sheet->getStyle("F3:F{$maxRows}")->getNumberFormat()->setFormatCode('yyyy-mm-dd'); // Date format
 
-        // Date column format
-        $sheet->getStyle('F3:F100')->getNumberFormat()->setFormatCode('yyyy-mm-dd');
+        // Auto-fit columns
+        foreach (range('A', $highestColumn) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Set default row height for clean layout
+        for ($i = 3; $i <= $maxRows; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(20);
+        }
 
         return [];
     }

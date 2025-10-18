@@ -469,36 +469,79 @@ class StudentController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'excel_file' => 'required|file|mimes:xlsx,xls,csv'
+            'excel_file' => 'required|file|mimetypes:text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
 
         try {
-            $import = new \App\Imports\StudentsImport();
-            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('excel_file'));
+            $file = $request->file('excel_file');
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
 
-            $summary = "✅ Imported: {$import->imported}";
-            if ($import->duplicates > 0) $summary .= " | ⚠️ Duplicates: {$import->duplicates}";
-            if ($import->skipped > 0) $summary .= " | 🚫 Skipped: {$import->skipped}";
+            //  header validation
+            $firstRow = null;
+            for ($i = 1; $i <= 5; $i++) {
+                $row = $sheet->rangeToArray("A{$i}:N{$i}", null, true, false)[0];
+                if (in_array('lrn', array_map('strtolower', $row))) {
+                    $firstRow = $row;
+                    break;
+                }
+            }
 
-            return redirect()
-                ->route('student.management')
-                ->with('success', $summary);
+            if (!$firstRow) {
+                return back()->with('error', "❌ Missing required column: 'lrn'. Please use the provided Excel template.")->withInput();
+            }
+
+            $headers = array_map(fn($h) => strtolower(trim($h)), $firstRow);
+            $requiredHeaders = [
+                'lrn',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'extension_name',
+                'dob',
+                'sex',
+                'place_of_birth',
+                'house_no',
+                'street_name',
+                'barangay',
+                'municipality_city',
+                'province',
+                'zip_code'
+            ];
+
+            foreach ($requiredHeaders as $header) {
+                if (!in_array($header, $headers)) {
+                    return back()->with('error', "❌ Missing required column: '{$header}'. Please use the provided Excel template.")->withInput();
+                }
+            }
+
+            //  Import process
+            $import = new StudentsImport();
+            Excel::import($import, $file);
+
+            //  Summary + error messages
+            $summary = " Imported: {$import->imported}";
+            if ($import->duplicates > 0) $summary .= " | Duplicates: {$import->duplicates}";
+            // if ($import->skipped > 0) $summary .= " | Skipped: {$import->skipped}";
+
+            // Collect all detailed errors
+            $errorDetails = implode("<br>", $import->errors);
+
+            return redirect()->route('student.management')->with([
+                'success' => $summary,
+                'import_errors' => $errorDetails ?: null,
+            ]);
         } catch (\Exception $e) {
-            return redirect()
-                ->route('student.management')
-                ->with('error', 'Failed to import students. Error: ' . $e->getMessage());
+            return back()->with('error', "🚫 Import failed: {$e->getMessage()}");
         }
     }
 
-    public function downloadTemplate(Request $request)
+    public function downloadTemplate()
     {
-        $format = $request->get('format', 'excel'); // default to Excel
-
-        if ($format === 'csv') {
-            return Excel::download(new StudentTemplateExport, 'student_template.csv', \Maatwebsite\Excel\Excel::CSV);
-        }
-
-        return Excel::download(new StudentTemplateExport, 'student_template.xlsx');
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\StudentTemplateExport,
+            'student_template.xlsx'
+        );
     }
 
     public function edit(Request $request, $id)
@@ -851,6 +894,28 @@ class StudentController extends Controller
             ->with('success', "{$student->student_fName} {$student->student_lName} has been unenrolled from {$schoolYear->school_year}.");
     }
 
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+
+        if (empty($ids)) {
+            return response()->json(['message' => 'No students selected.'], 400);
+        }
+
+        $students = Student::whereIn('id', $ids)->get();
+
+        foreach ($students as $student) {
+            $student->parents()->detach();
+            $student->class()->detach();
+            $student->classStudents()->delete();
+            $student->payments()->delete();
+            $student->address()->delete();
+            $student->delete();
+        }
+
+        return response()->json(['message' => 'Selected students deleted successfully.']);
+    }
+
     public function showPromotionView(Request $request)
     {
         $currentSchoolYear = $this->getDefaultSchoolYear();
@@ -1046,30 +1111,5 @@ class StudentController extends Controller
         $cutoff = now()->copy()->setMonth(6)->setDay(1);
         $start = $now->lt($cutoff) ? $year - 1 : $year;
         return $start . '-' . ($start + 1);
-    }
-
-    private function normalizePhone($phone)
-    {
-        if (!$phone) return null;
-
-        // Remove spaces, dashes, parentheses
-        $phone = preg_replace('/\D+/', '', $phone);
-
-        // Convert "09XXXXXXXXX" → "+639XXXXXXXXX"
-        if (str_starts_with($phone, '09')) {
-            return '+63' . substr($phone, 1);
-        }
-
-        // If already starts with "639", prepend "+"
-        if (str_starts_with($phone, '639')) {
-            return '+' . $phone;
-        }
-
-        // If already correct E.164
-        if (str_starts_with($phone, '+639')) {
-            return $phone;
-        }
-
-        return $phone; // fallback (just in case)
     }
 }
