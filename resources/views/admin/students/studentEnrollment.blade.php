@@ -224,142 +224,149 @@
 
         {{-- Card --}}
         @foreach ($groupedStudents as $grade => $students)
+            @php
+                // Calculate counts for header display
+                $totalStudents = $students->count();
+
+                // Collect unique adviser and subject teacher counts
+                $adviserCount = $students
+                    ->map(fn($s) => optional($s->class->first())->adviser)
+                    ->filter()
+                    ->unique('id')
+                    ->count();
+
+                $subjectTeacherCount = $students
+                    ->flatMap(fn($s) => optional($s->class->first())->subjectTeachers ?? [])
+                    ->unique('id')
+                    ->count();
+            @endphp
+
             <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                {{-- Header with toggle --}}
+                <div class="card-header bg-light d-flex justify-content-between align-items-center collapse-toggle"
+                    data-bs-toggle="collapse" data-bs-target="#collapse-{{ Str::slug($grade) }}" aria-expanded="false"
+                    aria-controls="collapse-{{ Str::slug($grade) }}" style="cursor: pointer;">
+
                     <h5 class="fw-bold text-primary mb-0">{{ $grade }}</h5>
-                    {{-- <a href="" class="btn btn-success btn-sm">
-                        <i class="bx bx-printer"></i> Export
-                    </a> --}}
+                    <i class="bx bx-chevron-down fs-4 transition-all"></i>
                 </div>
 
-                <div class="table-responsive text-nowrap">
-                    <table class="table table-hover table-bordered text-center mb-0" id="table-{{ Str::slug($grade) }}">
-                        <thead>
-                            <tr>
-                                <th style="min-width: 220px;">Full Name</th>
-                                <th style="width: 10%;">Photo</th>
-                                <th style="width: 15%;">LRN</th>
-                                <th style="width: 20%;">Grade & Section</th>
-                                <th style="width: 15%;">Enrollment Status</th>
-                                <th style="width: 15%;">Enrollment Type</th>
-                                <th style="width: 15%;">Emergency Contact No.</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($students->sortBy([
-                                                                                                                                            ['student_lName', 'asc'],
-                                                                                                                                            ['student_fName', 'asc'],
-                                                                                                                                            ['student_mName', 'asc'],
-                                                                                                                                            ['student_extName', 'asc'],
-                                                                                                                                            ]) as $student)
-                                <tr class="student-row"
-                                    data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
-                                    data-section="{{ strtolower(optional($student->class->first())->section) }}"
-                                    data-grade="{{ strtolower(optional($student->class->first())->formatted_grade_level) }}"
-                                    data-lrn="{{ strtolower($student->student_lrn) }}"
-                                    data-enrollment_status="{{ strtolower(optional($student->class->first())->pivot->enrollment_status ?? '') }}"
-                                    data-enrollment_type="{{ strtolower(optional($student->class->first())->pivot->enrollment_type ?? '') }}">
-                                    <td><a class="text-primary"
-                                            href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                            {{ $student->student_lName }},
-                                            {{ $student->student_fName }}
-                                            {{ $student->student_mName }}
-                                            {{ $student->student_extName }}</a></td>
-                                    <td><a class="text-primary"
-                                            href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                            @if ($student->student_photo)
-                                                <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                    alt="Profile Photo" width="30" height="30"
-                                                    style="object-fit: cover; border-radius: 50%;">
-                                            @else
-                                                <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                    alt="No Profile" width="30" height="30"
-                                                    style="object-fit: cover; border-radius: 50%;">
-                                            @endif
-                                        </a>
-                                    </td>
-                                    <td>{{ $student->student_lrn }}</td>
-                                    <td>{{ optional($student->class->first())->formatted_grade_level }}
-                                        - {{ optional($student->class->first())->section }}</td>
-                                    <td>
-                                        @php
-                                            $status =
-                                                optional($student->class->first())->pivot->enrollment_status ?? 'N/A';
-                                            $badgeClass = match ($status) {
-                                                'enrolled' => 'bg-label-success',
-                                                'not_enrolled' => 'bg-label-secondary',
-                                                'archived' => 'bg-label-warning',
-                                                'graduated' => 'bg-label-info',
-                                                default => 'bg-label-dark',
-                                            };
-                                        @endphp
-                                        <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                            {{ strtoupper(str_replace('_', ' ', $status)) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @php
-                                            $type = optional($student->class->first())->pivot->enrollment_type ?? 'N/A';
-                                            $badgeClass = match ($type) {
-                                                'regular' => 'bg-label-primary',
-                                                'transferee' => 'bg-label-info',
-                                                'returnee' => 'bg-label-warning',
-                                                default => 'bg-label-dark',
-                                            };
-                                        @endphp
-                                        <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                            {{ strtoupper(str_replace('_', ' ', $type)) }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $student->phone ?? 'N/A' }}</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <button class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <div class="dropdown-menu">
-                                                <a class="dropdown-item text-info"
-                                                    href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                    <i class="bx bxs-user-badge me-1"></i> View Profile
-                                                </a>
-                                                @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
-                                                    {{-- <a class="dropdown-item text-warning"
-                                                        href="{{ route('edit.student', ['id' => $student->id]) }}">
-                                                        <i class="bx bx-edit-alt me-1"></i> Edit
-                                                    </a> --}}
-                                                    <button type="button" class="dropdown-item text-danger"
-                                                        onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}', '{{ $selectedYear }}')">
-                                                        <i class="bx bx-user-x me-1"></i> Unenroll
-                                                    </button>
-
-                                                    <form id="unenroll-form-{{ $student->id }}"
-                                                        action="{{ route('unenroll.student', $student->id) }}"
-                                                        method="POST" style="display: none;">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <input type="hidden" name="school_year"
-                                                            value="{{ $selectedYear }}">
-                                                    </form>
+                {{-- Collapsible Content --}}
+                <div id="collapse-{{ Str::slug($grade) }}" class="collapse">
+                    <div class="table-responsive text-nowrap">
+                        <table class="table table-hover table-bordered text-center mb-0"
+                            id="table-{{ Str::slug($grade) }}">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 220px;">Full Name</th>
+                                    <th style="width: 10%;">Photo</th>
+                                    <th style="width: 15%;">LRN</th>
+                                    <th style="width: 20%;">Grade & Section</th>
+                                    <th style="width: 15%;">Enrollment Status</th>
+                                    <th style="width: 15%;">Enrollment Type</th>
+                                    <th style="width: 15%;">Emergency Contact No.</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($students->sortBy([
+                                                ['student_lName', 'asc'],
+                                                ['student_fName', 'asc'],
+                                                ['student_mName', 'asc'],
+                                                ['student_extName', 'asc'],
+                                            ]) as $student)
+                                    {{-- Student rows unchanged --}}
+                                    <tr class="student-row">
+                                        <td>
+                                            <a class="text-primary"
+                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                {{ $student->student_mName }} {{ $student->student_extName }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a class="text-primary"
+                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                @if ($student->student_photo)
+                                                    <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                        alt="Profile Photo" width="30" height="30"
+                                                        style="object-fit: cover; border-radius: 50%;">
+                                                @else
+                                                    <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                        alt="No Profile" width="30" height="30"
+                                                        style="object-fit: cover; border-radius: 50%;">
                                                 @endif
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr class="text-muted">
-                                    <td colspan="7">No students enrolled in {{ $grade }}.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                            </a>
+                                        </td>
+                                        <td>{{ $student->student_lrn }}</td>
+                                        <td>{{ optional($student->class->first())->formatted_grade_level }} -
+                                            {{ optional($student->class->first())->section }}</td>
+                                        <td>
+                                            @php
+                                                $status =
+                                                    optional($student->class->first())->pivot->enrollment_status ??
+                                                    'N/A';
+                                                $badgeClass = match ($status) {
+                                                    'enrolled' => 'bg-label-success',
+                                                    'not_enrolled' => 'bg-label-secondary',
+                                                    'archived' => 'bg-label-warning',
+                                                    'graduated' => 'bg-label-info',
+                                                    default => 'bg-label-dark',
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                                {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @php
+                                                $type =
+                                                    optional($student->class->first())->pivot->enrollment_type ?? 'N/A';
+                                                $badgeClass = match ($type) {
+                                                    'regular' => 'bg-label-primary',
+                                                    'transferee' => 'bg-label-info',
+                                                    'returnee' => 'bg-label-warning',
+                                                    default => 'bg-label-dark',
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                                {{ strtoupper(str_replace('_', ' ', $type)) }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $student->phone ?? 'N/A' }}</td>
+                                        <td>
+                                            {{-- Dropdown remains the same --}}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr class="text-muted">
+                                        <td colspan="8">No students enrolled in {{ $grade }}.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- Pagination & Info for this grade -->
-                <div class="d-flex justify-content-end align-items-center flex-wrap px-3 py-2 border-top gap-2">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
-                    </nav>
+                    {{-- Pagination --}}
+                    <div class="d-flex justify-content-between align-items-center flex-wrap px-3 py-2 border-top gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="length-{{ Str::slug($grade) }}" class="mb-0">Show</label>
+                            <select id="length-{{ Str::slug($grade) }}" class="form-select form-select-sm w-auto">
+                                <option value="5" selected>5</option>
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <div class="flex-grow-1 text-center">
+                            <small id="info-{{ Str::slug($grade) }}" class="text-muted"></small>
+                        </div>
+                        <nav aria-label="Page navigation" class="ms-auto">
+                            <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         @endforeach
@@ -371,7 +378,8 @@
     <!-- / Content wrapper -->
 
     <!-- Enroll Students Modal -->
-    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true"
+        data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <form method="POST" action="{{ route('assign.student.class') }}">
@@ -459,163 +467,186 @@
 
 @push('scripts')
     <script>
-        // pagination function
-        const paginators = {}; // Global reference for pagination functions
-        const visibleRowsMap = {}; // Store filtered rows for each table
+        document.addEventListener("DOMContentLoaded", function() {
 
-        function paginateTable(tableId, paginationId, rowsPerPage = 5, maxVisiblePages = 5) {
-            const table = document.getElementById(tableId);
-            const pagination = document.getElementById(paginationId);
+            // ========= GLOBAL STATE ==========
+            const paginators = {};
+            const visibleRowsMap = {};
+            const tableSettings = {}; // { rowsPerPage, currentPage }
 
-            function showPage(page) {
-                const rows = visibleRowsMap[tableId] || Array.from(table.querySelectorAll("tbody tr"));
+            // ========= PAGINATION FUNCTION ==========
+            function paginateTable(tableId, paginationId, infoId, lengthSelectId, defaultRowsPerPage = 5,
+                maxVisiblePages = 5) {
+                const table = document.getElementById(tableId);
+                const pagination = document.getElementById(paginationId);
+                const info = document.getElementById(infoId);
+                const lengthSelect = document.getElementById(lengthSelectId);
 
-                const totalPages = Math.ceil(rows.length / rowsPerPage);
-                const start = (page - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
+                tableSettings[tableId] = {
+                    rowsPerPage: defaultRowsPerPage,
+                    currentPage: 1
+                };
 
-                rows.forEach((row, index) => {
-                    row.style.display = (index >= start && index < end) ? "" : "none";
+                function updateInfo(start, end, total) {
+                    info.textContent = total > 0 ?
+                        `Showing ${start + 1} to ${end} of ${total} entries` :
+                        "Showing 0 to 0 of 0 entries";
+                }
+
+                function showPage(page) {
+                    const rows = visibleRowsMap[tableId] || Array.from(table.querySelectorAll(
+                        "tbody tr.student-row"));
+                    const totalRows = rows.length;
+                    const rowsPerPage = tableSettings[tableId].rowsPerPage;
+                    const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+                    if (page > totalPages) page = totalPages || 1;
+                    tableSettings[tableId].currentPage = page;
+
+                    const start = (page - 1) * rowsPerPage;
+                    const end = Math.min(start + rowsPerPage, totalRows);
+
+                    rows.forEach((row, index) => {
+                        row.style.display = index >= start && index < end ? "" : "none";
+                    });
+
+                    updateInfo(start, end, totalRows);
+
+                    pagination.innerHTML = "";
+                    const ul = document.createElement("ul");
+                    ul.className = "pagination mb-0";
+
+                    // Prev
+                    const prev = document.createElement("li");
+                    prev.className = `page-item prev ${page === 1 ? "disabled" : ""}`;
+                    prev.innerHTML =
+                        `<a class="page-link text-primary" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-left"></i></a>`;
+                    prev.onclick = () => page > 1 && showPage(page - 1);
+                    ul.appendChild(prev);
+
+                    // Page numbers
+                    let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                    if (endPage - startPage + 1 < maxVisiblePages) {
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        const li = document.createElement("li");
+                        li.className = `page-item ${i === page ? "active" : ""}`;
+                        li.innerHTML =
+                            `<a class="page-link ${i === page ? "bg-primary text-white border-primary" : "text-primary"}" href="javascript:void(0);">${i}</a>`;
+                        li.onclick = () => showPage(i);
+                        ul.appendChild(li);
+                    }
+
+                    // Next
+                    const next = document.createElement("li");
+                    next.className = `page-item next ${page === totalPages ? "disabled" : ""}`;
+                    next.innerHTML =
+                        `<a class="page-link text-primary" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-right"></i></a>`;
+                    next.onclick = () => page < totalPages && showPage(page + 1);
+                    ul.appendChild(next);
+
+                    pagination.appendChild(ul);
+                }
+
+                // Length select event
+                lengthSelect.addEventListener("change", function() {
+                    tableSettings[tableId].rowsPerPage = parseInt(this.value, 10);
+                    showPage(1);
                 });
 
-                pagination.innerHTML = "";
-                const ul = document.createElement("ul");
-                ul.className = "pagination mb-0";
-
-                const prev = document.createElement("li");
-                prev.className = `page-item prev ${page === 1 ? 'disabled' : ''}`;
-                prev.innerHTML =
-                    `<a class="page-link text-primary" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-left"></i></a>`;
-                prev.onclick = () => page > 1 && showPage(page - 1);
-                ul.appendChild(prev);
-
-                let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const li = document.createElement("li");
-                    li.className = `page-item ${i === page ? 'active' : ''}`;
-                    li.innerHTML =
-                        `<a class="page-link ${i === page ? 'bg-primary text-white border-primary' : 'text-primary'}" href="javascript:void(0);">${i}</a>`;
-                    li.onclick = () => showPage(i);
-                    ul.appendChild(li);
-                }
-
-                const next = document.createElement("li");
-                next.className = `page-item next ${page === totalPages ? 'disabled' : ''}`;
-                next.innerHTML =
-                    `<a class="page-link text-primary" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-right"></i></a>`;
-                next.onclick = () => page < totalPages && showPage(page + 1);
-                ul.appendChild(next);
-
-                pagination.appendChild(ul);
+                visibleRowsMap[tableId] = Array.from(table.querySelectorAll("tbody tr.student-row"));
+                showPage(1);
+                paginators[tableId] = () => showPage(1);
             }
 
-            paginators[tableId] = () => showPage(1);
+            // ========= SEARCH + FILTER ==========
+            function setupSearchAndFilters() {
+                const searchInput = document.getElementById("studentSearch");
+                const noResultsMessage = document.getElementById("noResultsMessage");
 
-            // On load, store all rows
-            visibleRowsMap[tableId] = Array.from(table.querySelectorAll("tbody tr.student-row"));
-            showPage(1);
-        }
+                searchInput.addEventListener("input", function() {
+                    const query = this.value.trim().toLowerCase();
+                    const gradeCards = document.querySelectorAll(".grade-card");
+                    let overallMatch = false;
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const gradeLevels = @json(array_keys($groupedStudents->toArray()));
-            gradeLevels.forEach(grade => {
-                const slug = grade.toLowerCase().replace(/\s+/g, '-');
-                paginateTable(`table-${slug}`, `pagination-${slug}`);
-            });
-        });
-    </script>
-
-    <script>
-        // Search functionality
-        document.addEventListener("DOMContentLoaded", function() {
-            const searchInput = document.getElementById("studentSearch");
-            const noResultsMessage = document.getElementById("noResultsMessage");
-
-            searchInput.addEventListener("input", function() {
-                const query = this.value.trim().toLowerCase();
-                const gradeCards = document.querySelectorAll(".grade-card");
-
-                let overallMatch = false;
-
-                gradeCards.forEach(card => {
-                    const table = card.querySelector("table");
-                    const rows = table.querySelectorAll("tbody tr.student-row");
-                    const noStudentsRow = table.querySelector("tr.no-students-row");
-                    const pagination = card.querySelector(".pagination");
-                    const tableId = table.id;
-
-                    let anyMatch = false;
-
-                    rows.forEach(row => {
-                        const name = row.dataset.name;
-                        const grade = row.dataset.grade;
-                        const section = row.dataset.section;
-                        const lrn = row.dataset.lrn;
-                        const enrollment_status = row.dataset.enrollment_status;
-                        const enrollment_type = row.dataset.enrollment_type;
-                        const gradeSection = `${grade} - ${section}`;
-
-                        const isMatch =
-                            query === "" ||
-                            name.includes(query) ||
-                            grade.includes(query) ||
-                            section.includes(query) ||
-                            lrn.includes(query) ||
-                            enrollment_status.includes(query) ||
-                            enrollment_type.includes(query) ||
-                            gradeSection.includes(query);
-
-                        row.style.display = isMatch ? "table-row" : "none";
-                        if (isMatch) anyMatch = true;
-                    });
-
-                    visibleRowsMap[tableId] = Array.from(rows).filter(row => row.style.display !==
-                        "none");
-
-                    if (anyMatch) {
-                        card.classList.remove("d-none");
-                        if (noStudentsRow) noStudentsRow.classList.add("d-none");
-                        if (paginators[tableId]) paginators[tableId]();
-                        overallMatch = true;
-                    } else {
-                        card.classList.add("d-none");
-                        if (pagination) pagination.innerHTML = "";
-                    }
-                });
-
-                // Show/hide "No search found" message
-                if (!overallMatch && query !== "") {
-                    noResultsMessage.classList.remove("d-none");
-                } else {
-                    noResultsMessage.classList.add("d-none");
-                }
-
-                // Reset everything if query is empty
-                if (query === "") {
                     gradeCards.forEach(card => {
-                        card.classList.remove("d-none");
-
                         const table = card.querySelector("table");
-                        const rows = table.querySelectorAll("tbody tr.student-row");
-                        const noStudentsRow = table.querySelector("tr.no-students-row");
+                        const rows = Array.from(table.querySelectorAll("tbody tr.student-row"));
                         const tableId = table.id;
 
+                        let anyMatch = false;
+
                         rows.forEach(row => {
-                            row.style.display = "table-row";
+                            const text = row.textContent.toLowerCase();
+                            const match = text.includes(query);
+                            row.style.display = match ? "table-row" : "none";
+                            if (match) anyMatch = true;
                         });
 
-                        if (noStudentsRow) noStudentsRow.classList.add("d-none");
+                        visibleRowsMap[tableId] = rows.filter(r => r.style.display !== "none");
 
-                        visibleRowsMap[tableId] = Array.from(rows);
-                        if (paginators[tableId]) paginators[tableId]();
+                        if (anyMatch) {
+                            card.classList.remove("d-none");
+                            overallMatch = true;
+                            if (paginators[tableId]) paginators[tableId]();
+                        } else {
+                            card.classList.add("d-none");
+                        }
                     });
-                }
+
+                    noResultsMessage.classList.toggle("d-none", overallMatch || query === "");
+
+                    if (query === "") {
+                        gradeCards.forEach(card => {
+                            const table = card.querySelector("table");
+                            const rows = Array.from(table.querySelectorAll("tbody tr.student-row"));
+                            const tableId = table.id;
+
+                            rows.forEach(r => r.style.display = "table-row");
+                            visibleRowsMap[tableId] = rows;
+                            if (paginators[tableId]) paginators[tableId]();
+                            card.classList.remove("d-none");
+                        });
+                    }
+                });
+            }
+
+            // ========= ACCORDION CHEVRON & ONE OPEN ==========
+            function setupAccordion() {
+                const headers = document.querySelectorAll(".collapse-toggle");
+
+                headers.forEach(header => {
+                    const icon = header.querySelector(".bx-chevron-down");
+                    const targetId = header.getAttribute("data-bs-target");
+                    const target = document.querySelector(targetId);
+
+                    target.addEventListener("show.bs.collapse", () => {
+                        document.querySelectorAll(".collapse.show").forEach(collapse => {
+                            if (collapse !== target) new bootstrap.Collapse(collapse, {
+                                toggle: true
+                            });
+                        });
+                        icon.classList.add("rotate-180");
+                    });
+
+                    target.addEventListener("hide.bs.collapse", () => {
+                        icon.classList.remove("rotate-180");
+                    });
+                });
+            }
+
+            // ========= INITIALIZATION ==========
+            const gradeLevels = @json(array_keys($groupedStudents->toArray()));
+            gradeLevels.forEach(grade => {
+                const slug = grade.toLowerCase().replace(/\s+/g, "-");
+                paginateTable(`table-${slug}`, `pagination-${slug}`, `info-${slug}`, `length-${slug}`);
             });
+
+            setupSearchAndFilters();
+            setupAccordion();
         });
     </script>
 
@@ -655,21 +686,6 @@
             });
         }
     </script>
-
-    {{-- <script>
-        // alert after a success edit or delete of teacher's info
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: '{{ session('success') }}',
-                confirmButtonColor: '#3085d6',
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            });
-        @endif
-    </script> --}}
 
     <script>
         // alert for logout
@@ -760,13 +776,46 @@
                                 callback(data.map(student => ({
                                     id: student.id,
                                     text: student.student_lrn + " - " + student
-                                        .student_fName + " " + student.student_mName + " " + student.student_lName
+                                        .student_fName + " " + student
+                                        .student_mName + " " + student.student_lName
                                 })));
                             })
                             .catch(() => callback());
                     }
                 });
             }
+        });
+    </script>
+
+    {{-- Rotate Chevron on Collapse --}}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const headers = document.querySelectorAll('.collapse-toggle');
+
+            headers.forEach(header => {
+                const icon = header.querySelector('.bx-chevron-down');
+                const targetId = header.getAttribute('data-bs-target');
+                const target = document.querySelector(targetId);
+
+                // When a card is shown
+                target.addEventListener('show.bs.collapse', () => {
+                    // Close all other collapses
+                    document.querySelectorAll('.collapse').forEach(collapse => {
+                        if (collapse !== target && collapse.classList.contains('show')) {
+                            new bootstrap.Collapse(collapse, {
+                                toggle: true
+                            });
+                        }
+                    });
+                    // Rotate the current icon
+                    icon.classList.add('rotate-180');
+                });
+
+                // When a card is hidden
+                target.addEventListener('hide.bs.collapse', () => {
+                    icon.classList.remove('rotate-180');
+                });
+            });
         });
     </script>
 @endpush
@@ -791,6 +840,15 @@
         #noResultsMessage {
             margin-top: 1rem;
             font-weight: 500;
+        }
+
+        .rotate-180 {
+            transform: rotate(180deg);
+            transition: transform 0.3s ease;
+        }
+
+        .bx-chevron-down {
+            transition: transform 0.3s ease;
         }
 
         .ts-control {

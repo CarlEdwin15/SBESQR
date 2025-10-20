@@ -181,7 +181,9 @@
                             </div>
                             <div>
                                 <h5 class="fw-semibold mb-2">Students</h5>
-                                <div class="display-6 fw-bold text-primary">{{ $studentCount }}</div>
+                                <div class="fw-bold text-primary">
+                                    {{ $studentCount > 0 ? $studentCount : 'No Students Enrolled' }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -190,8 +192,7 @@
 
                 <!-- Attendance Today -->
                 <div class="col-md-4">
-                    <a href=""
-                        class="card card-hover border-0 shadow-sm h-100 bg-light text-decoration-none text-dark">
+                    <div class="card card-hover border-0 shadow-sm h-100 bg-light text-decoration-none text-dark">
                         <div class="card-body d-flex align-items-center">
                             <div class="me-3 flex-shrink-0">
                                 @if ($class)
@@ -201,10 +202,10 @@
                             </div>
                             <div>
                                 <h5 class="fw-semibold mb-2">Attendance Today</h5>
-                                <div class="display-6 fw-bold text-success">{{ $attendanceToday }}%</div>
+                                <div class="display-6 fw-bold text-success text-center">{{ $attendanceToday }}%</div>
                             </div>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <!-- /Attendance Today -->
 
@@ -229,7 +230,7 @@
                             <div>
                                 <h5 class="fw-semibold mb-2">Adviser</h5>
                                 <div class="fw-bold text-primary">
-                                    {{ $class->adviser->firstName ?? 'N/A' }}
+                                    {{ $class->adviser->firstName ?? 'No Adviser Assigned' }}
                                     {{ $class->adviser->lastName ?? '' }}
                                 </div>
                             </div>
@@ -263,10 +264,10 @@
                     </a>
                 </div>
                 <div class="col-md-3">
-                    <a href=""
+                    <a href="{{ route('classes.subjects', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                         class="card card-hover border-0 shadow-sm text-center py-4 bg-warning text-white h-100">
-                        <i class="bx bx-message-check fs-2 mb-4"></i>
-                        <div class="fw-semibold">SMS Logs</div>
+                        <i class="bx bx-book fs-2 mb-4"></i>
+                        <div class="fw-semibold">Subjects and Grades</div>
                     </a>
                 </div>
             </div>

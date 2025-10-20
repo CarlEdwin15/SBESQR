@@ -396,6 +396,16 @@
         });
     </script>
 
+    @if (!empty($announcementId))
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const announcementId = {{ $announcementId }};
+                // 👇 Call your existing JS function to open the modal
+                openAnnouncementModal(announcementId);
+            });
+        </script>
+    @endif
+
     {{-- <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script> --}}
 
     <!-- Additional scripts can be stacked from views -->

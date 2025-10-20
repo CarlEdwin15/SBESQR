@@ -125,7 +125,7 @@
             <li class="menu-item active">
                 <a href="{{ route('account.settings') }}" class="menu-link">
                     <i class="menu-icon bx bx-cog"></i>
-                    <div>Account Settings</div>
+                    <div class="text-warning">Account Settings</div>
                 </a>
             </li>
 
@@ -147,74 +147,15 @@
 
     <!-- Content wrapper -->
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
+        <h4 class="fw-bold py-3 mb-3 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
             </span> Account Settings
         </h4>
 
-        <hr class="my-4" />
-
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        <div class="d-flex justify-content-start mb-3 gap-2">
-            <button type="button" class="btn btn-danger d-flex align-items-center gap-1" onclick="handleCancel()">
-                <i class="bx bx-arrow-back"></i>
-                <span class="d-sm-block">Back</span>
-                {{-- {{ url()->previous() }} --}}
-            </button>
-            <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="saveChangesBtn">
-                <i class="bx bx-save"></i>
-                <span class="d-sm-block">Save</span>
-            </button>
-        </div>
-
-        <!-- User's Details -->
-        <form action="{{ route('update.admin', ['id' => auth()->user()->id]) }}" method="POST"
-            enctype="multipart/form-data">
-            @csrf
-
-            <div class="mb-3">
-                <label for="profile_photo" class="form-label">Profile Photo</label><br>
-                <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile Photo" width="100">
-                <input type="file" name="profile_photo" class="form-control mt-2" accept="image/*">
-            </div>
-
-            <div class="mb-3">
-                <label for="firstName" class="form-label">First Name</label>
-                <input type="text" name="firstName" class="form-control" value="{{ auth()->user()->firstName }}"
-                    required>
-            </div>
-
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" name="email" class="form-control" value="{{ auth()->user()->email }}" required>
-            </div>
-
-            <hr>
-
-            <div class="mb-3">
-                <label for="current_password" class="form-label">Current Password</label>
-                <input type="password" name="current_password" class="form-control">
-            </div>
-
-            <div class="mb-3">
-                <label for="new_password" class="form-label">New Password</label>
-                <input type="password" name="new_password" class="form-control">
-            </div>
-
-            <div class="mb-3">
-                <label for="confirm_password" class="form-label">Confirm Password</label>
-                <input type="password" name="confirm_password" class="form-control">
-            </div>
-
-            <button type="submit" class="btn btn-primary">Update Settings</button>
-        </form>
-        <!-- /User's Details -->
+        @include('partials.account_settings', [
+            'user' => $user,
+            'updateRoute' => 'admin.update', // We'll define this route next
+        ])
 
     </div>
     <!-- / Content wrapper -->

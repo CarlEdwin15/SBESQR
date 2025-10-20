@@ -146,11 +146,11 @@
     </aside>
     <!-- / Menu -->
 
-    @if (session('error'))
+    {{-- @if (session('error'))
         <script>
             alert("{{ session('error') }}");
         </script>
-    @endif
+    @endif --}}
 
     <!-- Content wrapper -->
     <div class="content-wrapper">
@@ -558,7 +558,7 @@
                             <input type="file" name="excel_file" id="excel_file" class="form-control" required
                                 accept=".xlsx,.xls,.csv">
                             <small class="text-muted">
-                                Allowed formats: <strong>.xlsx, .xls, .csv</strong>
+                                Allowed formats: <strong>.xlsx, .xls</strong>
                             </small>
                         </div>
 
@@ -1104,6 +1104,7 @@
         });
     </script>
 
+    <!-- Import Students via Excel Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('#importExcelModal form');
@@ -1112,28 +1113,65 @@
             form.addEventListener('submit', function(e) {
                 const file = fileInput.files[0];
                 if (!file) {
-                    alert('⚠️ Please select a file before importing.');
+                    Swal.fire({
+                        title: "No File Selected",
+                        text: "⚠️ Please select a file before importing.",
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
                     e.preventDefault();
                     return;
                 }
 
-                // Allowed formats
                 const allowedExtensions = ['xlsx', 'xls', 'csv'];
                 const ext = file.name.split('.').pop().toLowerCase();
                 if (!allowedExtensions.includes(ext)) {
-                    alert('❌ Invalid file type. Please upload a .xlsx, .xls, or .csv file.');
+                    Swal.fire({
+                        title: "Invalid File Type",
+                        text: "❌ Please upload a .xlsx, .xls, or .csv file.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
                     e.preventDefault();
                     return;
                 }
 
-                // File size limit (5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('⚠️ File is too large. Please upload a file smaller than 5MB.');
+                    Swal.fire({
+                        title: "File Too Large",
+                        text: "⚠️ Please upload a file smaller than 5MB.",
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
                     e.preventDefault();
                     return;
                 }
 
-                // Optional quick feedback
+                // ✅ Show SweetAlert loading while submitting
+                Swal.fire({
+                    title: "Uploading...",
+                    text: "Please wait while we validate your Excel file.",
+                    icon: "info",
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                });
+
+                // Disable button + change text
                 const btn = form.querySelector('button[type="submit"]');
                 btn.disabled = true;
                 btn.innerHTML = '<i class="bx bx-loader bx-spin me-1"></i> Validating...';
@@ -1141,18 +1179,41 @@
         });
     </script>
 
+    <!-- Import Result Alert Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             @if (session('success'))
+                const importedCount = parseInt("{{ session('imported_count') ?? 0 }}");
+                const importStatus = "{{ session('import_status') ?? '' }}";
+                const hasErrors = `{!! session('import_errors') !!}`.trim().length > 0;
+                let title = "Import Complete";
+                let icon = "success";
+
+                // 🔹 Case 1: No rows imported → total failure
+                if (importedCount === 0 || importStatus === "error") {
+                    title = "Import Error";
+                    icon = "error";
+                }
+                // 🔹 Case 2: Some imported but some with validation errors
+                else if (importedCount > 0 && hasErrors) {
+                    title = "Import Incomplete";
+                    icon = "warning";
+                }
+                // 🔹 Case 3: Imported successfully, only duplicates (non-error)
+                else {
+                    title = "Import Complete";
+                    icon = "success";
+                }
+
                 Swal.fire({
-                    title: "Import Complete",
+                    title: title,
                     html: `{!! session('success') !!}` +
                         `{!! session('import_errors')
                             ? '<hr><div style="text-align:left;max-height:250px;overflow-y:auto;font-size:14px;color:#d33;"><b>Error Details:</b><br>' .
                                 session('import_errors') .
                                 '</div>'
                             : '' !!}`,
-                    icon: "{{ session('import_errors') ? 'warning' : 'success' }}",
+                    icon: icon,
                     width: 600,
                     customClass: {
                         container: 'my-swal-container'

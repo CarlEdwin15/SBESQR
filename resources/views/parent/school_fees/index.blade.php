@@ -24,14 +24,6 @@
                 </a>
             </li>
 
-            {{-- My Children sidebar --}}
-            <li class="menu-item">
-                <a href="{{ route('parent.children.index') }}" class="menu-link bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-child text-light"></i>
-                    <div class="text-light">My Children</div>
-                </a>
-            </li>
-
             {{-- School Fees sidebar --}}
             <li class="menu-item active">
                 <a href="{{ route('parent.school-fees.index') }}" class="menu-link">
@@ -40,17 +32,9 @@
                 </a>
             </li>
 
-            {{-- Announcements sidebar --}}
-            <li class="menu-item">
-                <a href="{{ route('parent.announcements.index') }}" class="menu-link bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
-                    <div class="text-light">Announcements</div>
-                </a>
-            </li>
-
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('parent.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>

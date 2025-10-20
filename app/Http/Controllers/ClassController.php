@@ -96,7 +96,7 @@ class ClassController extends Controller
             ->wherePivot('role', 'adviser')
             ->first();
 
-        // ✅ Attendance Today (same as myClass)
+        // Attendance Today (same as myClass)
         $today = now()->format('Y-m-d');
         $dayName = now()->format('l');
 
@@ -130,22 +130,126 @@ class ClassController extends Controller
     // Master list of students in the class
     public function masterList(Request $request, $grade_level, $section)
     {
+        // Determine current + next school years (same logic as teacher side)
+        $now = now();
+        $year = $now->year;
+        $cutoff = $now->copy()->setMonth(6)->setDay(1);
+        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
+
+        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
+        $nextSchoolYear = ($currentYear + 1) . '-' . ($currentYear + 2);
+
+        // Fetch all available school years
+        $savedYears = SchoolYear::pluck('school_year')->toArray();
+        $savedStartYears = array_map(fn($sy) => (int)substr($sy, 0, 4), $savedYears);
+        $minYear = !empty($savedStartYears) ? min($savedStartYears) : $currentYear;
+
+        $schoolYears = [];
+        for ($y = $minYear; $y <= $currentYear; $y++) {
+            $schoolYears[] = $y . '-' . ($y + 1);
+        }
+
+        if (!in_array($currentSchoolYear, $schoolYears)) {
+            $schoolYears[] = $currentSchoolYear;
+        }
+
+        $schoolYears[] = $nextSchoolYear;
+        usort($schoolYears, fn($a, $b) => intval(substr($a, 0, 4)) <=> intval(substr($b, 0, 4)));
+
+        // Selected school year
+        $selectedYear = $request->query('school_year', $currentSchoolYear);
+
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+        $schoolYearId = $schoolYear->id;
+
+        // Get class info
+        $class = $this->getClass($grade_level, $section);
+
+        // Students via pivot (identical to teacher)
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->get();
+
+        // Adviser
+        $class->adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->wherePivot('role', 'adviser')
+            ->first();
+
+        return view('admin.classes.masterList.index', compact(
+            'class',
+            'students',
+            'schoolYears',
+            'selectedYear',
+            'schoolYearId',
+            'currentYear'
+        ));
+    }
+
+    public function subjects(Request $request, $grade_level, $section)
+    {
         $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
 
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
         $class = $this->getClass($grade_level, $section);
-
-        $students = $class->students()
-            ->where('school_year_id', $schoolYear->id)
-            ->orderBy('student_lName')
-            ->get();
 
         $class->adviser = $class->teachers()
             ->wherePivot('school_year_id', $schoolYear->id)
             ->wherePivotIn('role', ['adviser'])
             ->first();
 
-        return view('admin.classes.masterList.index', compact('class', 'students', 'selectedYear'));
+        // Fetch class subjects for this class and school year
+        $classSubjects = $class->classSubjects()
+            ->where('school_year_id', $schoolYear->id)
+            ->with(['subject', 'teacher'])
+            ->get();
+
+        return view('admin.classes.subjects_grades.subjects', compact(
+            'class',
+            'selectedYear',
+            'classSubjects'
+        ));
+    }
+
+    public function grades(Request $request, $grade_level, $section, $subject)
+    {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+
+        $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
+        $class = $this->getClass($grade_level, $section);
+
+        $class->adviser = $class->teachers()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->wherePivotIn('role', ['adviser'])
+            ->first();
+
+        // Fetch class subject for this class, subject, and school year
+        $classSubject = $class->classSubjects()
+            ->where('school_year_id', $schoolYear->id)
+            ->where('subject_id', $subject)
+            ->with(['subject', 'teacher'])
+            ->firstOrFail();
+
+        // Fetch students with their grades for this subject
+        $students = $class->students()
+            ->wherePivot('school_year_id', $schoolYear->id)
+            ->with([
+                'quarterlyGrades.quarter' => function ($query) use ($classSubject) {
+                    $query->where('class_subject_id', $classSubject->id);
+                },
+                'finalSubjectGrades' => function ($query) use ($classSubject) {
+                    $query->where('class_subject_id', $classSubject->id);
+                }
+            ])
+            ->orderBy('student_lName')
+            ->get();
+
+        return view('admin.classes.subjects_grades.grades', compact(
+            'class',
+            'selectedYear',
+            'classSubject',
+            'students'
+        ));
     }
 
     // Helper function to retrieve a class

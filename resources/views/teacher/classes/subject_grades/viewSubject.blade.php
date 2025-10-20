@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Teacher | Subjects')
+@section('title', 'Teacher | Grades')
 
 @section('content')
 
@@ -58,7 +58,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('teacher.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>
@@ -95,7 +95,7 @@
                         </a> /
                         <a class="text-muted fw-light"
                             href="{{ route('teacher.myClassSubject', ['grade_level' => $class->grade_level, 'section' => $class->section, 'school_year' => $selectedYear]) }}">
-                            Subjects
+                            Grades
                         </a> /
                     </span>
                     {{ $classSubject->subject->name }}
@@ -113,7 +113,7 @@
                     <span class="d-none d-sm-block">Back</span>
                 </a>
             </div>
-            <div>
+            {{-- <div>
                 <a href="{{ route('teacher.subjects.export', [
                     'grade_level' => $class->grade_level,
                     'section' => $class->section,
@@ -123,7 +123,7 @@
                     <i class='bx bx-printer me-2'></i><span class="d-none d-sm-block">Export</span>
                 </a>
 
-            </div>
+            </div> --}}
         </div>
 
         <div class="card p-4 shadow-sm">

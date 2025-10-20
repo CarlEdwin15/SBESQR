@@ -58,7 +58,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('teacher.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>
@@ -116,11 +116,11 @@
                     <span class="d-none d-sm-block">Add Subject</span>
                 </button>
             </div>
-            <div>
+            {{-- <div>
                 <a href="" class="btn btn-success d-flex align-items-center">
                     <i class='bx bx-printer me-2'></i><span class="d-none d-sm-block">Export</span>
                 </a>
-            </div>
+            </div> --}}
         </div>
 
         <!-- Card Subject Lists -->
@@ -143,8 +143,15 @@
                                         $color2 = '#' . substr(md5(strrev($classSubject->subject->name)), 0, 6);
                                     @endphp
 
-                                    <div class="card-header text-white border-0 position-relative p-4"
-                                        style="
+                                    <a href="{{ route('teacher.subjects.view', [
+                                        'grade_level' => $class->grade_level,
+                                        'section' => $class->section,
+                                        'subject_id' => $classSubject->id,
+                                        'school_year' => $selectedYear,
+                                    ]) }}"
+                                        class="text-white text-decoration-none">
+                                        <div class="card-header text-white border-0 position-relative p-4"
+                                            style="
                 background:
                     linear-gradient(135deg, {{ $color1 }}cc, {{ $color2 }}cc),
                     url('{{ asset("assetsDashboard/img/subject-card-bg/bg$bgIndex.jpg") }}');
@@ -152,26 +159,22 @@
                 background-position: center;
                 height: 140px;
              ">
-                                        <a href="{{ route('teacher.subjects.view', [
-                                            'grade_level' => $class->grade_level,
-                                            'section' => $class->section,
-                                            'subject_id' => $classSubject->id,
-                                            'school_year' => $selectedYear,
-                                        ]) }}"
-                                            class="text-white text-decoration-none">
+
                                             <h4 class="card-title text-white fw-bold mb-1">
                                                 {{ $classSubject->subject->name }}
                                             </h4>
                                             <p class="subject-desc text-auto small mb-0">
                                                 {{ $classSubject->description }}
                                             </p>
-                                        </a>
-                                        <div class="avatar-wrapper position-absolute" style="bottom: -20px; right: 20px;">
-                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($classSubject->subject->name) }}&background=random"
-                                                class="rounded-circle border border-3 border-white shadow-sm" width="60"
-                                                height="60" alt="Subject Avatar">
+
+                                            <div class="avatar-wrapper position-absolute"
+                                                style="bottom: -20px; right: 20px;">
+                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($classSubject->subject->name) }}&background=random"
+                                                    class="rounded-circle border border-3 border-white shadow-sm"
+                                                    width="60" height="60" alt="Subject Avatar">
+                                            </div>
                                         </div>
-                                    </div>
+                                    </a>
 
                                     <!-- Card Body -->
                                     <div class="card-body pt-2">
@@ -197,19 +200,19 @@
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
-                                                    <form class="delete-subject-form"
-                                                        action="{{ route('teacher.subjects.delete', [
-                                                            'grade_level' => $class->grade_level,
-                                                            'section' => $class->section,
-                                                            'subject_id' => $classSubject->id,
-                                                        ]) }}?school_year={{ $selectedYear }}"
-                                                        method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="bi bi-trash me-2"></i>Delete
-                                                        </button>
-                                                    </form>
+                                                <form class="delete-subject-form"
+                                                    action="{{ route('teacher.subjects.delete', [
+                                                        'grade_level' => $class->grade_level,
+                                                        'section' => $class->section,
+                                                        'subject_id' => $classSubject->id,
+                                                    ]) }}?school_year={{ $selectedYear }}"
+                                                    method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="dropdown-item text-danger">
+                                                        <i class="bi bi-trash me-2"></i>Delete
+                                                    </button>
+                                                </form>
                                                 </li>
                                             </ul>
                                         </div>
@@ -436,7 +439,6 @@
         /* Subject Cards */
         .subject-card {
             transition: transform 0.25s ease, box-shadow 0.25s ease;
-            cursor: pointer;
         }
 
         .subject-card:hover {

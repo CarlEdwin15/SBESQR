@@ -468,16 +468,64 @@ class StudentController extends Controller
 
     public function import(Request $request)
     {
+        ini_set('max_execution_time', 120);
+
         $request->validate([
             'excel_file' => 'required|file|mimetypes:text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
 
         try {
             $file = $request->file('excel_file');
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+
+            // Quick lightweight validation before fully loading spreadsheet
+            $ext = strtolower($file->getClientOriginalExtension());
+            $validExtensions = ['xlsx', 'xls', 'csv'];
+
+            if (!in_array($ext, $validExtensions)) {
+                return back()->with('error', "Invalid file type. Please upload a .xlsx, .xls, or .csv file.")->withInput();
+            }
+
+            // Limit file size to avoid long parsing on huge/malformed files (optional safety)
+            if ($file->getSize() > 5 * 1024 * 1024) {
+                return back()->with('error', "File too large. Please upload a file smaller than 5MB.")->withInput();
+            }
+
+            // FAST HEADER VALIDATION (before loading full workbook)
+            $firstBytes = file_get_contents($file->getRealPath(), false, null, 0, 4096); // only read first 4KB
+            if (trim($firstBytes) === '') {
+                return back()->with('error', "The uploaded file appears empty. Please use the proper student template.")->withInput();
+            }
+
+            // For CSV files → directly read first line instead of loading PhpSpreadsheet
+            if ($ext === 'csv') {
+                $handle = fopen($file->getRealPath(), 'r');
+                $firstRow = fgetcsv($handle);
+                fclose($handle);
+
+                if (!$firstRow) {
+                    return back()->with('error', "The CSV file is empty or unreadable.")->withInput();
+                }
+
+                // 🩹 Normalize headers: trim, remove quotes/BOM, and lowercase
+                $normalizedHeaders = array_map(function ($h) {
+                    $h = trim($h, " \t\n\r\0\x0B\"'");
+                    // Remove UTF-8 BOM if present
+                    $h = preg_replace('/^\xEF\xBB\xBF/', '', $h);
+                    return strtolower($h);
+                }, $firstRow);
+
+                if (!in_array('lrn', $normalizedHeaders)) {
+                    return back()->with('error', "Missing required 'lrn' column. Please use the provided Excel template.")->withInput();
+                }
+            }
+
+            // Safe full load only after confirming file has content
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getPathname());
+            $reader->setReadDataOnly(true); // make it faster by ignoring styles
+            $spreadsheet = $reader->load($file->getPathname());
             $sheet = $spreadsheet->getActiveSheet();
 
-            //  header validation
+            // Header validation (your existing logic)
             $firstRow = null;
             for ($i = 1; $i <= 5; $i++) {
                 $row = $sheet->rangeToArray("A{$i}:N{$i}", null, true, false)[0];
@@ -488,7 +536,7 @@ class StudentController extends Controller
             }
 
             if (!$firstRow) {
-                return back()->with('error', "❌ Missing required column: 'lrn'. Please use the provided Excel template.")->withInput();
+                return back()->with('error', " Missing required column: 'lrn'. Please use the provided Excel template.")->withInput();
             }
 
             $headers = array_map(fn($h) => strtolower(trim($h)), $firstRow);
@@ -511,28 +559,28 @@ class StudentController extends Controller
 
             foreach ($requiredHeaders as $header) {
                 if (!in_array($header, $headers)) {
-                    return back()->with('error', "❌ Missing required column: '{$header}'. Please use the provided Excel template.")->withInput();
+                    return back()->with('error', " Missing required column: '{$header}'. Please use the provided Excel template.")->withInput();
                 }
             }
 
-            //  Import process
-            $import = new StudentsImport();
-            Excel::import($import, $file);
+            // Proceed with import only after passing header check
+            $import = new \App\Imports\StudentsImport();
+            \Maatwebsite\Excel\Facades\Excel::import($import, $file);
 
-            //  Summary + error messages
             $summary = " Imported: {$import->imported}";
             if ($import->duplicates > 0) $summary .= " | Duplicates: {$import->duplicates}";
-            // if ($import->skipped > 0) $summary .= " | Skipped: {$import->skipped}";
-
-            // Collect all detailed errors
             $errorDetails = implode("<br>", $import->errors);
 
             return redirect()->route('student.management')->with([
                 'success' => $summary,
                 'import_errors' => $errorDetails ?: null,
+                'imported_count' => $import->imported,
+                'import_status' => $import->imported > 0 ? 'success' : 'error',
             ]);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            return back()->with('error', "🚫 Invalid or corrupted Excel file. Please use the official student template.")->withInput();
         } catch (\Exception $e) {
-            return back()->with('error', "🚫 Import failed: {$e->getMessage()}");
+            return back()->with('error', "🚫 Import failed: {$e->getMessage()}")->withInput();
         }
     }
 

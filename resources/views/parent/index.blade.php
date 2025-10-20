@@ -24,14 +24,6 @@
                 </a>
             </li>
 
-            {{-- My Children sidebar --}}
-            <li class="menu-item">
-                <a href="{{ route('parent.children.index') }}" class="menu-link bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-child text-light"></i>
-                    <div class="text-light">My Children</div>
-                </a>
-            </li>
-
             {{-- School Fees sidebar --}}
             <li class="menu-item">
                 <a href="{{ route('parent.school-fees.index') }}" class="menu-link bg-dark text-light">
@@ -41,16 +33,16 @@
             </li>
 
             {{-- Announcements sidebar --}}
-            <li class="menu-item">
+            {{-- <li class="menu-item">
                 <a href="{{ route('parent.announcements.index') }}" class="menu-link bg-dark text-light">
                     <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
                     <div class="text-light">Announcements</div>
                 </a>
-            </li>
+            </li> --}}
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('parent.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>
@@ -75,72 +67,6 @@
 
     <!-- Content Wrapper -->
     <div class="container-xxl container-p-y">
-
-        <div class="row mb-4 g-3">
-            <!-- My Children Card -->
-            <div class="col-6 col-md-3">
-                <div class="card h-100 card-hover">
-                    <a href="{{ route('parent.children.index') }}" class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/studentIcon.png') }}"
-                                    alt="My Children" class="rounded" />
-                            </div>
-                        </div>
-                        <span class="fw-semibold d-block mb-1 text-primary">My Children</span>
-                        <h3 class="card-title mb-2"></h3>
-                    </a>
-                </div>
-            </div>
-
-            <!-- School Fees Card -->
-            <div class="col-6 col-md-3">
-                <div class="card h-100 card-hover">
-                    <a href="{{ route('parent.school-fees.index') }}" class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/school-fees.png') }}"
-                                    alt="School Fees" class="rounded" />
-                            </div>
-                        </div>
-                        <span class="fw-semibold d-block mb-1 text-primary">School Fees</span>
-                        <h3 class="card-title mb-2"></h3>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Announcements Card -->
-            <div class="col-6 col-md-3">
-                <div class="card h-100 card-hover">
-                    <a href="{{ route('parent.announcements.index') }}" class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}"
-                                    alt="Announcements" class="rounded" />
-                            </div>
-                        </div>
-                        <span class="fw-semibold d-block mb-1 text-primary">Announcements</span>
-                        <h3 class="card-title text-nowrap mb-2"></h3>
-                    </a>
-                </div>
-            </div>
-
-            <!-- SMS Logs Card -->
-            <div class="col-6 col-md-3">
-                <div class="card h-100 card-hover">
-                    <a href="" class="card-body">
-                        <div class="card-title d-flex align-items-start justify-content-between">
-                            <div class="avatar flex-shrink-0">
-                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/sms.png') }}" alt="SMS Logs"
-                                    class="rounded" />
-                            </div>
-                        </div>
-                        <span class="fw-semibold d-block mb-1 text-primary">SMS Logs</span>
-                        <h3 class="card-title mb-2"></h3>
-                    </a>
-                </div>
-            </div>
-        </div>
 
         <!-- Parent Dashboard Layout -->
         <div class="card shadow-sm">

@@ -763,6 +763,114 @@
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addPaymentBtn = document.getElementById('openAddPayment');
+
+            // ✅ Prevent selecting past dates in date pickers
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[name="due_date"]').forEach(dateInput => {
+                dateInput.setAttribute('min', today);
+            });
+
+            addPaymentBtn.addEventListener('click', function() {
+                Swal.fire({
+                    title: 'Select Payment Assignment',
+                    text: 'Would you like to assign payments by Batch/Class or by Specific Students?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'By Batch/Class',
+                    cancelButtonText: 'Specific Students',
+                    reverseButtons: true,
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        new bootstrap.Modal(document.getElementById('addPaymentBatchModal')).show();
+                    } else if (result.dismiss === Swal.DismissReason.cancel) {
+                        new bootstrap.Modal(document.getElementById('addPaymentStudentsModal'))
+                            .show();
+                    }
+                });
+            });
+
+            // ✅ TomSelect init for Batch/Class
+            new TomSelect("#classSelectBatch", {
+                plugins: ['remove_button'],
+                maxItems: null,
+                placeholder: "Select one or more classes (or All Classes)",
+                render: {
+                    option: function(data, escape) {
+                        let text = escape(data.text);
+                        let customClass = data.customClass ? data.customClass : '';
+                        let disabled = data.disabled ? 'opacity-50' : '';
+                        return `<div class="${customClass} ${disabled}">${text}</div>`;
+                    },
+                    item: function(data, escape) {
+                        let text = escape(data.text);
+                        let customClass = data.customClass ? data.customClass : '';
+                        return `<div class="${customClass}">${text}</div>`;
+                    }
+                },
+                onInitialize: function() {
+                    this.options = Object.fromEntries(Object.entries(this.options).map(([k, v]) => {
+                        let optionEl = this.input.querySelector(`option[value="${k}"]`);
+                        if (optionEl) {
+                            if (optionEl.dataset.customClass) {
+                                v.customClass = optionEl.dataset.customClass;
+                            }
+                            if (optionEl.disabled) {
+                                v.disabled = true;
+                            }
+                        }
+                        return [k, v];
+                    }));
+                },
+                onChange: function(values) {
+                    // ✅ If "all" is selected, remove any specific classes
+                    if (values.includes("all") && values.length > 1) {
+                        this.setValue(["all"]);
+                    }
+                }
+            });
+
+            // ✅ TomSelect init for Specific Students (AJAX search)
+            if (document.getElementById('classStudentSelectMulti')) {
+                new TomSelect('#classStudentSelectMulti', {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Search enrolled students...",
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+                        fetch("{{ route('class-students.search') }}?q=" + encodeURIComponent(query))
+                            .then(response => response.json())
+                            .then(data => {
+                                callback(data.map(cs => {
+                                    let fullName = cs.student.student_fName + " " + cs
+                                        .student.student_lName;
+                                    let gradeSection = (cs.class.formatted_grade_level ?
+                                            " " + cs.class.formatted_grade_level : "") +
+                                        (cs.class.section ? " - " + cs.class.section :
+                                            "");
+                                    return {
+                                        id: cs.id,
+                                        text: cs.student.student_lrn + " " + fullName +
+                                            " (" + gradeSection + ")"
+                                    };
+                                }));
+                            }).catch(() => {
+                                callback();
+                            });
+                    }
+                });
+            }
+        });
+    </script>
+
     <!-- Donut Chart -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {

@@ -132,8 +132,8 @@ class AnnouncementController extends Controller
         if ($announcement->status === 'active') {
             app(WebPushService::class)->broadcast([
                 'title' => '📢 New Announcement',
-                'body' => $announcement->title,
-                'url'   => route('home', ['announcement_id' => $announcement->id]) . '#announcement-section',
+                'body'  => $announcement->title,
+                'url'   => route('announcement.redirect', ['id' => $announcement->id]),
                 'tag'   => 'announcement-' . $announcement->id,
                 'id'    => $announcement->id,
             ]);
@@ -202,15 +202,15 @@ class AnnouncementController extends Controller
         $announcement->update($validated);
 
         // Re-broadcast if the updated announcement is active
-        // if ($announcement->status === 'active') {
-        //     app(WebPushService::class)->broadcast([
-        //         'title' => '📢 Updated Announcement',
-        //         'body'  => $announcement->title,
-        //         'url'   => route('announcements.index'),
-        //         'tag'   => 'announcement-' . $announcement->id,
-        //         'id'    => $announcement->id,
-        //     ]);
-        // }
+        if ($announcement->status === 'active') {
+            app(WebPushService::class)->broadcast([
+                'title' => '📢 Updated Announcement',
+                'body'  => $announcement->title,
+                'url'   => route('announcement.redirect', ['id' => $announcement->id]),
+                'tag'   => 'announcement-' . $announcement->id,
+                'id'    => $announcement->id,
+            ]);
+        }
 
         // Cleanup expired announcements → archive
         Announcement::where('status', '!=', 'archive')
@@ -279,9 +279,4 @@ class AnnouncementController extends Controller
 
         return $start . '-' . ($start + 1);
     }
-
-    // public function pusher()
-    // {
-    //     return view('teacher.pusher');
-    // }
 }

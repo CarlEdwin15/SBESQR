@@ -65,7 +65,7 @@ class User extends Authenticatable
         return "{$this->firstName}{$middle} {$this->lastName}{$ext}";
     }
 
-    /** 🔹 Many-to-many: a parent can have multiple children */
+    /** Many-to-many: a parent can have multiple children */
     public function children()
     {
         return $this->belongsToMany(Student::class, 'student_parent', 'parent_id', 'student_id');

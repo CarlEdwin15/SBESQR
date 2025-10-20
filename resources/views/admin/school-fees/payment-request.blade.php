@@ -219,21 +219,27 @@
                                 @if ($req->status === 'pending')
                                     <div class="d-flex justify-content-center gap-1">
                                         <!-- Approve -->
-                                        <form action="{{ route('admin.payment.requests.approve', $req->id) }}"
-                                            method="POST">
+                                        <form id="approve-form-{{ $req->id }}"
+                                            action="{{ route('admin.payment.requests.approve', $req->id) }}"
+                                            method="POST" style="display: inline;">
                                             @csrf
-                                            <button type="submit" class="btn btn-success btn-sm"
-                                                onclick="return confirm('Approve this payment?')">Approve</button>
+                                            <button type="button" class="btn btn-success btn-sm"
+                                                onclick="confirmApprove({{ $req->id }})">
+                                                Approve
+                                            </button>
                                         </form>
 
                                         <!-- Deny -->
-                                        <form action="{{ route('admin.payment.requests.deny', $req->id) }}"
-                                            method="POST">
+                                        <form id="deny-form-{{ $req->id }}"
+                                            action="{{ route('admin.payment.requests.deny', $req->id) }}" method="POST"
+                                            style="display: inline;">
                                             @csrf
                                             <input type="hidden" name="admin_remarks"
                                                 value="Invalid or unclear payment proof">
-                                            <button type="submit" class="btn btn-danger btn-sm"
-                                                onclick="return confirm('Deny this payment?')">Deny</button>
+                                            <button type="button" class="btn btn-danger btn-sm"
+                                                onclick="confirmDeny({{ $req->id }})">
+                                                Deny
+                                            </button>
                                         </form>
                                     </div>
                                 @else
@@ -301,6 +307,76 @@
                 }
             });
         @endif
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        function confirmApprove(id) {
+            Swal.fire({
+                title: 'Approve Payment?',
+                text: "Are you sure you want to approve this payment request?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, approve it!',
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Approving...',
+                        text: 'Please wait while we update the payment status.',
+                        icon: 'info',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+
+                    setTimeout(() => {
+                        document.getElementById('approve-form-' + id).submit();
+                    }, 800);
+                }
+            });
+        }
+
+        function confirmDeny(id) {
+            Swal.fire({
+                title: 'Deny Payment?',
+                text: "Are you sure you want to deny this payment request?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, deny it!',
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Denying...',
+                        text: 'Please wait while we process your action.',
+                        icon: 'info',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+
+                    setTimeout(() => {
+                        document.getElementById('deny-form-' + id).submit();
+                    }, 800);
+                }
+            });
+        }
     </script>
 @endpush
 

@@ -41,12 +41,12 @@
             </li>
 
             {{-- Announcements sidebar --}}
-            <li class="menu-item">
+            {{-- <li class="menu-item">
                 <a href="{{ route('parent.announcements.index') }}" class="menu-link bg-dark text-light">
                     <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
                     <div class="text-light">Announcements</div>
                 </a>
-            </li>
+            </li> --}}
 
             {{-- SMS Logs sidebar --}}
             <li class="menu-item active">

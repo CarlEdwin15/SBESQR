@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Parent | Announcements')
+@section('title', 'Parent | Account Settings')
 
 @section('content')
     <!-- Menu -->
@@ -8,8 +8,8 @@
         <div class="app-brand bg-dark">
             <a href="{{ url('/home') }}" class="app-brand-link">
                 <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
-                <span class="app-brand-text menu-text fw-bolder text-light" style="padding: 9px">Parent's
-                    <span class="text-light">Dashboard</span>
+                <span class="app-brand-text menu-text fw-bolder text-warning" style="padding: 9px">Parent's
+                    <span class="text-warning">Dashboard</span>
                 </span>
             </a>
         </div>
@@ -33,18 +33,18 @@
             </li>
 
             {{-- Announcements sidebar --}}
-            {{-- <li class="menu-item active">
-                <a href="{{ route('parent.announcements.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bxs-megaphone"></i>
-                    <div class="text-warning">Announcements</div>
+            {{-- <li class="menu-item">
+                <a href="{{ route('parent.announcements.index') }}" class="menu-link bg-dark text-light">
+                    <i class="menu-icon tf-icons bx bxs-megaphone text-light"></i>
+                    <div class="text-light">Announcements</div>
                 </a>
             </li> --}}
 
             {{-- Account Settings sidebar --}}
-            <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
-                    <i class="bx bx-cog me-3 text-light"></i>
-                    <div class="text-light">Account Settings</div>
+            <li class="menu-item active">
+                <a href="{{ route('parent.account.settings') }}" class="menu-link">
+                    <i class="bx bx-cog me-3"></i>
+                    <div class="text-warning">Account Settings</div>
                 </a>
             </li>
 
@@ -69,9 +69,15 @@
     <div class="container-xxl container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning">
             <span class="text-muted fw-light">
-            <a class="text-muted fw-light" href="{{ url('/home') }}">Dashboard / </a>
-            </span> Announcements
+                <a class="text-muted fw-light" href="{{ url('/home') }}">Dashboard / </a>
+            </span> Account Settings
         </h4>
+
+
+        @include('partials.account_settings', [
+            'user' => $user,
+            'updateRoute' => 'teacher.update', // We'll define this route next
+        ])
 
     </div>
     <!-- /Content Wrapper -->

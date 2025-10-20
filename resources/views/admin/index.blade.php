@@ -174,7 +174,7 @@
                 <!-- Student Card -->
                 <div class="col-6 col-md-3">
                     <div class="card h-100 card-hover">
-                        <a href="{{ route('show.students') }}" class="card-body">
+                        <a href="{{ route('student.management') }}" class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between">
                                 <div class="avatar flex-shrink-0">
 

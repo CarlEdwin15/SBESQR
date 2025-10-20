@@ -156,34 +156,33 @@
                         <a class="text-muted fw-light" href="{{ route('all.classes') }}">Classes</a> /
                         <a class="text-muted fw-light"
                             href="{{ route('classes.showClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}">
-                            {{ ucfirst($class->grade_level) }} - {{ $class->section }} </a> /
+                            {{ ucfirst($class->grade_level) }} - {{ $class->section }} ({{ $selectedYear }})
+                        </a> /
                     </span>
-                    Master’s List
+                    Master List
                 </h4>
             </div>
         </div>
 
-        <a href="{{ url()->previous() }}" class="btn btn-danger mb-3">Back</a>
+        <h3 class="mb-1 text-center fw-bold text-info">Class Master List ({{ $selectedYear }})</h3><br>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{{ url()->previous() }}" class="btn btn-danger mb-3 d-flex align-items-center">
+                <i class='bx bx-chevrons-left'></i>
+                <span class="d-none d-sm-block">Back</span>
+            </a>
+        </div>
+
         <div class="card p-4 shadow-sm">
             <div class="d-flex align-items-center justify-content-between mb-4">
-                <h5 class="fw-bold mb-2">School Year: {{ $selectedYear }}</h5>
-
-                <!-- Export List Form -->
-                <form action="" method="GET">
-                    @csrf
-                    <button type="submit" class="btn btn-success ms-md-auto">
-                        <i class="bx bx-printer"></i>Export List
-                    </button>
-                </form>
+                <h3 class="fw-bold mb-2 text-primary">{{ $class->formatted_grade_level }} -
+                    {{ $class->section }}</h3>
             </div>
 
-            <h3 class="mb-4 text-center fw-bold">List of Students for
-                {{ $class->formatted_grade_level }} -
-                {{ $class->section }}</h3><br>
             <h5 class="text-center">Adviser:</h5>
 
             @if ($class->adviser)
-                <h5 class="text-info text-center mb-4">
+                <h5 class="text-info text-center mb-4 fw-bold">
                     {{ $class->adviser->firstName ?? 'N/A' }} {{ $class->adviser->lastName ?? '' }}
                 </h5>
             @else
@@ -192,21 +191,26 @@
 
             <div class="row">
                 <!-- Male Table -->
-                <div class="col-md-6">
-                    <table class="table table-bordered text-center" id="studentTable">
+                <div class="col-md-6 table-responsive mb-4">
+                    <table class="table table-hover table-bordered" id="studentTable">
                         <thead class="table-info">
-                            <tr>
-                                <th>NO.</th>
+                            <tr class="text-center">
+                                <th style="width: 5%;">NO.</th>
+                                <th style="width: 10%;">PHOTO</th>
                                 <th>MALE</th>
+                                <th>LRN</th>
                             </tr>
                         </thead>
                         <tbody>
                             @php $maleCount = 1; @endphp
-                            @foreach ($students->where('student_sex', 'male')->sortBy(function ($student) {
-            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
-        }) as $student)
-                                <tr class="student-row">
-                                    <td>{{ $maleCount++ }}</td>
+                            @foreach ($students->where('student_sex', 'male')->sortBy(fn($s) => $s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName) as $student)
+                                <tr class="t-row" data-href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                    <td class="text-center">{{ $maleCount++ }}</td>
+                                    <td class="text-center">
+                                        <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                            alt="Student Photo" class="rounded-circle me-2 student-photo"
+                                            style="width: 40px; height: 40px;">
+                                    </td>
                                     <td>
                                         {{ $student->student_lName }}, {{ $student->student_fName }}
                                         {{ $student->student_extName }}
@@ -214,33 +218,41 @@
                                             {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
                                         @endif
                                     </td>
+                                    <td class="text-center">{{ $student->student_lrn }}</td>
                                 </tr>
                             @endforeach
                             @if ($maleCount === 1)
                                 <tr>
-                                    <td colspan="2">No male students enrolled.</td>
+                                    <td colspan="4" class="text-center">No male students enrolled.</td>
                                 </tr>
                             @endif
                         </tbody>
                     </table>
                 </div>
+                <!-- /Male Table -->
 
                 <!-- Female Table -->
-                <div class="col-md-6">
-                    <table class="table table-bordered text-center" id="studentTable">
+                <div class="col-md-6 table-responsive">
+                    <table class="table table-bordered" id="studentTable">
                         <thead class="table-danger">
-                            <tr>
-                                <th>NO.</th>
+                            <tr class="text-center">
+                                <th style="width: 5%;">NO.</th>
+                                <th style="width: 10%;">PHOTO</th>
                                 <th>FEMALE</th>
+                                <th>LRN</th>
                             </tr>
                         </thead>
                         <tbody>
                             @php $femaleCount = 1; @endphp
-                            @foreach ($students->where('student_sex', 'female')->sortBy(function ($student) {
-            return $student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName;
-        }) as $student)
-                                <tr class="student-row">
-                                    <td>{{ $femaleCount++ }}</td>
+                            @foreach ($students->where('student_sex', 'female')->sortBy(fn($s) => $s->student_lName . ' ' . $s->student_fName . ' ' . $s->student_mName) as $student)
+                                <tr class="t-row"
+                                    data-href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                    <td class="text-center">{{ $femaleCount++ }}</td>
+                                    <td class="text-center">
+                                        <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                            alt="Student Photo" class="rounded-circle me-2 student-photo"
+                                            style="width: 40px; height: 40px;">
+                                    </td>
                                     <td>
                                         {{ $student->student_lName }}, {{ $student->student_fName }}
                                         {{ $student->student_extName }}
@@ -248,16 +260,18 @@
                                             {{ strtoupper(substr($student->student_mName, 0, 1)) }}.
                                         @endif
                                     </td>
+                                    <td class="text-center">{{ $student->student_lrn }}</td>
                                 </tr>
                             @endforeach
                             @if ($femaleCount === 1)
                                 <tr>
-                                    <td colspan="2">No female students enrolled.</td>
+                                    <td colspan="4" class="text-center">No female students enrolled.</td>
                                 </tr>
                             @endif
                         </tbody>
                     </table>
                 </div>
+                <!-- /Female Table -->
             </div>
         </div>
     </div>
@@ -266,71 +280,6 @@
 @endsection
 
 @push('scripts')
-    <script>
-        // search bar
-        document.getElementById('studentSearch').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#studentTable tbody .student-row');
-
-            rows.forEach(row => {
-                const rowText = row.innerText.toLowerCase();
-                row.style.display = rowText.includes(searchValue) ? '' : 'none';
-            });
-        });
-    </script>
-
-    <script>
-        // delete button alert
-        function confirmDelete(student_id, student_fName, student_lName) {
-            Swal.fire({
-                title: `Delete ${student_fName} ${student_lName}'s record?`,
-                text: "This action cannot be undone.",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#6c757d",
-                confirmButtonText: "Yes, delete it!",
-                cancelButtonText: "Cancel",
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Deleting...",
-                        text: "Please wait while we remove the record.",
-                        icon: "info",
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        customClass: {
-                            container: 'my-swal-container'
-                        },
-                        didOpen: () => {
-                            setTimeout(() => {
-                                document.getElementById('delete-form-' + student_id).submit();
-                            }, 1000);
-                        }
-                    });
-                }
-            });
-        }
-    </script>
-
-    <script>
-        // alert after a success edit or delete of teacher's info
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: '{{ session('success') }}',
-                confirmButtonColor: '#3085d6',
-                customClass: {
-                    container: 'my-swal-container'
-                }
-            });
-        @endif
-    </script>
-
     <script>
         // alert for logout
         function confirmLogout() {
@@ -361,30 +310,6 @@
             });
         }
     </script>
-
-    <script>
-        // alert for upload and preview profile in registration
-        const uploadInput = document.getElementById('upload');
-        const previewImg = document.getElementById('photo-preview');
-        const resetBtn = document.getElementById('reset-photo');
-        const defaultImage = "{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}";
-
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        resetBtn.addEventListener('click', function() {
-            uploadInput.value = '';
-            previewImg.src = defaultImage;
-        });
-    </script>
 @endpush
 
 @push('styles')
@@ -396,14 +321,16 @@
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
 
     <style>
-        .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
+        .student-photo {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+        .student-photo:hover {
+            transform: scale(1.1);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
         }
     </style>
 @endpush

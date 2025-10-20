@@ -58,7 +58,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('teacher.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>
@@ -171,18 +171,54 @@
                                                 @php $iconIndex++; @endphp
                                             @endif
                                         </div>
+
                                         <a href="{{ route('teacher.myClass', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear }}"
                                             class="stretched-link">
                                             <h3>
                                                 @if (strtolower($class->grade_level) === 'kindergarten')
                                                     Kindergarten
                                                 @else
-                                                    Grade
-                                                    {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
+                                                    Grade {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
                                                 @endif
                                                 - {{ $class->section }}
                                             </h3>
                                         </a>
+
+                                        {{-- ✅ Inline logic for class type and student count --}}
+                                        @php
+
+                                            // Convert selectedYear (e.g. "2025-2026") to its database ID
+                                            $schoolYearId = \App\Models\SchoolYear::where(
+                                                'school_year',
+                                                $selectedYear,
+                                            )->value('id');
+
+                                            // Get teacher pivot for this class + school year
+                                            $teacherPivot = $class->teachers
+                                                ->where('id', auth()->id())
+                                                ->filter(function ($teacher) use ($schoolYearId) {
+                                                    return $teacher->pivot->school_year_id == $schoolYearId;
+                                                })
+                                                ->first();
+
+                                            $role = $teacherPivot ? ucfirst($teacherPivot->pivot->role) : 'N/A';
+
+                                            // Count students for this class in that school year
+                                            $studentCount = $class
+                                                ->students()
+                                                ->wherePivot('school_year_id', $schoolYearId)
+                                                ->count();
+                                        @endphp
+
+                                        <div>
+                                            <span class="{{ $role === 'Adviser' ? 'text-primary' : 'text-secondary' }}">
+                                                {{ $role === 'Adviser' ? 'Advisory Class' : 'Subject-Based Class' }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <strong class="text-success">{{ $studentCount }}</strong> Students
+                                            Enrolled
+                                        </div>
                                     </div>
                                 </div>
                             </div>

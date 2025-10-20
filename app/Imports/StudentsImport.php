@@ -32,13 +32,11 @@ class StudentsImport extends DefaultValueBinder implements
 
     public function onRow(Row $row): void
     {
-        $excelRow = $row->getIndex(); // 👈 actual Excel row number
+        $excelRow = $row->getIndex();
         $r = $row->toArray();
 
         // Skip title (row 1), header (row 2), and empty rows
-        if ($excelRow <= 2 || count(array_filter($r)) === 0) {
-            return;
-        }
+        if ($excelRow <= 2 || count(array_filter($r)) === 0) return;
 
         $headers = [
             'lrn',
@@ -78,7 +76,7 @@ class StudentsImport extends DefaultValueBinder implements
         // Validate LRN pattern
         if (!preg_match('/^112828\d{6}$/', $data['lrn'])) {
             $this->skipped++;
-            $this->errors[] = "Row {$excelRow}: Invalid LRN '{$data['lrn']}'. LRN must be 12-digits numeric starting with 112828, and should not contain any letters or other characters.";
+            $this->errors[] = "Row {$excelRow}: Invalid LRN '{$data['lrn']}'.";
             return;
         }
 
@@ -86,7 +84,7 @@ class StudentsImport extends DefaultValueBinder implements
         $sex = strtolower($data['sex']);
         if (!in_array($sex, ['male', 'female'])) {
             $this->skipped++;
-            $this->errors[] = "Row {$excelRow}: Invalid Sex value '{$data['sex']}'. Use 'male' or 'female'.";
+            $this->errors[] = "Row {$excelRow}: Invalid Sex value '{$data['sex']}'.";
             return;
         }
 
@@ -107,6 +105,23 @@ class StudentsImport extends DefaultValueBinder implements
             }
         } catch (Exception $e) {
             $dob = null;
+        }
+
+        // Normalize text fields
+        $textFields = [
+            'first_name',
+            'middle_name',
+            'last_name',
+            'extension_name',
+            'place_of_birth',
+            'street_name',
+            'barangay',
+            'municipality_city',
+            'province'
+        ];
+
+        foreach ($textFields as $field) {
+            $data[$field] = $this->normalizeText($data[$field]);
         }
 
         // Transactional insert
@@ -142,6 +157,16 @@ class StudentsImport extends DefaultValueBinder implements
             $this->skipped++;
             $this->errors[] = "Row {$excelRow}: Database error — " . $e->getMessage();
         }
+    }
+
+    /**
+     * Capitalize the first letter of each word, normalize spacing
+     */
+    private function normalizeText(string $text): string
+    {
+        $text = trim($text);
+        $text = preg_replace('/\s+/', ' ', $text); // remove extra spaces
+        return mb_convert_case($text, MB_CASE_TITLE, "UTF-8");
     }
 
     public function chunkSize(): int

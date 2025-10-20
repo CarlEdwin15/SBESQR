@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Teacher | Dashboard')
+@section('title', 'Teacher | Management')
 
 @section('content')
 
@@ -10,7 +10,7 @@
             <a href="{{ url('/home') }}" class="app-brand-link">
                 <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="app-brand-logo">
                 <span class="app-brand-text menu-text fw-bolder text-warning" style="padding: 9px">Teacher's
-                    <span class="text-warning">Dashboard</span>
+                    <span class="text-warning">Management</span>
                 </span>
             </a>
         </div>
@@ -58,7 +58,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('teacher.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>

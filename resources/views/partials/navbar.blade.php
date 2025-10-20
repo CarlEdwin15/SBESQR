@@ -52,7 +52,9 @@
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <ul class="navbar-nav flex-row align-items-center ms-auto">
 
-            <button id="enablePush" class="btn btn-outline-primary">Enable SBESqr notifications</button>
+            <button id="enablePush" class="btn btn-outline-primary">
+                <i class="bx bx-bell"></i> <span class="d-none d-sm-inline">Enable SBESqr notifications</span>
+            </button>
 
             <!-- Notification Dropdown -->
             <li class="nav-item dropdown">
@@ -109,8 +111,7 @@
                         <hr class="dropdown-divider my-0">
                     </li>
                     <li>
-                        <a href=""
-                            class="dropdown-item text-center text-primary fw-semibold py-2">
+                        <a href="" class="dropdown-item text-center text-primary fw-semibold py-2">
                             View all announcements
                         </a>
                     </li>
@@ -174,7 +175,7 @@
                         </div>
 
                         @auth
-                            <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
+                            <span class="fw-semibold ms-2 d-none d-sm-block">{{ Auth::user()->firstName }}</span>
                         @endauth
                     </div>
                 </a>
@@ -242,28 +243,100 @@
 <div class="modal fade" id="announcementModal" tabindex="-1" aria-labelledby="announcementModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content shadow-lg border-0 rounded-3">
-            <div class="modal-header text-white">
-                <h5 class="modal-title" id="announcementModalLabel">Announcement</h5>
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+
+            <!-- Header -->
+            <div class="modal-header bg-gradient-primary text-white py-3 px-4 border-0">
+                <div>
+                    <h4 class="modal-title fw-bold mb-0 text-white" id="announcementModalLabel">
+                        Announcement
+                    </h4>
+                    <small class="d-block opacity-75 mt-1">Official School Notice</small>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <div id="announcementContent" class="text-muted">
+
+            <!-- Body -->
+            <div class="modal-body bg-light p-4" id="announcementBody">
+                <div id="announcementContent" class="announcement-body">
                     <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status"></div>
-                        <p class="mt-2">Loading announcement...</p>
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Fetching announcement details...</p>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light">
-                <small class="text-muted me-auto" id="announcementMeta"></small>
-                <button type="button" class="btn btn-secondary rounded-pill px-4"
-                    data-bs-dismiss="modal">Close</button>
+
+            <!-- Footer -->
+            <div
+                class="modal-footer bg-white px-4 py-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
+                <div id="announcementMeta" class="text-muted small"></div>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 mt-3 mt-sm-0"
+                    data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i> Close
+                </button>
             </div>
+
         </div>
     </div>
 </div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0066cc, #0099ff);
+    }
+
+    .announcement-body {
+        animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    #announcementContent h1,
+    #announcementContent h2,
+    #announcementContent h3 {
+        color: #0d6efd;
+    }
+
+    #announcementContent p {
+        line-height: 1.7;
+        font-size: 1rem;
+        color: #333;
+    }
+
+    #announcementContent img {
+        max-width: 100%;
+        border-radius: 0.5rem;
+        margin: 15px 0;
+    }
+
+    #announcementMeta {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .badge-author {
+        background: #e9f2ff;
+        color: #0056b3;
+        border-radius: 50px;
+        padding: 0.25rem 0.75rem;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+    }
+</style>
 
 <!-- Announcement Modal Script -->
 <script>
@@ -272,66 +345,63 @@
         const content = document.getElementById('announcementContent');
         const meta = document.getElementById('announcementMeta');
 
-        // Handle manual click from dropdown items
         document.querySelectorAll('.view-announcement').forEach(item => {
             item.addEventListener('click', function() {
                 const id = this.dataset.id;
 
-                // Show loading spinner
                 content.innerHTML = `
-                <div class="text-center py-5">
-                  <div class="spinner-border text-primary" role="status"></div>
-                  <p class="mt-2">Loading announcement...</p>
-                </div>`;
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <p class="text-muted">Fetching announcement details...</p>
+          </div>`;
                 meta.textContent = '';
 
                 modal.show();
 
-                // Fetch announcement details
                 fetch(`/announcements/${id}/show-ajax`)
                     .then(res => res.json())
                     .then(data => {
                         document.getElementById('announcementModalLabel').textContent = data
                             .title;
-                        content.innerHTML = data.body;
-                        meta.textContent =
-                            `Published: ${data.published} | By ${data.author}`;
+                        content.innerHTML = `
+              <div class="announcement-body">
+                ${data.body}
+              </div>`;
+                        meta.innerHTML = `
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
+                <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
+              </div>`;
                     })
-                    .catch(err => {
+                    .catch(() => {
                         content.innerHTML =
                             `<div class="alert alert-danger">Failed to load announcement.</div>`;
                     });
             });
         });
 
-        // Auto-open modal if announcement_id is in URL (from push notification click)
-        const urlParams = new URLSearchParams(window.location.search);
-        const announcementId = urlParams.get('announcement_id');
+        // Auto-open from push link
+        const params = new URLSearchParams(window.location.search);
+        const announcementId = params.get('announcement_id');
 
         if (announcementId) {
-            content.innerHTML = `
-              <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2">Loading announcement...</p>
-              </div>`;
-            meta.textContent = '';
-
             modal.show();
-
             fetch(`/announcements/${announcementId}/show-ajax`)
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('announcementModalLabel').textContent = data.title;
-                    content.innerHTML = data.body;
-                    meta.textContent = `Published: ${data.published} | By ${data.author}`;
-
-                    // ✅ Remove announcement_id from URL after modal is loaded
+                    content.innerHTML = `<div class="announcement-body">${data.body}</div>`;
+                    meta.innerHTML = `
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
+              <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
+            </div>`;
                     const newUrl = window.location.origin + window.location.pathname;
                     window.history.replaceState({}, document.title, newUrl);
                 })
-                .catch(err => {
+                .catch(() => {
                     content.innerHTML =
-                        `<div class="alert alert-danger">Failed to load announcement.</div>`;
+                    `<div class="alert alert-danger">Failed to load announcement.</div>`;
                 });
         }
     });

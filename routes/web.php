@@ -98,10 +98,20 @@ Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallb
 // Route::get('/auth/facebook', [FacebookController::class, 'redirectToFacebook'])->name('facebook.login');
 // Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
 
-// User Account Settings (on ADMIN dashboard)
+// Account Settings (Admin)
 Route::get('/accountSettings', [AdminController::class, 'accountSettings'])->name('account.settings');
+Route::put('/accountSettings/{id}', [AdminController::class, 'updateAdmin'])->name('admin.update');
 
-Route::post('/updateAdminAccount/{id}', [AdminController::class, 'updateAdmin'])->name('update.admin');
+// Account Settings (Teacher)
+Route::get('/teacher/accountSettings', [TeacherController::class, 'accountSettings'])->name('teacher.account.settings');
+Route::put('/teacher/accountSettings/{id}', [TeacherController::class, 'updateTeacher'])->name('teacher.update');
+
+// Account Settings (Parent)
+Route::get('/parent/accountSettings', [ParentController::class, 'accountSettings'])->name('parent.account.settings');
+Route::put('/parent/accountSettings/{id}', [ParentController::class, 'updateParent'])->name('parent.update');
+
+
+// Route::post('/updateAdminAccount/{id}', [AdminController::class, 'updateAdmin'])->name('update.admin');
 
 Route::get('/showAllTeachers', [AdminController::class, 'showAllTeachers'])->name('show.teachers');
 
@@ -168,7 +178,9 @@ Route::get('/classes/{grade_level}/{section}', [ClassController::class, 'showCla
 
 Route::get('/classes/{grade_level}/{section}/masterList', [ClassController::class, 'masterList'])->name('classes.masterList');
 
-Route::get('/classes/{grade_level}/{section}/export-master-list', [ClassController::class, 'exportMasterList'])->name('classes.exportMasterList');
+Route::get('/classes/{grade_level}/{section}/subjects', [ClassController::class, 'subjects'])->name('classes.subjects');
+
+Route::get('/classes/{grade_level}/{section}/{subject}/grades', [ClassController::class, 'grades'])->name('classes.grades');
 
 
 // Schedule Management (on ADMIN dashboard)
@@ -196,6 +208,16 @@ Route::middleware('auth')->prefix('announcements')->name('announcements.')->grou
     Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('update');
     Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
 });
+
+Route::get('/announcement/redirect/{id}', function ($id) {
+    if (Auth::check()) {
+        // Logged in — send to dashboard
+        return redirect()->route('home', ['announcement_id' => $id]);
+    } else {
+        // Not logged in — send to login page
+        return redirect()->route('login')->with('redirect_announcement', $id);
+    }
+})->name('announcement.redirect');
 
 Route::post('/announcements/upload-image', [AnnouncementController::class, 'uploadImage'])
     ->name('announcements.uploadImage');

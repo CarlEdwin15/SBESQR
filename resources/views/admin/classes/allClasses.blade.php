@@ -276,6 +276,22 @@
                                         @else
                                             <h6 class="text-warning">No adviser assigned</h6>
                                         @endif
+
+                                        @php
+                                            $studentCount = \App\Models\ClassStudent::where('class_id', $class->id)
+                                                ->whereHas('schoolYear', function ($q) use ($selectedYear) {
+                                                    $q->where('school_year', $selectedYear);
+                                                })
+                                                ->whereIn('enrollment_status', ['enrolled', 'active'])
+                                                ->count();
+                                        @endphp
+
+                                        @if ($studentCount > 0)
+                                            <span class="text-success fw-bold">{{ $studentCount }}</span> students
+                                            enrolled
+                                        @else
+                                            <span class="text-muted">No students enrolled</span>
+                                        @endif
                                     </a>
                                 </div>
                             </div>

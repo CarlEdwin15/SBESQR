@@ -12,13 +12,19 @@ use App\Models\Announcement;
 
 class HomeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         if (!Auth::check()) {
             return redirect()->route('welcome');
         }
 
-        // 🔹 Flash success message only once after login
+        // Check if redirected after login for announcement
+        if (session()->has('redirect_announcement')) {
+            $request->merge(['announcement_id' => session('redirect_announcement')]);
+            session()->forget('redirect_announcement');
+        }
+
+        // Flash success message only once after login
         if (!session()->has('login_success_shown')) {
             session()->flash('success', 'Login successful!');
             session(['login_success_shown' => true]);
@@ -50,17 +56,17 @@ class HomeController extends Controller
         }
 
         if ($role == 'admin') {
-            // 🔹 All school years for dropdown
+            // All school years for dropdown
             $schoolYears = SchoolYear::orderBy('start_date', 'desc')->get();
 
-            // 🔹 Selected school year (via ?school_year_id= or current active)
+            // Selected school year (via ?school_year_id= or current active)
             $selectedSchoolYear = request()->get('school_year_id')
                 ? SchoolYear::find(request()->get('school_year_id'))
                 : SchoolYear::where('start_date', '<=', now())
                 ->where('end_date', '>=', now())
                 ->first();
 
-            // 🔹 Default empty collection
+            // Default empty collection
             $enrolleesByGrade = collect();
 
             if ($selectedSchoolYear) {
@@ -80,11 +86,15 @@ class HomeController extends Controller
                     });
             }
 
+            // Pass announcement_id to dashboard view so modal can auto-open
+            $announcementId = $request->get('announcement_id');
+
             return view('admin.index', compact(
                 'notifications',
                 'schoolYears',
                 'selectedSchoolYear',
-                'enrolleesByGrade'
+                'enrolleesByGrade',
+                'announcementId'
             ));
         }
 

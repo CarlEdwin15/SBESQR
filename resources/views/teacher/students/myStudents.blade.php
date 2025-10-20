@@ -58,7 +58,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('teacher.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -172,18 +172,16 @@
                                 <th style="width: 20%;">Grade & Section</th>
                                 <th style="width: 15%;">Enrollment Status</th>
                                 <th style="width: 15%;">Enrollment Type</th>
-                                <th style="width: 15%;">Emergency Contact No.</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($students->sortBy([
-                                        ['student_lName', 'asc'],
-                                        ['student_fName', 'asc'],
-                                        ['student_mName', 'asc'],
-                                        ['student_extName', 'asc'],
-                                        ]) as $student)
-                                <tr class="student-row t-row"
+                                                        ['student_lName', 'asc'],
+                                                        ['student_fName', 'asc'],
+                                                        ['student_mName', 'asc'],
+                                                        ['student_extName', 'asc'],
+                                                        ]) as $student)
+                                <tr class="student-row"
                                     data-href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}"
                                     data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                     data-section="{{ strtolower(optional($student->class->first())->section) }}"
@@ -191,20 +189,29 @@
                                     data-lrn="{{ strtolower($student->student_lrn) }}"
                                     data-enrollment_status="{{ strtolower(optional($student->class->first())->pivot->enrollment_status ?? '') }}"
                                     data-enrollment_type="{{ strtolower(optional($student->class->first())->pivot->enrollment_type ?? '') }}">
-                                    <td>{{ $student->student_lName }},
-                                        {{ $student->student_fName }}
-                                        {{ $student->student_mName }}
-                                        {{ $student->student_extName }}</td>
                                     <td>
-                                        @if ($student->student_photo)
-                                            <img src="{{ asset('storage/' . $student->student_photo) }}"
-                                                alt="Profile Photo" width="30" height="30"
-                                                style="object-fit: cover; border-radius: 50%;">
-                                        @else
-                                            <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                alt="No Profile" width="30" height="30"
-                                                style="object-fit: cover; border-radius: 50%;">
-                                        @endif
+                                        <a href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}"
+                                            class="text-decoration-none text-dark fw-semibold">
+                                            {{ $student->student_lName }},
+                                            {{ $student->student_fName }}
+                                            {{ $student->student_mName }}
+                                            {{ $student->student_extName }}
+                                        </a>
+                                    </td>
+
+                                    <td>
+                                        <a
+                                            href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                            @if ($student->student_photo)
+                                                <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                    alt="Profile Photo" width="30" height="30"
+                                                    style="object-fit: cover; border-radius: 50%;">
+                                            @else
+                                                <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                    alt="No Profile" width="30" height="30"
+                                                    style="object-fit: cover; border-radius: 50%;">
+                                            @endif
+                                        </a>
                                     </td>
                                     <td>{{ $student->student_lrn }}</td>
                                     <td>{{ optional($student->class->first())->formatted_grade_level }}
@@ -239,36 +246,6 @@
                                             {{ strtoupper(str_replace('_', ' ', $type)) }}
                                         </span>
                                     </td>
-                                    <td>{{ $student->phone ?? 'N/A' }}</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <button class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <div class="dropdown-menu">
-                                                <a class="dropdown-item text-info"
-                                                    href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                    <i class="bx bxs-user-badge me-1"></i> View Profile
-                                                </a>
-                                                @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
-                                                    <a class="dropdown-item text-warning"
-                                                        href="{{ route('edit.student', ['id' => $student->id]) }}">
-                                                        <i class="bx bx-edit-alt me-1"></i> Edit
-                                                    </a>
-                                                    <button type="button" class="dropdown-item text-danger"
-                                                        onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}')">
-                                                        <i class="bx bx-user-x me-1"></i> Unenroll
-                                                    </button>
-                                                    <form id="unenroll-form-{{ $student->id }}"
-                                                        action="{{ route('unenroll.student', $student->id) }}"
-                                                        method="POST" style="display: none;">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                    </form>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
                                 </tr>
                             @empty
                                 <tr class="text-muted">
@@ -279,8 +256,27 @@
                     </table>
                 </div>
 
-                <!-- Pagination for this grade -->
-                <div class="d-flex justify-content-start px-3 py-2 border-top">
+                <!-- Pagination, table length, and info -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap px-3 py-2 border-top">
+                    <!-- Table length -->
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
+                        <label class="me-2 mb-0">Show</label>
+                        <select class="form-select form-select-sm w-auto" id="length-{{ Str::slug($grade) }}">
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="all">All</option>
+                        </select>
+                        <label class="ms-2 mb-0">entries</label>
+                    </div>
+
+                    <!-- Table info text -->
+                    <div id="table-info-{{ Str::slug($grade) }}" class="text-muted small mb-2 mb-md-0">
+                        Showing 1 to 5 of {{ count($students) }} entries
+                    </div>
+
+                    <!-- Pagination -->
                     <nav aria-label="Page navigation">
                         <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
                     </nav>
@@ -327,25 +323,39 @@
     </script>
 
     <script>
-        // pagination function
-        const paginators = {}; // Global reference for pagination functions
-        const visibleRowsMap = {}; // Store filtered rows for each table
+        const paginators = {}; // Global pagination references
+        const visibleRowsMap = {}; // Store filtered rows per table
+        const currentPageMap = {}; // Track current page per table
+        const tableLengthMap = {}; // Track selected rows per page
 
         function paginateTable(tableId, paginationId, rowsPerPage = 5, maxVisiblePages = 5) {
             const table = document.getElementById(tableId);
             const pagination = document.getElementById(paginationId);
+            const gradeSlug = tableId.replace('table-', '');
+            const info = document.getElementById(`table-info-${gradeSlug}`);
+            const lengthSelect = document.getElementById(`length-${gradeSlug}`);
+
+            tableLengthMap[tableId] = rowsPerPage;
+            currentPageMap[tableId] = 1;
 
             function showPage(page) {
                 const rows = visibleRowsMap[tableId] || Array.from(table.querySelectorAll("tbody tr"));
-
-                const totalPages = Math.ceil(rows.length / rowsPerPage);
-                const start = (page - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
+                const totalRows = rows.length;
+                const perPage = tableLengthMap[tableId] === "all" ? totalRows : parseInt(tableLengthMap[tableId]);
+                const totalPages = Math.ceil(totalRows / perPage);
+                const start = (page - 1) * perPage;
+                const end = start + perPage;
 
                 rows.forEach((row, index) => {
                     row.style.display = (index >= start && index < end) ? "" : "none";
                 });
 
+                // Update table info text
+                const startEntry = totalRows === 0 ? 0 : start + 1;
+                const endEntry = Math.min(end, totalRows);
+                info.textContent = `Showing ${startEntry} to ${endEntry} of ${totalRows} entries`;
+
+                // Build pagination
                 pagination.innerHTML = "";
                 const ul = document.createElement("ul");
                 ul.className = "pagination mb-0";
@@ -380,13 +390,21 @@
                 ul.appendChild(next);
 
                 pagination.appendChild(ul);
+                currentPageMap[tableId] = page;
             }
 
-            paginators[tableId] = () => showPage(1);
+            // Handle change in table length
+            if (lengthSelect) {
+                lengthSelect.addEventListener("change", function() {
+                    tableLengthMap[tableId] = this.value;
+                    showPage(1);
+                });
+            }
 
-            // On load, store all rows
+            // On load
             visibleRowsMap[tableId] = Array.from(table.querySelectorAll("tbody tr.student-row"));
             showPage(1);
+            paginators[tableId] = () => showPage(1);
         }
 
         document.addEventListener("DOMContentLoaded", () => {

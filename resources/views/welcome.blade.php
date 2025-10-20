@@ -25,8 +25,8 @@
                 <ul>
                     <li><a href="#hero" data-aos="fade-up" data-aos-delay="100" class="active">Home</a></li>
                     <li><a href="#about" data-aos="fade-up" data-aos-delay="100">About</a></li>
-                    <li><a href="#announcement-section" id="announcement-nav" data-aos="fade-up" data-aos-delay="100"
-                            style="display: none;">Announcements</a></li>
+                    {{-- <li><a href="#announcement-section" id="announcement-nav" data-aos="fade-up" data-aos-delay="100"
+                            style="display: none;">Announcements</a></li> --}}
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
@@ -113,7 +113,7 @@
         <!-- /About Section -->
 
         <!-- Announcement Section -->
-        <section id="announcement-section" class="testimonials section dark-background" style="display: none;">
+        {{-- <section id="announcement-section" class="testimonials section dark-background" style="display: none;">
             <img src="{{ asset('assets/img/testimonials-bg.jpg') }}" class="testimonials-bg"
                 alt="announcement-section-bg" />
 
@@ -141,10 +141,6 @@
                         @forelse($announcements as $announcement)
                             <div class="swiper-slide">
                                 <div class="testimonial-item">
-                                    {{-- <img src="assets/img/testimonials/testimonials-1.jpg" class="testimonial-img"
-                                        alt="" />
-                                    <h3>Saul Goodman</h3>
-                                    <h4>Ceo &amp; Founder</h4> --}}
                                     <div class="text-end">{{ $announcement->date_published?->format('M d, Y | l | h:i A') }}</div>
                                     <h3 class="text-black text-center announcement-title">{{ $announcement->title }}</h3>
                                     <div class="quill-content announcement-body">
@@ -165,7 +161,7 @@
                     <div class="swiper-pagination"></div>
                 </div>
             </div>
-        </section>
+        </section> --}}
         <!-- /Announcement Section -->
 
 
