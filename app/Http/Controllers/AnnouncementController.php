@@ -7,14 +7,14 @@ use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // ✅ Import Log
+use Illuminate\Support\Facades\Log;
 use App\Events\AnnouncementBroadcasted;
 use App\Models\User;
 use App\Notifications\AnnouncementNotification;
 use App\Services\WebPushService;
 use Carbon\Carbon;
-use Minishlink\WebPush\WebPush; // ✅ Import WebPush
-use Minishlink\WebPush\Subscription; // ✅ Import Subscription
+use Minishlink\WebPush\WebPush;
+use Minishlink\WebPush\Subscription;
 use Illuminate\Support\Facades\Notification;
 use NotificationChannels\WebPush\PushSubscription;
 
@@ -129,15 +129,29 @@ class AnnouncementController extends Controller
 
         $announcement = Announcement::create($validated);
 
-        if ($announcement->status === 'active') {
-            app(WebPushService::class)->broadcast([
-                'title' => '📢 New Announcement',
-                'body'  => $announcement->title,
-                'url'   => route('announcement.redirect', ['id' => $announcement->id]),
-                'tag'   => 'announcement-' . $announcement->id,
-                'id'    => $announcement->id,
-            ]);
+        // Handle recipients
+        if ($request->filled('recipients')) {
+            $recipientIds = array_unique($request->input('recipients'));
+            $announcement->recipients()->sync($recipientIds);
+
+            // Only notify selected recipients
+            $recipients = User::whereIn('id', $recipientIds)->get();
+            Notification::send($recipients, new AnnouncementNotification($announcement));
+        } else {
+            // Optional: broadcast to all users who have push subscriptions
+            $recipients = User::whereHas('pushSubscriptions')->get();
+            Notification::send($recipients, new AnnouncementNotification($announcement));
         }
+
+        // if ($announcement->status === 'active') {
+        //     app(WebPushService::class)->broadcast([
+        //         'title' => '📢 New Announcement',
+        //         'body'  => $announcement->title,
+        //         'url'   => route('announcement.redirect', ['id' => $announcement->id]),
+        //         'tag'   => 'announcement-' . $announcement->id,
+        //         'id'    => $announcement->id,
+        //     ]);
+        // }
 
         Announcement::where('status', '!=', 'archive')
             ->whereNotNull('end_date')
@@ -148,17 +162,22 @@ class AnnouncementController extends Controller
             ->with('success', 'Announcement posted successfully.');
     }
 
-    public function edit(Announcement $announcement)
+    public function edit($id)
     {
-        $schoolYears = SchoolYear::orderByDesc('school_year')->get();
+        $announcement = Announcement::with(['recipients'])->findOrFail($id);
+        $schoolYears = SchoolYear::all();
 
-        // If editing via AJAX modal (from index)
-        if (request()->ajax()) {
-            return view('admin.announcements.edit', compact('announcement', 'schoolYears'));
-        }
+        // Build a JSON-safe recipient list
+        $recipients = $announcement->recipients->map(fn($u) => [
+            'id' => $u->id,
+            'text' => "{$u->firstName} {$u->lastName} ({$u->email})",
+        ]);
 
-        // Full page edit fallback
-        return view('admin.announcements.edit', compact('announcement', 'schoolYears'));
+        return view('admin.announcements.edit', [
+            'announcement' => $announcement,
+            'schoolYears' => $schoolYears,
+            'recipientsJson' => $recipients->toJson(),
+        ]);
     }
 
     public function update(Request $request, Announcement $announcement)
@@ -201,16 +220,29 @@ class AnnouncementController extends Controller
 
         $announcement->update($validated);
 
-        // Re-broadcast if the updated announcement is active
-        if ($announcement->status === 'active') {
-            app(WebPushService::class)->broadcast([
-                'title' => '📢 Updated Announcement',
-                'body'  => $announcement->title,
-                'url'   => route('announcement.redirect', ['id' => $announcement->id]),
-                'tag'   => 'announcement-' . $announcement->id,
-                'id'    => $announcement->id,
-            ]);
+        if ($request->filled('recipients')) {
+            $recipientIds = array_unique($request->input('recipients'));
+            $announcement->recipients()->sync($recipientIds);
+
+            // Only notify selected recipients
+            $recipients = User::whereIn('id', $recipientIds)->get();
+            Notification::send($recipients, new AnnouncementNotification($announcement));
+        } else {
+            // Optional: broadcast to all users who have push subscriptions
+            $recipients = User::whereHas('pushSubscriptions')->get();
+            Notification::send($recipients, new AnnouncementNotification($announcement));
         }
+
+        // Re-broadcast if the updated announcement is active
+        // if ($announcement->status === 'active') {
+        //     app(WebPushService::class)->broadcast([
+        //         'title' => '📢 Updated Announcement',
+        //         'body'  => $announcement->title,
+        //         'url'   => route('announcement.redirect', ['id' => $announcement->id]),
+        //         'tag'   => 'announcement-' . $announcement->id,
+        //         'id'    => $announcement->id,
+        //     ]);
+        // }
 
         // Cleanup expired announcements → archive
         Announcement::where('status', '!=', 'archive')
@@ -278,5 +310,18 @@ class AnnouncementController extends Controller
         $start = $now->lt($cutoff) ? $year - 1 : $year;
 
         return $start . '-' . ($start + 1);
+    }
+
+    public function searchUser(Request $request)
+    {
+        $query = $request->input('q', '');
+        $users = User::query()
+            ->where('firstName', 'like', "%{$query}%")
+            ->orWhere('lastName', 'like', "%{$query}%")
+            ->orWhere('email', 'like', "%{$query}%")
+            ->limit(20)
+            ->get(['id', 'firstName', 'lastName', 'email']);
+
+        return response()->json($users);
     }
 }

@@ -19,7 +19,9 @@
         <h5 class="mb-0">Current School Year: {{ $schoolYear }}</h5>
     </div> --}}
 
-    @php
+
+
+    {{-- @php
         $nowPH = now('Asia/Manila')->format('Y-m-d H:i:s');
     @endphp
 
@@ -47,7 +49,7 @@
         }
 
         setInterval(updateClock, 1000);
-    </script>
+    </script> --}}
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <ul class="navbar-nav flex-row align-items-center ms-auto">
@@ -251,7 +253,6 @@
                     <h4 class="modal-title fw-bold mb-0 text-white" id="announcementModalLabel">
                         Announcement
                     </h4>
-                    <small class="d-block opacity-75 mt-1">Official School Notice</small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Close"></button>
@@ -280,6 +281,7 @@
         </div>
     </div>
 </div>
+<!-- /Announcement Modal -->
 
 <!-- Custom Styles -->
 <style>

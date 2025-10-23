@@ -23,6 +23,14 @@ return new class extends Migration
 
             $table->timestamps();
         });
+
+        Schema::create('announcement_user', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('announcement_id')->constrained('announcements')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function down(): void

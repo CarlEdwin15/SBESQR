@@ -281,13 +281,20 @@
                                 <div class="col-md-4">
                                     <div class="border rounded p-3 bg-light">
                                         <p><strong>Author:</strong> {{ $announcement->author_name }}</p>
-                                        <p><strong>Published:</strong> {{ $announcement->formatted_published }}
-                                        </p>
+                                        <p><strong>Published:</strong> {{ $announcement->formatted_published }}</p>
                                         <p><strong>School Year:</strong>
                                             {{ $announcement->schoolYear->school_year ?? 'N/A' }}</p>
-                                        <p><strong>Effective Date:</strong>
-                                            {{ $announcement->formatted_effective }} -
+                                        <p><strong>Effective Date:</strong> {{ $announcement->formatted_effective }} -
                                             {{ $announcement->formatted_end }}</p>
+
+                                        {{-- Recipients section --}}
+                                        @if ($announcement->recipients->count())
+                                            <p><strong>Recipients:</strong>
+                                                {{ $announcement->recipients->pluck('full_name')->join(', ') }}
+                                            </p>
+                                        @else
+                                            <p><strong>Recipients:</strong> All users</p>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -371,7 +378,6 @@
 @endsection
 
 @push('scripts')
-
     <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
 
     <!-- Pusher JS for Real-time Notifications -->
@@ -510,7 +516,7 @@
             <div class="spinner-border text-primary" role="status"></div>
             <p>Loading form...</p>
         </div>
-        `;
+                `;
 
             fetch(`/announcements/${id}/edit`)
                 .then(response => response.text())
@@ -518,8 +524,11 @@
                     modalBody.innerHTML = html;
                     form.action = `/announcements/${id}`;
 
-                    // Delay needed to ensure DOM is updated before init
-                    setTimeout(() => initEditQuillEditor(), 50);
+                    // Delay initialization to ensure DOM loads
+                    setTimeout(() => {
+                        initEditQuillEditor();
+                        initEditRecipientSelect(); // New line
+                    }, 100);
                 })
                 .catch(() => {
                     modalBody.innerHTML = '<div class="alert alert-danger">Failed to load the form.</div>';
@@ -564,7 +573,7 @@
                             }, {
                                 'list': 'bullet'
                             }],
-                            ['link', 'image'], // ✅ keep image button
+                            ['link', 'image'], // keep image button
                             ['clean']
                         ],
                         handlers: {
@@ -643,6 +652,50 @@
         }
     </script>
 
+    <!-- TomSelect Initialization for Edit Form -->
+    <script>
+        function initEditRecipientSelect() {
+            const selectEl = document.querySelector('#edit-recipients');
+            if (!selectEl) return;
+
+            const recipientSelect = new TomSelect(selectEl, {
+                plugins: ['remove_button', 'clear_button'],
+                create: false,
+                maxOptions: 100,
+                valueField: 'id',
+                labelField: 'text',
+                searchField: ['text'],
+                load: function(query, callback) {
+                    if (!query.length) return callback();
+                    fetch(`{{ route('search.user') }}?q=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(json => {
+                            const results = json.map(user => ({
+                                id: user.id,
+                                text: `${user.firstName} ${user.lastName} (${user.email})`
+                            }));
+                            callback(results);
+                        })
+                        .catch(() => callback());
+                },
+                render: {
+                    option: data => `<div><strong>${data.text}</strong></div>`,
+                    item: data => `<div>${data.text}</div>`
+                },
+                placeholder: 'Search and select recipients...',
+                preload: false,
+            });
+
+            // Preload existing recipients if available in Blade
+            if (window.existingRecipients) {
+                window.existingRecipients.forEach(u => {
+                    recipientSelect.addOption(u);
+                    recipientSelect.addItem(u.id);
+                });
+            }
+        }
+    </script>
+
     <!-- Search Functionality -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -677,7 +730,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
 
     <!-- Toastr Notification for Success Messages -->
-    @if (session('success'))
+    {{-- @if (session('success'))
         <script>
             $(document).ready(function() {
                 toastr.success(@json(session('success')), "Success", {
@@ -689,7 +742,7 @@
                 });
             });
         </script>
-    @endif
+    @endif --}}
 @endpush
 
 @push('styles')
@@ -761,6 +814,24 @@
         .active-announcement {
             border-left: 4px solid #198754;
             /* green for active */
+        }
+
+        .ts-control {
+            background-color: #e0f7fa;
+            border-color: #42a5f5;
+        }
+
+        .ts-control .item {
+            background-color: #4dd0e1;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 4px;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
         }
     </style>
 @endpush

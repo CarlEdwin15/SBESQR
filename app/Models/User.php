@@ -120,6 +120,13 @@ class User extends Authenticatable
         return $this->hasMany(Announcement::class, 'user_id');
     }
 
+    public function receivedAnnouncements()
+    {
+        return $this->belongsToMany(Announcement::class, 'announcement_user')
+            ->withPivot('read_at')
+            ->withTimestamps();
+    }
+
     public function pushSubscriptions()
     {
         return $this->hasMany(\App\Models\PushSubscription::class);

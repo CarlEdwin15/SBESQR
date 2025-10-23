@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use NotificationChannels\WebPush\PushSubscription as BasePushSubscription;
 
-class PushSubscription extends Model
+class PushSubscription extends BasePushSubscription
 {
     protected $fillable = [
         'user_id',
@@ -17,6 +17,6 @@ class PushSubscription extends Model
 
     public function user()
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class);
     }
 }

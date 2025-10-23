@@ -209,6 +209,8 @@ Route::middleware('auth')->prefix('announcements')->name('announcements.')->grou
     Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
 });
 
+Route::get('/users/search', [AnnouncementController::class, 'searchUser'])->name('search.user')->middleware('auth');
+
 Route::get('/announcement/redirect/{id}', function ($id) {
     if (Auth::check()) {
         // Logged in — send to dashboard

@@ -1,3 +1,13 @@
+{{-- Recipients --}}
+<div class="mb-3">
+    <label for="recipients" class="form-label fw-bold">Select Recipients</label>
+    <select id="recipients" name="recipients[]" multiple required></select>
+    <small class="form-text text-muted">
+        Search and select one or more users by name or email.
+    </small>
+</div>
+
+
 <div class="mb-3">
     <label for="title">Title</label>
     <input type="text" name="title" value="{{ old('title', $announcement->title ?? '') }}" class="form-control"
@@ -192,10 +202,70 @@
             });
         });
     </script>
+
+    <!-- Tom Select -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('recipients')) {
+                new TomSelect('#recipients', {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Search users by name or email...",
+                    valueField: 'id',
+                    labelField: 'text',
+                    searchField: 'text',
+
+                    load: function(query, callback) {
+                        if (!query.length) return callback();
+                        fetch(`{{ route('search.user') }}?q=${encodeURIComponent(query)}`)
+                            .then(res => res.json())
+                            .then(users => {
+                                const results = users.map(user => ({
+                                    id: user.id,
+                                    text: `${user.firstName} ${user.lastName} (${user.email})`
+                                }));
+                                callback(results);
+                            })
+                            .catch(() => callback());
+                    },
+
+                    render: {
+                        option: data => `
+                    <div class="py-1">
+                        <strong>${data.text}</strong>
+                    </div>
+                `,
+                        item: data => `
+                    <div>${data.text}</div>
+                `
+                    }
+                });
+            }
+        });
+    </script>
 @endpush
 
 
 @push('styles')
     <!-- Quill CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        .ts-control {
+            min-height: 42px;
+            border-radius: 0.375rem;
+            border-color: #ced4da;
+            font-size: 0.95rem;
+        }
+
+        .ts-control input {
+            padding: 4px !important;
+        }
+
+        .ts-dropdown .option {
+            padding: 6px 10px;
+        }
+    </style>
 @endpush

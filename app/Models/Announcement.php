@@ -34,7 +34,7 @@ class Announcement extends Model
         return $this->belongsTo(SchoolYear::class);
     }
 
-    // ✅ New method to calculate status dynamically
+    // New method to calculate status dynamically
     public function getStatus(): string
     {
         $now = now();
@@ -57,5 +57,12 @@ class Announcement extends Model
         }
 
         return 'inactive';
+    }
+
+    public function recipients()
+    {
+        return $this->belongsToMany(User::class, 'announcement_user', 'announcement_id', 'user_id')
+            ->withPivot('read_at')
+            ->withTimestamps();
     }
 }

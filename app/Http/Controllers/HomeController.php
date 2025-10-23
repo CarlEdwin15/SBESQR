@@ -33,8 +33,22 @@ class HomeController extends Controller
         $user = Auth::user();
         $role = $user->role ?? 'parent';
 
-        // Get recent announcements for dropdown
-        $notifications = Announcement::orderBy('date_published', 'desc')
+        // Only get announcements relevant to the logged-in user
+        $notifications = Announcement::where(function ($q) use ($user, $role) {
+            // Admins see all announcements
+            if ($role === 'admin') {
+                return;
+            }
+
+            // For non-admins: announcements specifically assigned to them
+            $q->whereHas('recipients', function ($r) use ($user) {
+                $r->where('users.id', $user->id);
+            });
+
+            // OR general (no recipients, meaning sent to everyone)
+            $q->orWhereDoesntHave('recipients');
+        })
+            ->orderByDesc('date_published')
             ->take(99)
             ->get();
 

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
@@ -44,17 +45,22 @@ class AnnouncementNotification extends Notification
      */
     public function toWebPush($notifiable, $notification)
     {
-        return (new WebPushMessage)
-            ->title("📢 " . $this->announcement->title)
-            ->body($this->announcement->body)
-            ->icon(asset('assetsDashboard/img/icons/announcement.png'))
-            ->badge(asset('assetsDashboard/img/icons/badge.png'))
-            ->vibrate([100, 50, 100])
-            ->tag('announcement-' . $this->announcement->id) // ensures grouping
-            ->data([
-                'url' => route('home', ['announcement_id' => $this->announcement->id]),
-                'id'  => $this->announcement->id,
-            ])
-            ->action('open', 'View Announcement');
+        try {
+            return (new WebPushMessage)
+                ->title("📢 " . $this->announcement->title)
+                ->body(strip_tags($this->announcement->body))
+                ->icon(asset('assetsDashboard/img/icons/announcement.png'))
+                ->badge(asset('assetsDashboard/img/icons/badge.png'))
+                ->vibrate([100, 50, 100])
+                ->tag('announcement-' . $this->announcement->id)
+                ->data([
+                    'url' => route('home', ['announcement_id' => $this->announcement->id]),
+                    'id' => $this->announcement->id,
+                ])
+                ->action('open', 'View Announcement');
+        } catch (\Exception $e) {
+            Log::error("WebPush failed for user {$notifiable->id}: " . $e->getMessage());
+            return null;
+        }
     }
 }
