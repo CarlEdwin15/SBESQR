@@ -92,9 +92,6 @@
                             <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
                         </div>
 
-
-                        <p class="text-center text-info fw-bold mb-3">Or sign in with Google</p>
-
                         {{-- Google Login --}}
                         <div style="display: flex; justify-content: center; align-items: center; margin-top: 1rem;">
                             <a href="{{ route('google.login') }}" class="btn btn-light d-flex align-items-center mb-1"

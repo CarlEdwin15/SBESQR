@@ -283,6 +283,112 @@
 </div>
 <!-- /Announcement Modal -->
 
+<!-- Announcement Modal Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modal = new bootstrap.Modal(document.getElementById('announcementModal'));
+        const content = document.getElementById('announcementContent');
+        const meta = document.getElementById('announcementMeta');
+
+        // Handle manual announcement click
+        document.querySelectorAll('.view-announcement').forEach(item => {
+            item.addEventListener('click', function() {
+                const id = this.dataset.id;
+
+                content.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <p class="text-muted">Fetching announcement details...</p>
+                </div>`;
+                meta.textContent = '';
+
+                modal.show();
+
+                fetch(`/announcements/${id}/show-ajax`)
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('announcementModalLabel').textContent = data
+                            .title;
+                        content.innerHTML =
+                            `<div class="announcement-body">${data.body}</div>`;
+                        meta.innerHTML = `
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
+                            <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
+                        </div>`;
+                    })
+                    .catch(() => {
+                        content.innerHTML =
+                            `<div class="alert alert-danger">Failed to load announcement.</div>`;
+                    });
+            });
+        });
+
+        // Auto-open from push link
+        const params = new URLSearchParams(window.location.search);
+        const announcementId = params.get('announcement_id');
+
+        if (announcementId) {
+            modal.show();
+            fetch(`/announcements/${announcementId}/show-ajax`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('announcementModalLabel').textContent = data.title;
+                    content.innerHTML = `<div class="announcement-body">${data.body}</div>`;
+                    meta.innerHTML = `
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
+                        <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
+                    </div>`;
+                    const newUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                })
+                .catch(() => {
+                    content.innerHTML =
+                    `<div class="alert alert-danger">Failed to load announcement.</div>`;
+                });
+        }
+
+        // Detect if user just came from login/welcome page
+        const referrer = document.referrer;
+        const cameFromLoginOrWelcome = referrer.includes('/login') || referrer.includes('/welcome');
+
+        // Store session flag in sessionStorage instead of Laravel session (client-side)
+        if (cameFromLoginOrWelcome && !sessionStorage.getItem('announcements_shown')) {
+            const announcements = @json($activeAnnouncements ?? []);
+            if (announcements.length > 0) {
+                sessionStorage.setItem('announcements_shown', 'true');
+                let index = 0;
+
+                const showNextAnnouncement = () => {
+                    if (index >= announcements.length) return;
+
+                    const ann = announcements[index];
+                    modal.show();
+                    document.getElementById('announcementModalLabel').textContent = ann.title;
+                    content.innerHTML = `<div class="announcement-body">${ann.body}</div>`;
+                    meta.innerHTML = `
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span><i class="bx bx-calendar me-1"></i> Effective: ${ann.formatted_effective}</span>
+                        <span><i class="bx bx-calendar me-1"></i> Ends: ${ann.formatted_end}</span>
+                        <span class="badge-author"><i class="bx bx-user me-1"></i> ${ann.author_name ?? ''}</span>
+                    </div>`;
+
+                    const modalEl = document.getElementById('announcementModal');
+                    modalEl.addEventListener('hidden.bs.modal', () => {
+                        index++;
+                        if (index < announcements.length) showNextAnnouncement();
+                    }, {
+                        once: true
+                    });
+                };
+
+                showNextAnnouncement();
+            }
+        }
+    });
+</script>
+
 <!-- Custom Styles -->
 <style>
     .bg-gradient-primary {
@@ -339,72 +445,3 @@
         border-top: 1px solid #dee2e6;
     }
 </style>
-
-<!-- Announcement Modal Script -->
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const modal = new bootstrap.Modal(document.getElementById('announcementModal'));
-        const content = document.getElementById('announcementContent');
-        const meta = document.getElementById('announcementMeta');
-
-        document.querySelectorAll('.view-announcement').forEach(item => {
-            item.addEventListener('click', function() {
-                const id = this.dataset.id;
-
-                content.innerHTML = `
-          <div class="text-center py-5">
-            <div class="spinner-border text-primary mb-3" role="status"></div>
-            <p class="text-muted">Fetching announcement details...</p>
-          </div>`;
-                meta.textContent = '';
-
-                modal.show();
-
-                fetch(`/announcements/${id}/show-ajax`)
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('announcementModalLabel').textContent = data
-                            .title;
-                        content.innerHTML = `
-              <div class="announcement-body">
-                ${data.body}
-              </div>`;
-                        meta.innerHTML = `
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
-                <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
-              </div>`;
-                    })
-                    .catch(() => {
-                        content.innerHTML =
-                            `<div class="alert alert-danger">Failed to load announcement.</div>`;
-                    });
-            });
-        });
-
-        // Auto-open from push link
-        const params = new URLSearchParams(window.location.search);
-        const announcementId = params.get('announcement_id');
-
-        if (announcementId) {
-            modal.show();
-            fetch(`/announcements/${announcementId}/show-ajax`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('announcementModalLabel').textContent = data.title;
-                    content.innerHTML = `<div class="announcement-body">${data.body}</div>`;
-                    meta.innerHTML = `
-            <div class="d-flex flex-wrap align-items-center gap-2">
-              <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
-              <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
-            </div>`;
-                    const newUrl = window.location.origin + window.location.pathname;
-                    window.history.replaceState({}, document.title, newUrl);
-                })
-                .catch(() => {
-                    content.innerHTML =
-                    `<div class="alert alert-danger">Failed to load announcement.</div>`;
-                });
-        }
-    });
-</script>

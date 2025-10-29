@@ -46,15 +46,24 @@ class AnnouncementNotification extends Notification
     public function toWebPush($notifiable, $notification)
     {
         try {
+            // Go directly to home route with announcement_id parameter
+            $homeUrl = route('home', ['announcement_id' => $this->announcement->id]);
+
+            Log::info('Sending WebPush notification with DIRECT home URL', [
+                'announcement_id' => $this->announcement->id,
+                'home_url' => $homeUrl,
+                'user_id' => $notifiable->id
+            ]);
+
             return (new WebPushMessage)
                 ->title("📢 " . $this->announcement->title)
                 ->body(strip_tags($this->announcement->body))
-                ->icon(asset('assetsDashboard/img/icons/announcement.png'))
-                ->badge(asset('assetsDashboard/img/icons/badge.png'))
+                ->icon(url('/assetsDashboard/img/icons/announcement.png'))
+                ->badge(url('/assetsDashboard/img/icons/badge.png'))
                 ->vibrate([100, 50, 100])
                 ->tag('announcement-' . $this->announcement->id)
                 ->data([
-                    'url' => route('home', ['announcement_id' => $this->announcement->id]),
+                    'url' => $homeUrl, // Direct to home with parameter
                     'id' => $this->announcement->id,
                 ])
                 ->action('open', 'View Announcement');

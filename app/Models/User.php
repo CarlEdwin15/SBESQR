@@ -122,7 +122,7 @@ class User extends Authenticatable
 
     public function receivedAnnouncements()
     {
-        return $this->belongsToMany(Announcement::class, 'announcement_user')
+        return $this->belongsToMany(Announcement::class, 'announcement_user', 'user_id', 'announcement_id')
             ->withPivot('read_at')
             ->withTimestamps();
     }

@@ -81,7 +81,18 @@ class AnnouncementController extends Controller
         $defaultYear = $this->getDefaultSchoolYear();
         $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
 
-        $notifications = Announcement::orderByDesc('date_published')->take(99)->get();
+        $user = Auth::user();
+
+        $user = Auth::user();
+        $notifications = collect(); // default empty collection
+        if ($user && $user->id) {  // Added check for $user->id to prevent null access
+            $notifications = Announcement::whereHas('recipients', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+                ->orderByDesc('date_published')
+                ->take(99)
+                ->get();
+        }
 
         return view('admin.announcements.index', compact(
             'announcements',
@@ -143,16 +154,6 @@ class AnnouncementController extends Controller
             Notification::send($recipients, new AnnouncementNotification($announcement));
         }
 
-        // if ($announcement->status === 'active') {
-        //     app(WebPushService::class)->broadcast([
-        //         'title' => '📢 New Announcement',
-        //         'body'  => $announcement->title,
-        //         'url'   => route('announcement.redirect', ['id' => $announcement->id]),
-        //         'tag'   => 'announcement-' . $announcement->id,
-        //         'id'    => $announcement->id,
-        //     ]);
-        // }
-
         Announcement::where('status', '!=', 'archive')
             ->whereNotNull('end_date')
             ->where('end_date', '<', now())
@@ -167,16 +168,23 @@ class AnnouncementController extends Controller
         $announcement = Announcement::with(['recipients'])->findOrFail($id);
         $schoolYears = SchoolYear::all();
 
-        // Build a JSON-safe recipient list
-        $recipients = $announcement->recipients->map(fn($u) => [
-            'id' => $u->id,
-            'text' => "{$u->firstName} {$u->lastName} ({$u->email})",
-        ]);
+        // Get default school year for consistent form behavior
+        $defaultYear = $this->getDefaultSchoolYear();
+        $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
+
+        // Build recipients data for JavaScript
+        $recipientsData = $announcement->recipients->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'text' => "{$user->firstName} {$user->lastName} ({$user->email})"
+            ];
+        });
 
         return view('admin.announcements.edit', [
             'announcement' => $announcement,
             'schoolYears' => $schoolYears,
-            'recipientsJson' => $recipients->toJson(),
+            'defaultSchoolYear' => $defaultSchoolYear,
+            'recipientsJson' => $recipientsData->toJson()
         ]);
     }
 
@@ -285,6 +293,32 @@ class AnnouncementController extends Controller
         ]);
     }
 
+    public function redirect($id)
+    {
+        Log::info('=== ANNOUNCEMENT REDIRECT START ===');
+        Log::info('Announcement ID: ' . $id);
+        Log::info('User authenticated: ' . (Auth::check() ? 'YES' : 'NO'));
+        Log::info('User ID: ' . (Auth::id() ?? 'NONE'));
+        Log::info('User role: ' . (Auth::check() ? Auth::user()->role : 'N/A'));
+        Log::info('Full URL: ' . request()->fullUrl());
+        Log::info('Session ID: ' . session()->getId());
+        Log::info('Headers: ' . json_encode(request()->header()));
+        Log::info('IP: ' . request()->ip());
+
+        if (Auth::check()) {
+            Log::info('✅ User IS logged in, redirecting to home with announcement_id');
+            $redirectUrl = route('home', ['announcement_id' => $id]);
+            Log::info('Redirect URL: ' . $redirectUrl);
+            return redirect($redirectUrl);
+        } else {
+            Log::info('❌ User NOT logged in, storing in session and redirecting to login');
+            session(['login_redirect_announcement' => $id]);
+            Log::info('Session data stored: ' . $id);
+            Log::info('Session all data: ' . json_encode(session()->all()));
+            return redirect()->route('login');
+        }
+    }
+
     public function uploadImage(Request $request)
     {
         $request->validate([
@@ -315,11 +349,16 @@ class AnnouncementController extends Controller
     public function searchUser(Request $request)
     {
         $query = $request->input('q', '');
+        $role = $request->input('role', '');
+
         $users = User::query()
-            ->where('firstName', 'like', "%{$query}%")
-            ->orWhere('lastName', 'like', "%{$query}%")
-            ->orWhere('email', 'like', "%{$query}%")
-            ->limit(20)
+            ->when($role, fn($q) => $q->where('role', $role))
+            ->where(function ($q) use ($query) {
+                $q->where('firstName', 'like', "%{$query}%")
+                    ->orWhere('lastName', 'like', "%{$query}%")
+                    ->orWhere('email', 'like', "%{$query}%");
+            })
+            ->limit(50)
             ->get(['id', 'firstName', 'lastName', 'email']);
 
         return response()->json($users);

@@ -65,4 +65,21 @@ class Announcement extends Model
             ->withPivot('read_at')
             ->withTimestamps();
     }
+
+    protected $appends = ['author_name', 'formatted_effective', 'formatted_end'];
+
+    public function getAuthorNameAttribute()
+    {
+        return $this->user ? $this->user->full_name : 'System';
+    }
+
+    public function getFormattedEffectiveAttribute()
+    {
+        return $this->effective_date ? $this->effective_date->format('M d, Y') : '';
+    }
+
+    public function getFormattedEndAttribute()
+    {
+        return $this->end_date ? $this->end_date->format('M d, Y') : '';
+    }
 }

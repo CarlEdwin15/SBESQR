@@ -195,7 +195,7 @@
                                                     '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}?mark_absent=true',
                                                     '{{ $schedule->start_time }}',
                                                     '{{ $schedule->end_time }}')">
-                                    📷 Start QR Attendance
+                                    <i class='bx bx-scan'></i> Start QR Attendance
                                     ({{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} -
                                     {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }})
                                 </button>

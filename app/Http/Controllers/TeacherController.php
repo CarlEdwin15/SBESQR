@@ -1716,6 +1716,110 @@ class TeacherController extends Controller
         return $pdf->stream($filename);
     }
 
+    public function studentForm10($student_id)
+    {
+        // Load student with necessary relationships
+        $student = Student::with(['address', 'parents'])->findOrFail($student_id);
+
+        // Fetch class history (all enrolled classes, sorted by school year descending)
+        $classHistory = $student->class()
+            ->with([
+                'advisers' => function ($q) {
+                    $q->wherePivot('role', 'adviser');
+                }
+            ])
+            ->get()
+            ->sortByDesc(function ($classItem) {
+                return $classItem->pivot->school_year_id;
+            })
+            ->values();
+
+        // Preload school years for efficiency
+        $schoolYears = SchoolYear::whereIn('id', $classHistory->pluck('pivot.school_year_id'))->pluck('school_year', 'id');
+
+        // Prepare grades data (similar to studentInfo method)
+        $gradesByClass = [];
+        $generalAverages = [];
+
+        foreach ($classHistory as $classItem) {
+            $classSubjects = $classItem->classSubjects()
+                ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
+                    $q->where('student_id', $student->id);
+                }])
+                ->where('school_year_id', $classItem->pivot->school_year_id)
+                ->get();
+
+            $subjectsWithGrades = [];
+            $finalGrades = [];
+
+            foreach ($classSubjects as $classSubject) {
+                $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
+                    return [
+                        'quarter' => $quarter->quarter,
+                        'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
+                    ];
+                });
+
+                $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
+                $finalAverage = null;
+                $remarks = null;
+
+                if ($allQuartersHaveGrades) {
+                    $grades = $quarters->pluck('grade')->all();
+                    $finalAverage = round(array_sum($grades) / 4, 2);
+                    $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
+                    $finalGrades[] = $finalAverage;
+                }
+
+                $subjectsWithGrades[] = [
+                    'subject' => $classSubject->subject->name,
+                    'quarters' => $quarters,
+                    'final_average' => $finalAverage,
+                    'remarks' => $remarks,
+                ];
+            }
+
+            $gradesByClass[$classItem->id] = $subjectsWithGrades;
+
+            // General Average
+            $totalSubjects = count($classSubjects);
+            $completedSubjects = count($finalGrades);
+            if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
+                $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+                $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
+                $generalAverages[$classItem->id] = [
+                    'general_average' => $generalAverage,
+                    'remarks' => $remarks,
+                ];
+            } else {
+                $generalAverages[$classItem->id] = null;
+            }
+        }
+
+        // Prepare data for PDF
+        $data = [
+            'student' => $student,
+            'classHistory' => $classHistory,
+            'gradesByClass' => $gradesByClass,
+            'generalAverages' => $generalAverages,
+            'schoolYears' => $schoolYears, // Add this
+            'school' => [
+                'name' => 'STA. BARBARA ELEMENTARY SCHOOL',
+                'division' => 'Schools Division Office of Camarines Sur',
+                'region' => 'Region V',
+                'department' => 'Republic of the Philippines, Department of Education',
+            ],
+        ];
+
+        // Generate PDF with custom paper size (8.5 x 13 inches in points)
+        $pdf = Pdf::loadView('pdf.student_form10', $data)
+            ->setPaper([0, 0, 612, 936], 'portrait'); // 8.5" width, 13" height
+
+        // Stream the PDF
+        $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.pdf';
+        return $pdf->stream($filename);
+    }
+
     public function editStudentInfo($student_id)
     {
         $student = Student::findOrFail($student_id);

@@ -378,7 +378,7 @@
 
         let scanner = new Instascan.Scanner({
             video: document.getElementById('preview'),
-            mirror: true
+            mirror: false
         });
 
         const qrResult = document.getElementById('qr-result');
@@ -472,8 +472,17 @@
         });
 
         Instascan.Camera.getCameras().then(cameras => {
-            if (cameras.length > 0) scanner.start(cameras[0]);
-            else alert('No cameras found.');
+            if (cameras.length > 0) {
+                // Try to find a back (environment) camera first
+                let selectedCam = cameras.find(cam => cam.name.toLowerCase().includes('back')) ||
+                    cameras.find(cam => cam.name.toLowerCase().includes('rear')) ||
+                    cameras.find(cam => cam.name.toLowerCase().includes('environment')) ||
+                    cameras[cameras.length - 1]; // fallback to last camera
+
+                scanner.start(selectedCam);
+            } else {
+                alert('No cameras found.');
+            }
         }).catch(e => {
             console.error(e);
             alert('Camera error: ' + e);

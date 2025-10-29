@@ -50,7 +50,7 @@ class AdminSeeder extends Seeder
         ]);
 
         $class1 = Classes::firstOrCreate([
-            'grade_level' => 'kindergarten',
+            'grade_level' => 'grade1',
             'section' => 'A',
         ]);
 
@@ -62,9 +62,9 @@ class AdminSeeder extends Seeder
 
         // Teacher 2
         $teacher2 = User::create([
-            'firstName' => 'Jison',
-            'middleName' => 'Santos',
-            'lastName' => 'Titum',
+            'firstName' => 'John Renz',
+            'middleName' => 'Barrio',
+            'lastName' => 'Gavina',
             'email' => 'piggypogi09@gmail.com',
             'password' => Hash::make('@Pogi123'),
             'role' => 'teacher',
@@ -76,7 +76,7 @@ class AdminSeeder extends Seeder
         ]);
 
         $class2 = Classes::firstOrCreate([
-            'grade_level' => 'grade1',
+            'grade_level' => 'kindergarten',
             'section' => 'A',
         ]);
 

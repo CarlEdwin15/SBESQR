@@ -156,7 +156,9 @@
             All Announcements
         </h4>
 
-        <h3 class="text-center text-primary fw-bold mt-5 mb-5"> 📢 Announcement Management</h3>
+        <h3 class="text-center text-primary fw-bold mt-5 mb-5"> <img
+                src="{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}" alt=""
+                style="width: 40px; height: 40px;"> Announcement Management</h3>
 
 
         {{-- Add New and Filters --}}
@@ -230,7 +232,9 @@
                             data-bs-target="#collapse{{ $announcement->id }}" aria-expanded="false"
                             aria-controls="collapse{{ $announcement->id }}">
                             {{ $announcement->formatted_published }}
-                            | 📢 {{ $announcement->title }}
+                            | <img src="{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}"
+                                alt="" style="width: 24px; height: 24px; margin-right: 10px; margin-left: 10px;">
+                            {{ $announcement->title }}
                             <span
                                 class="ms-2 badge
                                             @if ($announcement->computed_status == 'active') bg-success
@@ -312,7 +316,7 @@
 
         {{-- Create Modal --}}
         <div class="modal fade" id="createAnnouncementModal" tabindex="-1"
-            aria-labelledby="createAnnouncementModalLabel" aria-hidden="true">
+            aria-labelledby="createAnnouncementModalLabel" aria-hidden="true" data-bs-backdrop="static">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <form method="POST" action="{{ route('announcements.store') }}" id="createAnnouncementForm">
@@ -342,7 +346,7 @@
 
         {{-- Edit Modal --}}
         <div class="modal fade" id="editAnnouncementModal" tabindex="-1" aria-labelledby="editAnnouncementModalLabel"
-            aria-hidden="true">
+            aria-hidden="true" data-bs-backdrop="static">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <form method="POST" id="editAnnouncementForm">
@@ -512,11 +516,11 @@
             const form = document.getElementById('editAnnouncementForm');
 
             modalBody.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p>Loading form...</p>
-        </div>
-                `;
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p>Loading form...</p>
+            </div>
+        `;
 
             fetch(`/announcements/${id}/edit`)
                 .then(response => response.text())
@@ -524,10 +528,11 @@
                     modalBody.innerHTML = html;
                     form.action = `/announcements/${id}`;
 
-                    // Delay initialization to ensure DOM loads
+                    // Initialize all edit form components
                     setTimeout(() => {
                         initEditQuillEditor();
-                        initEditRecipientSelect(); // New line
+                        initEditRecipientSelect();
+                        initEditUserModal(); // Initialize the user modal for edit form
                     }, 100);
                 })
                 .catch(() => {
@@ -573,7 +578,7 @@
                             }, {
                                 'list': 'bullet'
                             }],
-                            ['link', 'image'], // keep image button
+                            ['link', 'image'],
                             ['clean']
                         ],
                         handlers: {
@@ -652,7 +657,7 @@
         }
     </script>
 
-    <!-- TomSelect Initialization for Edit Form -->
+    <!-- TomSelect and User Modal Initialization for Edit Form -->
     <script>
         function initEditRecipientSelect() {
             const selectEl = document.querySelector('#edit-recipients');
@@ -686,13 +691,234 @@
                 preload: false,
             });
 
-            // Preload existing recipients if available in Blade
-            if (window.existingRecipients) {
-                window.existingRecipients.forEach(u => {
-                    recipientSelect.addOption(u);
-                    recipientSelect.addItem(u.id);
+            // Store reference for use in modal
+            window.editRecipientSelect = recipientSelect;
+        }
+
+        function initEditUserModal() {
+            const modal = new bootstrap.Modal(document.getElementById('editUserSelectModal'));
+            const userListContainer = document.getElementById('editUserListContainer');
+            const roleFilter = document.getElementById('editRoleFilter');
+            const openModalBtn = document.getElementById('editOpenUserModal');
+
+            const addSelectedBtn = document.getElementById('editAddSelectedUsers');
+            const tableLength = document.getElementById('editTableLength');
+            const userSearch = document.getElementById('editUserSearch');
+            const selectAllUsers = document.getElementById('editSelectAllUsers');
+            const selectAllLabel = document.querySelector('label[for="editSelectAllUsers"]');
+            const tableInfo = document.getElementById('editTableInfo');
+            const pagination = document.getElementById('editPagination');
+
+            let allUsers = [];
+            let filteredUsers = [];
+            let currentPage = 1;
+            let itemsPerPage = tableLength ? parseInt(tableLength.value) : 10;
+            let persistentSelectedUsers = new Map();
+
+            // Function to update the "Add Selected" button label dynamically
+            function updateEditAddSelectedButtonLabel() {
+                const count = persistentSelectedUsers.size;
+                if (count > 0) {
+                    addSelectedBtn.textContent = `Add ${count} Selected`;
+                } else {
+                    addSelectedBtn.textContent = 'Add Selected';
+                }
+            }
+
+            // Initialize with current recipients from TomSelect
+            if (window.editRecipientSelect) {
+                const currentItems = window.editRecipientSelect.items;
+                const currentOptions = window.editRecipientSelect.options;
+                currentItems.forEach(id => {
+                    if (currentOptions[id]) {
+                        persistentSelectedUsers.set(id, {
+                            id: id,
+                            text: currentOptions[id].text
+                        });
+                    }
+                });
+                updateEditAddSelectedButtonLabel();
+            }
+
+            if (openModalBtn) {
+                openModalBtn.addEventListener('click', function() {
+                    modal.show();
+                    loadEditUsers();
+                    updateEditSelectAllLabel(); // set initial label
+                    updateEditAddSelectedButtonLabel(); // initialize button label correctly
                 });
             }
+
+            // clear the label when modal closes
+            document.getElementById('editUserSelectModal').addEventListener('hidden.bs.modal', function() {
+                updateEditAddSelectedButtonLabel();
+            });
+
+            if (roleFilter) {
+                roleFilter.addEventListener('change', () => {
+                    loadEditUsers();
+                    updateEditSelectAllLabel(); // update label dynamically
+                });
+            }
+
+            if (tableLength) {
+                tableLength.addEventListener('change', () => {
+                    itemsPerPage = parseInt(tableLength.value);
+                    currentPage = 1;
+                    renderEditUsers();
+                });
+            }
+
+            if (userSearch) {
+                userSearch.addEventListener('input', () => {
+                    currentPage = 1;
+                    filterEditUsers();
+                });
+            }
+
+            if (selectAllUsers) {
+                selectAllUsers.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.edit-user-checkbox');
+                    checkboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                        cb.dispatchEvent(new Event('change'));
+                    });
+                    updateEditAddSelectedButtonLabel(); // ensure label updates after select all
+                });
+            }
+
+            if (addSelectedBtn) {
+                addSelectedBtn.addEventListener('click', function() {
+                    persistentSelectedUsers.forEach(u => {
+                        if (!window.editRecipientSelect.options[u.id]) {
+                            window.editRecipientSelect.addOption({
+                                id: u.id,
+                                text: u.text
+                            });
+                        }
+                        window.editRecipientSelect.addItem(u.id);
+                    });
+                    modal.hide();
+                });
+            }
+
+            function loadEditUsers() {
+                const role = roleFilter ? roleFilter.value : '';
+                if (userListContainer) {
+                    userListContainer.innerHTML = '<p class="text-muted text-center">Loading...</p>';
+                }
+
+                fetch(`{{ route('search.user') }}?role=${encodeURIComponent(role)}`)
+                    .then(res => res.json())
+                    .then(users => {
+                        allUsers = users;
+                        filteredUsers = [...allUsers];
+                        currentPage = 1;
+                        renderEditUsers();
+                    })
+                    .catch(() => {
+                        if (userListContainer) {
+                            userListContainer.innerHTML =
+                                '<p class="text-danger text-center">Failed to load users.</p>';
+                        }
+                    });
+            }
+
+            function filterEditUsers() {
+                const query = userSearch ? userSearch.value.toLowerCase() : '';
+                filteredUsers = allUsers.filter(u =>
+                    `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(query)
+                );
+                renderEditUsers();
+            }
+
+            function renderEditUsers() {
+                const start = (currentPage - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                const paginated = filteredUsers.slice(start, end);
+
+                if (!userListContainer) return;
+
+                if (paginated.length === 0) {
+                    userListContainer.innerHTML = '<p class="text-muted text-center">No users found.</p>';
+                    if (tableInfo) tableInfo.textContent = '';
+                    if (pagination) pagination.innerHTML = '';
+                    return;
+                }
+
+                userListContainer.innerHTML = paginated.map(u => {
+                    const userText = `${u.firstName} ${u.lastName} (${u.email})`;
+                    const isChecked = persistentSelectedUsers.has(u.id.toString()) ? 'checked' : '';
+                    return `
+                    <div class="form-check border-bottom py-2">
+                        <input class="form-check-input edit-user-checkbox" type="checkbox" value="${u.id}" id="edit-user-${u.id}"
+                            data-text="${userText}" ${isChecked}>
+                        <label class="form-check-label" for="edit-user-${u.id}">
+                            <strong>${u.firstName} ${u.lastName}</strong>
+                            <small>(${u.email})</small>
+                        </label>
+                    </div>
+                `;
+                }).join('');
+
+                userListContainer.querySelectorAll('.edit-user-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        const id = this.value.toString();
+                        const text = this.dataset.text;
+                        if (this.checked) {
+                            persistentSelectedUsers.set(id, {
+                                id,
+                                text
+                            });
+                        } else {
+                            persistentSelectedUsers.delete(id);
+                            if (window.editRecipientSelect) {
+                                window.editRecipientSelect.removeItem(id);
+                            }
+                        }
+                        updateEditAddSelectedButtonLabel();
+                    });
+                });
+
+                const total = filteredUsers.length;
+                if (tableInfo) {
+                    tableInfo.textContent = `Showing ${start + 1} to ${Math.min(end, total)} of ${total} users`;
+                }
+                renderEditPagination(total);
+            }
+
+            function renderEditPagination(totalItems) {
+                if (!pagination) return;
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                pagination.innerHTML = '';
+
+                if (totalPages <= 1) return;
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    li.innerHTML = `<button class="page-link">${i}</button>`;
+                    li.addEventListener('click', () => {
+                        currentPage = i;
+                        renderEditUsers();
+                    });
+                    pagination.appendChild(li);
+                }
+            }
+
+            function updateEditSelectAllLabel() {
+                if (!roleFilter || !selectAllLabel) return;
+                const role = roleFilter.value;
+                let labelText = 'Select All Users';
+                if (role) {
+                    const capitalized = role.charAt(0).toUpperCase() + role.slice(1);
+                    labelText = `Select All ${capitalized}${role.endsWith('s') ? '' : 's'}`;
+                }
+                selectAllLabel.textContent = labelText;
+            }
+
+            // Load users initially
+            loadEditUsers();
         }
     </script>
 

@@ -1,16 +1,91 @@
-<div class="mb-3">
-    <label for="recipients" class="form-label">Recipients</label>
-    <select id="edit-recipients" name="recipients[]" multiple placeholder="Select recipients..." class="form-select">
-        {{-- Dynamically loaded via Tom Select --}}
+{{-- Recipients --}}
+<div class="mb-3 position-relative">
+    <label for="edit-recipients" class="form-label fw-bold d-flex justify-content-between align-items-center">
+        <span>Select Recipients</span>
+        <button type="button" id="editOpenUserModal" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-people"></i> Choose from Users List
+        </button>
+    </label>
+
+    <select id="edit-recipients" name="recipients[]" multiple required>
+        @if (isset($announcement) && $announcement->recipients->count())
+            @foreach ($announcement->recipients as $recipient)
+                <option value="{{ $recipient->id }}" selected>
+                    {{ $recipient->firstName }} {{ $recipient->lastName }} ({{ $recipient->email }})
+                </option>
+            @endforeach
+        @endif
     </select>
+
+    <small class="form-text text-muted">
+        You can search by name/email or click "Choose from list" to select multiple users.
+    </small>
 </div>
 
-<script>
-    window.existingRecipients = {!! $recipientsJson ?? '[]' !!};
-</script>
+<!-- User Selection Modal for Edit Form -->
+<div class="modal fade" id="editUserSelectModal" tabindex="-1" aria-labelledby="editUserSelectModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserSelectModalLabel">Select Recipients</h5>
+            </div>
+
+            <div class="modal-body">
+                <div class="col ms-auto mb-2">
+                    <input type="text" id="editUserSearch" class="form-control" placeholder="Search name/email...">
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="col-auto">
+                        <select id="editTableLength" class="form-select w-auto">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select id="editRoleFilter" class="form-select">
+                            <option value="">All Roles</option>
+                            <option value="admin">Admin</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="parent">Parent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <input type="checkbox" id="editSelectAllUsers" class="form-check-input me-2">
+                        <label for="editSelectAllUsers" class="form-check-label">Select All</label>
+                    </div>
+                </div>
+
+                <div id="editUserListContainer" class="border rounded p-2" style="max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted text-center">Loading users...</p>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div id="editTableInfo" class="text-muted small"></div>
+                    <nav>
+                        <ul class="pagination pagination mb-0" id="editPagination"></ul>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="editAddSelectedUsers" class="btn btn-primary">Add Selected</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="mb-3">
-    <label for="title">Title</label>
+    <label for="title">Subject</label>
     <input type="text" name="title" value="{{ old('title', $announcement->title ?? '') }}" class="form-control"
         required>
     @error('title')
@@ -83,158 +158,6 @@
     </div>
 </div>
 
-@push('scripts')
-    <!-- Quill JS -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    <!-- Tom Select JS -->
-    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
-
-    <!-- Initialization Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 🔹 Initialize Quill Editor
-            const Font = Quill.import('formats/font');
-            Font.whitelist = ['sans-serif', 'serif', 'monospace'];
-            Quill.register(Font, true);
-
-            const editQuill = new Quill('#edit-quill-editor', {
-                theme: 'snow',
-                placeholder: 'Write your announcement here...',
-                modules: {
-                    toolbar: {
-                        container: [
-                            [{
-                                'font': Font.whitelist
-                            }],
-                            [{
-                                'size': ['small', false, 'large', 'huge']
-                            }],
-                            ['bold', 'italic', 'underline'],
-                            [{
-                                'color': []
-                            }, {
-                                'background': []
-                            }],
-                            [{
-                                'align': []
-                            }],
-                            [{
-                                'list': 'ordered'
-                            }, {
-                                'list': 'bullet'
-                            }],
-                            ['link', 'image'],
-                            ['clean']
-                        ],
-                        handlers: {
-                            image: function() {
-                                const input = document.createElement('input');
-                                input.setAttribute('type', 'file');
-                                input.setAttribute('accept', 'image/*');
-                                input.click();
-
-                                input.onchange = () => {
-                                    const file = input.files[0];
-                                    if (file) {
-                                        const formData = new FormData();
-                                        formData.append('image', file);
-
-                                        fetch("{{ route('announcements.uploadImage') }}", {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                                },
-                                                body: formData
-                                            })
-                                            .then(res => res.json())
-                                            .then(data => {
-                                                if (data.url) {
-                                                    const range = editQuill.getSelection();
-                                                    editQuill.insertEmbed(range.index, 'image',
-                                                        data.url);
-                                                } else {
-                                                    alert('Image upload failed');
-                                                }
-                                            })
-                                            .catch(() => alert('Image upload failed'));
-                                    }
-                                };
-                            }
-                        }
-                    }
-                },
-                formats: [
-                    'font', 'size', 'bold', 'italic', 'underline',
-                    'list', 'color', 'background',
-                    'align', 'link', 'image'
-                ]
-            });
-
-            // 🔹 Handle form submission
-            const editForm = document.getElementById('editAnnouncementForm');
-            const bodyInput = document.getElementById('edit-body');
-            const errorDiv = document.getElementById('edit-body-error');
-
-            editForm.addEventListener('submit', function(e) {
-                const htmlContent = editQuill.root.innerHTML.trim();
-                bodyInput.value = htmlContent;
-
-                if (editQuill.getLength() <= 1 || htmlContent === '<p><br></p>') {
-                    e.preventDefault();
-                    errorDiv.textContent = 'The Body field is required.';
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-
-                errorDiv.style.display = 'none';
-            });
-
-            // 🔹 Initialize Tom Select for Recipients
-            const recipientSelect = new TomSelect('#edit-recipients', {
-                plugins: ['remove_button', 'clear_button'],
-                create: false,
-                maxOptions: 100,
-                valueField: 'id',
-                labelField: 'text',
-                searchField: ['text'],
-                load: function(query, callback) {
-                    if (!query.length) return callback();
-                    fetch(`{{ route('search.user') }}?q=${encodeURIComponent(query)}`)
-                        .then(res => res.json())
-                        .then(json => {
-                            const results = json.map(user => ({
-                                id: user.id,
-                                text: `${user.firstName} ${user.lastName} (${user.email})`
-                            }));
-                            callback(results);
-                        })
-                        .catch(() => callback());
-                },
-                render: {
-                    option: data => `<div><strong>${data.text}</strong></div>`,
-                    item: data => `<div>${data.text}</div>`
-                },
-                placeholder: 'Search and select recipients...',
-                preload: false,
-            });
-
-            // ✅ Preload existing recipients when editing
-            @if (isset($announcement) && $announcement->recipients->count())
-                const existingRecipients = @json(
-                    $announcement->recipients->map(fn($u) => [
-                            'id' => $u->id,
-                            'text' => "{$u->firstName} {$u->lastName} ({$u->email})",
-                        ]));
-
-                existingRecipients.forEach(u => {
-                    recipientSelect.addOption(u);
-                    recipientSelect.addItem(u.id);
-                });
-            @endif
-        });
-    </script>
-@endpush
-
 @push('styles')
     <!-- Quill CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -254,6 +177,14 @@
 
         .ts-dropdown .option {
             padding: 6px 10px;
+        }
+
+        #editUserListContainer .form-check:hover {
+            background-color: #f8f9fa;
+        }
+
+        #editPagination .page-link {
+            cursor: pointer;
         }
     </style>
 @endpush

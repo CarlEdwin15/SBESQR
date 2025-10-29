@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class CheckUserStatus
 {
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
         if (Auth::check()) {
             $status = Auth::user()->status;

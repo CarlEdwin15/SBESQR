@@ -79,7 +79,20 @@
 
             <!-- Classes & Grades -->
             <div class="tab-pane fade" id="classes">
-                <h5 class="fw-bold text-primary mb-3">Classes and Grades</h5>
+
+                <!-- Add Export Form 10 Button Here -->
+                @php
+                    $user = auth()->user();
+                @endphp
+                @if ($user && ($user->role === 'admin'))
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="fw-bold text-primary mb-3">Classes and Grades</h5>
+                        <a href="{{ route('teacher.student.form10', ['student_id' => $student->id]) }}" target="_blank"
+                            class="btn btn-success btn-sm align-items-center">
+                            <i class="bx bx-printer"></i> Export Form 10 (Cumulative Grades)
+                        </a>
+                    </div>
+                @endif
 
                 @if ($classHistory->isEmpty())
                     <p class="text-muted">No classes found for this student.</p>
@@ -143,7 +156,7 @@
                                                     $user = auth()->user();
                                                 @endphp
 
-                                                @if ($user && ($user->role === 'teacher' || $user->role === 'admin'))
+                                                @if ($user && ($user->role === 'teacher'))
                                                     <!-- Teacher-only export button -->
                                                     <a href="{{ route('teacher.student.card', [
                                                         'student_id' => $student->id,
@@ -351,6 +364,7 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
+    <!-- Attendance Calendar Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('attendanceCalendar');
@@ -461,6 +475,7 @@
     <!-- Bootstrap 5 Calendar (FullCalendar) -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
 
+    <!-- Responsive styles for calendar -->
     <style>
         @media (max-width: 576px) {
             #attendanceCalendar .fc-daygrid-day-number {

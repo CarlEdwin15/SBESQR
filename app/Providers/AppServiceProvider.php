@@ -5,36 +5,30 @@ namespace App\Providers;
 use Illuminate\Support\Facades\View;
 use App\Models\Announcement;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        // Make $notifications available in all views that include layouts/main
-        View::composer('layouts.main', function ($view) {
-            $notifications = Announcement::orderBy('date_published', 'desc')
-                ->take(99)
-                ->get();
+        // Single global view composer for all views
+        View::composer('*', function ($view) {
+            $notifications = collect();
+            $user = Auth::user();
 
-            $view->with('notifications', $notifications);
-        });
-
-        // OR if you only want it inside navbar partial
-        View::composer('partials.navbar', function ($view) {
-            $notifications = Announcement::orderBy('date_published', 'desc')
-                ->take(99)
-                ->get();
+            if ($user) {
+                $notifications = Announcement::whereHas('recipients', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                    ->orderByDesc('date_published')
+                    ->take(99)
+                    ->get();
+            }
 
             $view->with('notifications', $notifications);
         });
