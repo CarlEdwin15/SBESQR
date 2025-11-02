@@ -44,8 +44,12 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
             $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
-            $table->enum('enrollment_status', ['enrolled', 'not_enrolled', 'archived', 'graduated'])->default('enrolled');
-            $table->enum('enrollment_type', ['regular', 'transferee', 'returnee', 'dropped'])->nullable()->default('regular');
+            $table->enum('enrollment_status', ['enrolled', 'not_enrolled', 'archived', 'graduated', 'dropped'])->default('enrolled');
+            $table->enum('enrollment_type', ['regular', 'transferee', 'returnee'])->nullable()->default('regular');
+            $table->boolean('q1_allow_view')->default(false);
+            $table->boolean('q2_allow_view')->default(false);
+            $table->boolean('q3_allow_view')->default(false);
+            $table->boolean('q4_allow_view')->default(false);
             $table->timestamps();
 
             $table->unique(['student_id', 'class_id', 'school_year_id'], 'unique_class_student_sy');

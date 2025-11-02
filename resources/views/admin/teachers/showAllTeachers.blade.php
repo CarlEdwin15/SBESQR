@@ -741,10 +741,6 @@
                                                     href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
                                                     <i class="bx bxs-user-badge me-1"></i> View Profile
                                                 </a>
-                                                <a class="dropdown-item text-warning"
-                                                    href="{{ route('edit.teacher', ['id' => $teacher->id, 'school_year' => $selectedYear]) }}">
-                                                    <i class="bx bx-edit-alt me-1"></i> Edit
-                                                </a>
                                                 <button type="button" class="dropdown-item text-danger"
                                                     onclick="confirmDelete({{ $teacher->id }}, '{{ $teacher->firstName }}', '{{ $teacher->lastName }}', '{{ $selectedYear }}')">
                                                     <i class="bx bx-trash me-1"></i> Delete

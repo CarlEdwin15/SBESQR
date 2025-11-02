@@ -84,7 +84,7 @@
                 @php
                     $user = auth()->user();
                 @endphp
-                @if ($user && ($user->role === 'admin'))
+                @if ($user && $user->role === 'admin')
                     <div class="d-flex justify-content-between mb-3">
                         <h5 class="fw-bold text-primary mb-3">Classes and Grades</h5>
                         <a href="{{ route('teacher.student.form10', ['student_id' => $student->id]) }}" target="_blank"
@@ -110,6 +110,31 @@
                                     default => 'bg-secondary',
                                 };
                                 $subjectsWithGrades = $gradesByClass[$classItem->id] ?? [];
+
+                                // Check if ALL quarters are enabled for viewing for parents
+                                $canViewAllQuarters = true;
+                                $canViewFinalGrades = true;
+                                if (auth()->user() && auth()->user()->role === 'parent') {
+                                    $classStudent = $student->classStudents
+                                        ->where('class_id', $classItem->id)
+                                        ->where('school_year_id', $classItem->pivot->school_year_id)
+                                        ->first();
+
+                                    if ($classStudent) {
+                                        // Check if all quarters (1-4) are enabled
+                                        $canViewAllQuarters =
+                                            $classStudent->q1_allow_view &&
+                                            $classStudent->q2_allow_view &&
+                                            $classStudent->q3_allow_view &&
+                                            $classStudent->q4_allow_view;
+
+                                        // Final grades and general average are only visible when all quarters are enabled
+                                        $canViewFinalGrades = $canViewAllQuarters;
+                                    } else {
+                                        $canViewAllQuarters = false;
+                                        $canViewFinalGrades = false;
+                                    }
+                                }
                             @endphp
 
                             <div class="accordion-item border-0 shadow-sm mb-2 rounded-3">
@@ -156,7 +181,7 @@
                                                     $user = auth()->user();
                                                 @endphp
 
-                                                @if ($user && ($user->role === 'teacher'))
+                                                @if ($user && $user->role === 'teacher')
                                                     <!-- Teacher-only export button -->
                                                     <a href="{{ route('teacher.student.card', [
                                                         'student_id' => $student->id,
@@ -167,6 +192,17 @@
                                                     </a>
                                                 @endif
                                             </div>
+
+                                            <!-- Grade Viewing Status Alert for Parents -->
+                                            @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewAllQuarters)
+                                                <div class="alert alert-warning mb-3">
+                                                    <i class="bx bx-info-circle"></i>
+                                                    <strong>Note:</strong> Final grades and general average will be
+                                                    visible only when all quarterly grades are enabled for viewing by
+                                                    the teacher.
+                                                </div>
+                                            @endif
+
                                             <div class="table-responsive">
                                                 <table class="table table-bordered table-hover">
                                                     <thead class="table-light">
@@ -184,32 +220,131 @@
                                                         @foreach ($subjectsWithGrades as $item)
                                                             <tr>
                                                                 <td>{{ $item['subject'] }}</td>
-                                                                <td class="text-center">
-                                                                    {{ $item['quarters']->firstWhere('quarter', 1)['grade'] ?? '-' }}
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    {{ $item['quarters']->firstWhere('quarter', 2)['grade'] ?? '-' }}
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    {{ $item['quarters']->firstWhere('quarter', 3)['grade'] ?? '-' }}
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    {{ $item['quarters']->firstWhere('quarter', 4)['grade'] ?? '-' }}
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    @if ($item['final_average'] !== null)
-                                                                        <strong>{{ round($item['final_average']) }}</strong>
+
+                                                                {{-- Quarter Grades --}}
+                                                                @foreach ([1, 2, 3, 4] as $q)
+                                                                    @php
+                                                                        $grade =
+                                                                            $item['quarters']->firstWhere(
+                                                                                'quarter',
+                                                                                $q,
+                                                                            )['grade'] ?? null;
+                                                                        $gradeColor = '';
+
+                                                                        // Check if parent can view this quarter's grade
+                                                                        $canViewGrade = true;
+                                                                        if (
+                                                                            auth()->user() &&
+                                                                            auth()->user()->role === 'parent'
+                                                                        ) {
+                                                                            $classStudent = $student->classStudents
+                                                                                ->where('class_id', $classItem->id)
+                                                                                ->where(
+                                                                                    'school_year_id',
+                                                                                    $classItem->pivot->school_year_id,
+                                                                                )
+                                                                                ->first();
+
+                                                                            // Use the correct column names
+                                                                            $quarterColumn = 'q' . $q . '_allow_view'; // This becomes 'q1_allow_view', etc.
+                                                                            $canViewGrade =
+                                                                                $classStudent &&
+                                                                                $classStudent->$quarterColumn;
+                                                                        }
+
+                                                                        if (is_numeric($grade) && $canViewGrade) {
+                                                                            if ($grade >= 90) {
+                                                                                $gradeColor = 'text-success';
+                                                                            } elseif ($grade >= 85) {
+                                                                                $gradeColor = 'text-success';
+                                                                            } elseif ($grade >= 80) {
+                                                                                $gradeColor = 'text-warning';
+                                                                            } elseif ($grade >= 75) {
+                                                                                $gradeColor = 'text-warning';
+                                                                            } else {
+                                                                                $gradeColor = 'text-danger fw-semibold';
+                                                                            }
+                                                                        }
+                                                                    @endphp
+                                                                    <td class="text-center {{ $gradeColor }}">
+                                                                        @if ($grade !== null)
+                                                                            @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewGrade)
+                                                                                <span class="text-muted"
+                                                                                    title="Grade viewing not enabled by teacher">
+                                                                                    <i class="bx bx-lock-alt"></i>
+                                                                                </span>
+                                                                            @else
+                                                                                {{ $grade }}
+                                                                            @endif
+                                                                        @else
+                                                                            -
+                                                                        @endif
+                                                                    </td>
+                                                                @endforeach
+
+                                                                {{-- Final Grade --}}
+                                                                @php
+                                                                    $finalAverage = $item['final_average'] ?? null;
+                                                                    $finalColor = '';
+                                                                    $finalRemarks = null;
+
+                                                                    if (is_numeric($finalAverage)) {
+                                                                        $roundedFinal = round($finalAverage);
+
+                                                                        if ($roundedFinal >= 90) {
+                                                                            $finalColor = 'text-success fw-bold';
+                                                                        } elseif ($roundedFinal >= 85) {
+                                                                            $finalColor = 'text-success';
+                                                                        } elseif ($roundedFinal >= 80) {
+                                                                            $finalColor = 'text-warning';
+                                                                        } elseif ($roundedFinal >= 75) {
+                                                                            $finalColor = 'text-warning';
+                                                                        } else {
+                                                                            $finalColor = 'text-danger fw-semibold';
+                                                                        }
+
+                                                                        // Corrected passing logic
+                                                                        $finalRemarks =
+                                                                            $roundedFinal >= 75 ? 'passed' : 'failed';
+                                                                    }
+                                                                @endphp
+
+                                                                <td class="text-center {{ $finalColor }}">
+                                                                    @if ($finalAverage !== null)
+                                                                        @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewFinalGrades)
+                                                                            <span class="text-muted"
+                                                                                title="Final grades are visible only when all quarterly grades are enabled">
+                                                                                <i class="bx bx-lock-alt"></i>
+                                                                            </span>
+                                                                        @else
+                                                                            <strong>{{ round($finalAverage) }}</strong>
+                                                                        @endif
                                                                     @else
                                                                         <span class="text-muted">-</span>
                                                                     @endif
                                                                 </td>
+
                                                                 <td class="text-center">
-                                                                    @if ($item['remarks'] === 'passed')
-                                                                        <span
-                                                                            class="badge bg-label-success fw-bold">Passed</span>
-                                                                    @elseif($item['remarks'] === 'failed')
-                                                                        <span
-                                                                            class="badge bg-label-danger fw-bold">Failed</span>
+                                                                    @if ($finalRemarks === 'passed')
+                                                                        @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewFinalGrades)
+                                                                            <span class="text-muted"
+                                                                                title="Remarks are visible only when all quarterly grades are enabled">
+                                                                                <i class="bx bx-lock-alt"></i>
+                                                                            </span>
+                                                                        @else
+                                                                            <span
+                                                                                class="badge bg-label-success">Passed</span>
+                                                                        @endif
+                                                                    @elseif ($finalRemarks === 'failed')
+                                                                        @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewFinalGrades)
+                                                                            <span class="text-muted"
+                                                                                title="Remarks are visible only when all quarterly grades are enabled">
+                                                                                <i class="bx bx-lock-alt"></i>
+                                                                            </span>
+                                                                        @else
+                                                                            <span
+                                                                                class="badge bg-label-danger">Failed</span>
+                                                                        @endif
                                                                     @else
                                                                         <span class="text-muted">-</span>
                                                                     @endif
@@ -222,16 +357,45 @@
 
                                             <h5 class="fw-bold text-primary mt-3 mb-3">General Average</h5>
                                             @if (!empty($generalAverages[$classItem->id]))
-                                                @php $ga = $generalAverages[$classItem->id]; @endphp
+                                                @php
+                                                    $ga = $generalAverages[$classItem->id];
+                                                    $gaValue = round($ga['general_average']);
+                                                    $gaColor = '';
+
+                                                    if ($gaValue >= 90) {
+                                                        $gaColor = 'text-success fw-bold';
+                                                    } elseif ($gaValue >= 85) {
+                                                        $gaColor = 'text-success';
+                                                    } elseif ($gaValue >= 80) {
+                                                        $gaColor = 'text-warning';
+                                                    } elseif ($gaValue >= 75) {
+                                                        $gaColor = 'text-warning';
+                                                    } else {
+                                                        $gaColor = 'text-danger fw-semibold';
+                                                    }
+
+                                                    // Revised passing logic
+                                                    $gaRemarks = $gaValue >= 75 ? 'passed' : 'failed';
+                                                @endphp
+
                                                 <div
                                                     class="p-3 rounded-3 border bg-light d-flex justify-content-between">
                                                     <span class="fw-bold">General Average:</span>
-                                                    <span>
-                                                        <strong>{{ round($ga['general_average']) }}</strong>
-                                                        @if ($ga['remarks'] === 'passed')
-                                                            <span class="badge bg-label-success ms-2">Passed</span>
+                                                    <span class="{{ $gaColor }}">
+                                                        @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewFinalGrades)
+                                                            <span class="text-muted"
+                                                                title="General average is visible only when all quarterly grades are enabled">
+                                                                <i class="bx bx-lock-alt me-1"></i>
+                                                            </span>
                                                         @else
-                                                            <span class="badge bg-label-danger ms-2">Failed</span>
+                                                            <strong>{{ $gaValue }}</strong>
+                                                            @if ($gaRemarks === 'passed')
+                                                                <span
+                                                                    class="badge bg-label-success ms-2 fw-bold">Passed</span>
+                                                            @else
+                                                                <span
+                                                                    class="badge bg-label-danger ms-2 fw-bold">Failed</span>
+                                                            @endif
                                                         @endif
                                                     </span>
                                                 </div>
@@ -296,7 +460,7 @@
                                 <!-- Footer Info -->
                                 <div class="card-footer bg-light text-center py-2">
                                     <small class="text-muted">
-                                        Last seen: {{ $parent->last_seen ?? 'Not available' }}
+                                        Last active: {{ $parent->last_seen ?? 'Not available' }}
                                     </small>
                                 </div>
                             </div>
@@ -370,7 +534,7 @@
             const calendarEl = document.getElementById('attendanceCalendar');
             if (!calendarEl) return;
 
-            // Determine if we’re on a small screen
+            // Determine if we're on a small screen
             function isMobile() {
                 return window.innerWidth <= 576; // Bootstrap "sm" breakpoint
             }
@@ -486,13 +650,7 @@
                 font-size: 0.8rem;
             }
         }
-    </style>
-@endpush
 
-@push('styles')
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
-
-    <style>
         #attendanceCalendar td.fc-daygrid-day.fc-day-today>.fc-daygrid-day-frame {
             background-color: var(--bs-info, #0d6efd) !important;
             color: #fff !important;

@@ -34,7 +34,15 @@ class Student extends Model
     public function class()
     {
         return $this->belongsToMany(Classes::class, 'class_student', 'student_id', 'class_id')
-            ->withPivot('school_year_id', 'enrollment_status', 'enrollment_type')
+            ->withPivot(
+                'school_year_id',
+                'enrollment_status',
+                'enrollment_type',
+                'q1_allow_view',
+                'q2_allow_view',
+                'q3_allow_view',
+                'q4_allow_view'
+            )
             ->withTimestamps();
     }
 

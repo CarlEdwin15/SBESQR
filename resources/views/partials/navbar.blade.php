@@ -285,52 +285,24 @@
 
 <!-- Announcement Modal Script -->
 <script>
+    // Announcement Modal Script
     document.addEventListener("DOMContentLoaded", function() {
         const modal = new bootstrap.Modal(document.getElementById('announcementModal'));
         const content = document.getElementById('announcementContent');
         const meta = document.getElementById('announcementMeta');
 
-        // Handle manual announcement click
-        document.querySelectorAll('.view-announcement').forEach(item => {
-            item.addEventListener('click', function() {
-                const id = this.dataset.id;
+        // Function to load and show announcement
+        function loadAnnouncement(id) {
+            content.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted">Fetching announcement details...</p>
+            </div>`;
+            meta.textContent = '';
 
-                content.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary mb-3" role="status"></div>
-                    <p class="text-muted">Fetching announcement details...</p>
-                </div>`;
-                meta.textContent = '';
-
-                modal.show();
-
-                fetch(`/announcements/${id}/show-ajax`)
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('announcementModalLabel').textContent = data
-                            .title;
-                        content.innerHTML =
-                            `<div class="announcement-body">${data.body}</div>`;
-                        meta.innerHTML = `
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
-                            <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
-                        </div>`;
-                    })
-                    .catch(() => {
-                        content.innerHTML =
-                            `<div class="alert alert-danger">Failed to load announcement.</div>`;
-                    });
-            });
-        });
-
-        // Auto-open from push link
-        const params = new URLSearchParams(window.location.search);
-        const announcementId = params.get('announcement_id');
-
-        if (announcementId) {
             modal.show();
-            fetch(`/announcements/${announcementId}/show-ajax`)
+
+            fetch(`/announcements/${id}/show-ajax`)
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('announcementModalLabel').textContent = data.title;
@@ -340,8 +312,12 @@
                         <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
                         <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
                     </div>`;
-                    const newUrl = window.location.origin + window.location.pathname;
-                    window.history.replaceState({}, document.title, newUrl);
+
+                    // Clear URL parameters to prevent reopening on refresh
+                    if (window.history.replaceState) {
+                        const newUrl = window.location.origin + window.location.pathname;
+                        window.history.replaceState({}, document.title, newUrl);
+                    }
                 })
                 .catch(() => {
                     content.innerHTML =
@@ -349,12 +325,30 @@
                 });
         }
 
-        // Detect if user just came from login/welcome page
+        // Handle manual announcement click
+        document.querySelectorAll('.view-announcement').forEach(item => {
+            item.addEventListener('click', function() {
+                const id = this.dataset.id;
+                loadAnnouncement(id);
+            });
+        });
+
+        // Auto-open from notification or login redirect
+        const announcementId = @json($announcementId ?? null);
+
+        if (announcementId) {
+            // Small delay to ensure page is fully loaded
+            setTimeout(() => {
+                loadAnnouncement(announcementId);
+            }, 500);
+        }
+
+        // Detect if user just came from login/welcome page (your existing code)
         const referrer = document.referrer;
         const cameFromLoginOrWelcome = referrer.includes('/login') || referrer.includes('/welcome');
 
         // Store session flag in sessionStorage instead of Laravel session (client-side)
-        if (cameFromLoginOrWelcome && !sessionStorage.getItem('announcements_shown')) {
+        if (cameFromLoginOrWelcome && !sessionStorage.getItem('announcements_shown') && !announcementId) {
             const announcements = @json($activeAnnouncements ?? []);
             if (announcements.length > 0) {
                 sessionStorage.setItem('announcements_shown', 'true');
@@ -368,11 +362,11 @@
                     document.getElementById('announcementModalLabel').textContent = ann.title;
                     content.innerHTML = `<div class="announcement-body">${ann.body}</div>`;
                     meta.innerHTML = `
-                    <div class="d-flex flex-wrap align-items-center gap-2">
-                        <span><i class="bx bx-calendar me-1"></i> Effective: ${ann.formatted_effective}</span>
-                        <span><i class="bx bx-calendar me-1"></i> Ends: ${ann.formatted_end}</span>
-                        <span class="badge-author"><i class="bx bx-user me-1"></i> ${ann.author_name ?? ''}</span>
-                    </div>`;
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span><i class="bx bx-calendar me-1"></i> Effective: ${ann.formatted_effective}</span>
+                    <span><i class="bx bx-calendar me-1"></i> Ends: ${ann.formatted_end}</span>
+                    <span class="badge-author"><i class="bx bx-user me-1"></i> ${ann.author_name ?? ''}</span>
+                </div>`;
 
                     const modalEl = document.getElementById('announcementModal');
                     modalEl.addEventListener('hidden.bs.modal', () => {

@@ -378,7 +378,7 @@
 
         let scanner = new Instascan.Scanner({
             video: document.getElementById('preview'),
-            mirror: false
+            mirror: true
         });
 
         const qrResult = document.getElementById('qr-result');

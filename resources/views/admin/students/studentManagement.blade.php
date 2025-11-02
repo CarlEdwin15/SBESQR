@@ -1204,31 +1204,6 @@
                     title = "Import Complete";
                     icon = "success";
                 }
-
-                Swal.fire({
-                    title: title,
-                    html: `{!! session('success') !!}` +
-                        `{!! session('import_errors')
-                            ? '<hr><div style="text-align:left;max-height:250px;overflow-y:auto;font-size:14px;color:#d33;"><b>Error Details:</b><br>' .
-                                session('import_errors') .
-                                '</div>'
-                            : '' !!}`,
-                    icon: icon,
-                    width: 600,
-                    customClass: {
-                        container: 'my-swal-container'
-                    },
-                });
-            @elseif (session('error'))
-                Swal.fire({
-                    title: "Import Error",
-                    html: `{!! session('error') !!}`,
-                    icon: "error",
-                    width: 500,
-                    customClass: {
-                        container: 'my-swal-container'
-                    },
-                });
             @endif
         });
     </script>

@@ -76,7 +76,7 @@
 
         @include('partials.account_settings', [
             'user' => $user,
-            'updateRoute' => 'teacher.update', // We'll define this route next
+            'updateRoute' => 'parent.update', // We'll define this route next
         ])
 
     </div>

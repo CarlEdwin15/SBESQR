@@ -24,14 +24,21 @@ class HomeController extends Controller
         // Handle announcement redirect from push notification
         $announcementId = null;
 
-        // Priority 1: Check URL parameter (direct from push notification)
+        // Check for announcement ID from notification redirect
+        if (session()->has('notification_announcement_id')) {
+            $announcementId = session('notification_announcement_id');
+            session()->forget('notification_announcement_id'); // Clear it after use
+        }
+
+        // Also check for announcement ID from login redirect
+        if (session()->has('login_redirect_announcement')) {
+            $announcementId = session('login_redirect_announcement');
+            session()->forget('login_redirect_announcement'); // Clear it after use
+        }
+
+        // Check URL parameter as fallback
         if ($request->has('announcement_id')) {
             $announcementId = $request->get('announcement_id');
-        }
-        // Priority 2: Check session (from login redirect)
-        elseif (session()->has('login_redirect_announcement')) {
-            $announcementId = session('login_redirect_announcement');
-            session()->forget('login_redirect_announcement');
         }
 
         // Flash login success message (only once per session)

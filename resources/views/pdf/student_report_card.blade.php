@@ -403,22 +403,32 @@
                     </td>
                 </tr>
 
-                <!-- Row 2: Age and Sex (underline extends fully to the same right edge as Name row) -->
+                <!-- Row 2: Age and Sex -->
                 <tr>
                     <td style="width: 8%;">Age:</td>
-                    <td style="border-bottom: 1px solid #000; width: 15%;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 15%; text-align: center;">
+                        {{ $student_info['age'] ?? '' }}
+                    </td>
                     <td style="width: 8%;">Sex:</td>
-                    <td colspan="3" style="border-bottom: 1px solid #000; width: 69%;"></td>
+                    <td colspan="3" style="border-bottom: 1px solid #000; width: 69%; text-align: center;">
+                        {{ $student_info['sex'] ?? '' }}
+                    </td>
                 </tr>
 
                 <!-- Row 3: Grade, Section, and LRN -->
                 <tr>
                     <td style="width: 8%;">Grade:</td>
-                    <td style="border-bottom: 1px solid #000; width: 10%;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 10%; text-align: center;">
+                        {{ $student_info['grade'] ?? '' }}
+                    </td>
                     <td style="width: 8%;">Section:</td>
-                    <td style="border-bottom: 1px solid #000; width: 15%;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 15%; text-align: center;">
+                        {{ $student_info['section'] ?? '' }}
+                    </td>
                     <td style="width: 6%;">LRN:</td>
-                    <td style="border-bottom: 1px solid #000; width: 20%;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 20%; text-align: center;">
+                        {{ $student_info['lrn'] ?? '' }}
+                    </td>
                 </tr>
             </table>
 
@@ -569,7 +579,11 @@
                         <td class="center">
                             {{ isset($s['final']) ? round($s['final']) : '' }}
                         </td>
-                        <td class="center">{{ $s['remarks'] ?? '' }}</td>
+                        @php
+                            $finalGrade = isset($s['final']) ? round($s['final']) : null;
+                            $remarks = $finalGrade !== null ? ($finalGrade >= 75 ? 'Passed' : 'Failed') : '';
+                        @endphp
+                        <td class="center">{{ $remarks }}</td>
                     </tr>
                 @endforeach
                 <tr style="font-size: 13px; font-weight: bold;">

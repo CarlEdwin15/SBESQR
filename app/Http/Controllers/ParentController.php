@@ -71,6 +71,41 @@ class ParentController extends Controller
             ->wherePivot('school_year_id', $schoolYearId)
             ->first();
 
+        // === ADD THIS STATUS LOGIC (same as admin) ===
+        // Determine status
+        $latestEnrollment = $child->classStudents()->latest()->first();
+        $studentStatus = $latestEnrollment->enrollment_status ?? 'not_enrolled';
+
+        // Determine additional info
+        $statusInfo = null;
+
+        if ($studentStatus === 'enrolled' && $class) {
+            $grade = $class->formatted_grade_level ?? null;
+            $section = $class->section ?? null;
+            $gradeSection = $grade ? $grade . ($section ? ' - ' . $section : '') : null;
+
+            $statusInfo = $gradeSection
+                ? "{$gradeSection} for SY {$schoolYear->school_year}"
+                : "For SY {$schoolYear->school_year}";
+        } elseif (in_array($studentStatus, ['archived', 'not_enrolled'])) {
+            $lastEnrollment = $child->classStudents()
+                ->where('enrollment_status', 'enrolled')
+                ->latest()
+                ->first();
+
+            $lastSY = $lastEnrollment?->schoolYear?->school_year;
+            $statusInfo = $lastSY ? "Last Enrolled: {$lastSY}" : 'No recent enrollment';
+        } elseif ($studentStatus === 'graduated') {
+            $graduatedRecord = $child->classStudents()
+                ->where('enrollment_status', 'graduated')
+                ->latest()
+                ->first();
+
+            $gradSY = $graduatedRecord?->schoolYear?->school_year;
+            $statusInfo = $gradSY ? "Graduated: {$gradSY}" : 'Graduation year not recorded';
+        }
+        // === END STATUS LOGIC ===
+
         // Fetch all classes the child has been in (class history)
         $classHistory = $child->class()
             ->with([
@@ -161,7 +196,9 @@ class ParentController extends Controller
             'schoolYearId',
             'classHistory',
             'gradesByClass',
-            'generalAverages'
+            'generalAverages',
+            'studentStatus',
+            'statusInfo'
         ));
     }
 
@@ -346,24 +383,6 @@ class ParentController extends Controller
         return redirect()->back()->with('success', 'Payment request has been ' . $paymentRequest->status . '.');
     }
 
-    public function smsLogs()
-    {
-        $user = Auth::user();
-
-        if ($user->role !== 'parent') {
-            abort(403, 'Unauthorized');
-        }
-
-        $children = $user->children()->with(['classStudents.class', 'schoolYears'])->get();
-
-        // Collect SMS logs from all children
-        $smsLogs = $children->flatMap(function ($child) {
-            return $child->smsLogs; // Assuming 'smsLogs' is the relationship defined in the Student model
-        })->sortByDesc('created_at'); // Sort by most recent
-
-        return view('parent.sms_logs.index', compact('smsLogs'));
-    }
-
     public function announcements()
     {
         $user = Auth::user();
@@ -377,7 +396,7 @@ class ParentController extends Controller
         return view('parent.announcements.index', compact('children'));
     }
 
-    public function accountSettings()
+    public function updateParent()
     {
         $user = Auth::user();
 

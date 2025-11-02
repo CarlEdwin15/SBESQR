@@ -194,16 +194,39 @@
                                             $grade =
                                                 $student->quarterlyGrades->firstWhere('quarter.quarter', $q)
                                                     ->final_grade ?? '';
+                                            // Inline color logic
+                                            $gradeColor = '';
+                                            if (is_numeric($grade)) {
+                                                if ($grade >= 90) {
+                                                    $gradeColor = 'text-success';
+                                                }
+                                                // Outstanding
+                                                elseif ($grade >= 85) {
+                                                    $gradeColor = 'text-success';
+                                                }
+                                                // Very Satisfactory
+                                                elseif ($grade >= 80) {
+                                                    $gradeColor = 'text-warning';
+                                                }
+                                                // Satisfactory
+                                                elseif ($grade >= 75) {
+                                                    $gradeColor = 'text-warning';
+                                                }
+                                                // Fairly Satisfactory
+                                                else {
+                                                    $gradeColor = 'text-danger fw-semibold';
+                                                } // Did Not Meet Expectations
+                                            }
                                         @endphp
-                                        <td>
+                                        <td class="text-center">
                                             @if ($canEdit)
                                                 <input type="number"
                                                     name="grades[{{ $student->id }}][q{{ $q }}]"
-                                                    class="form-control quarter-input quarter-{{ $q }}"
+                                                    class="form-control quarter-input quarter-{{ $q }} {{ $gradeColor }}"
                                                     value="{{ $grade }}" min="0" max="100"
                                                     step="0.01" disabled>
                                             @else
-                                                <span>{{ $grade }}</span>
+                                                <span class="{{ $gradeColor }}">{{ $grade }}</span>
                                             @endif
                                         </td>
                                     @endforeach
@@ -232,8 +255,29 @@
                                             : '';
                                     @endphp
 
-                                    <td class="text-center"><span class="final-grade fw-bold">{{ $finalAverage }}</span></td>
-                                    <td class="text-center"><span class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
+                                    @php
+                                        $finalColor = '';
+                                        if (is_numeric($finalAverage)) {
+                                            if ($finalAverage >= 90) {
+                                                $finalColor = 'text-success fw-bold';
+                                            } elseif ($finalAverage >= 85) {
+                                                $finalColor = 'text-success fw-bold';
+                                            } elseif ($finalAverage >= 80) {
+                                                $finalColor = 'text-warning fw-bold';
+                                            } elseif ($finalAverage >= 75) {
+                                                $finalColor = 'text-warning fw-bold';
+                                            } else {
+                                                $finalColor = 'text-danger fw-semibold';
+                                            }
+                                        }
+                                    @endphp
+                                    <td class="text-center">
+                                        <span class="final-grade {{ $finalColor }}">{{ $finalAverage }}</span>
+                                    </td>
+
+                                    </td>
+                                    <td class="text-center"><span
+                                            class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
                                     </td>
                                 </tr>
                             @endforeach
@@ -291,16 +335,39 @@
                                             $grade =
                                                 $student->quarterlyGrades->firstWhere('quarter.quarter', $q)
                                                     ->final_grade ?? '';
+                                            // Inline color logic
+                                            $gradeColor = '';
+                                            if (is_numeric($grade)) {
+                                                if ($grade >= 90) {
+                                                    $gradeColor = 'text-success fw-bold';
+                                                }
+                                                // Outstanding
+                                                elseif ($grade >= 85) {
+                                                    $gradeColor = 'text-success';
+                                                }
+                                                // Very Satisfactory
+                                                elseif ($grade >= 80) {
+                                                    $gradeColor = 'text-warning';
+                                                }
+                                                // Satisfactory
+                                                elseif ($grade >= 75) {
+                                                    $gradeColor = 'text-warning';
+                                                }
+                                                // Fairly Satisfactory
+                                                else {
+                                                    $gradeColor = 'text-danger fw-semibold';
+                                                } // Did Not Meet Expectations
+                                            }
                                         @endphp
-                                        <td>
+                                        <td class="text-center">
                                             @if ($canEdit)
                                                 <input type="number"
                                                     name="grades[{{ $student->id }}][q{{ $q }}]"
-                                                    class="form-control quarter-input quarter-{{ $q }}"
+                                                    class="form-control quarter-input quarter-{{ $q }} {{ $gradeColor }}"
                                                     value="{{ $grade }}" min="0" max="100"
                                                     step="0.01" disabled>
                                             @else
-                                                <span>{{ $grade }}</span>
+                                                <span class="{{ $gradeColor }}">{{ $grade }}</span>
                                             @endif
                                         </td>
                                     @endforeach
@@ -329,8 +396,29 @@
                                             : '';
                                     @endphp
 
-                                    <td class="text-center"><span class="final-grade fw-bold">{{ $finalAverage }}</span></td>
-                                    <td class="text-center"><span class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
+                                    @php
+                                        $finalColor = '';
+                                        if (is_numeric($finalAverage)) {
+                                            if ($finalAverage >= 90) {
+                                                $finalColor = 'text-success fw-bold';
+                                            } elseif ($finalAverage >= 85) {
+                                                $finalColor = 'text-success';
+                                            } elseif ($finalAverage >= 80) {
+                                                $finalColor = 'text-warning';
+                                            } elseif ($finalAverage >= 75) {
+                                                $finalColor = 'text-warning';
+                                            } else {
+                                                $finalColor = 'text-danger fw-semibold';
+                                            }
+                                        }
+                                    @endphp
+                                    <td class="text-center">
+                                        <span class="final-grade {{ $finalColor }}">{{ $finalAverage }}</span>
+                                    </td>
+
+                                    </td>
+                                    <td class="text-center"><span
+                                            class="remarks fw-semibold text-uppercase">{{ $remarks }}</span>
                                     </td>
                                 </tr>
                             @endforeach
@@ -392,45 +480,59 @@
                 let total = 0,
                     count = 0;
                 inputs.forEach(i => {
-                    let val = parseFloat(i.value);
+                    const val = parseFloat(i.value);
                     if (!isNaN(val)) {
                         total += val;
                         count++;
                     }
                 });
 
-                // Only show final if all 4 quarters are filled
+                // Reset before recalculating
+                finalGradeEl.className = "final-grade";
+                remarksEl.className = "remarks fw-semibold text-uppercase";
+
                 if (count === 4) {
                     const avg = Math.round(total / 4);
                     finalGradeEl.textContent = avg;
 
-                    if (avg >= 75) {
-                        finalGradeEl.classList.add("text-success");
-                        finalGradeEl.classList.remove("text-danger");
-                        remarksEl.textContent = "PASSED";
-                        remarksEl.classList.add("text-success");
-                        remarksEl.classList.remove("text-danger");
+                    // Apply color coding logic
+                    let colorClass = "",
+                        remarks = "";
+                    if (avg >= 90) {
+                        colorClass = "text-success fw-bold"; // Outstanding
+                        remarks = "PASSED";
+                    } else if (avg >= 85) {
+                        colorClass = "text-success"; // Very Satisfactory
+                        remarks = "PASSED";
+                    } else if (avg >= 80) {
+                        colorClass = "text-warning"; // Satisfactory
+                        remarks = "PASSED";
+                    } else if (avg >= 75) {
+                        colorClass = "text-warning"; // Fairly Satisfactory
+                        remarks = "PASSED";
                     } else {
-                        finalGradeEl.classList.add("text-danger");
-                        finalGradeEl.classList.remove("text-success");
-                        remarksEl.textContent = "FAILED";
-                        remarksEl.classList.add("text-danger");
-                        remarksEl.classList.remove("text-success");
+                        colorClass = "text-danger fw-semibold"; // Did Not Meet Expectations
+                        remarks = "FAILED";
                     }
+
+                    finalGradeEl.classList.add(...colorClass.split(" "));
+                    remarksEl.textContent = remarks;
+                    remarksEl.classList.add(
+                        remarks === "PASSED" ? "text-success" : "text-danger"
+                    );
                 } else {
+                    // Incomplete quarters
                     finalGradeEl.textContent = "";
-                    finalGradeEl.classList.remove("text-success", "text-danger");
                     remarksEl.textContent = "";
-                    remarksEl.classList.remove("text-success", "text-danger");
                 }
             }
 
-            // Attach listeners for live grade updates
+            // Apply to all inputs
             document.querySelectorAll(".quarter-input").forEach(input => {
                 input.addEventListener("input", function() {
                     updateFinalGrade(input.closest("tr"));
                 });
-                updateFinalGrade(input.closest("tr")); // run once
+                updateFinalGrade(input.closest("tr")); // Initial run
             });
 
             // Fixed: select form correctly
@@ -515,26 +617,66 @@
         });
     </script>
 
+    <!-- Validate grades on form submit -->
     <script>
-        // Toggle enabling inputs by clicking the quarter header with SweetAlert confirmation
+        // Validate input grades before submitting (range 60–100)
+        document.addEventListener("DOMContentLoaded", function() {
+            const gradeForm = document.querySelector(".save-grades-form");
+            if (!gradeForm) return;
+
+            gradeForm.addEventListener("submit", function(e) {
+                const inputs = gradeForm.querySelectorAll(".quarter-input:not([disabled])");
+                let invalidInputs = [];
+
+                inputs.forEach(input => {
+                    const value = parseFloat(input.value);
+                    if (isNaN(value)) return; // skip empty ones
+
+                    if (value < 60 || value > 100) {
+                        invalidInputs.push(input);
+                        input.classList.add("is-invalid");
+                    } else {
+                        input.classList.remove("is-invalid");
+                    }
+                });
+
+                if (invalidInputs.length > 0) {
+                    e.preventDefault();
+
+                    Swal.fire({
+                        icon: "error",
+                        title: "Invalid Grade(s) Detected!",
+                        text: "Please ensure all grades are between 60 and 100 only.",
+                        customClass: {
+                            container: "my-swal-container"
+                        }
+                    });
+
+                    invalidInputs[0].focus();
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // Toggle enabling quarter inputs (per student validation)
         document.querySelectorAll(".toggle-edit").forEach(th => {
             th.addEventListener("click", function() {
-                if (!this.dataset.quarter) return; // skip if not editable
+                if (!this.dataset.quarter) return;
 
-                const quarter = this.dataset.quarter;
-                const inputs = document.querySelectorAll(`input.quarter-${quarter}`);
+                const quarter = parseInt(this.dataset.quarter);
+                const quarterInputs = document.querySelectorAll(`input.quarter-${quarter}`);
                 const columnCells = document.querySelectorAll(
-                    `th[data-quarter="${quarter}"], td:nth-child(${parseInt(quarter) + 3})`
+                    `th[data-quarter="${quarter}"], td:nth-child(${quarter + 3})`
                 );
-                // +3 offset = No., Photo, Name columns before quarters
 
-                let currentlyDisabled = inputs[0]?.disabled;
+                let anyEnabled = Array.from(quarterInputs).some(input => !input.disabled);
 
-                if (currentlyDisabled) {
+                if (!anyEnabled) {
                     // Ask before enabling
                     Swal.fire({
                         title: `Enable Editing?`,
-                        text: `Do you want to enable inputting grades for Quarter ${quarter}?`,
+                        text: `Enable input for Quarter ${quarter}? Only students with complete previous quarters will be editable.`,
                         icon: "question",
                         showCancelButton: true,
                         confirmButtonText: "Yes, enable",
@@ -544,12 +686,37 @@
                         }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            inputs.forEach(input => input.disabled = false);
-                            th.classList.add("text-dark");
-                            th.classList.remove("text-muted");
+                            quarterInputs.forEach(input => {
+                                const row = input.closest("tr");
+                                const studentId = row.dataset.student;
 
-                            // Highlight the entire column
+                                // ✅ Check previous quarters for this student
+                                let missingPrev = false;
+                                if (quarter > 1) {
+                                    for (let prev = 1; prev < quarter; prev++) {
+                                        const prevInput = row.querySelector(
+                                            `.quarter-${prev}`);
+                                        const prevVal = prevInput ? prevInput.value.trim() :
+                                            "";
+                                        if (!prevVal) {
+                                            missingPrev = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (!missingPrev) {
+                                    input.disabled = false;
+                                    input.classList.remove("locked-quarter");
+                                } else {
+                                    input.disabled = true;
+                                    input.classList.add("locked-quarter");
+                                }
+                            });
+
+                            // Highlight the column
                             columnCells.forEach(cell => cell.classList.add("active-quarter"));
+                            th.classList.add("text-dark");
                         }
                     });
                 } else {
@@ -566,12 +733,10 @@
                         }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            inputs.forEach(input => input.disabled = true);
-                            th.classList.remove("text-success");
-                            th.classList.add("text-muted");
-
-                            // Remove highlight
+                            quarterInputs.forEach(input => input.disabled = true);
                             columnCells.forEach(cell => cell.classList.remove("active-quarter"));
+                            th.classList.remove("text-dark");
+                            th.classList.add("text-muted");
                         }
                     });
                 }
@@ -607,6 +772,17 @@
         .active-quarter {
             background-color: #e0fdd0 !important;
             /* Bootstrap bg-warning */
+        }
+
+        .is-invalid {
+            border-color: #dc3545 !important;
+            background-color: #f8d7da !important;
+        }
+
+        .locked-quarter {
+            background-color: #f2f2f2 !important;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
     </style>
 @endpush

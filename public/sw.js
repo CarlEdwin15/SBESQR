@@ -24,7 +24,6 @@ self.addEventListener("push", (event) => {
         actions: [
             {
                 action: "open",
-                title: "View Announcement",
             },
         ],
     };
@@ -36,7 +35,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
 
-    const targetUrl = event.notification.data?.url || "/";
+    let targetUrl = event.notification.data?.url || "/";
     const announcementId = event.notification.data?.id;
 
     console.log("🔔 Notification clicked:", {
@@ -44,45 +43,95 @@ self.addEventListener("notificationclick", (event) => {
         announcementId: announcementId,
     });
 
-    event.waitUntil(
-        clients
-            .matchAll({
-                type: "window",
-                includeUncontrolled: true,
-            })
-            .then((windowClients) => {
-                console.log("Found window clients:", windowClients.length);
-
-                // Check if there's already a window/tab open with our domain
-                const sameOriginClient = windowClients.find((client) => {
-                    const clientUrl = new URL(client.url);
-                    const targetUrlObj = new URL(targetUrl);
-                    return clientUrl.origin === targetUrlObj.origin;
-                });
-
-                if (sameOriginClient) {
-                    console.log(
-                        "✅ Found existing window with same origin, focusing it"
-                    );
-                    // Focus the existing window and navigate to the target URL
-                    return sameOriginClient
-                        .navigate(targetUrl)
-                        .then(() => sameOriginClient.focus())
-                        .catch((err) => {
-                            console.error(
-                                "Error navigating existing window:",
-                                err
-                            );
-                            // Fallback: open new window
-                            return clients.openWindow(targetUrl);
-                        });
-                } else {
-                    console.log(
-                        "❌ No existing window found, opening new window"
-                    );
-                    // No existing window, open a new one
-                    return clients.openWindow(targetUrl);
-                }
-            })
-    );
+    event.waitUntil(handleNotificationClick(targetUrl));
 });
+
+async function handleNotificationClick(targetUrl) {
+    try {
+        // Ensure targetUrl is a full URL
+        if (!targetUrl.startsWith("http")) {
+            targetUrl = self.location.origin + targetUrl;
+        }
+
+        console.log("Final target URL:", targetUrl);
+
+        // Get all window clients
+        const windowClients = await clients.matchAll({
+            type: "window",
+            includeUncontrolled: true,
+        });
+
+        console.log("Found window clients:", windowClients.length);
+
+        // Check for an existing tab with our origin
+        for (const client of windowClients) {
+            try {
+                const clientUrl = new URL(client.url);
+                const targetUrlObj = new URL(targetUrl);
+
+                if (clientUrl.origin === targetUrlObj.origin) {
+                    console.log("✅ Found existing window with same origin");
+
+                    // Try to focus the client first
+                    await client.focus();
+
+                    // Then try to navigate if possible
+                    if (client.url !== targetUrl && "navigate" in client) {
+                        try {
+                            await client.navigate(targetUrl);
+                            console.log(
+                                "✅ Successfully navigated existing window"
+                            );
+                        } catch (navError) {
+                            console.warn(
+                                "Could not navigate existing window:",
+                                navError
+                            );
+                            // Navigation failed, but we still have the window focused
+                        }
+                    }
+
+                    return; // Successfully handled
+                }
+            } catch (urlError) {
+                console.warn("Error processing client URL:", urlError);
+                continue;
+            }
+        }
+
+        // If no existing window found or all attempts failed, open new window
+        console.log("❌ No suitable existing window found, opening new window");
+        await clients.openWindow(targetUrl);
+    } catch (error) {
+        console.error("Error in notification click handler:", error);
+
+        // Final fallback - try to open window directly
+        try {
+            await clients.openWindow(targetUrl);
+        } catch (finalError) {
+            console.error(
+                "Complete failure to handle notification click:",
+                finalError
+            );
+        }
+    }
+}
+
+// Alternative simpler version - uncomment if above still has issues
+/*
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+
+    let targetUrl = event.notification.data?.url || "/";
+
+    // Ensure targetUrl is a full URL
+    if (!targetUrl.startsWith("http")) {
+        targetUrl = self.location.origin + targetUrl;
+    }
+
+    console.log("Opening URL:", targetUrl);
+
+    // Simple approach - always open new window/tab
+    event.waitUntil(clients.openWindow(targetUrl));
+});
+*/

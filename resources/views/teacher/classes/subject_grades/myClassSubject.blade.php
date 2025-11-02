@@ -179,13 +179,13 @@
                                     <!-- Card Body -->
                                     <div class="card-body pt-2">
                                         <div class="d-flex align-items-center">
-                                            <img src="{{ $classSubject->teacher->profile_photo ? asset('storage/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
+                                            <img src="{{ $classSubject->teacher && $classSubject->teacher->profile_photo ? asset('storage/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                                 alt="Teacher Profile" class="rounded-circle me-2" width="30"
                                                 height="30">
                                             <small class="text-muted">
                                                 <span class="fw-semibold">
-                                                    {{ $classSubject->teacher->firstName ?? 'Unknown' }}
-                                                    {{ $classSubject->teacher->lastName ?? '' }}
+                                                    {{ $classSubject->teacher ? ($classSubject->teacher->firstName ?? 'Unknown') : 'Unknown' }}
+                                                    {{ $classSubject->teacher ? ($classSubject->teacher->lastName ?? '') : '' }}
                                                 </span>
                                             </small>
                                         </div>
@@ -252,11 +252,16 @@
                                 <option value="English">English</option>
                                 <option value="Filipino">Filipino</option>
                                 <option value="MAPEH">MAPEH</option>
+                                <option value="Music">Music</option>
+                                <option value="Arts">Arts</option>
+                                <option value="Physical Education">Physical Education</option>
+                                <option value="Health">Health</option>
+                                <option value="Arabic Language">Arabic Language</option>
+                                <option value="Islamic Values Education">Islamic Values Education</option>
                                 <option value="Mathematics">Mathematics</option>
                                 <option value="Mother Tongue">Mother Tongue</option>
                                 <option value="Science">Science</option>
-                                <option value="Technology and Livelihood Education">Technology and Livelihood
-                                    Education</option>
+                                <option value="Technology Livelihood Education(TLE)">Technology Livelihood Education(TLE)</option>
                                 <option value="Others">Others...</option>
                             </select>
 

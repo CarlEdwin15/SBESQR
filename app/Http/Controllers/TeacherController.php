@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Classes;
 use App\Models\Student;
 use App\Models\Attendance;
+use App\Models\ClassStudent;
 use App\Models\ClassSubject;
 use App\Models\FinalSubjectGrade;
 use App\Models\Schedule;
@@ -191,9 +192,20 @@ class TeacherController extends Controller
         // Fetch the class
         $class = $this->getClass($grade_level, $section);
 
-        // Fetch students for that class in the given school year
+        // Check if the authenticated teacher is the adviser of this class for the selected school year
+        $isAdviser = auth()->user()->classes()
+            ->where('classes.id', $class->id)
+            ->wherePivot('role', 'adviser')
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->exists();
+
+        // Fetch students with their class student data
         $students = $class->students()
             ->wherePivot('school_year_id', $schoolYearId)
+            ->with(['classStudents' => function ($query) use ($class, $schoolYearId) {
+                $query->where('class_id', $class->id)
+                    ->where('school_year_id', $schoolYearId);
+            }])
             ->get();
 
         // Fetch adviser for that class in the given school year
@@ -208,8 +220,81 @@ class TeacherController extends Controller
             'schoolYears',
             'selectedYear',
             'schoolYearId',
-            'currentYear'
+            'currentYear',
+            'isAdviser' // Add this variable
         ));
+    }
+
+    public function updateGradePermission(Request $request)
+    {
+        try {
+            Log::info('Update Grade Permission Request:', $request->all());
+
+            $request->validate([
+                'student_id' => 'required|exists:students,id',
+                'class_id' => 'required|exists:classes,id',
+                'school_year_id' => 'required|exists:school_years,id',
+                'quarter' => 'required|in:q1,q2,q3,q4',
+                'allow_view' => 'required|boolean'
+            ]);
+
+            // Additional security check: verify the teacher is the adviser for this class
+            $isAdviser = Auth::user()->classes()
+                ->where('classes.id', $request->class_id)
+                ->wherePivot('role', 'adviser')
+                ->wherePivot('school_year_id', $request->school_year_id)
+                ->exists();
+
+            if (!$isAdviser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized: Only class advisers can update grade permissions.'
+                ], 403);
+            }
+
+            $classStudent = ClassStudent::where('student_id', $request->student_id)
+                ->where('class_id', $request->class_id)
+                ->where('school_year_id', $request->school_year_id)
+                ->first();
+
+            Log::info('ClassStudent found:', [$classStudent ? $classStudent->toArray() : 'Not found']);
+
+            if (!$classStudent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student not found in this class for the selected school year.'
+                ], 404);
+            }
+
+            // Update the specific quarter permission
+            $column = $request->quarter . '_allow_view';
+
+            Log::info('Updating column:', [
+                'column' => $column,
+                'value' => $request->allow_view
+            ]);
+
+            $classStudent->update([
+                $column => $request->allow_view
+            ]);
+
+            Log::info('Update successful');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Grade viewing permission updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating grade permission:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating permission: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function mySchedule(Request $request, $grade_level, $section)
@@ -1203,16 +1288,12 @@ class TeacherController extends Controller
                 $quarterId = $quarters[$q] ?? null;
                 if (!$quarterId) continue;
 
-                // IMPORTANT: only act if the input for this quarter was actually submitted
-                // (disabled inputs are NOT submitted and so will NOT have this key)
                 if (!array_key_exists("q{$q}", $gradeData)) {
-                    // input not present in POST -> do nothing (preserve DB value)
                     continue;
                 }
 
                 $grade = $gradeData["q{$q}"];
 
-                // If the submitted value is empty string or null -> delete this quarter record
                 if ($grade === null || $grade === '') {
                     QuarterlyGrade::where('student_id', $studentId)
                         ->where('quarter_id', $quarterId)
@@ -1220,16 +1301,34 @@ class TeacherController extends Controller
                     continue;
                 }
 
-                // Otherwise validate/cast numeric and save
-                if (!is_numeric($grade)) {
-                    // skip invalid non-numeric input; optionally you could throw/collect errors
-                    continue;
-                }
+                if (!is_numeric($grade)) continue;
 
                 $gradeValue = round(floatval($grade), 2);
-                // optional clamp:
-                $gradeValue = max(0, min(100, $gradeValue));
+                if ($gradeValue < 60 || $gradeValue > 100) {
+                    return back()
+                        ->with('error', "Grade for student ID {$studentId} must be between 60 and 100.")
+                        ->withInput();
+                }
 
+                // ✅ NEW: check if previous quarters exist for this student
+                if ($q > 1) {
+                    $previousQuarterIds = array_values(array_slice($quarters, 0, $q - 1));
+                    $missingPrev = QuarterlyGrade::where('student_id', $studentId)
+                        ->whereIn('quarter_id', $previousQuarterIds)
+                        ->where(function ($query) {
+                            $query->whereNull('final_grade')
+                                ->orWhere('final_grade', '');
+                        })
+                        ->count();
+
+                    if ($missingPrev > 0) {
+                        return back()
+                            ->with('error', "Cannot enter Quarter {$q} grade for student ID {$studentId}. Please complete previous quarters first.")
+                            ->withInput();
+                    }
+                }
+
+                // ✅ Save valid grade
                 QuarterlyGrade::updateOrCreate(
                     [
                         'student_id' => $studentId,
@@ -1504,6 +1603,41 @@ class TeacherController extends Controller
 
         $schoolYear = SchoolYear::find($schoolYearId);
 
+        // === ADD THIS STATUS LOGIC (same as admin) ===
+        // Determine status
+        $latestEnrollment = $student->classStudents()->latest()->first();
+        $studentStatus = $latestEnrollment->enrollment_status ?? 'not_enrolled';
+
+        // Determine additional info
+        $statusInfo = null;
+
+        if ($studentStatus === 'enrolled' && $class) {
+            $grade = $class->formatted_grade_level ?? null;
+            $section = $class->section ?? null;
+            $gradeSection = $grade ? $grade . ($section ? ' - ' . $section : '') : null;
+
+            $statusInfo = $gradeSection
+                ? "{$gradeSection} for SY {$schoolYear->school_year}"
+                : "For SY {$schoolYear->school_year}";
+        } elseif (in_array($studentStatus, ['archived', 'not_enrolled'])) {
+            $lastEnrollment = $student->classStudents()
+                ->where('enrollment_status', 'enrolled')
+                ->latest()
+                ->first();
+
+            $lastSY = $lastEnrollment?->schoolYear?->school_year;
+            $statusInfo = $lastSY ? "Last Enrolled: {$lastSY}" : 'No recent enrollment';
+        } elseif ($studentStatus === 'graduated') {
+            $graduatedRecord = $student->classStudents()
+                ->where('enrollment_status', 'graduated')
+                ->latest()
+                ->first();
+
+            $gradSY = $graduatedRecord?->schoolYear?->school_year;
+            $statusInfo = $gradSY ? "Graduated: {$gradSY}" : 'Graduation year not recorded';
+        }
+        // === END STATUS LOGIC ===
+
         // Fetch and reorder classes (latest/current first)
         $classHistory = $student->class()
             ->with([
@@ -1524,7 +1658,7 @@ class TeacherController extends Controller
             })
             ->values();
 
-        // 🔹 Prepare storage
+        // Prepare storage
         $gradesByClass = [];
         $generalAverages = [];
 
@@ -1571,7 +1705,7 @@ class TeacherController extends Controller
 
             $gradesByClass[$classItem->id] = $subjectsWithGrades;
 
-            // 🔹 General Average: only if ALL subjects have final grades
+            // General Average: only if ALL subjects have final grades
             $totalSubjects = count($classSubjects);
             $completedSubjects = count($finalGrades);
 
@@ -1606,7 +1740,9 @@ class TeacherController extends Controller
             'schoolYearId',
             'classHistory',
             'gradesByClass',
-            'generalAverages'
+            'generalAverages',
+            'studentStatus',
+            'statusInfo'
         ));
     }
 
@@ -1659,7 +1795,8 @@ class TeacherController extends Controller
                 if ($allPresent) {
                     $arr = $quarters->pluck('grade')->all();
                     $final = round(array_sum($arr) / count($arr), 2);
-                    $remarks = $final >= 75 ? 'Passed' : 'Failed';
+                    $roundedFinal = round($final);
+                    $remarks = $roundedFinal >= 75 ? 'Passed' : 'Failed';
                 }
 
                 $subjectsWithGrades->push([
@@ -1677,7 +1814,8 @@ class TeacherController extends Controller
         $generalRemarks = null;
         if ($subjectsWithGrades->count() > 0 && $finals->count() === $subjectsWithGrades->count()) {
             $generalAverage = round($finals->sum() / $finals->count(), 2);
-            $generalRemarks = $generalAverage >= 75 ? 'Passed' : 'Failed';
+            $roundedGA = round($generalAverage);
+            $generalRemarks = $roundedGA >= 75 ? 'Passed' : 'Failed';
         }
 
         // Attendance counts - placeholder logic (you can replace with your Attendance model)
@@ -1688,6 +1826,25 @@ class TeacherController extends Controller
             // If you have monthly attendance, compute arrays here
         ];
 
+        // Compute Age based on DOB and end of school year (March 31 default)
+        $age = null;
+        if (!empty($student->student_dob)) {
+            $dob = \Carbon\Carbon::parse($student->student_dob);
+            $schoolYear = SchoolYear::find($schoolYearId);
+            $endOfSchoolYear = $schoolYear
+                ? \Carbon\Carbon::parse($schoolYear->end_date ?? now())
+                : now();
+
+            // Ensure whole number only
+            $age = (int) floor($dob->diffInYears($endOfSchoolYear));
+        }
+
+        // Extract other key info
+        $sex = ucfirst($student->gender ?? $student->student_sex ?? '');
+        $gradeLevel = $class ? $class->formatted_grade_level : '';
+        $section = $class ? $class->section : '';
+        $lrn = $student->student_lrn ?? '';
+
         // Prepare data for blade
         $data = [
             'student' => $student,
@@ -1697,12 +1854,19 @@ class TeacherController extends Controller
             'generalAverage' => $generalAverage,
             'generalRemarks' => $generalRemarks,
             'attendance' => $attendance,
-            // any school header info you want
             'school' => [
                 'name' => 'STA. BARBARA ELEMENTARY SCHOOL',
                 'division' => 'Schools Division Office of Camarines Sur',
                 'region' => 'Region V',
                 'department' => 'Republic of the Philippines, Department of Education',
+            ],
+            // New derived student info
+            'student_info' => [
+                'age' => $age,
+                'sex' => $sex,
+                'grade' => $gradeLevel,
+                'section' => $section,
+                'lrn' => $lrn,
             ],
         ];
 

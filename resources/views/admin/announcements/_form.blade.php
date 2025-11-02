@@ -10,7 +10,7 @@
     <select id="recipients" name="recipients[]" multiple required></select>
 
     <small class="form-text text-muted">
-        You can search by name/email or click “Choose from list” to select multiple users.
+        You can search by name/email or click "Choose from list" to select multiple users.
     </small>
 </div>
 
@@ -154,7 +154,6 @@
     </div>
 </div>
 
-
 @push('scripts')
     <!-- Quill JS -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
@@ -192,64 +191,15 @@
                             }, {
                                 'list': 'bullet'
                             }],
-                            ['link', 'image'], // ✅ keep image button
+                            ['link'], // Removed 'image' button
                             ['clean']
-                        ],
-                        handlers: {
-                            image: function() {
-                                const input = document.createElement('input');
-                                input.setAttribute('type', 'file');
-                                input.setAttribute('accept', 'image/*');
-                                input.click();
-
-                                input.onchange = () => {
-                                    const file = input.files[0];
-                                    if (file) {
-                                        const formData = new FormData();
-                                        formData.append('image', file);
-
-                                        fetch("{{ route('announcements.uploadImage') }}", {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                                },
-                                                body: formData
-                                            })
-                                            .then(res => {
-                                                if (!res.ok) throw res;
-                                                return res.json();
-                                            })
-                                            .then(data => {
-                                                if (data.url) {
-                                                    const range = quill.getSelection();
-                                                    quill.insertEmbed(range.index, 'image', data
-                                                        .url);
-                                                } else {
-                                                    alert('Image upload failed');
-                                                }
-                                            })
-                                            .catch(async (err) => {
-                                                let msg = 'Image upload failed';
-                                                if (err.json) {
-                                                    const errorData = await err.json();
-                                                    if (errorData.errors && errorData.errors
-                                                        .image) {
-                                                        msg = errorData.errors.image.join(
-                                                            ', ');
-                                                    }
-                                                }
-                                                alert(msg);
-                                            });
-                                    }
-                                };
-                            }
-                        }
+                        ]
                     }
                 },
                 formats: [
                     'font', 'size', 'bold', 'italic', 'underline',
                     'list', 'color', 'background',
-                    'align', 'link', 'image'
+                    'align', 'link' // Removed 'image' format
                 ]
             });
 
@@ -490,7 +440,6 @@
         });
     </script>
 @endpush
-
 
 @push('styles')
     <!-- Tom Select CSS -->

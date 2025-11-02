@@ -225,8 +225,9 @@
         {{-- Card --}}
         @foreach ($groupedStudents as $grade => $students)
             @php
-                // Calculate counts for header display
+                // Calculate counts for header display - COUNT ALL STUDENTS IN THE LIST
                 $totalStudents = $students->count();
+                $studentCount = $totalStudents; // This now counts all students listed
 
                 // Collect unique adviser and subject teacher counts
                 $adviserCount = $students
@@ -247,7 +248,14 @@
                     data-bs-toggle="collapse" data-bs-target="#collapse-{{ Str::slug($grade) }}" aria-expanded="false"
                     aria-controls="collapse-{{ Str::slug($grade) }}" style="cursor: pointer;">
 
-                    <h5 class="fw-bold text-primary mb-0">{{ $grade }}</h5>
+                    <h5 class="fw-bold text-primary mb-0">{{ $grade }} (
+                        @if ($studentCount > 0)
+                            <span class="text-success fw-bold">{{ $studentCount }} students</span>
+                        @else
+                            <span class="text-muted">No students</span>
+                        @endif)
+                    </h5>
+
                     <i class="bx bx-chevron-down fs-4 transition-all"></i>
                 </div>
 
@@ -264,17 +272,16 @@
                                     <th style="width: 20%;">Grade & Section</th>
                                     <th style="width: 15%;">Enrollment Status</th>
                                     <th style="width: 15%;">Enrollment Type</th>
-                                    <th style="width: 15%;">Emergency Contact No.</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($students->sortBy([
-                                                ['student_lName', 'asc'],
-                                                ['student_fName', 'asc'],
-                                                ['student_mName', 'asc'],
-                                                ['student_extName', 'asc'],
-                                            ]) as $student)
+                                                                    ['student_lName', 'asc'],
+                                                                    ['student_fName', 'asc'],
+                                                                    ['student_mName', 'asc'],
+                                                                    ['student_extName', 'asc'],
+                                                                ]) as $student)
                                     {{-- Student rows unchanged --}}
                                     <tr class="student-row">
                                         <td>
@@ -333,14 +340,39 @@
                                                 {{ strtoupper(str_replace('_', ' ', $type)) }}
                                             </span>
                                         </td>
-                                        <td>{{ $student->phone ?? 'N/A' }}</td>
                                         <td>
-                                            {{-- Dropdown remains the same --}}
+                                            <div class="dropdown">
+                                                <button class="btn p-0 dropdown-toggle hide-arrow"
+                                                    data-bs-toggle="dropdown">
+                                                    <i class="bx bx-dots-vertical-rounded"></i>
+                                                </button>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item text-info"
+                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                        <i class="bx bxs-user-badge me-1"></i> View Profile
+                                                    </a>
+                                                    @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
+                                                        <button type="button" class="dropdown-item text-danger"
+                                                            onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}', '{{ $selectedYear }}')">
+                                                            <i class="bx bx-user-x me-1"></i> Unenroll
+                                                        </button>
+
+                                                        <form id="unenroll-form-{{ $student->id }}"
+                                                            action="{{ route('unenroll.student', $student->id) }}"
+                                                            method="POST" style="display: none;">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <input type="hidden" name="school_year"
+                                                                value="{{ $selectedYear }}">
+                                                        </form>
+                                                    @endif
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr class="text-muted">
-                                        <td colspan="8">No students enrolled in {{ $grade }}.</td>
+                                        <td colspan="8">No students in {{ $grade }}.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

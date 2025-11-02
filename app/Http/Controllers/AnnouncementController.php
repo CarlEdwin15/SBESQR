@@ -299,41 +299,41 @@ class AnnouncementController extends Controller
         Log::info('Announcement ID: ' . $id);
         Log::info('User authenticated: ' . (Auth::check() ? 'YES' : 'NO'));
         Log::info('User ID: ' . (Auth::id() ?? 'NONE'));
-        Log::info('User role: ' . (Auth::check() ? Auth::user()->role : 'N/A'));
-        Log::info('Full URL: ' . request()->fullUrl());
-        Log::info('Session ID: ' . session()->getId());
-        Log::info('Headers: ' . json_encode(request()->header()));
-        Log::info('IP: ' . request()->ip());
 
         if (Auth::check()) {
             Log::info('✅ User IS logged in, redirecting to home with announcement_id');
-            $redirectUrl = route('home', ['announcement_id' => $id]);
-            Log::info('Redirect URL: ' . $redirectUrl);
-            return redirect($redirectUrl);
+
+            // Store the announcement ID in session for auto-opening
+            session(['notification_announcement_id' => $id]);
+
+            // Redirect to home page - this will trigger the modal auto-open
+            return redirect()->route('home');
         } else {
             Log::info('❌ User NOT logged in, storing in session and redirecting to login');
+
+            // Store announcement ID in session for after login
             session(['login_redirect_announcement' => $id]);
-            Log::info('Session data stored: ' . $id);
-            Log::info('Session all data: ' . json_encode(session()->all()));
+
+            // Redirect to login page
             return redirect()->route('login');
         }
     }
 
-    public function uploadImage(Request $request)
-    {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
+    // public function uploadImage(Request $request)
+    // {
+    //     $request->validate([
+    //         'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+    //     ]);
 
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('announcements', 'public');
-            $url = asset('storage/' . $path);
+    //     if ($request->hasFile('image')) {
+    //         $path = $request->file('image')->store('announcements', 'public');
+    //         $url = asset('storage/' . $path);
 
-            return response()->json(['url' => $url]);
-        }
+    //         return response()->json(['url' => $url]);
+    //     }
 
-        return response()->json(['error' => 'No image uploaded'], 400);
-    }
+    //     return response()->json(['error' => 'No image uploaded'], 400);
+    // }
 
     // Helper function to get the default school year (e.g., "2024-2025")
     private function getDefaultSchoolYear()
@@ -359,7 +359,15 @@ class AnnouncementController extends Controller
                     ->orWhere('email', 'like', "%{$query}%");
             })
             ->limit(50)
-            ->get(['id', 'firstName', 'lastName', 'email']);
+            ->get(['id', 'firstName', 'lastName', 'email'])
+            ->map(function ($user) {
+                return [
+                    'id'        => $user->id,
+                    'firstName' => $user->firstName ?? '',
+                    'lastName'  => $user->lastName ?? '',
+                    'email'     => $user->email ?? '',
+                ];
+            });
 
         return response()->json($users);
     }

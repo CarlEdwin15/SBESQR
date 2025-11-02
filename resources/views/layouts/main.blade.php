@@ -202,6 +202,7 @@
                     </script>
                 @endif --}}
 
+    <!-- Make table rows clickable -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll(".t-row").forEach(row => {
@@ -239,6 +240,25 @@
 
     <!-- Tom Select JS -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        // Handle navigation messages from service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data && event.data.type === 'NAVIGATE_TO_ANNOUNCEMENT') {
+                    console.log('Received navigation request:', event.data.url);
+                    window.location.href = event.data.url;
+                }
+            });
+        }
+
+        // Optional: Let service worker know we're ready
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                console.log('Service Worker is ready');
+            });
+        }
+    </script>
 
     <script>
         // Create a SweetAlert mixin so we don’t repeat customClass everywhere
@@ -388,6 +408,7 @@
                     showConfirmButton: false,
                     timer: 3000,
                     timerProgressBar: true,
+                    showCloseButton: true,
                     customClass: {
                         container: 'my-swal-container'
                     }

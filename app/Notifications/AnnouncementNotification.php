@@ -37,6 +37,7 @@ class AnnouncementNotification extends Notification
             'title'           => $this->announcement->title,
             'body'            => $this->announcement->body,
             'date_published'  => $this->announcement->date_published,
+            'url'             => route('announcement.redirect', ['id' => $this->announcement->id]),
         ];
     }
 
@@ -46,24 +47,18 @@ class AnnouncementNotification extends Notification
     public function toWebPush($notifiable, $notification)
     {
         try {
-            // Go directly to home route with announcement_id parameter
-            $homeUrl = route('home', ['announcement_id' => $this->announcement->id]);
-
-            Log::info('Sending WebPush notification with DIRECT home URL', [
-                'announcement_id' => $this->announcement->id,
-                'home_url' => $homeUrl,
-                'user_id' => $notifiable->id
-            ]);
+            // Generate absolute URL for the redirect route
+            $redirectUrl = route('announcement.redirect', ['id' => $this->announcement->id]);
 
             return (new WebPushMessage)
                 ->title("📢 " . $this->announcement->title)
                 ->body(strip_tags($this->announcement->body))
-                ->icon(url('/assetsDashboard/img/icons/announcement.png'))
-                ->badge(url('/assetsDashboard/img/icons/badge.png'))
+                ->icon(asset('assetsDashboard/img/icons/announcement.png'))
+                ->badge(asset('assetsDashboard/img/icons/badge.png'))
                 ->vibrate([100, 50, 100])
                 ->tag('announcement-' . $this->announcement->id)
                 ->data([
-                    'url' => $homeUrl, // Direct to home with parameter
+                    'url' => $redirectUrl, // This should now be a full URL like "https://yoursite.com/announcement/redirect/123"
                     'id' => $this->announcement->id,
                 ])
                 ->action('open', 'View Announcement');

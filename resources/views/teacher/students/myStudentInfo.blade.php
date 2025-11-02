@@ -113,37 +113,39 @@
                         <div><span class="fw-bold">LRN:</span> {{ $student->student_lrn }}</div>
                     </div>
 
-                    <!-- Enrollment Status -->
-                    <div class="mt-2 mb-3">
-                        <span class="fw-bold">Enrollment Status:</span><br>
-                        @if ($class && $class->pivot->enrollment_status)
-                            @php
-                                $status = $class->pivot->enrollment_status;
-                                $badgeClass = match ($status) {
-                                    'enrolled' => 'bg-label-success fw-bold',
-                                    'archived' => 'bg-label-warning fw-bold',
-                                    default => 'bg-label-secondary fw-bold',
-                                };
-                            @endphp
-                            <span class="badge {{ $badgeClass }} px-3 py-2">
-                                {{ ucfirst($status) }}
-                            </span>
-                        @else
-                            <span class="text-muted">N/A</span>
+                    <!-- Student Status Display (Updated to match admin) -->
+                    <div class="mt-2 mb-3 text-center">
+                        <span class="fw-bold">Student Status</span><br>
+
+                        @php
+                            $displayStatus = match ($studentStatus) {
+                                'enrolled' => 'Active',
+                                'graduated' => 'Graduated',
+                                'archived', 'not_enrolled' => 'Inactive',
+                                default => ucfirst($studentStatus),
+                            };
+
+                            $badgeClass = match ($displayStatus) {
+                                'Active' => 'bg-label-success fw-bold',
+                                'Inactive' => 'bg-label-secondary fw-bold',
+                                'Graduated' => 'bg-label-info fw-bold',
+                                default => 'bg-label-warning fw-bold',
+                            };
+                        @endphp
+
+                        <span class="badge {{ $badgeClass }} px-3 py-2">{{ $displayStatus }}</span><br>
+
+                        @if (!empty($statusInfo))
+                            <small class="text-muted d-block mt-1">{{ $statusInfo }}</small>
                         @endif
                     </div>
 
                     <div class="d-flex justify-content-center mt-3">
                         <!-- Back Button -->
-                        <a href="{{ session('back_url', url()->previous()) }}" class="btn btn-danger me-2 d-flex align-items-center">
+                        <a href="{{ session('back_url', url()->previous()) }}"
+                            class="btn btn-danger me-2 d-flex align-items-center">
                             <i class='bx bx-chevrons-left'></i>
                             <span class="d-none d-sm-block">Back</span>
-                        </a>
-                        <!-- Edit Button -->
-                        <a href="{{ route('teacher.edit.student', $student->id) }}"
-                            class="btn btn-warning d-flex align-items-center">
-                            <i class='bx bx-edit me-1'></i>
-                            <span class="d-none d-sm-block">Edit</span>
                         </a>
                     </div>
                 </div>

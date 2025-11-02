@@ -543,6 +543,8 @@
 
     <!-- Quill Editor Initialization for Edit Form -->
     <script>
+        // In your index.blade.php, update the initEditQuillEditor function:
+
         function initEditQuillEditor() {
             const editorContainer = document.querySelector('#edit-quill-editor');
             if (!editorContainer) return;
@@ -578,62 +580,15 @@
                             }, {
                                 'list': 'bullet'
                             }],
-                            ['link', 'image'],
+                            ['link'], // Removed 'image' button
                             ['clean']
-                        ],
-                        handlers: {
-                            image: function() {
-                                const input = document.createElement('input');
-                                input.setAttribute('type', 'file');
-                                input.setAttribute('accept', 'image/*');
-                                input.click();
-
-                                input.onchange = () => {
-                                    const file = input.files[0];
-                                    if (file) {
-                                        const formData = new FormData();
-                                        formData.append('image', file);
-
-                                        fetch("{{ route('announcements.uploadImage') }}", {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                                },
-                                                body: formData
-                                            })
-                                            .then(res => {
-                                                if (!res.ok) throw res;
-                                                return res.json();
-                                            })
-                                            .then(data => {
-                                                if (data.url) {
-                                                    const range = quill.getSelection();
-                                                    quill.insertEmbed(range.index, 'image', data.url);
-                                                } else {
-                                                    alert('Image upload failed');
-                                                }
-                                            })
-                                            .catch(async (err) => {
-                                                let msg = 'Image upload failed';
-                                                if (err.json) {
-                                                    const errorData = await err.json();
-                                                    if (errorData.errors && errorData.errors
-                                                        .image) {
-                                                        msg = errorData.errors.image.join(', ');
-                                                    }
-                                                }
-                                                alert(msg);
-                                            });
-                                    }
-                                };
-                            }
-                        }
+                        ]
                     }
                 },
                 formats: [
                     'font', 'size', 'bold', 'italic', 'underline',
                     'list', 'color', 'background',
-                    'align', 'link', 'image'
+                    'align', 'link' // Removed 'image' format
                 ]
             });
 

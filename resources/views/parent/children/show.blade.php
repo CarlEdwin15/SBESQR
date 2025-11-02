@@ -107,33 +107,30 @@
                         <div><span class="fw-bold">LRN:</span> {{ $child->student_lrn }}</div>
                     </div>
 
-                    <!-- Enrollment Status + Type -->
+                    <!-- Student Status Display (Updated to match admin) -->
                     <div class="mt-2 mb-3 text-center">
-                        <span class="fw-bold">
-                            Enrollment Status & Type for<br> Current School Year
-                            ({{ Carbon::now()->format('Y') }} - {{ Carbon::now()->addYear()->format('Y') }})
-                        </span><br>
+                        <span class="fw-bold">Student Status</span><br>
 
-                        @if ($class && $class->pivot->enrollment_status)
-                            @php
-                                $status = $class->pivot->enrollment_status;
-                                $type = $class->pivot->enrollment_type ?? 'N/A';
+                        @php
+                            $displayStatus = match ($studentStatus) {
+                                'enrolled' => 'Active',
+                                'graduated' => 'Graduated',
+                                'archived', 'not_enrolled' => 'Inactive',
+                                default => ucfirst($studentStatus),
+                            };
 
-                                $badgeClass = match ($status) {
-                                    'enrolled' => 'bg-label-success fw-bold',
-                                    'archived' => 'bg-label-warning fw-bold',
-                                    default => 'bg-label-secondary fw-bold',
-                                };
-                            @endphp
+                            $badgeClass = match ($displayStatus) {
+                                'Active' => 'bg-label-success fw-bold',
+                                'Inactive' => 'bg-label-secondary fw-bold',
+                                'Graduated' => 'bg-label-info fw-bold',
+                                default => 'bg-label-warning fw-bold',
+                            };
+                        @endphp
 
-                            <span class="badge {{ $badgeClass }} px-3 py-2">
-                                {{ ucfirst($status) }}
-                            </span>
-                            <span class="badge bg-label-info fw-bold px-3 py-2">
-                                {{ ucfirst($type) }}
-                            </span>
-                        @else
-                            <span class="text-muted">N/A</span>
+                        <span class="badge {{ $badgeClass }} px-3 py-2">{{ $displayStatus }}</span><br>
+
+                        @if (!empty($statusInfo))
+                            <small class="text-muted d-block mt-1">{{ $statusInfo }}</small>
                         @endif
                     </div>
 

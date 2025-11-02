@@ -25,17 +25,15 @@ use App\Models\Announcement;
 use App\Models\Student;
 use App\Models\User;
 
-// ===================================
+
 // ERROR ROUTES
-// ===================================
 Route::view('/error/not_authorized', 'errors.401_not_authorized')->name('error.not_authorized');
 Route::view('/error/inactive', 'errors.423_inactive')->name('error.inactive');
 Route::view('/error/suspended', 'errors.402_suspended')->name('error.suspended');
 Route::view('/error/banned', 'errors.403_banned')->name('error.banned');
 
-// ===================================
+
 // GENERAL & AUTH ROUTES
-// ===================================
 Route::middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class])
     ->get('/home', [HomeController::class, 'index'])
     ->name('home');
@@ -50,9 +48,11 @@ Route::get('/', function () {
     return view('welcome', compact('announcements'));
 })->name('welcome');
 
-// ===================================
+// Announcement redirect route for notifications
+Route::get('/announcement/redirect/{id}', [AnnouncementController::class, 'redirect'])
+    ->name('announcement.redirect');
+
 // ADMIN DASHBOARD ROUTES
-// ===================================
 Route::prefix('admin')
     ->middleware([
         'auth',
@@ -137,7 +137,7 @@ Route::prefix('admin')
 
         // Announcements
         Route::resource('/announcements', AnnouncementController::class);
-        Route::get('/announcement/redirect/{id}', [AnnouncementController::class, 'redirect'])->name('announcement.redirect');
+        // Route::get('/announcement/redirect/{id}', [AnnouncementController::class, 'redirect'])->name('announcement.redirect');
 
         // Payments
         Route::get('/payments', [SchoolFeeController::class, 'index'])->name('admin.school-fees.index');
@@ -155,9 +155,7 @@ Route::prefix('admin')
         Route::get('/payments/show/{paymentName}', [SchoolFeeController::class, 'show'])->name('admin.school-fees.show');
     });
 
-// ===================================
 // TEACHER DASHBOARD ROUTES
-// ===================================
 Route::prefix('teacher')
     ->middleware([
         'auth',
@@ -171,11 +169,13 @@ Route::prefix('teacher')
         Route::get('/accountSettings', [TeacherController::class, 'accountSettings'])->name('teacher.account.settings');
         Route::put('/accountSettings/{id}', [TeacherController::class, 'updateTeacher'])->name('teacher.update');
 
+        // Class
         Route::get('/myClasses', [TeacherController::class, 'myClasses'])->name('teacher.myClasses');
         Route::get('/myStudents', [TeacherController::class, 'myStudents'])->name('teacher.my.students');
         Route::get('/myClass/{grade_level}/{section}', [TeacherController::class, 'myClass'])->name('teacher.myClass');
         Route::get('/mySchedule/{grade_level}/{section}', [TeacherController::class, 'mySchedule'])->name('teacher.mySchedule');
         Route::get('/myClassMasterList/{grade_level}/{section}', [TeacherController::class, 'myClassMasterList'])->name('teacher.myClassMasterList');
+        Route::post('/update-grade-permission', [TeacherController::class, 'updateGradePermission'])->name('teacher.update.grade.permission');
 
         // Attendance
         Route::get('/myAttendanceRecord/{grade_level}/{section}', [TeacherController::class, 'myAttendanceRecord'])->name('teacher.myAttendanceRecord');
@@ -220,9 +220,7 @@ Route::prefix('teacher')
         })->name('export.sf2');
     });
 
-// ===================================
 // PARENT DASHBOARD ROUTES
-// ===================================
 Route::prefix('parent')
     ->middleware([
         'auth',
@@ -250,28 +248,32 @@ Route::prefix('parent')
             ->name('attendance.fetchMonth');
     });
 
-// ===================================
+// Announcement Management (on ADMIN Dashboard)
+Route::middleware('auth')->prefix('announcements')->name('announcements.')->group(function () {
+    Route::get('/', [AnnouncementController::class, 'index'])->name('index');
+    Route::get('/create', [AnnouncementController::class, 'create'])->name('create');
+    Route::post('/', [AnnouncementController::class, 'store'])->name('store');
+    Route::get('/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('edit');
+    Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('update');
+    Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
+    // Route::post('upload-image', [AnnouncementController::class, 'uploadImage'])->name('uploadImage');
+});
+
 // ANNOUNCEMENT & USER SEARCH ROUTES
-// ===================================
 Route::get('/announcements/{id}/show-ajax', [AnnouncementController::class, 'showAjax'])->name('announcements.showAjax');
 Route::post('/announcements/upload-image', [AnnouncementController::class, 'uploadImage'])->name('announcements.uploadImage');
 Route::get('/users/search', [AnnouncementController::class, 'searchUser'])->name('search.user');
 
-// ===================================
 // PUSH NOTIFICATIONS
-// ===================================
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
 Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
-// ===================================
 // GOOGLE LOGIN
-// ===================================
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
-// ===================================
+
 // STUDENT SEARCH ROUTES (For Payments)
-// ===================================
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/class-students/search', [StudentController::class, 'classStudentSearch'])
         ->name('class-students.search');

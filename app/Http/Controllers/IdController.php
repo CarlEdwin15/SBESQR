@@ -10,27 +10,17 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class IdController extends Controller
 {
-
-    public function generateID(Request $request, $id)
-    {
-        // Store the previous URL, but avoid self-loop
-        $previous = url()->previous();
-        if ($previous !== $request->fullUrl()) {
-            session(['back_url' => $previous]);
-        }
-
-        $student = Student::findOrFail($id);
-        return view('admin.students.generate_id', compact('student'));
-    }
-
     public function previewID($id)
     {
         $student = Student::findOrFail($id);
 
+        // Use the SAME data structure as in student_tabs
+        $qrData = json_encode(['student_id' => $student->id]);
+
         $qrCode = base64_encode(
             QrCode::format('svg')
                 ->size(150)
-                ->generate(json_encode(['route' => 'student.info', 'id' => $student->id]))
+                ->generate($qrData)
         );
 
         $pdf = Pdf::loadView('pdf.id_card', compact('student', 'qrCode'))
@@ -39,7 +29,6 @@ class IdController extends Controller
         $filename = "{$student->student_fName}_{$student->student_lName}_ID.pdf";
         return $pdf->stream($filename);
     }
-
 
     /**
      * Display a listing of the resource.

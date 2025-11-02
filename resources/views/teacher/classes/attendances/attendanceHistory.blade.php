@@ -506,7 +506,7 @@
             const selectedDate = document.getElementById('date').value;
             const schoolYear = document.querySelector('input[name="school_year"]').value;
 
-            const baseUrl = "{{ url('attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
+            const baseUrl = "{{ url('teacher/attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
             const finalUrl = selectedDate ?
                 `${baseUrl}/${selectedDate}?school_year=${encodeURIComponent(schoolYear)}` :
                 `${baseUrl}?school_year=${encodeURIComponent(schoolYear)}`;

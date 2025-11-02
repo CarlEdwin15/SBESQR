@@ -8,12 +8,17 @@ class ClassStudent extends Model
 {
     protected $table = 'class_student';
 
+    // In ClassStudent model
     protected $fillable = [
         'student_id',
         'class_id',
         'school_year_id',
         'enrollment_status',
         'enrollment_type',
+        'q1_allow_view',
+        'q2_allow_view',
+        'q3_allow_view',
+        'q4_allow_view',
     ];
 
     public function student()
@@ -34,5 +39,17 @@ class ClassStudent extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    // Check if grade viewing is allowed for a specific quarter
+    public function isGradeViewingAllowed($quarter)
+    {
+        return match ($quarter) {
+            1 => $this->q1_allow_view,
+            2 => $this->q2_allow_view,
+            3 => $this->q3_allow_view,
+            4 => $this->q4_allow_view,
+            default => false
+        };
     }
 }
