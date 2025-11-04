@@ -108,9 +108,22 @@
                 <i class='bx bx-chevrons-left'></i>
                 <span class="d-none d-sm-block">Back</span>
             </a>
+
+            <!-- Bulk Print Buttons -->
+            <div class="d-flex gap-2">
+                <button id="bulkPrintBtn" class="btn btn-success mb-3 d-flex align-items-center d-none">
+                    <i class='bx bx-printer me-1'></i>
+                    <span class="d-none d-sm-block">Print Selected Grades</span>
+                </button>
+
+                <button id="toggleCheckboxes" class="btn btn-warning mb-3 d-flex align-items-center">
+                    <i class='bx bx-check-square me-1'></i>
+                    <span class="d-none d-sm-block">Select Students for Printing</span>
+                </button>
+            </div>
         </div>
 
-        <div class="card p-3 shadow-sm mb-3">
+        <div class="card p-3 shadow-sm mb-2">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
 
                 <!-- Adviser Info -->
@@ -123,8 +136,7 @@
                                 <img src="{{ $class->adviser->profile_photo
                                     ? asset('storage/' . $class->adviser->profile_photo)
                                     : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
-                                    alt="Adviser Photo"
-                                    style="width: 65px; height: 65px; object-fit: cover;">
+                                    alt="Adviser Photo" style="width: 65px; height: 65px; object-fit: cover;">
                             </div>
 
                             <!-- Adviser Info (Name + Email + Label) -->
@@ -196,7 +208,8 @@
                 <table class="table table-hover table-bordered text-center" id="masterListTable">
                     <thead class="table-primary align-middle text-center">
                         <tr>
-                            <th rowspan="2" style="width: 5%;">NO.</th>
+                            <th rowspan="2" style="width: 5%;" class="index-column">NO.</th>
+                            <th rowspan="2" style="width: 5%;" class="checkbox-column d-none">SELECT</th>
                             <th rowspan="2" style="width: 10%;">PHOTO</th>
                             <th rowspan="2">NAME</th>
                             <th rowspan="2">LRN</th>
@@ -258,8 +271,16 @@
                             <tr class="student-row"
                                 data-name="{{ strtolower($student->student_lName . ' ' . $student->student_fName . ' ' . $student->student_mName . ' ' . $student->student_extName) }}"
                                 data-lrn="{{ strtolower($student->student_lrn) }}"
-                                data-gender="{{ strtolower($student->student_sex) }}">
-                                <td class="text-center">{{ $index + 1 }}</td>
+                                data-gender="{{ strtolower($student->student_sex) }}"
+                                data-student-id="{{ $student->id }}">
+                                <td class="text-center index-column">{{ $index + 1 }}</td>
+                                <td class="text-center checkbox-column d-none">
+                                    <div class="form-check">
+                                        <input class="form-check-input student-checkbox" type="checkbox"
+                                            value="{{ $student->id }}"
+                                            data-student-name="{{ $student->student_lName }}, {{ $student->student_fName }} {{ $student->student_extName }}">
+                                    </div>
+                                </td>
                                 <td class="text-center">
                                     <a
                                         href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
@@ -339,7 +360,7 @@
 
                         @if ($allStudents->isEmpty())
                             <tr>
-                                <td colspan="{{ $isAdviser ? 8 : 4 }}" class="text-center text-muted py-4">No students
+                                <td colspan="{{ $isAdviser ? 9 : 5 }}" class="text-center text-muted py-4">No students
                                     enrolled in this class.
                                 </td>
                             </tr>
@@ -822,6 +843,260 @@
             });
         </script>
     @endif
+
+    <!-- Bulk Print Grades Script -->
+    <script>
+        bulkPrintBtn.addEventListener('click', function() {
+            const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked'));
+
+            if (selectedStudents.length === 0) {
+                Swal.fire({
+                    title: 'No Students Selected',
+                    text: 'Please select at least one student to print grades.',
+                    icon: 'warning',
+                    confirmButtonColor: "#3085d6",
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                });
+                return;
+            }
+
+            const studentIds = selectedStudents.map(checkbox => checkbox.value);
+            const studentNames = selectedStudents.map(checkbox => checkbox.dataset.studentName);
+
+            // Show confirmation with selected students
+            Swal.fire({
+                title: 'Print Grades for Selected Students?',
+                html: `You are about to print grades for <strong>${selectedStudents.length}</strong> student(s):<br><br>
+              <div style="max-height: 200px; overflow-y: auto; text-align: left;">
+                ${studentNames.map(name => `• ${name}`).join('<br>')}
+              </div>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Print',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                customClass: {
+                    container: 'my-swal-container'
+                },
+                width: '600px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Generating PDF...',
+                        text: 'Please wait while we prepare the grade slips.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+
+                    // Prepare the form data
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route('teacher.bulk.print.grades') }}';
+                    form.target = '_blank';
+
+                    // Add CSRF token
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    form.appendChild(csrfToken);
+
+                    // Add student IDs
+                    studentIds.forEach(studentId => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'student_ids[]';
+                        input.value = studentId;
+                        form.appendChild(input);
+                    });
+
+                    // Add class and school year info
+                    const classInput = document.createElement('input');
+                    classInput.type = 'hidden';
+                    classInput.name = 'class_id';
+                    classInput.value = '{{ $class->id }}';
+                    form.appendChild(classInput);
+
+                    const syInput = document.createElement('input');
+                    syInput.type = 'hidden';
+                    syInput.name = 'school_year_id';
+                    syInput.value = '{{ $schoolYearId }}';
+                    form.appendChild(syInput);
+
+                    // Append form to body and submit
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+
+                    // Close loading
+                    Swal.close();
+                }
+            });
+        });
+    </script>
+
+    <!-- Bulk Print Toggle and Functionality Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleCheckboxesBtn = document.getElementById('toggleCheckboxes');
+            const bulkPrintBtn = document.getElementById('bulkPrintBtn');
+            const indexColumns = document.querySelectorAll('.index-column');
+            const checkboxColumns = document.querySelectorAll('.checkbox-column');
+            let checkboxesVisible = false;
+
+            // Toggle checkboxes visibility
+            toggleCheckboxesBtn.addEventListener('click', function() {
+                checkboxesVisible = !checkboxesVisible;
+
+                if (checkboxesVisible) {
+                    // Show checkboxes, hide index numbers
+                    indexColumns.forEach(col => col.classList.add('d-none'));
+                    checkboxColumns.forEach(col => col.classList.remove('d-none'));
+                    bulkPrintBtn.classList.remove('d-none');
+                    toggleCheckboxesBtn.innerHTML =
+                        '<i class="bx bx-x me-1"></i><span class="d-none d-sm-block">Cancel Selection</span>';
+                    toggleCheckboxesBtn.classList.remove('btn-warning');
+                    toggleCheckboxesBtn.classList.add('btn-secondary');
+                } else {
+                    // Hide checkboxes, show index numbers
+                    indexColumns.forEach(col => col.classList.remove('d-none'));
+                    checkboxColumns.forEach(col => col.classList.add('d-none'));
+                    bulkPrintBtn.classList.add('d-none');
+                    toggleCheckboxesBtn.innerHTML =
+                        '<i class="bx bx-check-square me-1"></i><span class="d-none d-sm-block">Select Students for Printing</span>';
+                    toggleCheckboxesBtn.classList.remove('btn-secondary');
+                    toggleCheckboxesBtn.classList.add('btn-warning');
+
+                    // Uncheck all checkboxes when hiding
+                    document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+
+                    // Hide bulk print button
+                    bulkPrintBtn.classList.add('d-none');
+                }
+            });
+
+            // Show/hide bulk print button based on checkbox selection
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('student-checkbox')) {
+                    const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
+                    if (selectedCount > 0 && checkboxesVisible) {
+                        bulkPrintBtn.classList.remove('d-none');
+                    } else {
+                        bulkPrintBtn.classList.add('d-none');
+                    }
+                }
+            });
+
+            // Bulk print functionality
+            bulkPrintBtn.addEventListener('click', function() {
+                const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked'));
+
+                if (selectedStudents.length === 0) {
+                    Swal.fire({
+                        title: 'No Students Selected',
+                        text: 'Please select at least one student to print grades.',
+                        icon: 'warning',
+                        confirmButtonColor: "#3085d6",
+                        customClass: {
+                            container: 'my-swal-container'
+                        },
+                    });
+                    return;
+                }
+
+                const studentIds = selectedStudents.map(checkbox => checkbox.value);
+                const studentNames = selectedStudents.map(checkbox => checkbox.dataset.studentName);
+
+                // Show confirmation with selected students
+                Swal.fire({
+                    title: 'Print Grades for Selected Students?',
+                    html: `You are about to print grades for <strong>${selectedStudents.length}</strong> student(s):<br><br>
+                      <div style="max-height: 200px; overflow-y: auto; text-align: left;">
+                        ${studentNames.map(name => `• ${name}`).join('<br>')}
+                      </div>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Print',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                    width: '600px'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading
+                        Swal.fire({
+                            title: 'Generating PDF...',
+                            text: 'Please wait while we prepare the grade slips.',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            },
+                            customClass: {
+                                container: 'my-swal-container'
+                            }
+                        });
+
+                        // Prepare the form data
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '{{ route('teacher.bulk.print.grades') }}';
+                        form.target = '_blank';
+
+                        // Add CSRF token
+                        const csrfToken = document.createElement('input');
+                        csrfToken.type = 'hidden';
+                        csrfToken.name = '_token';
+                        csrfToken.value = '{{ csrf_token() }}';
+                        form.appendChild(csrfToken);
+
+                        // Add student IDs
+                        studentIds.forEach(studentId => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'student_ids[]';
+                            input.value = studentId;
+                            form.appendChild(input);
+                        });
+
+                        // Add class and school year info
+                        const classInput = document.createElement('input');
+                        classInput.type = 'hidden';
+                        classInput.name = 'class_id';
+                        classInput.value = '{{ $class->id }}';
+                        form.appendChild(classInput);
+
+                        const syInput = document.createElement('input');
+                        syInput.type = 'hidden';
+                        syInput.name = 'school_year_id';
+                        syInput.value = '{{ $schoolYearId }}';
+                        form.appendChild(syInput);
+
+                        // Append form to body and submit
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+
+                        // Close loading
+                        Swal.close();
+                    }
+                });
+            });
+        });
+    </script>
 @endpush
 
 @push('styles')
@@ -892,6 +1167,14 @@
 
         .gender-icon:hover {
             opacity: 1;
+        }
+
+        .checkbox-column {
+            vertical-align: middle;
+        }
+
+        .student-checkbox {
+            transform: scale(1.2);
         }
     </style>
 @endpush

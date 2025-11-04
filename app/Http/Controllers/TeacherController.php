@@ -1984,6 +1984,65 @@ class TeacherController extends Controller
         return $pdf->stream($filename);
     }
 
+    public function bulkPrintGrades(Request $request)
+    {
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id',
+            'class_id' => 'required|exists:classes,id',
+            'school_year_id' => 'required|exists:school_years,id',
+        ]);
+
+        $studentIds = $request->input('student_ids');
+        $classId = $request->input('class_id');
+        $schoolYearId = $request->input('school_year_id');
+
+        // Fetch the class and school year
+        $class = Classes::findOrFail($classId);
+        $schoolYear = SchoolYear::findOrFail($schoolYearId);
+
+        // Fetch students in the EXACT ORDER they were selected
+        $students = Student::whereIn('id', $studentIds)
+            ->with([
+                'classStudents' => function ($query) use ($classId, $schoolYearId) {
+                    $query->where('class_id', $classId)
+                        ->where('school_year_id', $schoolYearId);
+                },
+                'quarterlyGrades.quarter.classSubject.subject',
+                'finalSubjectGrades.classSubject.subject',
+                'generalAverages' => function ($query) use ($schoolYearId) {
+                    $query->where('school_year_id', $schoolYearId);
+                }
+            ])
+            ->get();
+
+        // IMPORTANT: Maintain the original selection order
+        $students = $students->sortBy(function ($student) use ($studentIds) {
+            return array_search($student->id, $studentIds);
+        });
+
+        // Get all subjects for this class
+        $subjects = $class->subjects()
+            ->wherePivot('school_year_id', $schoolYearId)
+            ->get();
+
+        // Prepare data for PDF
+        $data = [
+            'students' => $students,
+            'class' => $class,
+            'schoolYear' => $schoolYear,
+            'subjects' => $subjects,
+        ];
+
+        // Generate PDF
+        $pdf = Pdf::loadView('pdf.grade_slip', $data)
+            ->setPaper('a4', 'portrait')
+            ->setOption('dpi', 150)
+            ->setOption('defaultFont', 'Times New Roman');
+
+        return $pdf->stream('grade_slips_' . $class->grade_level . '_' . $class->section . '.pdf');
+    }
+
     public function editStudentInfo($student_id)
     {
         $student = Student::findOrFail($student_id);

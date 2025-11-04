@@ -198,6 +198,7 @@ Route::prefix('teacher')
         // Student Reports
         Route::get('/student/{student_id}/report_card/export', [TeacherController::class, 'studentReportCard'])->name('teacher.student.card');
         Route::get('/student/form10/{student_id}', [TeacherController::class, 'studentForm10'])->name('teacher.student.form10');
+        Route::post('/student/bulk-print-grades', [TeacherController::class, 'bulkPrintGrades'])->name('teacher.bulk.print.grades');
         Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');
         Route::get('/editStudentInfo/{id}', [TeacherController::class, 'editStudentInfo'])->name('teacher.edit.student');
         Route::post('/updateStudentInfo/{id}', [TeacherController::class, 'updateStudentInfo'])->name('teacher.update.student');
