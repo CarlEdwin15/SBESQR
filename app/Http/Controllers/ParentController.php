@@ -171,12 +171,16 @@ class ParentController extends Controller
 
             $gradesByClass[$classItem->id] = $subjectsWithGrades;
 
-            // Compute General Average
+            // Compute General Average - MATCHING GRADE SLIP LOGIC
             $totalSubjects = count($classSubjects);
             $completedSubjects = count($finalGrades);
 
             if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
-                $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+                // Apply DepEd rounding to each subject's final average FIRST
+                $roundedFinalGrades = array_map('round', $finalGrades);
+
+                // Then calculate general average from rounded grades
+                $generalAverage = round(array_sum($roundedFinalGrades) / $completedSubjects);
                 $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
 
                 $generalAverages[$classItem->id] = [

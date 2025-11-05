@@ -590,9 +590,13 @@
                     <td style="border: none;"></td>
                     <td class="center" colspan="4">General Average</td>
                     <td class="center">
-                        {{ isset($generalAverage) ? round($generalAverage) : '' }}
+                        {{ isset($generalAverage) ? $generalAverage : '' }}
                     </td>
-                    <td style="border: none;"></td>
+                    <td class="center">
+                        @if (isset($generalAverage))
+                            {{ $generalAverage >= 75 ? 'Promoted' : 'Retained' }}
+                        @endif
+                    </td>
                 </tr>
             </table>
 

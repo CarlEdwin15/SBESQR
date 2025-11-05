@@ -209,7 +209,13 @@
                     <thead class="table-primary align-middle text-center">
                         <tr>
                             <th rowspan="2" style="width: 5%;" class="index-column">NO.</th>
-                            <th rowspan="2" style="width: 5%;" class="checkbox-column d-none">SELECT</th>
+                            <th rowspan="2" style="width: 5%;" class="checkbox-column d-none checkbox-column-header">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input select-all-students" type="checkbox"
+                                        id="selectAllStudents">
+                                    <label class="form-check-label fw-bold" for="selectAllStudents">SELECT ALL</label>
+                                </div>
+                            </th>
                             <th rowspan="2" style="width: 10%;">PHOTO</th>
                             <th rowspan="2">NAME</th>
                             <th rowspan="2">LRN</th>
@@ -274,8 +280,9 @@
                                 data-gender="{{ strtolower($student->student_sex) }}"
                                 data-student-id="{{ $student->id }}">
                                 <td class="text-center index-column">{{ $index + 1 }}</td>
-                                <td class="text-center checkbox-column d-none">
-                                    <div class="form-check">
+                                <td class="text-center checkbox-column d-none" style="vertical-align: middle;">
+                                    <div class="form-check d-flex justify-content-center align-items-center"
+                                        style="height: 100%;">
                                         <input class="form-check-input student-checkbox" type="checkbox"
                                             value="{{ $student->id }}"
                                             data-student-name="{{ $student->student_lName }}, {{ $student->student_fName }} {{ $student->student_extName }}">
@@ -900,7 +907,7 @@
                     // Prepare the form data
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '{{ route('teacher.bulk.print.grades') }}';
+                    form.action = '{{ route('teacher.print.grade.slip') }}';
                     form.target = '_blank';
 
                     // Add CSRF token
@@ -961,11 +968,13 @@
                     // Show checkboxes, hide index numbers
                     indexColumns.forEach(col => col.classList.add('d-none'));
                     checkboxColumns.forEach(col => col.classList.remove('d-none'));
-                    bulkPrintBtn.classList.remove('d-none');
                     toggleCheckboxesBtn.innerHTML =
                         '<i class="bx bx-x me-1"></i><span class="d-none d-sm-block">Cancel Selection</span>';
                     toggleCheckboxesBtn.classList.remove('btn-warning');
                     toggleCheckboxesBtn.classList.add('btn-secondary');
+
+                    // Update bulk print button visibility based on current selection
+                    updateBulkPrintButton();
                 } else {
                     // Hide checkboxes, show index numbers
                     indexColumns.forEach(col => col.classList.remove('d-none'));
@@ -983,23 +992,36 @@
 
                     // Hide bulk print button
                     bulkPrintBtn.classList.add('d-none');
+                    // Reset button text
+                    bulkPrintBtn.querySelector('span').textContent = 'Print Selected Grades';
                 }
             });
+
+            // Function to update bulk print button visibility and text
+            function updateBulkPrintButton() {
+                const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
+
+                if (selectedCount > 0 && checkboxesVisible) {
+                    bulkPrintBtn.classList.remove('d-none');
+                    // Update button text to show accurate count
+                    bulkPrintBtn.querySelector('span').textContent = `Print Selected Grades (${selectedCount})`;
+                } else {
+                    bulkPrintBtn.classList.add('d-none');
+                    // Reset button text when no selection
+                    bulkPrintBtn.querySelector('span').textContent = 'Print Selected Grades';
+                }
+            }
 
             // Show/hide bulk print button based on checkbox selection
             document.addEventListener('change', function(e) {
                 if (e.target.classList.contains('student-checkbox')) {
-                    const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
-                    if (selectedCount > 0 && checkboxesVisible) {
-                        bulkPrintBtn.classList.remove('d-none');
-                    } else {
-                        bulkPrintBtn.classList.add('d-none');
-                    }
+                    updateBulkPrintButton();
                 }
             });
 
-            // Bulk print functionality
+            // Bulk print functionality - WORKS WITH ALL SELECTED STUDENTS (including filtered ones)
             bulkPrintBtn.addEventListener('click', function() {
+                // Get ALL selected students, regardless of current filter/pagination
                 const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked'));
 
                 if (selectedStudents.length === 0) {
@@ -1018,13 +1040,13 @@
                 const studentIds = selectedStudents.map(checkbox => checkbox.value);
                 const studentNames = selectedStudents.map(checkbox => checkbox.dataset.studentName);
 
-                // Show confirmation with selected students
+                // Show confirmation with selected students - ACCURATE COUNT
                 Swal.fire({
                     title: 'Print Grades for Selected Students?',
                     html: `You are about to print grades for <strong>${selectedStudents.length}</strong> student(s):<br><br>
-                      <div style="max-height: 200px; overflow-y: auto; text-align: left;">
-                        ${studentNames.map(name => `• ${name}`).join('<br>')}
-                      </div>`,
+                  <div style="max-height: 200px; overflow-y: auto; text-align: left;">
+                    ${studentNames.map(name => `• ${name}`).join('<br>')}
+                  </div>`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, Print',
@@ -1053,7 +1075,7 @@
                         // Prepare the form data
                         const form = document.createElement('form');
                         form.method = 'POST';
-                        form.action = '{{ route('teacher.bulk.print.grades') }}';
+                        form.action = '{{ route('teacher.print.grade.slip') }}';
                         form.target = '_blank';
 
                         // Add CSRF token
@@ -1063,7 +1085,7 @@
                         csrfToken.value = '{{ csrf_token() }}';
                         form.appendChild(csrfToken);
 
-                        // Add student IDs
+                        // Add student IDs - ALL SELECTED STUDENTS
                         studentIds.forEach(studentId => {
                             const input = document.createElement('input');
                             input.type = 'hidden';
@@ -1095,6 +1117,160 @@
                     }
                 });
             });
+        });
+    </script>
+
+    <!-- Select All Students Checkbox Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllStudentsCheckbox = document.getElementById('selectAllStudents');
+            const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+
+            // Helper to sync "Select All Students" checkbox with current student states
+            function syncSelectAllStudentsState() {
+                const filteredStudentCheckboxes = getFilteredStudentCheckboxes();
+                if (selectAllStudentsCheckbox && filteredStudentCheckboxes.length > 0) {
+                    const allChecked = Array.from(filteredStudentCheckboxes).every(cb => cb.checked);
+                    selectAllStudentsCheckbox.checked = allChecked;
+                } else {
+                    selectAllStudentsCheckbox.checked = false;
+                }
+            }
+
+            // Get filtered students based on current search, gender filter, AND pagination
+            function getFilteredStudentCheckboxes() {
+                const searchTerm = document.getElementById('masterListSearch').value.toLowerCase();
+                const genderFilter = document.getElementById('genderFilter').value;
+                const allCheckboxes = document.querySelectorAll('.student-checkbox');
+
+                return Array.from(allCheckboxes).filter(checkbox => {
+                    const row = checkbox.closest('tr.student-row');
+                    if (!row) return false;
+
+                    // Check if row is currently visible (respects pagination)
+                    const isRowVisible = row.style.display !== 'none';
+                    if (!isRowVisible) return false;
+
+                    const name = row.dataset.name;
+                    const lrn = row.dataset.lrn;
+                    const gender = row.dataset.gender;
+
+                    const matchesSearch = !searchTerm ||
+                        name.includes(searchTerm) ||
+                        lrn.includes(searchTerm);
+
+                    const matchesGender = genderFilter === 'all' || gender === genderFilter;
+
+                    return matchesSearch && matchesGender;
+                });
+            }
+
+            // Get ALL filtered students regardless of pagination (for Select All functionality)
+            function getAllFilteredStudentCheckboxes() {
+                const searchTerm = document.getElementById('masterListSearch').value.toLowerCase();
+                const genderFilter = document.getElementById('genderFilter').value;
+                const allCheckboxes = document.querySelectorAll('.student-checkbox');
+
+                return Array.from(allCheckboxes).filter(checkbox => {
+                    const row = checkbox.closest('tr.student-row');
+                    if (!row) return false;
+
+                    const name = row.dataset.name;
+                    const lrn = row.dataset.lrn;
+                    const gender = row.dataset.gender;
+
+                    const matchesSearch = !searchTerm ||
+                        name.includes(searchTerm) ||
+                        lrn.includes(searchTerm);
+
+                    const matchesGender = genderFilter === 'all' || gender === genderFilter;
+
+                    return matchesSearch && matchesGender;
+                });
+            }
+
+            // Handle individual student checkbox changes
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    syncSelectAllStudentsState();
+                    updateBulkPrintButton();
+                });
+            });
+
+            // Handle Select All Students checkbox - NO CONFIRMATION
+            selectAllStudentsCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+
+                // Get ALL filtered students (not just current page) for Select All functionality
+                const allFilteredCheckboxes = getAllFilteredStudentCheckboxes();
+
+                if (allFilteredCheckboxes.length === 0) {
+                    this.checked = false; // revert the checkbox
+                    return;
+                }
+
+                // Update ALL filtered checkboxes immediately without confirmation
+                allFilteredCheckboxes.forEach(cb => {
+                    cb.checked = isChecked;
+                });
+
+                // Update bulk print button visibility
+                updateBulkPrintButton();
+            });
+
+            // Update select all students checkbox when filters change
+            document.getElementById('masterListSearch').addEventListener('input', function() {
+                // Small delay to ensure table has updated before syncing
+                setTimeout(() => {
+                    syncSelectAllStudentsState();
+                }, 100);
+            });
+
+            document.getElementById('genderFilter').addEventListener('change', function() {
+                // Small delay to ensure table has updated before syncing
+                setTimeout(() => {
+                    syncSelectAllStudentsState();
+                }, 100);
+            });
+
+            // Update when table length changes
+            document.getElementById('tableLength').addEventListener('change', function() {
+                setTimeout(() => {
+                    syncSelectAllStudentsState();
+                }, 100);
+            });
+
+            // Function to update bulk print button visibility
+            function updateBulkPrintButton() {
+                const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
+                const bulkPrintBtn = document.getElementById('bulkPrintBtn');
+                const checkboxesVisible = document.querySelector('.checkbox-column:not(.d-none)') !== null;
+
+                if (selectedCount > 0 && checkboxesVisible) {
+                    bulkPrintBtn.classList.remove('d-none');
+                    // Update button text to show accurate count
+                    bulkPrintBtn.querySelector('span').textContent = `Print Selected Grades (${selectedCount})`;
+                } else {
+                    bulkPrintBtn.classList.add('d-none');
+                    // Reset button text when no selection
+                    bulkPrintBtn.querySelector('span').textContent = 'Print Selected Grades';
+                }
+            }
+
+            // Override the table update function to include select all sync
+            const originalUpdateTableDisplay = updateTableDisplay;
+            updateTableDisplay = function() {
+                originalUpdateTableDisplay();
+                // Sync select all state after table updates
+                setTimeout(() => {
+                    syncSelectAllStudentsState();
+                }, 50);
+            };
+
+            // Initialize select all students checkbox on page load
+            setTimeout(() => {
+                syncSelectAllStudentsState();
+            }, 100);
         });
     </script>
 @endpush
@@ -1175,6 +1351,31 @@
 
         .student-checkbox {
             transform: scale(1.2);
+        }
+
+        /* Select All header styling */
+        .checkbox-column-header .form-check {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            height: 100%;
+        }
+
+        .checkbox-column-header .form-check-input {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+
+        .checkbox-column-header .form-check-label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* Ensure proper vertical alignment for all header cells */
+        .table-primary th {
+            vertical-align: middle !important;
         }
     </style>
 @endpush

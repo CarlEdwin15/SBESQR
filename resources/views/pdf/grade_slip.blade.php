@@ -62,6 +62,8 @@
             page-break-inside: avoid;
             background-color: #fff;
             /* ensure consistent background */
+            position: relative;
+            /* Added for date positioning */
         }
 
         .grade-card.empty {
@@ -85,16 +87,21 @@
 
         .header img.left-logo {
             left: 0;
+            height: 100px;
+            width: auto;
         }
 
         .header img.right-logo {
             right: 0;
+            height: 100px;
+            width: auto;
         }
 
         .header .title {
             text-align: center;
-            font-size: 10px;
+            font-size: 18px;
             line-height: 1.3;
+            /* margin-bottom: 15px; */
         }
 
         .header .bold {
@@ -102,22 +109,22 @@
         }
 
         .school-year {
-            font-size: 13px;
+            font-size: 18px;
             margin-top: 2px;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
         .grade-slip-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 15px;
         }
 
         .student-info {
-            font-size: 13px;
-            margin-bottom: 6px;
+            font-size: 20px;
+            margin-bottom: 5px;
             line-height: 1.3;
         }
 
@@ -127,13 +134,13 @@
         }
 
         .student-info td {
-            padding: 1px 2px;
+            text-align: center;
         }
 
         .grade-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 17px;
         }
 
         .grade-table th,
@@ -148,22 +155,54 @@
             font-weight: bold;
         }
 
+        .grade-table td.general-average {
+            padding-right: 5px;
+            height: 30px;
+        }
+
         .subject-name {
             text-align: left;
             padding-left: 5px;
         }
 
         .signature-area {
-            margin-top: 0.4cm;
-            font-size: 11px;
+            margin-top: 0.5cm;
+            font-size: 17px;
             text-align: center;
         }
 
-        .signature-line {
-            border-top: 1px solid #000;
-            width: 80%;
-            margin: 0.2cm auto 0;
-            padding-top: 0.1cm;
+        .underlined-name {
+            display: inline-block;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            min-width: 200px;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .adviser-title {
+            font-size: 17px;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        /* Date display styles */
+        .date-generated {
+            position: absolute;
+            bottom: 0.2cm;
+            left: 0.3cm;
+            font-size: 12px;
+            color: #333;
+        }
+
+        /* Red text for grades below 75 and failed remarks */
+        .low-grade {
+            color: #ff0000;
+        }
+
+        .failed-remark {
+            color: #ff0000;
         }
     </style>
 </head>
@@ -173,6 +212,7 @@
         $studentsPerPage = 4;
         $totalStudents = count($students);
         $totalPages = ceil($totalStudents / $studentsPerPage);
+        $currentDate = now()->format('F d, Y');
     @endphp
 
     @for ($page = 0; $page < $totalPages; $page++)
@@ -181,20 +221,17 @@
             $studentCount = count($pageStudents);
         @endphp
 
-        @if ($studentCount > 0) {{-- Only create page if there are students --}}
+        @if ($studentCount > 0)
             <div class="page">
                 <table class="grid-table">
                     @for ($row = 0; $row < 2; $row++)
-                        {{-- Always 2 rows max --}}
                         <tr>
                             @for ($col = 0; $col < 2; $col++)
-                                {{-- Always 2 columns --}}
                                 @php
                                     $index = $row * 2 + $col;
                                 @endphp
                                 @if ($index < $studentCount)
                                     <td class="grade-card">
-                                        <!-- Your existing card content here -->
                                         <!-- Header -->
                                         <div class="header">
                                             <img src="{{ public_path('assetsDashboard/img/report_card_img/seal_of_deped.png') }}"
@@ -207,7 +244,6 @@
                                                 <div>Region V, Bicol</div>
                                                 <div>Division of Camarines Sur - Nabua East District</div>
                                                 <div class="bold">STA. BARBARA ELEMENTARY SCHOOL</div>
-                                                <div>Sta. Barbara, Nabua, Camarines Sur</div>
                                                 <div class="school-year">School Year: {{ $schoolYear->school_year }}
                                                 </div>
                                             </div>
@@ -272,49 +308,166 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach ($subjects as $subject)
+                                                @php
+                                                    $currentStudent = $pageStudents[$index];
+                                                    $allSubjectsComplete = true;
+                                                @endphp
+
+                                                @foreach ($currentStudent->subjects_with_grades as $subjectGrade)
                                                     @php
-                                                        $quarterlyGrades = [];
-                                                        for ($q = 1; $q <= 4; $q++) {
-                                                            $grade = $pageStudents[$index]->quarterlyGrades
-                                                                ->where('quarter.quarter', $q)
-                                                                ->where('quarter.classSubject.subject_id', $subject->id)
-                                                                ->first();
-                                                            $quarterlyGrades[$q] = $grade ? $grade->final_grade : '';
+                                                        $quarters = $subjectGrade['quarters'];
+                                                        $finalGrade = $subjectGrade['final'];
+                                                        $remarks = $subjectGrade['remarks'];
+
+                                                        // Check if all quarterly grades are complete
+                                                        $hasAllQuarterlyGrades = $quarters->every(
+                                                            fn($q) => $q['grade'] !== null,
+                                                        );
+
+                                                        // Apply color coding
+                                                        $quarterlyGradeClasses = [];
+                                                        $finalGradeClass = '';
+                                                        $remarksClass = '';
+
+                                                        foreach ([1, 2, 3, 4] as $q) {
+                                                            $quarterGrade = $quarters->firstWhere('quarter', $q);
+                                                            $gradeValue = $quarterGrade ? $quarterGrade['grade'] : null;
+                                                            $quarterlyGradeClasses[$q] = '';
+
+                                                            if (
+                                                                $gradeValue !== null &&
+                                                                is_numeric($gradeValue) &&
+                                                                round($gradeValue) < 75 &&
+                                                                $gradeValue != 0
+                                                            ) {
+                                                                $quarterlyGradeClasses[$q] = 'low-grade';
+                                                            }
                                                         }
-                                                        $finalGrade = $pageStudents[$index]->finalSubjectGrades
-                                                            ->where('classSubject.subject_id', $subject->id)
-                                                            ->first();
+
+                                                        if ($finalGrade !== null && $finalGrade != 0) {
+                                                            if (round($finalGrade) < 75) {
+                                                                $finalGradeClass = 'low-grade';
+                                                            }
+                                                            if ($remarks === 'Failed') {
+                                                                $remarksClass = 'failed-remark';
+                                                            }
+                                                        }
+
+                                                        if (!$hasAllQuarterlyGrades) {
+                                                            $allSubjectsComplete = false;
+                                                        }
                                                     @endphp
                                                     <tr>
-                                                        <td class="subject-name">{{ ucfirst($subject->name) }}</td>
-                                                        <td>{{ $quarterlyGrades[1] }}</td>
-                                                        <td>{{ $quarterlyGrades[2] }}</td>
-                                                        <td>{{ $quarterlyGrades[3] }}</td>
-                                                        <td>{{ $quarterlyGrades[4] }}</td>
-                                                        <td>{{ $finalGrade->final_grade ?? '' }}</td>
-                                                        <td>{{ ucfirst($finalGrade->remarks ?? '') }}</td>
+                                                        <td class="subject-name">
+                                                            {{ ucfirst($subjectGrade['subject']) }}</td>
+
+                                                        <!-- Quarter 1 -->
+                                                        <td class="{{ $quarterlyGradeClasses[1] }}">
+                                                            @if (
+                                                                $quarters->firstWhere('quarter', 1) &&
+                                                                    $quarters->firstWhere('quarter', 1)['grade'] !== null &&
+                                                                    $quarters->firstWhere('quarter', 1)['grade'] != 0)
+                                                                {{ round($quarters->firstWhere('quarter', 1)['grade']) }}
+                                                            @endif
+                                                        </td>
+
+                                                        <!-- Quarter 2 -->
+                                                        <td class="{{ $quarterlyGradeClasses[2] }}">
+                                                            @if (
+                                                                $quarters->firstWhere('quarter', 2) &&
+                                                                    $quarters->firstWhere('quarter', 2)['grade'] !== null &&
+                                                                    $quarters->firstWhere('quarter', 2)['grade'] != 0)
+                                                                {{ round($quarters->firstWhere('quarter', 2)['grade']) }}
+                                                            @endif
+                                                        </td>
+
+                                                        <!-- Quarter 3 -->
+                                                        <td class="{{ $quarterlyGradeClasses[3] }}">
+                                                            @if (
+                                                                $quarters->firstWhere('quarter', 3) &&
+                                                                    $quarters->firstWhere('quarter', 3)['grade'] !== null &&
+                                                                    $quarters->firstWhere('quarter', 3)['grade'] != 0)
+                                                                {{ round($quarters->firstWhere('quarter', 3)['grade']) }}
+                                                            @endif
+                                                        </td>
+
+                                                        <!-- Quarter 4 -->
+                                                        <td class="{{ $quarterlyGradeClasses[4] }}">
+                                                            @if (
+                                                                $quarters->firstWhere('quarter', 4) &&
+                                                                    $quarters->firstWhere('quarter', 4)['grade'] !== null &&
+                                                                    $quarters->firstWhere('quarter', 4)['grade'] != 0)
+                                                                {{ round($quarters->firstWhere('quarter', 4)['grade']) }}
+                                                            @endif
+                                                        </td>
+
+                                                        <!-- Final Grade -->
+                                                        <td class="{{ $finalGradeClass }}">
+                                                            @if ($finalGrade !== null && $finalGrade != 0)
+                                                                {{ round($finalGrade) }}
+                                                            @endif
+                                                        </td>
+
+                                                        <!-- Remarks -->
+                                                        <td class="{{ $remarksClass }}">
+                                                            {{ $remarks ?? '' }}
+                                                        </td>
                                                     </tr>
                                                 @endforeach
-                                                @php $generalAverage = $pageStudents[$index]->generalAverages->first(); @endphp
+
+                                                @php
+                                                    // General Average
+                                                    $showGeneralAverage =
+                                                        $allSubjectsComplete &&
+                                                        $currentStudent->dynamic_general_average !== null;
+                                                    $dynamicGeneralAverage = $currentStudent->dynamic_general_average;
+
+                                                    $generalAverageRemarks = '';
+                                                    $generalAverageClass = '';
+                                                    $generalAverageRemarksClass = '';
+
+                                                    if (
+                                                        $showGeneralAverage &&
+                                                        $dynamicGeneralAverage !== null &&
+                                                        $dynamicGeneralAverage != 0
+                                                    ) {
+                                                        if ($dynamicGeneralAverage >= 75) {
+                                                            $generalAverageRemarks = 'Promoted';
+                                                        } else {
+                                                            $generalAverageRemarks = 'Retained';
+                                                        }
+                                                    }
+                                                @endphp
+
                                                 <tr>
-                                                    <td colspan="5"><strong>General Average</strong></td>
-                                                    <td><strong>{{ $generalAverage->general_average ?? '' }}</strong>
-                                                    </td>
-                                                    <td><strong>{{ $generalAverage->remarks ?? '' }}</strong></td>
+                                                    <td class="general-average" colspan="5"><strong>General
+                                                            Average</strong></td>
+                                                    <td><strong class="{{ $generalAverageClass }}">
+                                                            @if ($showGeneralAverage && $dynamicGeneralAverage != 0)
+                                                                {{ $dynamicGeneralAverage }}
+                                                            @endif
+                                                        </strong></td>
+                                                    <td><strong class="{{ $generalAverageRemarksClass }}">
+                                                            {{ $generalAverageRemarks }}
+                                                        </strong></td>
                                                 </tr>
                                             </tbody>
                                         </table>
 
                                         <div class="signature-area">
-                                            <div class="signature-line">
-                                                @if ($class->adviser)
-                                                    {{ $class->adviser->firstName }} {{ $class->adviser->lastName }}
+                                            <div class="underlined-name">
+                                                @if ($adviser)
+                                                    {{ $adviser->firstName }} {{ $adviser->lastName }}
                                                 @else
                                                     [Adviser's Name]
                                                 @endif
-                                                <br><em>Class Adviser</em>
                                             </div>
+                                            <div class="adviser-title">Class Adviser</div>
+                                        </div>
+
+                                        <!-- Date Generated -->
+                                        <div class="date-generated">
+                                            Generated: {{ $currentDate }}
                                         </div>
                                     </td>
                                 @else

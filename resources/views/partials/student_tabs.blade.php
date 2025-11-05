@@ -231,38 +231,45 @@
                                                                             )['grade'] ?? null;
                                                                         $gradeColor = '';
 
+                                                                        // Apply DepEd rounding like in grade slip
+                                                                        $roundedGrade =
+                                                                            $grade !== null ? round($grade) : null;
+
                                                                         // Check if parent can view this quarter's grade
-                                                                        $canViewGrade = true;
-                                                                        if (
-                                                                            auth()->user() &&
-                                                                            auth()->user()->role === 'parent'
-                                                                        ) {
-                                                                            $classStudent = $student->classStudents
-                                                                                ->where('class_id', $classItem->id)
-                                                                                ->where(
-                                                                                    'school_year_id',
-                                                                                    $classItem->pivot->school_year_id,
-                                                                                )
-                                                                                ->first();
+$canViewGrade = true;
+if (
+    auth()->user() &&
+    auth()->user()->role === 'parent'
+) {
+    $classStudent = $student->classStudents
+        ->where('class_id', $classItem->id)
+        ->where(
+            'school_year_id',
+            $classItem->pivot->school_year_id,
+        )
+        ->first();
 
-                                                                            // Use the correct column names
-                                                                            $quarterColumn = 'q' . $q . '_allow_view'; // This becomes 'q1_allow_view', etc.
-                                                                            $canViewGrade =
-                                                                                $classStudent &&
-                                                                                $classStudent->$quarterColumn;
-                                                                        }
+    // Use the correct column names
+    $quarterColumn = 'q' . $q . '_allow_view'; // This becomes 'q1_allow_view', etc.
+    $canViewGrade =
+        $classStudent &&
+        $classStudent->$quarterColumn;
+}
 
-                                                                        if (is_numeric($grade) && $canViewGrade) {
-                                                                            if ($grade >= 90) {
-                                                                                $gradeColor = 'text-success';
-                                                                            } elseif ($grade >= 85) {
-                                                                                $gradeColor = 'text-success';
-                                                                            } elseif ($grade >= 80) {
-                                                                                $gradeColor = 'text-warning';
-                                                                            } elseif ($grade >= 75) {
-                                                                                $gradeColor = 'text-warning';
-                                                                            } else {
-                                                                                $gradeColor = 'text-danger fw-semibold';
+if (
+    is_numeric($roundedGrade) &&
+    $canViewGrade
+) {
+    if ($roundedGrade >= 90) {
+        $gradeColor = 'text-success';
+    } elseif ($roundedGrade >= 85) {
+        $gradeColor = 'text-success';
+    } elseif ($roundedGrade >= 80) {
+        $gradeColor = 'text-warning';
+    } elseif ($roundedGrade >= 75) {
+        $gradeColor = 'text-warning';
+    } else {
+        $gradeColor = 'text-danger fw-semibold';
                                                                             }
                                                                         }
                                                                     @endphp
@@ -274,7 +281,7 @@
                                                                                     <i class="bx bx-lock-alt"></i>
                                                                                 </span>
                                                                             @else
-                                                                                {{ $grade }}
+                                                                                {{ $roundedGrade }}
                                                                             @endif
                                                                         @else
                                                                             -
@@ -288,9 +295,13 @@
                                                                     $finalColor = '';
                                                                     $finalRemarks = null;
 
-                                                                    if (is_numeric($finalAverage)) {
-                                                                        $roundedFinal = round($finalAverage);
+                                                                    // Apply DepEd rounding like in grade slip
+                                                                    $roundedFinal =
+                                                                        $finalAverage !== null
+                                                                            ? round($finalAverage)
+                                                                            : null;
 
+                                                                    if (is_numeric($roundedFinal)) {
                                                                         if ($roundedFinal >= 90) {
                                                                             $finalColor = 'text-success fw-bold';
                                                                         } elseif ($roundedFinal >= 85) {
@@ -303,9 +314,9 @@
                                                                             $finalColor = 'text-danger fw-semibold';
                                                                         }
 
-                                                                        // Corrected passing logic
+                                                                        // Corrected passing logic - match grade slip
                                                                         $finalRemarks =
-                                                                            $roundedFinal >= 75 ? 'passed' : 'failed';
+                                                                            $roundedFinal >= 75 ? 'Passed' : 'Failed';
                                                                     }
                                                                 @endphp
 
@@ -317,7 +328,7 @@
                                                                                 <i class="bx bx-lock-alt"></i>
                                                                             </span>
                                                                         @else
-                                                                            <strong>{{ round($finalAverage) }}</strong>
+                                                                            <strong>{{ $roundedFinal }}</strong>
                                                                         @endif
                                                                     @else
                                                                         <span class="text-muted">-</span>
@@ -325,7 +336,7 @@
                                                                 </td>
 
                                                                 <td class="text-center">
-                                                                    @if ($finalRemarks === 'passed')
+                                                                    @if ($finalRemarks === 'Passed')
                                                                         @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewFinalGrades)
                                                                             <span class="text-muted"
                                                                                 title="Remarks are visible only when all quarterly grades are enabled">
@@ -335,7 +346,7 @@
                                                                             <span
                                                                                 class="badge bg-label-success">Passed</span>
                                                                         @endif
-                                                                    @elseif ($finalRemarks === 'failed')
+                                                                    @elseif ($finalRemarks === 'Failed')
                                                                         @if (auth()->user() && auth()->user()->role === 'parent' && !$canViewFinalGrades)
                                                                             <span class="text-muted"
                                                                                 title="Remarks are visible only when all quarterly grades are enabled">
@@ -359,6 +370,7 @@
                                             @if (!empty($generalAverages[$classItem->id]))
                                                 @php
                                                     $ga = $generalAverages[$classItem->id];
+                                                    // Apply DepEd rounding like in grade slip
                                                     $gaValue = round($ga['general_average']);
                                                     $gaColor = '';
 
@@ -374,8 +386,8 @@
                                                         $gaColor = 'text-danger fw-semibold';
                                                     }
 
-                                                    // Revised passing logic
-                                                    $gaRemarks = $gaValue >= 75 ? 'passed' : 'failed';
+                                                    // Match grade slip remarks
+                                                    $gaRemarks = $gaValue >= 75 ? 'Promoted' : 'Retained';
                                                 @endphp
 
                                                 <div
@@ -389,12 +401,12 @@
                                                             </span>
                                                         @else
                                                             <strong>{{ $gaValue }}</strong>
-                                                            @if ($gaRemarks === 'passed')
+                                                            @if ($gaRemarks === 'Promoted')
                                                                 <span
-                                                                    class="badge bg-label-success ms-2 fw-bold">Passed</span>
+                                                                    class="badge bg-label-success ms-2 fw-bold">Promoted</span>
                                                             @else
                                                                 <span
-                                                                    class="badge bg-label-danger ms-2 fw-bold">Failed</span>
+                                                                    class="badge bg-label-danger ms-2 fw-bold">Retained</span>
                                                             @endif
                                                         @endif
                                                     </span>

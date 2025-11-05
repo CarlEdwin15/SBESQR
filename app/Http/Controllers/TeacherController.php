@@ -1603,12 +1603,9 @@ class TeacherController extends Controller
 
         $schoolYear = SchoolYear::find($schoolYearId);
 
-        // === ADD THIS STATUS LOGIC (same as admin) ===
-        // Determine status
+        // === STATUS LOGIC ===
         $latestEnrollment = $student->classStudents()->latest()->first();
         $studentStatus = $latestEnrollment->enrollment_status ?? 'not_enrolled';
-
-        // Determine additional info
         $statusInfo = null;
 
         if ($studentStatus === 'enrolled' && $class) {
@@ -1690,9 +1687,9 @@ class TeacherController extends Controller
 
                 if ($allQuartersHaveGrades) {
                     $grades = $quarters->pluck('grade')->all();
-                    $finalAverage = round(array_sum($grades) / 4, 2);
+                    $finalAverage = round(array_sum($grades) / 4, 2); // Keep precision for display
                     $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
-                    $finalGrades[] = $finalAverage;
+                    $finalGrades[] = $finalAverage; // Store for general average calculation
                 }
 
                 $subjectsWithGrades[] = [
@@ -1705,12 +1702,16 @@ class TeacherController extends Controller
 
             $gradesByClass[$classItem->id] = $subjectsWithGrades;
 
-            // General Average: only if ALL subjects have final grades
+            // === FIXED: General Average Calculation (Match Grade Slip Logic) ===
             $totalSubjects = count($classSubjects);
             $completedSubjects = count($finalGrades);
 
             if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
-                $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+                // Apply DepEd rounding to each subject's final average FIRST (like grade slip)
+                $roundedFinalGrades = array_map('round', $finalGrades);
+
+                // Then calculate general average from rounded grades
+                $generalAverage = round(array_sum($roundedFinalGrades) / $completedSubjects);
                 $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
 
                 \App\Models\GeneralAverage::updateOrCreate(
@@ -1794,9 +1795,8 @@ class TeacherController extends Controller
                 $remarks = null;
                 if ($allPresent) {
                     $arr = $quarters->pluck('grade')->all();
-                    $final = round(array_sum($arr) / count($arr), 2);
-                    $roundedFinal = round($final);
-                    $remarks = $roundedFinal >= 75 ? 'Passed' : 'Failed';
+                    $final = round(array_sum($arr) / count($arr)); // Apply DepEd rounding
+                    $remarks = $final >= 75 ? 'Passed' : 'Failed';
                 }
 
                 $subjectsWithGrades->push([
@@ -1808,14 +1808,21 @@ class TeacherController extends Controller
             }
         }
 
-        // General average calculation (only if all subject finals available)
-        $finals = $subjectsWithGrades->pluck('final')->filter();
+        // General average calculation (Match Grade Slip Logic)
         $generalAverage = null;
         $generalRemarks = null;
-        if ($subjectsWithGrades->count() > 0 && $finals->count() === $subjectsWithGrades->count()) {
-            $generalAverage = round($finals->sum() / $finals->count(), 2);
-            $roundedGA = round($generalAverage);
-            $generalRemarks = $roundedGA >= 75 ? 'Passed' : 'Failed';
+
+        if ($subjectsWithGrades->count() > 0) {
+            // Get all final grades that are not null
+            $roundedFinals = $subjectsWithGrades->pluck('final')->filter()->map(function ($final) {
+                return round($final); // Apply DepEd rounding to each subject's final grade
+            });
+
+            // Only calculate general average if ALL subjects have final grades
+            if ($roundedFinals->count() === $subjectsWithGrades->count()) {
+                $generalAverage = round($roundedFinals->sum() / $roundedFinals->count()); // Apply DepEd rounding
+                $generalRemarks = $generalAverage >= 75 ? 'Promoted' : 'Retained'; // Changed to Promoted/Retained
+            }
         }
 
         // Attendance counts - placeholder logic (you can replace with your Attendance model)
@@ -1949,7 +1956,7 @@ class TeacherController extends Controller
             $totalSubjects = count($classSubjects);
             $completedSubjects = count($finalGrades);
             if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
-                $generalAverage = round(array_sum($finalGrades) / $completedSubjects, 2);
+                $generalAverage = round(array_sum($finalGrades) / $completedSubjects);
                 $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
                 $generalAverages[$classItem->id] = [
                     'general_average' => $generalAverage,
@@ -1984,7 +1991,7 @@ class TeacherController extends Controller
         return $pdf->stream($filename);
     }
 
-    public function bulkPrintGrades(Request $request)
+    public function studentGradeSlip(Request $request)
     {
         $request->validate([
             'student_ids' => 'required|array',
@@ -1997,8 +2004,13 @@ class TeacherController extends Controller
         $classId = $request->input('class_id');
         $schoolYearId = $request->input('school_year_id');
 
-        // Fetch the class and school year
-        $class = Classes::findOrFail($classId);
+        // Fetch the class and school year WITH ADVISER
+        $class = Classes::with([
+            'advisers' => function ($query) use ($schoolYearId) {
+                $query->wherePivot('school_year_id', $schoolYearId);
+            }
+        ])->findOrFail($classId);
+
         $schoolYear = SchoolYear::findOrFail($schoolYearId);
 
         // Fetch students in the EXACT ORDER they were selected
@@ -2008,11 +2020,6 @@ class TeacherController extends Controller
                     $query->where('class_id', $classId)
                         ->where('school_year_id', $schoolYearId);
                 },
-                'quarterlyGrades.quarter.classSubject.subject',
-                'finalSubjectGrades.classSubject.subject',
-                'generalAverages' => function ($query) use ($schoolYearId) {
-                    $query->where('school_year_id', $schoolYearId);
-                }
             ])
             ->get();
 
@@ -2021,17 +2028,92 @@ class TeacherController extends Controller
             return array_search($student->id, $studentIds);
         });
 
-        // Get all subjects for this class
-        $subjects = $class->subjects()
-            ->wherePivot('school_year_id', $schoolYearId)
+        // Get all subjects for this class using the SAME logic as student report card
+        $classSubjects = ClassSubject::where('class_id', $classId)
+            ->where('school_year_id', $schoolYearId)
+            ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($studentIds) {
+                $q->whereIn('student_id', $studentIds);
+            }])
             ->get();
+
+        // Get the adviser for this class and school year
+        $adviser = $class->advisers->first();
+
+        // Prepare subjects data for the view (same structure as student report card)
+        $subjectsData = [];
+        foreach ($classSubjects as $cs) {
+            $subjectsData[] = [
+                'id' => $cs->subject->id,
+                'name' => $cs->subject->name,
+                'class_subject' => $cs,
+            ];
+        }
+
+        // Calculate grades for each student using the SAME logic as student report card
+        foreach ($students as $student) {
+            $studentSubjectsWithGrades = [];
+            $totalFinalGrade = 0;
+            $subjectCount = 0;
+            $allSubjectsComplete = true;
+
+            foreach ($classSubjects as $cs) {
+                $quarters = collect();
+
+                // Get quarterly grades (same logic as student report card)
+                foreach ($cs->quarters as $quarter) {
+                    $qgrade = $quarter->quarterlyGrades->where('student_id', $student->id)->first();
+                    $quarters->push([
+                        'quarter' => $quarter->quarter,
+                        'grade' => $qgrade ? $qgrade->final_grade : null,
+                    ]);
+                }
+
+                // Compute final average if all 4 quarters present (same logic as student report card)
+                $allPresent = $quarters->every(fn($x) => $x['grade'] !== null);
+                $final = null;
+                $remarks = null;
+
+                if ($allPresent) {
+                    $arr = $quarters->pluck('grade')->all();
+                    $final = round(array_sum($arr) / count($arr)); // Apply DepEd rounding
+                    $roundedFinal = round($final);
+                    $remarks = $roundedFinal >= 75 ? 'Passed' : 'Failed';
+
+                    // Add to general average calculation
+                    $totalFinalGrade += $final;
+                    $subjectCount++;
+                } else {
+                    $allSubjectsComplete = false;
+                }
+
+                $studentSubjectsWithGrades[] = [
+                    'subject' => $cs->subject->name,
+                    'subject_id' => $cs->subject->id,
+                    'quarters' => $quarters,
+                    'final' => $final,
+                    'remarks' => $remarks,
+                ];
+            }
+
+            // Calculate general average (same logic as student report card)
+            $dynamicGeneralAverage = null;
+            if ($subjectCount > 0 && $allSubjectsComplete) {
+                $dynamicGeneralAverage = round($totalFinalGrade / $subjectCount); // Apply DepEd rounding
+            }
+
+            // Add calculated data to student object
+            $student->subjects_with_grades = $studentSubjectsWithGrades;
+            $student->dynamic_general_average = $dynamicGeneralAverage;
+            $student->all_subjects_complete = $allSubjectsComplete;
+        }
 
         // Prepare data for PDF
         $data = [
             'students' => $students,
             'class' => $class,
             'schoolYear' => $schoolYear,
-            'subjects' => $subjects,
+            'subjects' => $subjectsData, // Pass the structured subjects data
+            'adviser' => $adviser,
         ];
 
         // Generate PDF
