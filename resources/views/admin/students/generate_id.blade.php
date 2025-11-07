@@ -128,7 +128,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -199,7 +199,7 @@
 
                             <div class="text-center mb-2">
                                 @if ($student->student_photo)
-                                    <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
+                                    <img src="{{ asset('public/uploads/' . $student->student_photo) }}" alt="Student Photo"
                                         class="border"
                                         style="width: 2.1in; height: 2.1in; object-fit: cover; border: 6px solid #000; border-radius: 2px; box-shadow: 0 0 5px #0190d2;">
                                 @else

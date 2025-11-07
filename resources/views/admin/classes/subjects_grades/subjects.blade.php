@@ -124,7 +124,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -222,7 +222,7 @@
 
                                     <div class="card-body pt-2">
                                         <div class="d-flex align-items-center">
-                                            <img src="{{ $classSubject->teacher->profile_photo ? asset('storage/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
+                                            <img src="{{ $classSubject->teacher->profile_photo ? asset('public/uploads/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                                 alt="Teacher Profile" class="rounded-circle me-2" width="30"
                                                 height="30">
                                             <small class="text-muted">

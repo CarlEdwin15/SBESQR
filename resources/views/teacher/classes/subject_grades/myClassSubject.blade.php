@@ -179,7 +179,7 @@
                                     <!-- Card Body -->
                                     <div class="card-body pt-2">
                                         <div class="d-flex align-items-center">
-                                            <img src="{{ $classSubject->teacher && $classSubject->teacher->profile_photo ? asset('storage/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
+                                            <img src="{{ $classSubject->teacher && $classSubject->teacher->profile_photo ? asset('public/uploads/' . $classSubject->teacher->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                                 alt="Teacher Profile" class="rounded-circle me-2" width="30"
                                                 height="30">
                                             <small class="text-muted">

@@ -183,8 +183,8 @@
 
                 @php
                     $photoPath =
-                        $student->student_photo && file_exists(public_path('storage/' . $student->student_photo))
-                            ? public_path('storage/' . $student->student_photo)
+                        $student->student_photo && file_exists(public_path('uploads/' . $student->student_photo))
+                            ? public_path('uploads/' . $student->student_photo)
                             : public_path('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
                 @endphp
                 <img src="{{ $photoPath }}" alt="Student Photo" class="id-img">

@@ -138,7 +138,7 @@
                                             $profilePhoto = $profilePhoto;
                                         } else {
                                             // Stored locally
-                                            $profilePhoto = asset('storage/' . $profilePhoto);
+                                            $profilePhoto = asset('public/uploads/' . $profilePhoto);
                                         }
                                     } else {
                                         // No profile photo, fallback by role
@@ -214,12 +214,30 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item" href="{{ route('account.settings') }}">
+                        @php
+                            $role = Auth::user()->role ?? null;
+
+                            switch ($role) {
+                                case 'admin':
+                                    $settingsRoute = route('admin.account.settings');
+                                    break;
+                                case 'teacher':
+                                    $settingsRoute = route('teacher.account.settings');
+                                    break;
+                                case 'parent':
+                                    $settingsRoute = route('parent.account.settings');
+                                    break;
+                                default:
+                                    $settingsRoute = '#'; // fallback
+                                    break;
+                            }
+                        @endphp
+
+                        <a class="dropdown-item" href="{{ $settingsRoute }}">
                             <i class="bx bx-cog me-2"></i>
                             <span class="align-middle">Settings</span>
                         </a>
                     </li>
-
                     <li>
                         <div class="dropdown-divider"></div>
                     </li>
@@ -321,7 +339,7 @@
                 })
                 .catch(() => {
                     content.innerHTML =
-                    `<div class="alert alert-danger">Failed to load announcement.</div>`;
+                        `<div class="alert alert-danger">Failed to load announcement.</div>`;
                 });
         }
 

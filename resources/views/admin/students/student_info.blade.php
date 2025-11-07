@@ -130,7 +130,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -180,7 +180,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card shadow p-3 align-items-center text-center">
                     @if ($student->student_photo)
-                        <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
+                        <img src="{{ asset('public/uploads/' . $student->student_photo) }}" alt="Student Photo"
                             class="mb-1 mt-2" style="object-fit: cover; height: 200px; width: 200px;">
                     @else
                         <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
@@ -287,7 +287,7 @@
                                     <div class="mb-3">
                                         @if ($student->student_photo)
                                             <img id="photo-preview"
-                                                src="{{ asset('storage/' . $student->student_photo) }}"
+                                                src="{{ asset('public/uploads/' . $student->student_photo) }}"
                                                 alt="Profile Preview" width="100" height="100"
                                                 class="profile-preview" style="object-fit: cover; border-radius: 5%">
                                         @else
@@ -391,7 +391,19 @@
                             </div>
                         </div>
 
-                        @if ($displayStatus !== 'Inactive')
+                        @php
+                            // Determine if student is active for the current school year
+                            $isActive = $studentStatus === 'enrolled';
+                            $currentClass = $student->class->first();
+                            $enrollmentType = $currentClass ? $currentClass->pivot->enrollment_type : null;
+                            $studentClass = $student
+                                ->class()
+                                ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
+                                ->first();
+                            $studentSection = $studentClass;
+                        @endphp
+
+                        @if ($isActive)
                             <hr class="my-0 mb-4 mt-4" />
 
                             <!-- Student Class -->
@@ -399,16 +411,6 @@
 
                             <!-- Enrollment Type, Grade Level, Section -->
                             <div class="row mt-3">
-                                @php
-                                    $currentClass = $student->class->first();
-                                    $enrollmentType = $currentClass ? $currentClass->pivot->enrollment_type : null;
-                                    $studentClass = $student
-                                        ->class()
-                                        ->wherePivot('school_year_id', $selectedSchoolYearId ?? $schoolYear->id)
-                                        ->first();
-                                    $studentSection = $studentClass;
-                                @endphp
-
                                 <div class="col mb-2">
                                     <label for="enrollment_type" class="form-label fw-bold">Enrollment Type</label>
                                     <select name="enrollment_type" id="enrollment_type" class="form-select" required>
@@ -476,6 +478,13 @@
                                     </select>
                                 </div>
                             </div>
+                        @else
+                            <!-- Hidden fields for inactive students (optional, if you want to preserve the data) -->
+                            <input type="hidden" name="enrollment_type" value="{{ $enrollmentType }}">
+                            <input type="hidden" name="student_grade_level"
+                                value="{{ $studentClass ? $studentClass->grade_level : '' }}">
+                            <input type="hidden" name="student_section"
+                                value="{{ $studentSection ? $studentSection->section : '' }}">
                         @endif
 
                         <hr class="my-0 mb-4 mt-4" />

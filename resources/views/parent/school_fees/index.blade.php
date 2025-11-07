@@ -20,7 +20,7 @@
             <li class="menu-item">
                 <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
                     <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                    <div class="text-light">Dashboard</div>
+                    <div class="text-light">My Children</div>
                 </a>
             </li>
 
@@ -118,7 +118,7 @@
                                     $student = $payment->classStudent->student;
                                     $class = $payment->classStudent->class;
                                     $photo = $student->student_photo
-                                        ? asset('storage/' . $student->student_photo)
+                                        ? asset('public/uploads/' . $student->student_photo)
                                         : asset(
                                             'assetsDashboard/img/student_profile_pictures/student_default_profile.jpg',
                                         );

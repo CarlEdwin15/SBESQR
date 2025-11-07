@@ -130,7 +130,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -199,7 +199,7 @@
                             <td>{{ $req->reference_number ?? '—' }}</td>
                             <td>
                                 @if ($req->receipt_image)
-                                    <a href="{{ asset('storage/' . $req->receipt_image) }}" target="_blank"
+                                    <a href="{{ asset('public/uploads/' . $req->receipt_image) }}" target="_blank"
                                         class="btn btn-sm btn-outline-info">View</a>
                                 @else
                                     —

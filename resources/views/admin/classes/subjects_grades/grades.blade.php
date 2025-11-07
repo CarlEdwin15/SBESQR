@@ -124,7 +124,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -238,7 +238,7 @@
                             <tr>
                                 <td class="text-center">{{ $maleIndex++ }}</td>
                                 <td class="text-center">
-                                    <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                    <img src="{{ $student->student_photo ? asset('public/uploads/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                         alt="Photo" class="rounded-circle" style="width: 40px; height: 40px;">
                                 </td>
                                 <td>{{ $student->student_lName }}, {{ $student->student_fName }}
@@ -306,7 +306,7 @@
                             <tr>
                                 <td class="text-center">{{ $femaleIndex++ }}</td>
                                 <td class="text-center">
-                                    <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                    <img src="{{ $student->student_photo ? asset('public/uploads/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                         alt="Photo" class="rounded-circle" style="width: 40px; height: 40px;">
                                 </td>
                                 <td>{{ $student->student_lName }}, {{ $student->student_fName }}

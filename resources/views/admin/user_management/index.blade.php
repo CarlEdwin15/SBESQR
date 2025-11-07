@@ -123,7 +123,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -343,7 +343,7 @@
                                             if (Str::startsWith($user->profile_photo, ['http://', 'https://'])) {
                                                 $profilePhoto = $user->profile_photo; // external (Google, etc.)
                                             } else {
-                                                $profilePhoto = asset('storage/' . $user->profile_photo); // stored locally
+                                                $profilePhoto = asset('public/uploads/' . $user->profile_photo); // stored locally
                                             }
                                         } else {
                                             // No profile photo → role-based fallback

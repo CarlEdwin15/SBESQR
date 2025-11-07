@@ -165,9 +165,13 @@ class ClassController extends Controller
         // Get class info
         $class = $this->getClass($grade_level, $section);
 
-        // Students via pivot (identical to teacher)
+        // Students via pivot with class student data (updated to match teacher side)
         $students = $class->students()
             ->wherePivot('school_year_id', $schoolYearId)
+            ->with(['classStudents' => function ($query) use ($class, $schoolYearId) {
+                $query->where('class_id', $class->id)
+                    ->where('school_year_id', $schoolYearId);
+            }])
             ->get();
 
         // Adviser

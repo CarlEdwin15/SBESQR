@@ -162,6 +162,14 @@
 
                         </div>
 
+                        <div class="text-center mt-2">
+                            <!-- Mute/Unmute Button Only - Switch Camera Button Removed -->
+                            <button id="mute-btn" class="btn btn-outline-secondary btn-sm">
+                                <i class='bx bx-volume-full' id="mute-icon"></i>
+                                <span id="mute-text">Mute Sound</span>
+                            </button>
+                        </div>
+
                         <div class="mt-3 text-center">
                             <h5 class="text-muted mb-0">
                                 @if ($gracePeriod === -1)
@@ -244,7 +252,7 @@
                                                 </td>
 
                                                 <td class="text-center">
-                                                    <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                    <img src="{{ $student->student_photo ? asset('public/uploads/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                         alt="Student Photo" class="rounded-circle me-2 student-photo"
                                                         style="width: 40px; height: 40px;">
                                                 </td>
@@ -340,6 +348,60 @@
     <script src="{{ asset('js/qr/instascan.min.js') }}"></script>
 
     <script>
+        // Sound control state
+        let soundEnabled = true;
+
+        // Initialize mute button functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const muteBtn = document.getElementById('mute-btn');
+            const muteIcon = document.getElementById('mute-icon');
+            const muteText = document.getElementById('mute-text');
+
+            // Load saved sound preference from localStorage
+            const savedSoundPreference = localStorage.getItem('attendanceSoundEnabled');
+            if (savedSoundPreference !== null) {
+                soundEnabled = savedSoundPreference === 'true';
+                updateMuteButton();
+            }
+
+            muteBtn.addEventListener('click', function() {
+                soundEnabled = !soundEnabled;
+                localStorage.setItem('attendanceSoundEnabled', soundEnabled);
+                updateMuteButton();
+
+                // Show feedback
+                const message = soundEnabled ? 'Sound enabled' : 'Sound muted';
+                showSoundFeedback(message);
+            });
+
+            function updateMuteButton() {
+                if (soundEnabled) {
+                    muteIcon.className = 'bx bx-volume-full';
+                    muteText.textContent = 'Mute Sound';
+                    muteBtn.classList.remove('btn-secondary');
+                    muteBtn.classList.add('btn-outline-secondary');
+                } else {
+                    muteIcon.className = 'bx bx-volume-mute';
+                    muteText.textContent = 'Unmute Sound';
+                    muteBtn.classList.remove('btn-outline-secondary');
+                    muteBtn.classList.add('btn-secondary');
+                }
+            }
+
+            function showSoundFeedback(message) {
+                // Simple toast-like feedback
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed bottom-0 end-0 m-3 p-2 bg-dark text-white rounded';
+                toast.style.zIndex = '9999';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 1500);
+            }
+        });
+
         // logout confirmation
         function confirmLogout() {
             Swal.fire({
@@ -374,16 +436,183 @@
         const grade_level = @json($grade_level);
         const section = @json($section);
         const date = @json($date);
-        const grace = {{ $gracePeriod ?? 60 }}; // Set default grace period to 60 minutes if not set
+        const grace = {{ $gracePeriod ?? 60 }};
 
         let scanner = new Instascan.Scanner({
             video: document.getElementById('preview'),
-            mirror: true
+            mirror: false // We'll set this based on device detection
         });
 
         const qrResult = document.getElementById('qr-result');
         let scanning = false;
+        let currentCamera = null;
 
+        // Enhanced device detection
+        function detectDeviceType() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            const isTablet = /ipad|android(?!.*mobile)/i.test(userAgent);
+            const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+            // More accurate desktop detection
+            const isDesktop = !isMobile && !isTablet && !hasTouchScreen;
+
+            console.log('Device Detection:', {
+                userAgent: navigator.userAgent,
+                isMobile,
+                isTablet,
+                hasTouchScreen,
+                isDesktop,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height
+            });
+
+            return {
+                isMobile,
+                isTablet,
+                isDesktop,
+                hasTouchScreen
+            };
+        }
+
+        // Force mirroring for all laptop/desktop cameras
+        function initializeCamera() {
+            Instascan.Camera.getCameras().then(cameras => {
+                if (cameras.length > 0) {
+                    const device = detectDeviceType();
+
+                    console.log('Available Cameras:', cameras.map(cam => ({
+                        name: cam.name,
+                        id: cam.id
+                    })));
+
+                    let selectedCamera = null;
+                    let shouldMirror = false;
+
+                    if (device.isMobile || device.isTablet) {
+                        // MOBILE/TABLET: Prefer back camera, no mirroring
+                        const backCamera = cameras.find(cam =>
+                            cam.name.toLowerCase().includes('back') ||
+                            cam.name.toLowerCase().includes('rear') ||
+                            cam.name.toLowerCase().includes('environment') ||
+                            (cam.name && !cam.name.toLowerCase().includes('front'))
+                        );
+
+                        const frontCamera = cameras.find(cam =>
+                            cam.name.toLowerCase().includes('front') ||
+                            cam.name.toLowerCase().includes('user') ||
+                            cam.name.toLowerCase().includes('selfie')
+                        );
+
+                        if (backCamera) {
+                            selectedCamera = backCamera;
+                            shouldMirror = false;
+                            console.log('📱 Mobile: Using BACK camera (non-mirrored)');
+                        } else if (frontCamera) {
+                            selectedCamera = frontCamera;
+                            shouldMirror = true; // Mirror front camera on mobile
+                            console.log('📱 Mobile: Using FRONT camera (mirrored)');
+                        } else {
+                            selectedCamera = cameras[0];
+                            shouldMirror = false;
+                            console.log('📱 Mobile: Using fallback camera (non-mirrored)');
+                        }
+                    } else {
+                        // DESKTOP/LAPTOP: Force mirroring for ALL cameras
+                        // Try to find front camera first
+                        const frontCamera = cameras.find(cam =>
+                            cam.name.toLowerCase().includes('front') ||
+                            cam.name.toLowerCase().includes('user') ||
+                            cam.name.toLowerCase().includes('face') ||
+                            cam.name.toLowerCase().includes('integrated') ||
+                            cam.name.toLowerCase().includes('built-in')
+                        );
+
+                        if (frontCamera) {
+                            selectedCamera = frontCamera;
+                            shouldMirror = true;
+                            console.log('💻 Desktop: Using FRONT camera (MIRRORED)');
+                        } else {
+                            // If no front camera found, use first camera but STILL MIRROR it
+                            selectedCamera = cameras[0];
+                            shouldMirror = true; // FORCE MIRRORING on desktop
+                            console.log('💻 Desktop: Using available camera (FORCE MIRRORED)');
+                        }
+                    }
+
+                    // Apply settings
+                    scanner.mirror = shouldMirror;
+                    currentCamera = selectedCamera;
+
+                    // Start scanner
+                    scanner.start(selectedCamera).then(() => {
+                        console.log('✅ Camera started successfully:', {
+                            camera: selectedCamera.name,
+                            mirrored: shouldMirror,
+                            deviceType: device.isDesktop ? 'desktop' : (device.isTablet ? 'tablet' :
+                                'mobile')
+                        });
+
+                        // Apply CSS mirroring
+                        const videoElement = document.getElementById('preview');
+                        if (shouldMirror) {
+                            videoElement.style.transform = 'scaleX(-1)';
+                            videoElement.style.webkitTransform = 'scaleX(-1)';
+                        } else {
+                            videoElement.style.transform = 'scaleX(1)';
+                            videoElement.style.webkitTransform = 'scaleX(1)';
+                        }
+
+                    }).catch(err => {
+                        console.error('❌ Failed to start camera:', err);
+                        alert('Failed to start camera: ' + err.message);
+                    });
+
+                } else {
+                    alert('No cameras found on this device.');
+                }
+            }).catch(e => {
+                console.error('Camera access error:', e);
+                alert('Camera error: ' + e.message);
+            });
+        }
+
+        // Manual camera switch function (kept but not used in UI)
+        function switchCamera() {
+            if (currentCamera) {
+                scanner.stop().then(() => {
+                    Instascan.Camera.getCameras().then(cameras => {
+                        if (cameras.length > 1) {
+                            const currentIndex = cameras.findIndex(cam => cam.id === currentCamera.id);
+                            const nextIndex = (currentIndex + 1) % cameras.length;
+                            const nextCamera = cameras[nextIndex];
+
+                            const device = detectDeviceType();
+                            const shouldMirror = device
+                            .isDesktop; // Mirror on desktop, don't mirror on mobile
+
+                            scanner.mirror = shouldMirror;
+                            currentCamera = nextCamera;
+
+                            scanner.start(nextCamera).then(() => {
+                                const videoElement = document.getElementById('preview');
+                                if (shouldMirror) {
+                                    videoElement.style.transform = 'scaleX(-1)';
+                                    videoElement.style.webkitTransform = 'scaleX(-1)';
+                                } else {
+                                    videoElement.style.transform = 'scaleX(1)';
+                                    videoElement.style.webkitTransform = 'scaleX(1)';
+                                }
+                                console.log('Switched to camera:', nextCamera.name, 'Mirrored:',
+                                    shouldMirror);
+                            });
+                        }
+                    });
+                });
+            }
+        }
+
+        // QR Scanner listener
         scanner.addListener('scan', function(content) {
             if (scanning) return;
             scanning = true;
@@ -414,8 +643,10 @@
                     .then(res => res.json())
                     .then(res => {
                         if (res.success) {
-                            document.getElementById('success-sound-1').play();
-                            document.getElementById('success-sound-2').play();
+                            if (soundEnabled) {
+                                document.getElementById('success-sound-1').play();
+                                document.getElementById('success-sound-2').play();
+                            }
 
                             showPopup(res.student, res.status);
 
@@ -437,8 +668,10 @@
                                 qrResult.innerText = '';
                             }, 2500);
                         } else {
-                            document.getElementById('error-sound').play(); // 🔊 Play error sound
-                            flashErrorBorder(); // ✨ Optional visual feedback
+                            if (soundEnabled) {
+                                document.getElementById('error-sound').play();
+                            }
+                            flashErrorBorder();
 
                             qrResult.classList.remove('text-success');
                             qrResult.classList.add('text-danger');
@@ -451,7 +684,9 @@
                         }
                     })
                     .catch(err => {
-                        document.getElementById('error-sound').play();
+                        if (soundEnabled) {
+                            document.getElementById('error-sound').play();
+                        }
                         flashErrorBorder();
 
                         qrResult.classList.remove('text-success');
@@ -461,7 +696,9 @@
                     });
 
             } catch (e) {
-                document.getElementById('error-sound').play();
+                if (soundEnabled) {
+                    document.getElementById('error-sound').play();
+                }
                 flashErrorBorder();
 
                 qrResult.classList.remove('text-success');
@@ -471,21 +708,9 @@
             }
         });
 
-        Instascan.Camera.getCameras().then(cameras => {
-            if (cameras.length > 0) {
-                // Try to find a back (environment) camera first
-                let selectedCam = cameras.find(cam => cam.name.toLowerCase().includes('back')) ||
-                    cameras.find(cam => cam.name.toLowerCase().includes('rear')) ||
-                    cameras.find(cam => cam.name.toLowerCase().includes('environment')) ||
-                    cameras[cameras.length - 1]; // fallback to last camera
-
-                scanner.start(selectedCam);
-            } else {
-                alert('No cameras found.');
-            }
-        }).catch(e => {
-            console.error(e);
-            alert('Camera error: ' + e);
+        // Initialize camera when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCamera();
         });
 
         // Optional: Add a flash effect to video on error
@@ -531,7 +756,7 @@
             }
         }
 
-        let popupTimeout; // Global timeout tracker
+        let popupTimeout;
 
         // Function to show the floating popup
         function showPopup(studentName, status) {
@@ -544,7 +769,6 @@
             name.textContent = studentName;
             statusText.textContent = `Marked as ${capitalize(status)}`;
 
-            // 🎨 Change color based on status
             let colorClass = 'alert-success';
             let emoji = '✅';
             if (status === 'late') {
@@ -565,12 +789,10 @@
             popup.classList.remove('d-none');
             popup.style.opacity = 1;
 
-            // Clear any previous timeout so new notifications reset the timer
             if (popupTimeout) {
                 clearTimeout(popupTimeout);
             }
 
-            // Set a new timeout to hide the popup after 3.5s of inactivity
             popupTimeout = setTimeout(() => {
                 popup.style.opacity = 0;
                 setTimeout(() => popup.classList.add('d-none'), 600);
@@ -580,7 +802,6 @@
         // Function to set custom timeout
         let customTimeout = document.getElementById('custom-timeout').value;
 
-        // Function to apply custom timeout
         function setCustomTimeout() {
             customTimeout = document.getElementById('custom-timeout').value;
 
@@ -690,10 +911,14 @@
                                         }
 
                                         showPopup(res.student, res.status);
-                                        document.getElementById('success-sound-1')
-                                            .play();
-                                        document.getElementById('success-sound-2')
-                                            .play();
+
+                                        // Play sounds only if sound is enabled
+                                        if (soundEnabled) {
+                                            document.getElementById('success-sound-1')
+                                                .play();
+                                            document.getElementById('success-sound-2')
+                                                .play();
+                                        }
                                     } else {
                                         Swal.fire('Error', res.message, 'error');
                                     }
@@ -730,6 +955,11 @@
             50% {
                 border-color: red;
             }
+        }
+
+        /* Style for the mute button */
+        #mute-btn {
+            margin-left: 0;
         }
     </style>
 @endpush

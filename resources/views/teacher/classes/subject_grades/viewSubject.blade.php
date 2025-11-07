@@ -180,7 +180,7 @@
                                     <td class="text-center">
                                         <a
                                             href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                            <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                            <img src="{{ $student->student_photo ? asset('public/uploads/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                 alt="Student Photo" class="rounded-circle me-2 student-photo"
                                                 style="width: 40px; height: 40px;">
                                         </a>
@@ -321,7 +321,7 @@
                                     <td class="text-center">
                                         <a
                                             href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                            <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                            <img src="{{ $student->student_photo ? asset('public/uploads/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                 alt="Student Photo" class="rounded-circle me-2 student-photo"
                                                 style="width: 40px; height: 40px;">
                                         </a>

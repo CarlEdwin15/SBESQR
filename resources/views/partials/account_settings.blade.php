@@ -50,7 +50,7 @@
                 <label for="profile_photo" class="form-label">Profile Photo</label>
                 <input type="file" name="profile_photo" id="profile_photo" class="form-control">
                 @if ($user->profile_photo)
-                    <img src="{{ asset('storage/' . $user->profile_photo) }}" alt="Profile Photo" class="mt-2 rounded"
+                    <img src="{{ asset('public/uploads/' . $user->profile_photo) }}" alt="Profile Photo" class="mt-2 rounded"
                         style="height: 100px;">
                 @endif
             </div>

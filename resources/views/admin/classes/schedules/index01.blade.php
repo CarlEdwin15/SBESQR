@@ -121,7 +121,7 @@
 
                     {{-- Account Settings sidebar --}}
                     <li class="menu-item">
-                        <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                        <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                             <i class="bx bx-cog me-3 text-light"></i>
                             <div class="text-light"> Account Settings</div>
                         </a>
@@ -173,7 +173,7 @@
                                             @auth
                                                 @php
                                                     $profilePhoto = Auth::user()->profile_photo
-                                                        ? asset('storage/' . Auth::user()->profile_photo)
+                                                        ? asset('public/uploads/' . Auth::user()->profile_photo)
                                                         : asset(
                                                             'assetsDashboard/img/profile_pictures/admin_default_profile.jpg',
                                                         );
@@ -223,7 +223,7 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="{{ route('account.settings') }}">
+                                        <a class="dropdown-item" href="{{ route('admin.account.settings') }}">
                                             <i class="bx bx-cog me-2"></i>
                                             <span class="align-middle">Settings</span>
                                         </a>

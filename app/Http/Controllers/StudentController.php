@@ -601,10 +601,20 @@ class StudentController extends Controller
             $query->where('class_student.school_year_id', $schoolYear->id);
         }])->findOrFail($id);
 
+        // Determine student status for this school year
+        $currentEnrollment = $student->classStudents()
+            ->where('school_year_id', $schoolYear->id)
+            ->first();
+
+        $studentStatus = $currentEnrollment ? $currentEnrollment->enrollment_status : 'not_enrolled';
+        $isActive = $studentStatus === 'enrolled';
+
         return view('admin.students.editStudent', [
             'student' => $student,
             'selectedSchoolYear' => $selectedSchoolYear,
             'schoolYearId' => $schoolYear->id,
+            'isActive' => $isActive,
+            'studentStatus' => $studentStatus,
         ]);
     }
 
@@ -612,7 +622,18 @@ class StudentController extends Controller
     {
         $student = Student::findOrFail($id);
 
-        $validatedData = $request->validate([
+        // Get the student's current status
+        $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
+        $schoolYear = SchoolYear::where('school_year', $selectedSchoolYear)->first();
+
+        $currentEnrollment = $student->classStudents()
+            ->where('school_year_id', $schoolYear->id)
+            ->first();
+
+        $isActive = $currentEnrollment && $currentEnrollment->enrollment_status === 'enrolled';
+
+        // Base validation rules (always required)
+        $validationRules = [
             'student_lrn' => [
                 'required',
                 'string',
@@ -620,8 +641,6 @@ class StudentController extends Controller
                 'regex:/^112828[0-9]{6}$/',
                 'unique:students,student_lrn,' . $student->id . ',id',
             ],
-            'student_grade_level' => 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6',
-            'student_section' => 'required|in:A,B,C,D,E,F',
             'student_fName' => 'required|string|max:255',
             'student_mName' => 'nullable|string|max:255',
             'student_lName' => 'required|string|max:255',
@@ -629,7 +648,6 @@ class StudentController extends Controller
             'student_dob' => 'nullable|date',
             'student_sex' => 'required|in:male,female',
             'student_pob' => 'required|string|max:255',
-            'enrollment_type' => 'required|in:regular,transferee,returnee',
             'student_parentEmail' => [
                 'nullable',
                 'string',
@@ -644,7 +662,21 @@ class StudentController extends Controller
                 },
             ],
             'student_profile_photo' => 'nullable|image|mimes:jpeg,png|max:2048',
-        ]);
+        ];
+
+        // Only require class fields if student is active
+        if ($isActive) {
+            $validationRules['student_grade_level'] = 'required|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6';
+            $validationRules['student_section'] = 'required|in:A,B,C,D,E,F';
+            $validationRules['enrollment_type'] = 'required|in:regular,transferee,returnee';
+        } else {
+            // Make class fields optional for inactive students
+            $validationRules['student_grade_level'] = 'nullable|in:kindergarten,grade1,grade2,grade3,grade4,grade5,grade6';
+            $validationRules['student_section'] = 'nullable|in:A,B,C,D,E,F';
+            $validationRules['enrollment_type'] = 'nullable|in:regular,transferee,returnee';
+        }
+
+        $validatedData = $request->validate($validationRules);
 
         // Handle profile photo
         if ($request->hasFile('student_profile_photo')) {
@@ -700,52 +732,53 @@ class StudentController extends Controller
             $student->parents()->syncWithoutDetaching([$parent->id]);
         }
 
-        // Get selected school year
-        $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
-        [$start, $end] = explode('-', $selectedSchoolYear);
+        // Only update class information if student is active AND class fields are provided
+        if ($isActive && $request->filled('student_grade_level') && $request->filled('student_section')) {
+            // Get selected school year
+            $selectedSchoolYear = $request->input('selected_school_year') ?? $this->getDefaultSchoolYear();
+            [$start, $end] = explode('-', $selectedSchoolYear);
 
-        $schoolYear = SchoolYear::firstOrCreate(
-            ['school_year' => $selectedSchoolYear],
-            [
-                'start_date' => "$start-06-01",
-                'end_date'   => "$end-03-31",
-            ]
-        );
+            $schoolYear = SchoolYear::firstOrCreate(
+                ['school_year' => $selectedSchoolYear],
+                [
+                    'start_date' => "$start-06-01",
+                    'end_date'   => "$end-03-31",
+                ]
+            );
 
-        // Find or create the class
-        $class = Classes::firstOrCreate([
-            'grade_level' => $validatedData['student_grade_level'],
-            'section'     => $validatedData['student_section'],
-        ]);
+            // Find or create the class
+            $class = Classes::firstOrCreate([
+                'grade_level' => $validatedData['student_grade_level'],
+                'section'     => $validatedData['student_section'],
+            ]);
 
-        // Check if student already has a class record for this school year
-        $existingPivot = $student->class()
-            ->wherePivot('school_year_id', $schoolYear->id)
-            ->first();
+            // Check if student already has a class record for this school year
+            $existingPivot = $student->class()
+                ->wherePivot('school_year_id', $schoolYear->id)
+                ->first();
 
-        // Determine enrollment type:
-        // - If user submits a new one → use it
-        // - If not → fallback to old value in pivot
-        $enrollmentType = $validatedData['enrollment_type'] ?? null;
+            // Determine enrollment type
+            $enrollmentType = $validatedData['enrollment_type'] ?? null;
 
-        if ($existingPivot) {
-            if (!$enrollmentType) {
-                // fallback to old enrollment type if none provided
-                $enrollmentType = $existingPivot->pivot->enrollment_type;
+            if ($existingPivot) {
+                if (!$enrollmentType) {
+                    // fallback to old enrollment type if none provided
+                    $enrollmentType = $existingPivot->pivot->enrollment_type;
+                }
+
+                // Update existing pivot row
+                $student->class()->updateExistingPivot($existingPivot->id, [
+                    'class_id'        => $class->id,
+                    'school_year_id'  => $schoolYear->id,
+                    'enrollment_type' => $enrollmentType,
+                ]);
+            } else {
+                // If no pivot exists for this school year, attach new
+                $student->class()->attach($class->id, [
+                    'school_year_id'  => $schoolYear->id,
+                    'enrollment_type' => $enrollmentType ?? 'regular',
+                ]);
             }
-
-            // Update existing pivot row
-            $student->class()->updateExistingPivot($existingPivot->id, [
-                'class_id'        => $class->id,
-                'school_year_id'  => $schoolYear->id,
-                'enrollment_type' => $enrollmentType,
-            ]);
-        } else {
-            // If no pivot exists for this school year, attach new
-            $student->class()->attach($class->id, [
-                'school_year_id'  => $schoolYear->id,
-                'enrollment_type' => $enrollmentType ?? 'regular', // default fallback
-            ]);
         }
 
         return redirect()->back()->with('success', 'Student updated successfully!');

@@ -327,7 +327,7 @@ class AnnouncementController extends Controller
 
     //     if ($request->hasFile('image')) {
     //         $path = $request->file('image')->store('announcements', 'public');
-    //         $url = asset('storage/' . $path);
+    //         $url = asset('public/uploads/' . $path);
 
     //         return response()->json(['url' => $url]);
     //     }

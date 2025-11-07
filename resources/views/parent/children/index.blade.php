@@ -17,17 +17,9 @@
         <ul class="menu-inner py-1 bg-dark">
 
             <!-- Dashboard sidebar-->
-            <li class="menu-item">
-                <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                    <div class="text-light">Dashboard</div>
-                </a>
-            </li>
-
-            {{-- SMS Logs sidebar --}}
             <li class="menu-item active">
-                <a href="{{ route('parent.children.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-child"></i>
+                <a href="{{ '/home ' }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-home-circle"></i>
                     <div class="text-warning">My Children</div>
                 </a>
             </li>
@@ -111,7 +103,7 @@
                             @php
                                 $latestClass = optional($child->classStudents->last())->class;
                                 $photo = $child->student_photo
-                                    ? asset('storage/' . $child->student_photo)
+                                    ? asset('public/uploads/' . $child->student_photo)
                                     : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
                             @endphp
 

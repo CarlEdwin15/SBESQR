@@ -20,7 +20,7 @@
             <li class="menu-item">
                 <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
                     <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                    <div class="text-light">Dashboard</div>
+                    <div class="text-light">My Children</div>
                 </a>
             </li>
 

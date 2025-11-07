@@ -124,7 +124,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -276,7 +276,7 @@
                                                     class="d-flex align-items-center text-decoration-none"
                                                     style="gap: 0.5rem;">
                                                     @if ($student->student_photo)
-                                                        <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                        <img src="{{ asset('public/uploads/' . $student->student_photo) }}"
                                                             alt="Profile Photo" width="35" height="35"
                                                             class="rounded-circle">
                                                     @else
@@ -486,12 +486,12 @@
                             <div class="col mb-3">
                                 <label for="house_no" class="form-label fw-bold">House No.</label>
                                 <input type="text" name="house_no" id="house_no" class="form-control"
-                                    placeholder="Enter House No." value="{{ old('house_no') }}" />
+                                    placeholder="Enter House No." value="{{ old('house_no') }}" required/>
                             </div>
                             <div class="col mb-3">
                                 <label for="street_name" class="form-label fw-bold">Street Name</label>
                                 <input type="text" name="street_name" id="street_name" class="form-control"
-                                    placeholder="Enter Street Name" value="{{ old('street_name') }}" />
+                                    placeholder="Enter Street Name" value="{{ old('street_name') }}" required/>
                             </div>
                         </div>
 
@@ -499,13 +499,13 @@
                             <div class="col mb-3">
                                 <label for="barangay" class="form-label fw-bold">Barangay</label>
                                 <input type="text" name="barangay" id="barangay" class="form-control"
-                                    placeholder="Enter Barangay" value="{{ old('barangay') }}" />
+                                    placeholder="Enter Barangay" value="{{ old('barangay') }}" required/>
                             </div>
                             <div class="col mb-3">
                                 <label for="municipality_city" class="form-label fw-bold">Municipality/City</label>
                                 <input type="text" name="municipality_city" id="municipality_city"
                                     class="form-control" placeholder="Enter Municipality or City"
-                                    value="{{ old('municipality_city') }}" />
+                                    value="{{ old('municipality_city') }}" required />
                             </div>
                         </div>
 
@@ -513,12 +513,12 @@
                             <div class="col mb-3">
                                 <label for="province" class="form-label fw-bold">Province</label>
                                 <input type="text" name="province" id="province" class="form-control"
-                                    placeholder="Enter Province" value="{{ old('province') }}" />
+                                    placeholder="Enter Province" value="{{ old('province') }}" required/>
                             </div>
                             <div class="col mb-3">
                                 <label for="zip_code" class="form-label fw-bold">Zip Code</label>
                                 <input type="text" name="zip_code" id="zip_code" class="form-control"
-                                    placeholder="Enter Zip Code" value="{{ old('zip_code') }}" />
+                                    placeholder="Enter Zip Code" value="{{ old('zip_code') }}" required/>
                             </div>
                         </div>
                     </div>

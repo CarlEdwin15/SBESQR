@@ -83,7 +83,7 @@ Route::prefix('admin')
         })->name('admin.userStatusRefresh');
 
         // Account Settings (Admin)
-        Route::get('/accountSettings', [AdminController::class, 'accountSettings'])->name('account.settings');
+        Route::get('/accountSettings', [AdminController::class, 'accountSettings'])->name('admin.account.settings');
         Route::put('/accountSettings/{id}', [AdminController::class, 'updateAdmin'])->name('admin.update');
 
         // Teachers Management

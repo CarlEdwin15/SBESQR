@@ -134,7 +134,7 @@
                             <!-- Profile Photo -->
                             <div class="position-relative me-3">
                                 <img src="{{ $class->adviser->profile_photo
-                                    ? asset('storage/' . $class->adviser->profile_photo)
+                                    ? asset('public/uploads/' . $class->adviser->profile_photo)
                                     : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                     alt="Adviser Photo" style="width: 65px; height: 65px; object-fit: cover;">
                             </div>
@@ -291,7 +291,7 @@
                                 <td class="text-center">
                                     <a
                                         href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                        <img src="{{ $student->student_photo ? asset('storage/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                        <img src="{{ $student->student_photo ? asset('public/uploads/' . $student->student_photo) : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                             alt="Student Photo" class="rounded-circle me-2 student-photo"
                                             style="width: 40px; height: 40px;">
                                     </a>

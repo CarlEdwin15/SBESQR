@@ -125,7 +125,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -676,7 +676,7 @@
                                     <td>
                                         <a href="{{ route('admin.user.info', ['id' => $teacher->id]) }}">
                                             @if ($teacher->profile_photo)
-                                                <img src="{{ asset('storage/' . $teacher->profile_photo) }}"
+                                                <img src="{{ asset('public/uploads/' . $teacher->profile_photo) }}"
                                                     width="40" height="40"
                                                     style="object-fit: cover; border-radius: 50%;">
                                             @else

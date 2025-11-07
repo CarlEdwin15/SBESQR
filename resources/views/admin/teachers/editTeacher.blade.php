@@ -123,7 +123,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -194,7 +194,7 @@
                         <div class="col mt-4 mb-3 d-flex align-items-start align-items-sm-center gap-4">
                             <div class="mb-3">
                                 @if ($teacher->profile_photo)
-                                    <img id="photo-preview" src="{{ asset('storage/' . $teacher->profile_photo) }}"
+                                    <img id="photo-preview" src="{{ asset('public/uploads/' . $teacher->profile_photo) }}"
                                         alt="Profile Preview" width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius: 5%">
                                 @else

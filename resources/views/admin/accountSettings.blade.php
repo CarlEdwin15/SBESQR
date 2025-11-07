@@ -123,7 +123,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item active">
-                <a href="{{ route('account.settings') }}" class="menu-link">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link">
                     <i class="menu-icon bx bx-cog"></i>
                     <div class="text-warning">Account Settings</div>
                 </a>

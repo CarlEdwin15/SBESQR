@@ -12,6 +12,8 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use App\Models\Student;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -201,5 +203,24 @@ class User extends Authenticatable
         }
 
         return $value;
+    }
+
+    // In your User model
+    public function getProfilePhotoUrlAttribute()
+    {
+        if (!$this->profile_photo) {
+            return match ($this->role) {
+                'admin' => asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg'),
+                'teacher' => asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg'),
+                'parent' => asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg'),
+                default => 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name),
+            };
+        }
+
+        if (Str::startsWith($this->profile_photo, ['http://', 'https://'])) {
+            return $this->profile_photo;
+        }
+
+        return Storage::url($this->profile_photo);
     }
 }

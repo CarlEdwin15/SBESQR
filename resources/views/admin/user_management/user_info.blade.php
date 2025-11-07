@@ -123,7 +123,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -169,7 +169,7 @@
                                 if (Str::startsWith($user->profile_photo, ['http://', 'https://'])) {
                                     $profilePhoto = $user->profile_photo; // external (Google, etc.)
                                 } else {
-                                    $profilePhoto = asset('storage/' . $user->profile_photo); // stored locally
+                                    $profilePhoto = asset('public/uploads/' . $user->profile_photo); // stored locally
                                 }
                             } else {
                                 // No profile photo → role-based fallback
@@ -494,7 +494,7 @@
                                                         <div class="card-body text-center p-4">
                                                             <!-- Profile Photo -->
                                                             @if ($student->student_profile)
-                                                                <img src="{{ asset('storage/' . $student->student_profile) }}"
+                                                                <img src="{{ asset('public/uploads/' . $student->student_profile) }}"
                                                                     alt="Student Photo"
                                                                     class="rounded-circle mb-3 shadow-sm"
                                                                     style="object-fit: cover; width: 100px; height: 100px;">
@@ -570,7 +570,7 @@
                             <div class="col d-flex align-items-center gap-4">
                                 <div>
                                     <img id="photo-preview"
-                                        src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
+                                        src="{{ $user->profile_photo ? asset('public/uploads/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
                                         width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius:5%;">
                                 </div>
@@ -663,7 +663,7 @@
                             <div class="col d-flex align-items-center gap-4">
                                 <div>
                                     <img id="photo-preview-edit"
-                                        src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
+                                        src="{{ $user->profile_photo ? asset('public/uploads/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                         width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius:5%;">
                                 </div>
@@ -854,7 +854,7 @@
                             <div class="col d-flex align-items-center gap-4">
                                 <div>
                                     <img id="photo-preview-parent"
-                                        src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg') }}"
+                                        src="{{ $user->profile_photo ? asset('public/uploads/' . $user->profile_photo) : asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg') }}"
                                         width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius:5%;">
                                 </div>

@@ -203,7 +203,7 @@
                                         <a
                                             href="{{ route('teacher.student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
                                             @if ($student->student_photo)
-                                                <img src="{{ asset('storage/' . $student->student_photo) }}"
+                                                <img src="{{ asset('public/uploads/' . $student->student_photo) }}"
                                                     alt="Profile Photo" width="30" height="30"
                                                     style="object-fit: cover; border-radius: 50%;">
                                             @else

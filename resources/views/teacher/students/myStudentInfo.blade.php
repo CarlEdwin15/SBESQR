@@ -99,7 +99,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card shadow p-3 align-items-center text-center">
                     @if ($student->student_photo)
-                        <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo" class="mb-3 mt-2"
+                        <img src="{{ asset('public/uploads/' . $student->student_photo) }}" alt="Student Photo" class="mb-3 mt-2"
                             style="object-fit: cover; height: 200px; width: 200px;">
                     @else
                         <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"

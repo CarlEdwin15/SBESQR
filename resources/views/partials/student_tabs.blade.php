@@ -438,7 +438,7 @@ if (
                                 <div class="card-body text-center p-4">
                                     <!-- Profile Photo -->
                                     @if ($parent->profile_photo)
-                                        <img src="{{ asset('storage/' . $parent->profile_photo) }}"
+                                        <img src="{{ asset('public/uploads/' . $parent->profile_photo) }}"
                                             alt="Parent Photo" class="rounded-circle mb-3 shadow-sm"
                                             style="object-fit: cover; width: 100px; height: 100px;">
                                     @else

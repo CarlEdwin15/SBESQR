@@ -38,10 +38,11 @@ return [
             'report' => false,
         ],
 
+        // CHANGE THIS - Update the public disk
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'root' => public_path('public/uploads'), // Changed from storage_path to public_path
+            'url' => env('APP_URL') . '/uploads', // Changed from /storage to /uploads
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

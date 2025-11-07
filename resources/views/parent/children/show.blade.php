@@ -21,17 +21,9 @@
         <ul class="menu-inner py-1 bg-dark">
 
             <!-- Dashboard sidebar-->
-            <li class="menu-item">
-                <a href="{{ '/home ' }}" class="menu-link bg-dark text-light">
-                    <i class="menu-icon tf-icons bx bx-home-circle text-light"></i>
-                    <div class="text-light">Dashboard</div>
-                </a>
-            </li>
-
-            {{-- SMS Logs sidebar --}}
             <li class="menu-item active">
-                <a href="{{ route('parent.children.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-child"></i>
+                <a href="{{ '/home ' }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-home-circle"></i>
                     <div class="text-warning">My Children</div>
                 </a>
             </li>
@@ -93,7 +85,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card shadow p-3 align-items-center text-center">
                     @if ($child->student_photo)
-                        <img src="{{ asset('storage/' . $child->student_photo) }}" alt="Student Photo" class="mb-3 mt-2"
+                        <img src="{{ asset('public/uploads/' . $child->student_photo) }}" alt="Student Photo" class="mb-3 mt-2"
                             style="object-fit: cover; height: 200px; width: 200px;">
                     @else
                         <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"

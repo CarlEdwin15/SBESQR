@@ -124,7 +124,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="{{ route('account.settings') }}" class="menu-link bg-dark text-light">
+                <a href="{{ route('admin.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light"> Account Settings</div>
                 </a>
@@ -367,7 +367,7 @@
                                         data-bs-target="#addPaymentModal{{ $p->id }}">
                                         <div class="d-flex align-items-center">
                                             <img src="{{ $p->student && $p->student->student_photo
-                                                ? asset('storage/' . $p->student->student_photo)
+                                                ? asset('public/uploads/' . $p->student->student_photo)
                                                 : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                                                 class="rounded-circle me-2"
                                                 style="width: 40px; height: 40px; object-fit: cover;">

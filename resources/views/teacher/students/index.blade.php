@@ -116,7 +116,7 @@
                     {{-- Student Photo --}}
                     <div class="col-md-4 mt-3 mb-3 text-center d-flex flex-column align-items-center">
                         @if ($student->student_photo)
-                            <img src="{{ asset('storage/' . $student->student_photo) }}" alt="Student Photo"
+                            <img src="{{ asset('public/uploads/' . $student->student_photo) }}" alt="Student Photo"
                                 class="img-thumbnail mb-3" style="object-fit: cover; height: 450px; width: 450px;">
                         @else
                             <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"

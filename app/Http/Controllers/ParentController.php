@@ -410,4 +410,15 @@ class ParentController extends Controller
 
         return view('parent.accountSettings', compact('user'));
     }
+
+    public function accountSettings()
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'parent') {
+            abort(403, 'Unauthorized');
+        }
+
+        return view('parent.accountSettings', compact('user'));
+    }
 }

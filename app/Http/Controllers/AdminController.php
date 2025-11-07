@@ -142,9 +142,11 @@ class AdminController extends Controller
             ? Hash::make(Str::random(16))
             : Hash::make($request->password);
 
-        $photoPath = $request->hasFile('profile_photo')
-            ? $request->file('profile_photo')->store('profile_pictures', 'public')
-            : null;
+        $photoPath = null;
+        if ($request->hasFile('profile_photo')) {
+            $photoPath = $request->file('profile_photo')->store('profile_pictures', 'public');
+            // This will now save to: public/uploads/profile_pictures/
+        }
 
         $user = User::create([
             'firstName'    => $request->firstName,
@@ -202,7 +204,6 @@ class AdminController extends Controller
                     'status' => 'active',
                 ]);
             }
-
         }
 
         return redirect()->route('admin.user.management')->with('success', ucfirst($user->role) . ' added successfully.');

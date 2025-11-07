@@ -20,7 +20,7 @@
             <li class="menu-item active">
                 <a href="{{ '/home ' }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                    <div class="text-warning">Dashboard</div>
+                    <div class="text-warning">My Children</div>
                 </a>
             </li>
 
@@ -98,7 +98,7 @@
                             @php
                                 $latestClass = optional($child->classStudents->last())->class;
                                 $photo = $child->student_photo
-                                    ? asset('storage/' . $child->student_photo)
+                                    ? asset('public/uploads/' . $child->student_photo)
                                     : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
                             @endphp
 
