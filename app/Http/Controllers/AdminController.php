@@ -84,7 +84,7 @@ class AdminController extends Controller
                 'string',
                 'email',
                 'max:255',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($request) {
                     // Teacher duplicate check
                     if (User::where('email', $value)->where('role', 'teacher')->exists()) {
                         return $fail('This email is already registered to a teacher.');
@@ -104,7 +104,16 @@ class AdminController extends Controller
             'role'       => 'required|in:teacher,admin,parent',
             'gender'     => 'nullable|in:male,female',
             'dob'        => 'nullable|date',
-            'phone'      => 'nullable|string|max:20',
+            'phone'      => [
+                'nullable',
+                'string',
+                'max:20',
+                function ($attribute, $value, $fail) {
+                    if ($value && !preg_match('/^(09|\+639)\d{9}$/', $value)) {
+                        $fail('The phone number must be a valid Philippine number (09XXXXXXXXX or +639XXXXXXXXX).');
+                    }
+                },
+            ],
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'house_no'   => 'nullable|string|max:50',
             'street_name' => 'nullable|string|max:255',
@@ -133,10 +142,23 @@ class AdminController extends Controller
             $rules['assigned_classes'] = 'required|array|min:1';
             $rules['assigned_classes.*'] = 'exists:classes,id';
             $rules['advisory_class'] = 'nullable|exists:classes,id';
-            $rules['selected_school_year'] = 'required|string|exists:school_years,school_year';
         }
 
-        $validated = $request->validate($rules);
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            // Ensure role is preserved in the session for modal detection
+            if ($request->has('role')) {
+                session()->flash('preserved_role', $request->role);
+            }
+
+            return redirect()
+                ->route('admin.user.management')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $validated = $validator->validated();
 
         $password = $request->role === 'parent'
             ? Hash::make(Str::random(16))
@@ -145,7 +167,6 @@ class AdminController extends Controller
         $photoPath = null;
         if ($request->hasFile('profile_photo')) {
             $photoPath = $request->file('profile_photo')->store('profile_pictures', 'public');
-            // This will now save to: public/uploads/profile_pictures/
         }
 
         $user = User::create([
@@ -218,7 +239,7 @@ class AdminController extends Controller
             'firstName'  => 'required|string|max:255',
             'middleName' => 'nullable|string|max:255',
             'extName'    => 'nullable|string|max:255',
-            'lastName'   => 'required|string|max:255',
+            'lastName'   => 'nullable|string|max:255',
             'email'      => [
                 'required',
                 'string',
@@ -226,13 +247,22 @@ class AdminController extends Controller
                 'max:255',
                 function ($attribute, $value, $fail) use ($user) {
                     if (User::where('email', $value)->where('id', '!=', $user->id)->exists()) {
-                        $fail('This email is already registered.');
+                        $fail('The email you input is already taken by registered user.');
                     }
                 }
             ],
             'gender'     => 'nullable|in:male,female',
             'dob'        => 'nullable|date',
-            'phone'      => 'nullable|string|max:20',
+            'phone'      => [
+                'nullable',
+                'string',
+                'max:20',
+                function ($attribute, $value, $fail) {
+                    if ($value && !preg_match('/^(09|\+639)\d{9}$/', $value)) {
+                        $fail('The phone number must be a valid Philippine number (09XXXXXXXXX or +639XXXXXXXXX).');
+                    }
+                },
+            ],
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'house_no'   => 'nullable|string|max:50',
             'street_name' => 'nullable|string|max:255',
@@ -256,7 +286,15 @@ class AdminController extends Controller
             $rules['advisory_class'] = 'nullable|exists:classes,id';
         }
 
-        $validated = $request->validate($rules);
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $validated = $validator->validated();
 
         // Handle profile photo
         if ($request->hasFile('profile_photo')) {

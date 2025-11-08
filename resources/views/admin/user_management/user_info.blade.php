@@ -623,7 +623,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Email</label>
                                 <input type="email" class="form-control" name="email"
-                                    value="{{ old('email', $user->email) }}" required>
+                                    value="{{ old('email', $user->email) }}" required placeholder="example@domain.com">
+                                <small class="email-format-hint">Enter a valid email address</small>
+                                <div class="validation-feedback valid-feedback">✓ Valid email format</div>
+                                <div class="validation-feedback invalid-feedback">Please enter a valid email address</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Phone</label>
@@ -720,15 +723,10 @@
                                 <label class="form-label fw-bold">Advisory Class</label>
                                 <select name="advisory_class" id="advisory_class" class="form-select">
                                     <option value="">-- None --</option>
-                                    @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}"
-                                            {{ old('advisory_class', $advisoryClass) == $class->id ? 'selected' : '' }}>
-                                            {{ strtoupper($class->formattedGradeLevel ?? $class->grade_level) }} -
-                                            {{ $class->section }}
-                                        </option>
-                                    @endforeach
+                                    {{-- Options will be populated dynamically via JavaScript --}}
                                 </select>
-                                <small class="text-muted">Must be one of the assigned classes</small>
+                                <small class="text-muted">Must be one of the assigned classes without an existing
+                                    adviser</small>
                             </div>
                         </div>
 
@@ -746,7 +744,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Middle Name</label>
                                 <input type="text" class="form-control" name="middleName"
-                                    value="{{ old('middleName', $user->middleName) }}">
+                                    value="{{ old('middleName', $user->middleName) }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Last Name</label>
@@ -761,16 +759,19 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Email</label>
                                 <input type="email" class="form-control" name="email"
-                                    value="{{ old('email', $user->email) }}" required>
+                                    value="{{ old('email', $user->email) }}" required placeholder="example@domain.com">
+                                <small class="email-format-hint">Enter a valid email address</small>
+                                <div class="validation-feedback valid-feedback">✓ Valid email format</div>
+                                <div class="validation-feedback invalid-feedback">Please enter a valid email address</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Phone</label>
                                 <input type="text" class="form-control" name="phone"
-                                    value="{{ old('phone', $user->phone) }}">
+                                    value="{{ old('phone', $user->phone) }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Gender</label>
-                                <select class="form-select" name="gender">
+                                <select class="form-select" name="gender" required>
                                     <option value="">-- Select --</option>
                                     <option value="male" {{ old('gender', $user->gender) == 'male' ? 'selected' : '' }}>
                                         Male</option>
@@ -781,7 +782,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Date of Birth</label>
                                 <input type="date" class="form-control" name="dob"
-                                    value="{{ old('dob', $user->dob) }}">
+                                    value="{{ old('dob', $user->dob) }}" required>
                             </div>
                         </div>
 
@@ -792,34 +793,34 @@
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">House No.</label>
                                 <input type="text" class="form-control" name="house_no"
-                                    value="{{ old('house_no', $user->house_no) }}">
+                                    value="{{ old('house_no', $user->house_no) }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Street</label>
                                 <input type="text" class="form-control" name="street_name"
-                                    value="{{ old('street_name', $user->street_name) }}">
+                                    value="{{ old('street_name', $user->street_name) }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Barangay</label>
                                 <input type="text" class="form-control" name="barangay"
-                                    value="{{ old('barangay', $user->barangay) }}">
+                                    value="{{ old('barangay', $user->barangay) }}" required>
                             </div>
                         </div>
                         <div class="row mt-2">
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">City/Municipality</label>
                                 <input type="text" class="form-control" name="municipality_city"
-                                    value="{{ old('municipality_city', $user->municipality_city) }}">
+                                    value="{{ old('municipality_city', $user->municipality_city) }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Province</label>
                                 <input type="text" class="form-control" name="province"
-                                    value="{{ old('province', $user->province) }}">
+                                    value="{{ old('province', $user->province) }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Zip Code</label>
                                 <input type="text" class="form-control" name="zip_code"
-                                    value="{{ old('zip_code', $user->zip_code) }}">
+                                    value="{{ old('zip_code', $user->zip_code) }}" required>
                             </div>
                         </div>
 
@@ -909,12 +910,15 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Email</label>
                                 <input type="email" class="form-control" name="email"
-                                    value="{{ old('email', $user->email) }}" required>
+                                    value="{{ old('email', $user->email) }}" required placeholder="example@domain.com">
+                                <small class="email-format-hint">Enter a valid email address</small>
+                                <div class="validation-feedback valid-feedback">✓ Valid email format</div>
+                                <div class="validation-feedback invalid-feedback">Please enter a valid email address</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Phone</label>
                                 <input type="text" class="form-control" name="phone"
-                                    value="{{ old('phone', $user->phone) }}">
+                                    value="{{ old('phone', $user->phone) }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Parent Type</label>
@@ -935,7 +939,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Date of Birth</label>
                                 <input type="date" class="form-control" name="dob"
-                                    value="{{ old('dob', $user->dob) }}">
+                                    value="{{ old('dob', $user->dob) }}" required>
                             </div>
 
                             <!-- Link Students -->
@@ -960,34 +964,34 @@
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">House No.</label>
                                     <input type="text" class="form-control" name="house_no"
-                                        value="{{ old('house_no', $user->house_no) }}">
+                                        value="{{ old('house_no', $user->house_no) }}" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Street</label>
                                     <input type="text" class="form-control" name="street_name"
-                                        value="{{ old('street_name', $user->street_name) }}">
+                                        value="{{ old('street_name', $user->street_name) }}" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Barangay</label>
                                     <input type="text" class="form-control" name="barangay"
-                                        value="{{ old('barangay', $user->barangay) }}">
+                                        value="{{ old('barangay', $user->barangay) }}" required>
                                 </div>
                             </div>
                             <div class="row mt-2">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">City/Municipality</label>
                                     <input type="text" class="form-control" name="municipality_city"
-                                        value="{{ old('municipality_city', $user->municipality_city) }}">
+                                        value="{{ old('municipality_city', $user->municipality_city) }}" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Province</label>
                                     <input type="text" class="form-control" name="province"
-                                        value="{{ old('province', $user->province) }}">
+                                        value="{{ old('province', $user->province) }}" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Zip Code</label>
                                     <input type="text" class="form-control" name="zip_code"
-                                        value="{{ old('zip_code', $user->zip_code) }}">
+                                        value="{{ old('zip_code', $user->zip_code) }}" required>
                                 </div>
                             </div>
                         </div>
@@ -1124,45 +1128,111 @@
         });
     </script>
 
-    <!-- TomSelect for Classes and Advisory with validation -->
+    <!-- Enhanced TomSelect for Classes and Advisory with filtering logic -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Advisory must be one of assigned classes
             const assignedSelect = document.getElementById('assigned_classes');
             const advisorySelect = document.getElementById('advisory_class');
-            const oldAdvisory = "{{ $advisoryClass ?? '' }}";
+
+            // Get classes with existing advisers from server
+            const classesWithAdvisers = @json(
+                $classes->filter(function ($class) {
+                        return $class->teachers->where('pivot.role', 'adviser')->isNotEmpty();
+                    })->pluck('id'));
+
+            // Current advisory class (for preserving selection)
+            const currentAdvisory = "{{ old('advisory_class', $advisoryClass ?? '') }}";
 
             function updateAdvisoryOptions() {
-                const selected = Array.from(assignedSelect.selectedOptions).map(o => o.value);
-                const currentAdvisory = "{{ old('advisory_class', $advisoryClass ?? '') }}";
+                const selectedAssigned = Array.from(assignedSelect.selectedOptions).map(opt => parseInt(opt.value));
                 advisorySelect.innerHTML = '<option value="">-- None --</option>';
 
-                assignedSelect.querySelectorAll('option').forEach(opt => {
-                    if (selected.includes(opt.value)) {
-                        const option = document.createElement('option');
-                        option.value = opt.value;
-                        option.textContent = opt.text;
-                        if (opt.value === currentAdvisory) option.selected = true;
-                        advisorySelect.appendChild(option);
+                // Get all assigned class options
+                Array.from(assignedSelect.options).forEach(option => {
+                    const classId = parseInt(option.value);
+
+                    // Only include classes that are:
+                    // 1. Currently selected in assigned classes
+                    // 2. Don't have an existing adviser OR are the current advisory class
+                    if (selectedAssigned.includes(classId)) {
+                        const isCurrentAdvisory = currentAdvisory && classId === parseInt(currentAdvisory);
+                        const hasAdviser = classesWithAdvisers.includes(classId);
+
+                        // Allow selection if:
+                        // - It's the current advisory (to keep it intact), OR
+                        // - It doesn't have an existing adviser
+                        if (isCurrentAdvisory || !hasAdviser) {
+                            const newOption = document.createElement('option');
+                            newOption.value = option.value;
+                            newOption.textContent = option.textContent.split(' (Adviser:')[
+                                0]; // Remove adviser info
+
+                            // Preserve current selection
+                            if (isCurrentAdvisory) {
+                                newOption.selected = true;
+                            }
+
+                            advisorySelect.appendChild(newOption);
+                        }
                     }
                 });
+
+                // If current advisory is not in options but exists, add it back
+                if (currentAdvisory && !Array.from(advisorySelect.options).some(opt => opt.value ===
+                        currentAdvisory)) {
+                    const currentClass = @json($classes->firstWhere('id', $advisoryClass));
+                    if (currentClass) {
+                        const option = document.createElement('option');
+                        option.value = currentAdvisory;
+                        option.textContent =
+                            `${strtoupper(currentClass.formattedGradeLevel ?? currentClass.grade_level)} - ${currentClass.section} (Current Advisory)`;
+                        option.selected = true;
+                        advisorySelect.appendChild(option);
+                    }
+                }
             }
 
             if (assignedSelect && advisorySelect) {
-                updateAdvisoryOptions();
-                assignedSelect.addEventListener('change', updateAdvisoryOptions);
-
+                // Initialize TomSelect for assigned classes
                 new TomSelect('#assigned_classes', {
                     plugins: ['remove_button'],
                     maxItems: null,
                     placeholder: "Select classes...",
+                    onInitialize: function() {
+                        // Set up advisory options after TomSelect initializes
+                        updateAdvisoryOptions();
+                    },
+                    onChange: function(values) {
+                        updateAdvisoryOptions();
+                    }
                 });
+
+                // Initial setup
+                updateAdvisoryOptions();
             }
 
-            // Confirmation dialog before update
+            // Form validation to ensure advisory class is from assigned classes
             const form = document.getElementById("editTeacherForm");
             if (form) {
                 form.addEventListener("submit", function(e) {
+                    const advisoryValue = advisorySelect.value;
+                    const assignedValues = Array.from(assignedSelect.selectedOptions).map(opt => opt.value);
+
+                    if (advisoryValue && !assignedValues.includes(advisoryValue)) {
+                        e.preventDefault();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Advisory Class',
+                            text: 'Advisory class must be one of the assigned classes.',
+                            confirmButtonColor: '#dc3545',
+                            customClass: {
+                                container: 'my-swal-container'
+                            }
+                        });
+                        return;
+                    }
+
+                    // Confirmation dialog
                     e.preventDefault();
                     Swal.fire({
                         title: "Confirm Update",
@@ -1182,6 +1252,11 @@
                 });
             }
         });
+
+        // Helper function to uppercase text (mimicking PHP strtoupper)
+        function strtoupper(text) {
+            return text ? text.toUpperCase() : '';
+        }
     </script>
 
     <!-- TomSelect for Linking Students -->
@@ -1247,6 +1322,290 @@
         @endif
     </script>
 
+    <!-- Phone Number Validation for Edit Modals -->
+    <script>
+        function validatePhoneNumber(phone) {
+            if (!phone) return true; // Allow empty
+            const regex = /^(09|\+639)\d{9}$/;
+            return regex.test(phone);
+        }
+
+        function showPhoneError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Phone Number',
+                text: message,
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        }
+
+        // Add validation to all edit modals
+        document.addEventListener('DOMContentLoaded', function() {
+            // Edit Admin Modal
+            const editAdminForm = document.querySelector('#editAdminModal form');
+            if (editAdminForm) {
+                editAdminForm.addEventListener('submit', function(e) {
+                    const phoneInput = editAdminForm.querySelector('input[name="phone"]');
+                    if (phoneInput && !validatePhoneNumber(phoneInput.value.trim())) {
+                        e.preventDefault();
+                        showPhoneError(
+                            'Please enter a valid Philippine phone number (09XXXXXXXXX or +639XXXXXXXXX).'
+                        );
+                        phoneInput.focus();
+                        return;
+                    }
+                });
+            }
+
+            // Edit Teacher Modal
+            const editTeacherForm = document.querySelector('#editTeacherModal form');
+            if (editTeacherForm) {
+                editTeacherForm.addEventListener('submit', function(e) {
+                    const phoneInput = editTeacherForm.querySelector('input[name="phone"]');
+                    if (phoneInput && !validatePhoneNumber(phoneInput.value.trim())) {
+                        e.preventDefault();
+                        showPhoneError(
+                            'Please enter a valid Philippine phone number (09XXXXXXXXX or +639XXXXXXXXX).'
+                        );
+                        phoneInput.focus();
+                        return;
+                    }
+                });
+            }
+
+            // Edit Parent Modal
+            const editParentForm = document.querySelector('#editParentModal form');
+            if (editParentForm) {
+                editParentForm.addEventListener('submit', function(e) {
+                    const phoneInput = editParentForm.querySelector('input[name="phone"]');
+                    if (phoneInput && !validatePhoneNumber(phoneInput.value.trim())) {
+                        e.preventDefault();
+                        showPhoneError(
+                            'Please enter a valid Philippine phone number (09XXXXXXXXX or +639XXXXXXXXX).'
+                        );
+                        phoneInput.focus();
+                        return;
+                    }
+                });
+            }
+
+            // Real-time validation with input formatting for edit forms
+            document.querySelectorAll(
+                '#editAdminModal input[name="phone"], #editTeacherModal input[name="phone"], #editParentModal input[name="phone"]'
+            ).forEach(input => {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+
+                    // Format as user types
+                    if (value.startsWith('63')) {
+                        value = '+' + value;
+                    } else if (value.startsWith('9')) {
+                        value = '0' + value;
+                    }
+
+                    e.target.value = value;
+
+                    // Real-time validation feedback
+                    if (value && !validatePhoneNumber(value)) {
+                        e.target.classList.add('is-invalid');
+                        e.target.classList.remove('is-valid');
+                    } else if (value) {
+                        e.target.classList.remove('is-invalid');
+                        e.target.classList.add('is-valid');
+                    } else {
+                        e.target.classList.remove('is-invalid', 'is-valid');
+                    }
+                });
+
+                // Clear validation on focus
+                input.addEventListener('focus', function(e) {
+                    e.target.classList.remove('is-invalid', 'is-valid');
+                });
+            });
+        });
+    </script>
+
+    <!-- Email Validation for Edit Modals -->
+    <script>
+        function validateEmail(email) {
+            if (!email) return false;
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
+        }
+
+        function showEmailError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Email',
+                text: message,
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        }
+
+        // Add email validation to all edit modals
+        document.addEventListener('DOMContentLoaded', function() {
+            // Edit Admin Modal
+            const editAdminForm = document.querySelector('#editAdminModal form');
+            if (editAdminForm) {
+                editAdminForm.addEventListener('submit', function(e) {
+                    const emailInput = editAdminForm.querySelector('input[name="email"]');
+                    if (emailInput && !validateEmail(emailInput.value.trim())) {
+                        e.preventDefault();
+                        showEmailError('Please enter a valid email address.');
+                        emailInput.focus();
+                        return;
+                    }
+                });
+            }
+
+            // Edit Teacher Modal
+            const editTeacherForm = document.querySelector('#editTeacherModal form');
+            if (editTeacherForm) {
+                editTeacherForm.addEventListener('submit', function(e) {
+                    const emailInput = editTeacherForm.querySelector('input[name="email"]');
+                    if (emailInput && !validateEmail(emailInput.value.trim())) {
+                        e.preventDefault();
+                        showEmailError('Please enter a valid email address.');
+                        emailInput.focus();
+                        return;
+                    }
+                });
+            }
+
+            // Edit Parent Modal
+            const editParentForm = document.querySelector('#editParentModal form');
+            if (editParentForm) {
+                editParentForm.addEventListener('submit', function(e) {
+                    const emailInput = editParentForm.querySelector('input[name="email"]');
+                    if (emailInput && !validateEmail(emailInput.value.trim())) {
+                        e.preventDefault();
+                        showEmailError('Please enter a valid email address.');
+                        emailInput.focus();
+                        return;
+                    }
+                });
+            }
+
+            // Real-time email validation with feedback for edit forms
+            document.querySelectorAll(
+                '#editAdminModal input[name="email"], #editTeacherModal input[name="email"], #editParentModal input[name="email"]'
+            ).forEach(input => {
+                input.addEventListener('input', function(e) {
+                    const value = e.target.value.trim();
+
+                    // Real-time validation feedback
+                    if (value && !validateEmail(value)) {
+                        e.target.classList.add('is-invalid');
+                        e.target.classList.remove('is-valid');
+                    } else if (value) {
+                        e.target.classList.remove('is-invalid');
+                        e.target.classList.add('is-valid');
+                    } else {
+                        e.target.classList.remove('is-invalid', 'is-valid');
+                    }
+                });
+
+                input.addEventListener('blur', function(e) {
+                    const value = e.target.value.trim();
+                    if (value && !validateEmail(value)) {
+                        showEmailError(
+                            'Please enter a valid email address (e.g., example@domain.com).');
+                    }
+                });
+
+                // Clear validation on focus
+                input.addEventListener('focus', function(e) {
+                    e.target.classList.remove('is-invalid', 'is-valid');
+                });
+            });
+        });
+    </script>
+
+    <!-- Auto-reopen edit modal on email error -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if there's an email error and we're on edit page
+            @if ($errors->has('email') && $user)
+                const role = '{{ $user->role }}';
+                const modalId = `edit${role.charAt(0).toUpperCase() + role.slice(1)}Modal`;
+
+                // Open the appropriate edit modal
+                const modal = new bootstrap.Modal(document.getElementById(modalId));
+                modal.show();
+
+                // Focus on email field
+                setTimeout(() => {
+                    const emailInput = document.querySelector(`#${modalId} input[name="email"]`);
+                    if (emailInput) {
+                        emailInput.focus();
+                        emailInput.select();
+                    }
+                }, 500);
+            @endif
+        });
+    </script>
+
+    <!-- SweetAlert for success and error messages -->
+    <script>
+        // Success alert
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                confirmButtonColor: '#3085d6',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
+
+        // Email error alert
+        @if ($errors->has('email'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Email Error',
+                text: '{{ $errors->first('email') }}',
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
+
+        // Phone error alert
+        @if ($errors->has('phone'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Phone Error',
+                text: '{{ $errors->first('phone') }}',
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
+
+        // Advisory class error alert
+        @if ($errors->has('advisory_class'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Advisory Class Error',
+                text: '{{ $errors->first('advisory_class') }}',
+                confirmButtonColor: '#dc3545',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            });
+        @endif
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 @endpush
 
@@ -1282,6 +1641,39 @@
         .ts-dropdown .option.active {
             background-color: #e3f2fd;
             color: #1976d2;
+        }
+
+        .is-valid {
+            border-color: #198754 !important;
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
+        }
+
+        .is-invalid {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .phone-format-hint,
+        .email-format-hint {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .validation-feedback {
+            display: none;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .is-valid+.validation-feedback.valid-feedback {
+            display: block;
+            color: #198754;
+        }
+
+        .is-invalid+.validation-feedback.invalid-feedback {
+            display: block;
+            color: #dc3545;
         }
     </style>
 @endpush

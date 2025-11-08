@@ -73,7 +73,7 @@ class StudentSeeder extends Seeder
 
         // ✅ Students per grade (same as before)
         $students = [
-            'kindergarten' => [
+            'grade6' => [
                 ['Aiden', 'Carter', 'male'],
                 ['Sophia', 'Nguyen', 'female'],
                 ['Liam', 'Johnson', 'male'],

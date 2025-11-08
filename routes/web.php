@@ -65,6 +65,7 @@ Route::prefix('admin')
         // User Management
         Route::get('/userManagement', [AdminController::class, 'userManagement'])->name('admin.user.management');
         Route::post('/userManagement/create', [AdminController::class, 'createUser'])->name('admin.user.create');
+        Route::get('/userManagement/check-email', [AdminController::class, 'checkEmail'])->name('admin.check.email');
         Route::put('/userManagement/{id}/update', [AdminController::class, 'updateUser'])->name('admin.user.update');
         Route::delete('/userManagement/{id}/delete', [AdminController::class, 'deleteUser'])->name('admin.user.delete');
         Route::get('/userInfo/{id}', [AdminController::class, 'userInfo'])->name('admin.user.info');
@@ -117,6 +118,8 @@ Route::prefix('admin')
         // ID Management
         Route::get('/students/{id}/generate-id', [IdController::class, 'generateID'])->name('students.generateID');
         Route::get('/students/{id}/preview-id', [IdController::class, 'previewID'])->name('students.previewID');
+        // Add this route to your admin routes group
+        Route::post('/students/bulk-print-ids', [IdController::class, 'bulkPrintIDs'])->name('students.bulkPrintIDs');
 
         // Class Management
         Route::get('/classes', [ClassController::class, 'allClasses'])->name('all.classes');

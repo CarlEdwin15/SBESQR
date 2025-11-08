@@ -182,34 +182,47 @@
                     <h3 class="card-title mb-3 fw-bold">Student Management</h3>
 
                     <!-- Search & Filters -->
-                    <div class="row g-2 mb-3 justify-content-between align-items-center">
+                    <div class="row g-2 mb-3 align-items-center">
                         <div class="col-md-4 col-sm-6">
                             <input type="text" class="form-control" placeholder="Search students..."
                                 id="studentSearch">
                         </div>
 
-                        <div class="col-md-5 col-sm-6 d-flex gap-2 justify-content-end">
-                            <!-- Bulk Delete Button (moved here, left of status filter) -->
-                            <button type="button" class="btn btn-danger d-flex align-items-center" id="bulkDeleteBtn"
-                                style="display: none; opacity: 0;">
+                        <div class="col-md-8 col-sm-6 d-flex gap-2 justify-content-end align-items-center">
+                            <!-- Bulk Print IDs Button -->
+                            <button type="button" class="btn btn-success d-flex align-items-center mb-0"
+                                id="bulkPrintBtn" style="display: none; opacity: 0;">
+                                <i class="bx bx-id-card me-1"></i>
+                                <span class="d-none d-sm-block">Print Selected IDs</span>
+                            </button>
+
+                            <!-- Bulk Delete Button -->
+                            <button type="button" class="btn btn-danger d-flex align-items-center mb-0"
+                                id="bulkDeleteBtn" style="display: none; opacity: 0;">
                                 <i class="bx bx-user-x me-1"></i>
                                 <span class="d-none d-sm-block">Delete Selected</span>
                             </button>
 
-                            <!-- Status Filter -->
-                            <select id="statusFilter" class="form-select" style="max-width: 180px;">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="graduated">Graduated</option>
-                            </select>
+                            <!-- Add Student Button -->
+                            <button type="button" class="btn btn-primary d-flex align-items-center mb-0"
+                                data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                <i class="bx bx-user-plus me-1"></i>
+                                <span class="align-items-center d-none d-sm-block">Add Student</span>
+                            </button>
+
+                            <!-- Import Excel Button -->
+                            <button type="button" class="btn btn-info d-flex align-items-center mb-0"
+                                data-bs-toggle="modal" data-bs-target="#importExcelModal">
+                                <i class="bx bx-file me-1"></i>
+                                <span class="align-items-center d-none d-sm-block">Import Students</span>
+                            </button>
                         </div>
                     </div>
 
                     <hr class="my-4" />
 
                     <!-- Table length -->
-                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-4">
                         <div>
                             <select id="tableLength" class="form-select">
                                 <option value="10" selected>10</option>
@@ -219,29 +232,44 @@
                             </select>
                         </div>
 
-                        <!-- Add Student & Import Excel Buttons -->
-                        <div class="d-flex gap-2 mb-3">
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Class Filter (initially hidden) -->
+                            <select id="classFilter" class="form-select" style="max-width: 180px; display: none;">
+                                <option value="">All Classes</option>
+                                @php
+                                    // Get unique classes from active students
+                                    $activeClasses = [];
+                                    foreach ($students as $student) {
+                                        if ($student->status === 'active' || $student->status === 'enrolled') {
+                                            $currentClass = $student->classStudents
+                                                ->where('school_year_id', $schoolYearId)
+                                                ->where('enrollment_status', 'enrolled')
+                                                ->first();
 
-                            <!-- Add Student Button -->
-                            <button type="button" class="btn btn-primary d-flex align-items-center"
-                                data-bs-toggle="modal" data-bs-target="#addStudentModal">
-                                <i class="bx bx-user-plus me-1"></i> <span
-                                    class="align-items-center d-none d-sm-block">Add Student</span>
-                            </button>
+                                            if ($currentClass && $currentClass->class) {
+                                                $gradeLevel = $currentClass->class->formatted_grade_level ?? '';
+                                                $section = $currentClass->class->section ?? '';
+                                                $classDisplay = $gradeLevel . ($section ? ' - ' . $section : '');
+                                                if ($classDisplay && !in_array($classDisplay, $activeClasses)) {
+                                                    $activeClasses[] = $classDisplay;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    sort($activeClasses);
+                                @endphp
+                                @foreach ($activeClasses as $class)
+                                    <option value="{{ $class }}">{{ $class }}</option>
+                                @endforeach
+                            </select>
 
-                            <!-- Import Excel Button -->
-                            <button type="button" class="btn btn-success d-flex align-items-center"
-                                data-bs-toggle="modal" data-bs-target="#importExcelModal">
-                                <i class="bx bx-file me-1"></i> <span
-                                    class="align-items-center d-none d-sm-block">Import</span>
-                            </button>
-
-                            <!-- Download Excel Template Button -->
-                            <a href="{{ route('students.downloadTemplate') }}"
-                                class="btn btn-label-secondary me-4 d-flex align-items-center">
-                                <i class="bx bx-export me-1"></i> <span
-                                    class="align-items-center d-none d-sm-block">Download Template</span>
-                            </a>
+                            <!-- Status Filter -->
+                            <select id="statusFilter" class="form-select" style="max-width: 120px;">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="graduated">Graduated</option>
+                            </select>
                         </div>
                     </div>
 
@@ -253,19 +281,28 @@
                                     <th style="width: 1%;">
                                         <input type="checkbox" id="selectAllStudents" style="cursor: pointer;">
                                     </th>
-                                    <th class="text-start" style="width: 20%;">Full Name</th>
-                                    <th style="width: 5%;">LRN</th>
-                                    <th style="width: 5%;">Status</th>
-                                    <th style="width: 5%;">Age</th>
-                                    <th style="width: 20%; display: none;" id="graduatedYearHeader">School Year Graduated
-                                    </th>
-                                    <th style="width: 20%;">Address</th>
+                                    <th class="text-start" style="width: 25%;">Full Name</th>
+                                    <th style="width: 10%;">LRN</th>
+                                    <th style="width: 10%;">Status</th>
+                                    <th style="width: 20%;">Class</th>
+                                    <!-- Removed School Year Graduated column -->
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($students as $student)
                                     <tr class="student-row text-center" data-name="{{ strtolower($student->full_name) }}"
-                                        data-status="{{ strtolower($student->status) }}" data-id="{{ $student->id }}">
+                                        data-status="{{ strtolower($student->status) }}" data-id="{{ $student->id }}"
+                                        data-class="{{ $student->status === 'active' || $student->status === 'enrolled'
+                                            ? ($student->classStudents->where('school_year_id', $schoolYearId)->where('enrollment_status', 'enrolled')->first() &&
+                                            $student->classStudents->where('school_year_id', $schoolYearId)->where('enrollment_status', 'enrolled')->first()->class
+                                                ? ($student->classStudents->where('school_year_id', $schoolYearId)->where('enrollment_status', 'enrolled')->first()->class->formatted_grade_level ??
+                                                        '') .
+                                                    ($student->classStudents->where('school_year_id', $schoolYearId)->where('enrollment_status', 'enrolled')->first()->class->section
+                                                        ? ' - ' .
+                                                            $student->classStudents->where('school_year_id', $schoolYearId)->where('enrollment_status', 'enrolled')->first()->class->section
+                                                        : '')
+                                                : 'Not assigned')
+                                            : '' }}">
                                         <td>
                                             <input type="checkbox" class="student-checkbox" value="{{ $student->id }}"
                                                 style="cursor: pointer;">
@@ -316,31 +353,39 @@
                                             </span>
                                         </td>
                                         <td>
-                                            @if ($student->student_dob)
-                                                {{ \Carbon\Carbon::parse($student->student_dob)->age }} years old
-                                            @else
-                                                -
-                                            @endif
+                                            @php
+                                                $classDisplay = '';
+
+                                                if ($student->status === 'active' || $student->status === 'enrolled') {
+                                                    // Get current class for active students
+                                                    $currentClass = $student->classStudents
+                                                        ->where('school_year_id', $schoolYearId)
+                                                        ->where('enrollment_status', 'enrolled')
+                                                        ->first();
+
+                                                    if ($currentClass && $currentClass->class) {
+                                                        $gradeLevel = $currentClass->class->formatted_grade_level ?? '';
+                                                        $section = $currentClass->class->section ?? '';
+                                                        $classDisplay =
+                                                            $gradeLevel . ($section ? ' - ' . $section : '');
+                                                    } else {
+                                                        $classDisplay = 'Not assigned';
+                                                    }
+                                                } elseif (
+                                                    $student->status === 'inactive' ||
+                                                    $student->status === 'not_enrolled' ||
+                                                    $student->status === 'archived'
+                                                ) {
+                                                    $classDisplay = 'Not enrolled';
+                                                } elseif ($student->status === 'graduated') {
+                                                    $classDisplay = $student->graduated_school_year ?? 'Graduated';
+                                                } else {
+                                                    $classDisplay = 'Not enrolled';
+                                                }
+                                            @endphp
+                                            <span class="text-muted">{{ $classDisplay }}</span>
                                         </td>
-                                        <td class="graduated-year-cell" style="display: none;">
-                                            @if ($student->status === 'graduated')
-                                                {{ $student->graduated_school_year ?? '-' }}
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td class="text-start">
-                                            @if ($student->address)
-                                                {{ $student->address->house_no ? $student->address->house_no . ', ' : '' }}
-                                                {{ $student->address->street_name ? $student->address->street_name . ', ' : '' }}
-                                                {{ $student->address->barangay ? $student->address->barangay . ', ' : '' }}
-                                                {{ $student->address->municipality_city ? $student->address->municipality_city . ', ' : '' }}
-                                                {{ $student->address->province ? $student->address->province . ', ' : '' }}
-                                                {{ $student->address->zip_code ?? '' }}
-                                            @else
-                                                <span class="text-muted">N/A</span>
-                                            @endif
-                                        </td>
+                                        <!-- Removed graduated-year-cell -->
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -468,7 +513,7 @@
                             <div class="col mb-3">
                                 <label for="student_pob" class="form-label fw-bold">Place of Birth</label>
                                 <input type="text" name="student_pob" id="student_pob" class="form-control"
-                                    placeholder="Municipality/City" required value="{{ old('student_pob') }}" />
+                                    placeholder="Municipality/City" required value="{{ old('student_pob') }}" required />
                             </div>
 
                             <!-- Date of Birth -->
@@ -486,12 +531,12 @@
                             <div class="col mb-3">
                                 <label for="house_no" class="form-label fw-bold">House No.</label>
                                 <input type="text" name="house_no" id="house_no" class="form-control"
-                                    placeholder="Enter House No." value="{{ old('house_no') }}" required/>
+                                    placeholder="Enter House No." value="{{ old('house_no') }}" required />
                             </div>
                             <div class="col mb-3">
                                 <label for="street_name" class="form-label fw-bold">Street Name</label>
                                 <input type="text" name="street_name" id="street_name" class="form-control"
-                                    placeholder="Enter Street Name" value="{{ old('street_name') }}" required/>
+                                    placeholder="Enter Street Name" value="{{ old('street_name') }}" required />
                             </div>
                         </div>
 
@@ -499,7 +544,7 @@
                             <div class="col mb-3">
                                 <label for="barangay" class="form-label fw-bold">Barangay</label>
                                 <input type="text" name="barangay" id="barangay" class="form-control"
-                                    placeholder="Enter Barangay" value="{{ old('barangay') }}" required/>
+                                    placeholder="Enter Barangay" value="{{ old('barangay') }}" required />
                             </div>
                             <div class="col mb-3">
                                 <label for="municipality_city" class="form-label fw-bold">Municipality/City</label>
@@ -513,12 +558,12 @@
                             <div class="col mb-3">
                                 <label for="province" class="form-label fw-bold">Province</label>
                                 <input type="text" name="province" id="province" class="form-control"
-                                    placeholder="Enter Province" value="{{ old('province') }}" required/>
+                                    placeholder="Enter Province" value="{{ old('province') }}" required />
                             </div>
                             <div class="col mb-3">
                                 <label for="zip_code" class="form-label fw-bold">Zip Code</label>
                                 <input type="text" name="zip_code" id="zip_code" class="form-control"
-                                    placeholder="Enter Zip Code" value="{{ old('zip_code') }}" required/>
+                                    placeholder="Enter Zip Code" value="{{ old('zip_code') }}" required />
                             </div>
                         </div>
                     </div>
@@ -574,21 +619,21 @@
                                 <p class="mb-2">Ensure your Excel file includes these column headers exactly as shown:
                                 </p>
                                 <ul class="list-unstyled ms-3 mb-0">
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>lrn</b> – Required, 12 digits
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>lrn</b> – Required, 12 digits
                                         starting with <code>112828</code></li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>first_name</b> – Required</li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>middle_name</b> – Optional</li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>last_name</b> – Required</li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>extension_name</b> – Optional
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>first_name</b> – Required</li>
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>middle_name</b> – Optional</li>
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>last_name</b> – Required</li>
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>extension_name</b> – Optional
                                     </li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>dob</b> – Optional (Format:
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>dob</b> – Optional (Format:
                                         <code>YYYY-MM-DD</code>)
                                     </li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>sex</b> – Required
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>sex</b> – Required
                                         (<code>male</code> or <code>female</code>)</li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>place_of_birth</b> – Optional
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>place_of_birth</b> – Optional
                                     </li>
-                                    <li><i class="bx bx-chevron-right text-success"></i> <b>house_no</b>,
+                                    <li><i class="bx bx-chevron-right text-info"></i> <b>house_no</b>,
                                         <b>street_name</b>, <b>barangay</b>, <b>municipality_city</b>, <b>province</b>,
                                         <b>zip_code</b> – Optional
                                     </li>
@@ -597,8 +642,9 @@
 
                             <div class="mt-3 text-muted small">
                                 💡 Tip: You can
-                                <a href="{{ route('students.downloadTemplate') }}" class="fw-bold text-success">
-                                    download the sample Excel template
+                                <a href="{{ route('students.downloadTemplate') }}"
+                                    class="btn btn-sm btn-outline-info fw-bold ms-1">
+                                    <i class="bx bx-download me-1"></i> Download Sample Excel Template
                                 </a>
                                 and fill it out for easy importing.
                             </div>
@@ -610,7 +656,7 @@
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                             <i class="bx bx-x me-1"></i> Cancel
                         </button>
-                        <button type="submit" class="btn btn-success fw-bold">
+                        <button type="submit" class="btn btn-info fw-bold">
                             <i class="bx bx-upload me-1"></i> Import Students
                         </button>
                     </div>
@@ -808,17 +854,34 @@
         document.addEventListener("DOMContentLoaded", function() {
             const searchInput = document.getElementById("studentSearch");
             const statusFilter = document.getElementById("statusFilter");
+            const classFilter = document.getElementById("classFilter");
             const table = document.getElementById("studentTable");
             const pagination = document.getElementById("studentPagination");
             const tableLengthSelect = document.getElementById("tableLength");
             const tableInfo = document.getElementById("tableInfo");
             const selectAllCheckbox = document.getElementById("selectAllStudents");
             const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+            const bulkPrintBtn = document.getElementById("bulkPrintBtn");
 
             let currentPage = 1;
             let rowsPerPage = parseInt(tableLengthSelect.value);
             let rows = []; // will hold current DOM rows
             let filteredRows = []; // rows after applying search/status
+
+            // Add CSS for highlighted rows (simplified)
+            const style = document.createElement('style');
+            style.textContent = `
+            .student-row.selected {
+                background-color: #e8f4fd !important;
+            }
+            .student-row {
+                transition: background-color 0.2s ease;
+            }
+            .student-checkbox:checked {
+                accent-color: #0d6efd;
+            }
+        `;
+            document.head.appendChild(style);
 
             // Refresh rows collection from DOM (call after DOM changes like deletion)
             function refreshRowCollections() {
@@ -830,16 +893,37 @@
                 return row.querySelector(".student-checkbox");
             }
 
+            // Highlight/unhighlight row based on checkbox state
+            function toggleRowHighlight(row, isChecked) {
+                if (isChecked) {
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+            }
+
+            // Toggle class filter visibility based on status filter
+            function toggleClassFilter() {
+                if (statusFilter.value === "active") {
+                    classFilter.style.display = "block";
+                } else {
+                    classFilter.style.display = "none";
+                    classFilter.value = ""; // Reset class filter when hidden
+                }
+            }
+
             // ---- Filtering ----
             function filterRows() {
                 const search = searchInput.value.trim().toLowerCase();
                 const status = statusFilter.value;
+                const selectedClass = classFilter.value;
 
                 // Rebuild filteredRows from the current DOM rows
                 filteredRows = rows.filter(row => {
                     const name = (row.dataset.name || "").toLowerCase();
                     const lrn = (row.querySelector("td:nth-child(3)")?.textContent || "").toLowerCase();
                     const rawStatus = (row.dataset.status || "").toLowerCase();
+                    const studentClass = (row.dataset.class || "").toLowerCase();
 
                     let displayStatus;
                     if (rawStatus === "enrolled") displayStatus = "active";
@@ -849,8 +933,9 @@
 
                     const matchesSearch = (name.includes(search) || lrn.includes(search));
                     const matchesStatus = !status || displayStatus === status;
+                    const matchesClass = !selectedClass || studentClass === selectedClass.toLowerCase();
 
-                    return matchesSearch && matchesStatus;
+                    return matchesSearch && matchesStatus && matchesClass;
                 });
 
                 // Reset page to 1 when filters change
@@ -882,12 +967,9 @@
                 // Rebuild pagination
                 renderPagination(totalPages);
 
-                // Graduated column toggle
-                toggleGraduatedColumn();
-
                 // Reset select all for visible page and update delete button
                 selectAllCheckbox.checked = false;
-                updateBulkDeleteState();
+                updateBulkButtonsState();
             }
 
             function renderPagination(totalPages) {
@@ -933,24 +1015,13 @@
                 return li;
             }
 
-            function toggleGraduatedColumn() {
-                const graduatedHeader = document.getElementById("graduatedYearHeader");
-                const graduatedCells = document.querySelectorAll(".graduated-year-cell");
-
-                if (statusFilter.value === "graduated") {
-                    graduatedHeader.style.display = "";
-                    graduatedCells.forEach(cell => cell.style.display = "");
-                } else {
-                    graduatedHeader.style.display = "none";
-                    graduatedCells.forEach(cell => cell.style.display = "none");
-                }
-            }
-
-            // ---- Checkboxes & Bulk Delete UI ----
+            // ---- Checkboxes & Bulk Buttons UI ----
 
             // Start hidden
             bulkDeleteBtn.style.display = "none";
             bulkDeleteBtn.style.opacity = "0";
+            bulkPrintBtn.style.display = "none";
+            bulkPrintBtn.style.opacity = "0";
 
             // Compute visible checkbox elements on the current page
             function getVisibleCheckboxesOnPage() {
@@ -960,19 +1031,25 @@
                 return pageRows.map(r => getRowCheckbox(r)).filter(Boolean);
             }
 
-            function updateBulkDeleteState() {
+            function updateBulkButtonsState() {
                 const visibleCheckboxes = getVisibleCheckboxesOnPage();
                 const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
 
                 if (checkedCount > 0) {
+                    // Show both buttons
                     bulkDeleteBtn.style.display = "inline-flex";
+                    bulkPrintBtn.style.display = "inline-flex";
                     setTimeout(() => {
                         bulkDeleteBtn.style.opacity = "1";
+                        bulkPrintBtn.style.opacity = "1";
                     }, 10);
                 } else {
+                    // Hide both buttons
                     bulkDeleteBtn.style.opacity = "0";
+                    bulkPrintBtn.style.opacity = "0";
                     setTimeout(() => {
                         bulkDeleteBtn.style.display = "none";
+                        bulkPrintBtn.style.display = "none";
                     }, 300);
                 }
             }
@@ -980,13 +1057,24 @@
             // Select-all only applies to visible page checkboxes
             selectAllCheckbox.addEventListener("change", function() {
                 const visibleCheckboxes = getVisibleCheckboxesOnPage();
-                visibleCheckboxes.forEach(cb => (cb.checked = selectAllCheckbox.checked));
-                updateBulkDeleteState();
+                visibleCheckboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                    const row = cb.closest('.student-row');
+                    if (row) {
+                        toggleRowHighlight(row, selectAllCheckbox.checked);
+                    }
+                });
+                updateBulkButtonsState();
             });
 
             // Use event delegation for checkbox changes inside the table (works for dynamic rows)
             table.addEventListener("change", function(e) {
                 if (e.target && e.target.classList && e.target.classList.contains("student-checkbox")) {
+                    const row = e.target.closest('.student-row');
+                    if (row) {
+                        toggleRowHighlight(row, e.target.checked);
+                    }
+
                     // if any checkbox unchecked, uncheck header selectAll
                     if (!e.target.checked) selectAllCheckbox.checked = false;
                     // if all visible are checked, set selectAll true
@@ -994,8 +1082,105 @@
                     if (visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => cb.checked)) {
                         selectAllCheckbox.checked = true;
                     }
-                    updateBulkDeleteState();
+                    updateBulkButtonsState();
                 }
+            });
+
+            // Add click event to entire row for easier selection
+            table.addEventListener("click", function(e) {
+                const row = e.target.closest('.student-row');
+                if (row && !e.target.matches('a, button, .btn, input[type="checkbox"]')) {
+                    const checkbox = getRowCheckbox(row);
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleRowHighlight(row, checkbox.checked);
+
+                        // Update select all state
+                        const visibleCheckboxes = getVisibleCheckboxesOnPage();
+                        if (visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => cb.checked)) {
+                            selectAllCheckbox.checked = true;
+                        } else {
+                            selectAllCheckbox.checked = false;
+                        }
+                        updateBulkButtonsState();
+
+                        // Trigger change event for consistency
+                        checkbox.dispatchEvent(new Event('change', {
+                            bubbles: true
+                        }));
+                    }
+                }
+            });
+
+            // ---- Bulk Print IDs ----
+            bulkPrintBtn.addEventListener("click", function() {
+                // collect ALL selected ids across the table (not only visible)
+                const selectedIds = Array.from(document.querySelectorAll(".student-checkbox:checked")).map(
+                    cb => cb.value);
+                if (selectedIds.length === 0) return;
+
+                Swal.fire({
+                    title: `Print ${selectedIds.length} Student ID(s)?`,
+                    text: "This will generate a PDF with ID cards for all selected students.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#28a745",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Yes, print them",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        // Show loading
+                        Swal.fire({
+                            title: "Generating IDs...",
+                            text: "Please wait while we prepare the student IDs.",
+                            icon: "info",
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            customClass: {
+                                container: 'my-swal-container'
+                            },
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Generate PDF for selected students
+                        const url = "{{ route('students.bulkPrintIDs') }}";
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = url;
+                        form.target = '_blank';
+
+                        // Add CSRF token
+                        const csrfToken = document.createElement('input');
+                        csrfToken.type = 'hidden';
+                        csrfToken.name = '_token';
+                        csrfToken.value = "{{ csrf_token() }}";
+                        form.appendChild(csrfToken);
+
+                        // Add student IDs
+                        selectedIds.forEach(id => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'student_ids[]';
+                            input.value = id;
+                            form.appendChild(input);
+                        });
+
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+
+                        // Close loading after a short delay
+                        setTimeout(() => {
+                            Swal.close();
+                        }, 2000);
+                    }
+                });
             });
 
             // ---- Bulk delete with refresh ----
@@ -1088,8 +1273,12 @@
             });
 
             statusFilter.addEventListener("change", () => {
+                toggleClassFilter();
                 filterRows();
-                toggleGraduatedColumn();
+            });
+
+            classFilter.addEventListener("change", () => {
+                filterRows();
             });
 
             tableLengthSelect.addEventListener("change", function() {
@@ -1099,6 +1288,7 @@
             });
 
             // ---- Initialize collections and render ----
+            toggleClassFilter(); // Set initial state
             refreshRowCollections();
             filterRows();
         });
@@ -1225,8 +1415,13 @@
             font-size: 1rem;
         }
 
-        #bulkDeleteBtn {
+        #bulkDeleteBtn,
+        #bulkPrintBtn {
             transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #classFilter {
+            transition: all 0.3s ease;
         }
     </style>
 @endpush
