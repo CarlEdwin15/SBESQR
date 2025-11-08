@@ -69,7 +69,7 @@
                     </li>
                     <li class="menu-item">
                         <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Promotion</div>
+                            <div class="text-light">Class Re-Enrollment</div>
                         </a>
                     </li>
                 </ul>
@@ -188,7 +188,7 @@
                             style="object-fit: cover; height: 200px; width: 200px;">
                     @endif
 
-                    <div class="d-flex justify-content-center align-items-center mt-3">
+                    {{-- <div class="d-flex justify-content-center align-items-center mt-3">
                         <!-- Generate ID Form -->
                         <form action="{{ route('students.previewID', $student->id) }}" method="GET" target="_blank">
                             @csrf
@@ -197,9 +197,9 @@
                                 <span class="d-none d-sm-block">Generate ID</span>
                             </button>
                         </form>
-                    </div>
+                    </div> --}}
 
-                    <h5 class="fw-bold">{{ $student->student_fName }} {{ $student->student_lName }}</h5>
+                    <h5 class="fw-bold mt-2">{{ $student->student_fName }} {{ $student->student_lName }}</h5>
 
                     <!-- Student Status Display -->
                     <div class="mt-2 mb-3 text-center">
@@ -207,15 +207,17 @@
 
                         @php
                             $displayStatus = match ($studentStatus) {
-                                'enrolled' => 'Active',
+                                'enrolled' => 'Enrolled',
                                 'graduated' => 'Graduated',
                                 'archived', 'not_enrolled' => 'Inactive',
+                                'dropped' => 'Dropped',
                                 default => ucfirst($studentStatus),
                             };
 
                             $badgeClass = match ($displayStatus) {
-                                'Active' => 'bg-label-success fw-bold',
+                                'Enrolled' => 'bg-label-success fw-bold',
                                 'Inactive' => 'bg-label-secondary fw-bold',
+                                'Dropped' => 'bg-label-danger fw-bold',
                                 'Graduated' => 'bg-label-info fw-bold',
                                 default => 'bg-label-warning fw-bold',
                             };

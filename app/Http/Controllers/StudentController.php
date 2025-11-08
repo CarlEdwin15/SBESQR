@@ -52,15 +52,23 @@ class StudentController extends Controller
             return response()->json([]);
         }
 
-        // Only exclude students who are *actively enrolled* in this year
+        // Get students who are actively enrolled in this year (to exclude them)
         $enrolledIds = ClassStudent::where('school_year_id', $schoolYear->id)
             ->where('enrollment_status', 'enrolled')
             ->pluck('student_id')
             ->toArray();
 
-        // Include students who are 'not_enrolled' or not yet in class_student for this year
+        // Get students who are marked as graduated in ANY school year (to exclude them)
+        $graduatedIds = ClassStudent::where('enrollment_status', 'graduated')
+            ->pluck('student_id')
+            ->toArray();
+
+        // Combine both lists of IDs to exclude
+        $excludedIds = array_unique(array_merge($enrolledIds, $graduatedIds));
+
+        // Include students who are NOT enrolled AND NOT graduated
         $students = Student::query()
-            ->whereNotIn('id', $enrolledIds)
+            ->whereNotIn('id', $excludedIds)
             ->where(function ($q) use ($term) {
                 $q->where('student_lrn', 'like', "%{$term}%")
                     ->orWhere('student_fName', 'like', "%{$term}%")

@@ -16,6 +16,10 @@
                     <span class="text-warning">Management</span>
                 </span>
             </a>
+
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large d-block d-xl-none">
+                <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
         </div>
 
         <ul class="menu-inner py-1 bg-dark">
@@ -119,14 +123,14 @@
 
                         @php
                             $displayStatus = match ($studentStatus) {
-                                'enrolled' => 'Active',
+                                'enrolled' => 'Enrolled',
                                 'graduated' => 'Graduated',
                                 'archived', 'not_enrolled' => 'Inactive',
                                 default => ucfirst($studentStatus),
                             };
 
                             $badgeClass = match ($displayStatus) {
-                                'Active' => 'bg-label-success fw-bold',
+                                'Enrolled' => 'bg-label-success fw-bold',
                                 'Inactive' => 'bg-label-secondary fw-bold',
                                 'Graduated' => 'bg-label-info fw-bold',
                                 default => 'bg-label-warning fw-bold',

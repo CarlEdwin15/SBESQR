@@ -63,7 +63,7 @@
                     </li>
                     <li class="menu-item">
                         <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Promotion</div>
+                            <div class="text-light">Class Re-Enrollment</div>
                         </a>
                     </li>
                 </ul>
@@ -194,7 +194,8 @@
                         <div class="col mt-4 mb-3 d-flex align-items-start align-items-sm-center gap-4">
                             <div class="mb-3">
                                 @if ($teacher->profile_photo)
-                                    <img id="photo-preview" src="{{ asset('public/uploads/' . $teacher->profile_photo) }}"
+                                    <img id="photo-preview"
+                                        src="{{ asset('public/uploads/' . $teacher->profile_photo) }}"
                                         alt="Profile Preview" width="100" height="100" class="profile-preview"
                                         style="object-fit: cover; border-radius: 5%">
                                 @else
@@ -408,8 +409,11 @@
 
     </div>
     <!-- / Content wrapper -->
+
     <hr class="my-5" />
 
+    <!-- Overlay -->
+    <div class="layout-overlay layout-menu-toggle"></div>
 @endsection
 
 @push('scripts')

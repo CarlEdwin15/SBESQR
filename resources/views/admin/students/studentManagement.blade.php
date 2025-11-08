@@ -63,7 +63,7 @@
                     </li>
                     <li class="menu-item">
                         <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Promotion</div>
+                            <div class="text-light">Class Re-Enrollment</div>
                         </a>
                     </li>
                 </ul>
@@ -260,6 +260,28 @@
                                 @endphp
                                 @foreach ($activeClasses as $class)
                                     <option value="{{ $class }}">{{ $class }}</option>
+                                @endforeach
+                            </select>
+
+                            <!-- School Year Graduated Filter (initially hidden) -->
+                            <select id="graduatedYearFilter" class="form-select"
+                                style="max-width: 180px; display: none;">
+                                <option value="">All Graduation Years</option>
+                                @php
+                                    // Get unique graduation years from graduated students
+                                    $graduationYears = [];
+                                    foreach ($students as $student) {
+                                        if ($student->status === 'graduated' && $student->graduated_school_year) {
+                                            if (!in_array($student->graduated_school_year, $graduationYears)) {
+                                                $graduationYears[] = $student->graduated_school_year;
+                                            }
+                                        }
+                                    }
+                                    // Sort graduation years in descending order (most recent first)
+                                    rsort($graduationYears);
+                                @endphp
+                                @foreach ($graduationYears as $year)
+                                    <option value="{{ $year }}">{{ $year }}</option>
                                 @endforeach
                             </select>
 
@@ -855,6 +877,7 @@
             const searchInput = document.getElementById("studentSearch");
             const statusFilter = document.getElementById("statusFilter");
             const classFilter = document.getElementById("classFilter");
+            const graduatedYearFilter = document.getElementById("graduatedYearFilter");
             const table = document.getElementById("studentTable");
             const pagination = document.getElementById("studentPagination");
             const tableLengthSelect = document.getElementById("tableLength");
@@ -902,13 +925,23 @@
                 }
             }
 
-            // Toggle class filter visibility based on status filter
+            // Toggle class filter and graduation year filter visibility based on status filter
             function toggleClassFilter() {
                 if (statusFilter.value === "active") {
                     classFilter.style.display = "block";
+                    graduatedYearFilter.style.display = "none";
+                    graduatedYearFilter.value = ""; // Reset when hidden
                 } else {
                     classFilter.style.display = "none";
                     classFilter.value = ""; // Reset class filter when hidden
+
+                    // Show graduated year filter only when status is graduated
+                    if (statusFilter.value === "graduated") {
+                        graduatedYearFilter.style.display = "block";
+                    } else {
+                        graduatedYearFilter.style.display = "none";
+                        graduatedYearFilter.value = ""; // Reset when hidden
+                    }
                 }
             }
 
@@ -917,6 +950,7 @@
                 const search = searchInput.value.trim().toLowerCase();
                 const status = statusFilter.value;
                 const selectedClass = classFilter.value;
+                const selectedGraduationYear = graduatedYearFilter.value;
 
                 // Rebuild filteredRows from the current DOM rows
                 filteredRows = rows.filter(row => {
@@ -924,6 +958,13 @@
                     const lrn = (row.querySelector("td:nth-child(3)")?.textContent || "").toLowerCase();
                     const rawStatus = (row.dataset.status || "").toLowerCase();
                     const studentClass = (row.dataset.class || "").toLowerCase();
+
+                    // Get graduation year from the class column text for graduated students
+                    let graduationYear = "";
+                    if (rawStatus === "graduated") {
+                        const classText = row.querySelector("td:nth-child(5)")?.textContent?.trim() || "";
+                        graduationYear = classText;
+                    }
 
                     let displayStatus;
                     if (rawStatus === "enrolled") displayStatus = "active";
@@ -934,8 +975,10 @@
                     const matchesSearch = (name.includes(search) || lrn.includes(search));
                     const matchesStatus = !status || displayStatus === status;
                     const matchesClass = !selectedClass || studentClass === selectedClass.toLowerCase();
+                    const matchesGraduationYear = !selectedGraduationYear || graduationYear ===
+                        selectedGraduationYear;
 
-                    return matchesSearch && matchesStatus && matchesClass;
+                    return matchesSearch && matchesStatus && matchesClass && matchesGraduationYear;
                 });
 
                 // Reset page to 1 when filters change
@@ -1086,102 +1129,174 @@
                 }
             });
 
-            // Add click event to entire row for easier selection
-            table.addEventListener("click", function(e) {
-                const row = e.target.closest('.student-row');
-                if (row && !e.target.matches('a, button, .btn, input[type="checkbox"]')) {
-                    const checkbox = getRowCheckbox(row);
-                    if (checkbox) {
-                        checkbox.checked = !checkbox.checked;
-                        toggleRowHighlight(row, checkbox.checked);
-
-                        // Update select all state
-                        const visibleCheckboxes = getVisibleCheckboxesOnPage();
-                        if (visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => cb.checked)) {
-                            selectAllCheckbox.checked = true;
-                        } else {
-                            selectAllCheckbox.checked = false;
-                        }
-                        updateBulkButtonsState();
-
-                        // Trigger change event for consistency
-                        checkbox.dispatchEvent(new Event('change', {
-                            bubbles: true
-                        }));
-                    }
-                }
-            });
-
             // ---- Bulk Print IDs ----
             bulkPrintBtn.addEventListener("click", function() {
                 // collect ALL selected ids across the table (not only visible)
-                const selectedIds = Array.from(document.querySelectorAll(".student-checkbox:checked")).map(
-                    cb => cb.value);
-                if (selectedIds.length === 0) return;
+                const allSelectedCheckboxes = Array.from(document.querySelectorAll(
+                    ".student-checkbox:checked"));
 
-                Swal.fire({
-                    title: `Print ${selectedIds.length} Student ID(s)?`,
-                    text: "This will generate a PDF with ID cards for all selected students.",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonColor: "#28a745",
-                    cancelButtonColor: "#6c757d",
-                    confirmButtonText: "Yes, print them",
-                    cancelButtonText: "Cancel",
-                    customClass: {
-                        container: 'my-swal-container'
-                    }
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        // Show loading
-                        Swal.fire({
-                            title: "Generating IDs...",
-                            text: "Please wait while we prepare the student IDs.",
-                            icon: "info",
-                            allowOutsideClick: false,
-                            showConfirmButton: false,
-                            customClass: {
-                                container: 'my-swal-container'
-                            },
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
+                if (allSelectedCheckboxes.length === 0) return;
+
+                // Filter out graduated students
+                const validStudents = [];
+                const graduatedStudents = [];
+
+                allSelectedCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('.student-row');
+                    const status = row.dataset.status;
+                    const studentName = row.querySelector('td:nth-child(2) .fw-semibold')
+                        ?.textContent || 'Unknown';
+                    const studentId = checkbox.value;
+
+                    if (status === 'graduated') {
+                        graduatedStudents.push({
+                            id: studentId,
+                            name: studentName
                         });
-
-                        // Generate PDF for selected students
-                        const url = "{{ route('students.bulkPrintIDs') }}";
-                        const form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = url;
-                        form.target = '_blank';
-
-                        // Add CSRF token
-                        const csrfToken = document.createElement('input');
-                        csrfToken.type = 'hidden';
-                        csrfToken.name = '_token';
-                        csrfToken.value = "{{ csrf_token() }}";
-                        form.appendChild(csrfToken);
-
-                        // Add student IDs
-                        selectedIds.forEach(id => {
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = 'student_ids[]';
-                            input.value = id;
-                            form.appendChild(input);
-                        });
-
-                        document.body.appendChild(form);
-                        form.submit();
-                        document.body.removeChild(form);
-
-                        // Close loading after a short delay
-                        setTimeout(() => {
-                            Swal.close();
-                        }, 2000);
+                    } else {
+                        validStudents.push(studentId);
                     }
                 });
+
+                // If only graduated students are selected, show warning
+                if (validStudents.length === 0 && graduatedStudents.length > 0) {
+                    Swal.fire({
+                        title: "Cannot Print Graduated Students",
+                        text: "ID cards cannot be printed for graduated students. Please select active or inactive students only.",
+                        icon: "warning",
+                        confirmButtonColor: "#dc3545",
+                        confirmButtonText: "OK",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return;
+                }
+
+                // If some graduated students were excluded, show confirmation with details
+                if (graduatedStudents.length > 0) {
+                    let graduatedList = '';
+                    if (graduatedStudents.length <= 5) {
+                        graduatedList = graduatedStudents.map(student =>
+                            `• ${student.name}`
+                        ).join('<br>');
+                    } else {
+                        graduatedList = graduatedStudents.slice(0, 5).map(student =>
+                            `• ${student.name}`
+                        ).join('<br>') + `<br>• and ${graduatedStudents.length - 5} more...`;
+                    }
+
+                    Swal.fire({
+                        title: `Print ${validStudents.length} Student ID(s)?`,
+                        html: `Graduated students cannot be printed and will be excluded:<br><br>
+                           <div style="text-align: left; max-height: 150px; overflow-y: auto; font-size: 0.9em; color: #dc3545;">
+                           ${graduatedList}
+                           </div>`,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#28a745",
+                        cancelButtonColor: "#6c757d",
+                        confirmButtonText: `Print ${validStudents.length} ID(s)`,
+                        cancelButtonText: "Cancel",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            proceedWithPrinting(validStudents);
+                        }
+                    });
+                } else {
+                    // All selected students are valid for printing
+                    Swal.fire({
+                        title: `Print ${validStudents.length} Student ID(s)?`,
+                        text: "This will generate a PDF with ID cards for all selected students.",
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonColor: "#28a745",
+                        cancelButtonColor: "#6c757d",
+                        confirmButtonText: "Yes, print them",
+                        cancelButtonText: "Cancel",
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            proceedWithPrinting(validStudents);
+                        }
+                    });
+                }
             });
+
+            // Function to handle the actual printing process
+            function proceedWithPrinting(studentIds) {
+                if (studentIds.length === 0) return;
+
+                // Show loading
+                Swal.fire({
+                    title: "Generating IDs...",
+                    text: "Please wait while we prepare the student IDs.",
+                    icon: "info",
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    customClass: {
+                        container: 'my-swal-container'
+                    },
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Generate PDF for selected students
+                const url = "{{ route('students.bulkPrintIDs') }}";
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.target = '_blank';
+
+                // Add CSRF token
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = "{{ csrf_token() }}";
+                form.appendChild(csrfToken);
+
+                // Add student IDs
+                studentIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'student_ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+
+                // Close loading after a short delay
+                setTimeout(() => {
+                    Swal.close();
+                }, 2000);
+            }
+
+            // Disable checkboxes for graduated students and add visual indication
+            function disableGraduatedCheckboxes() {
+                rows.forEach(row => {
+                    const checkbox = getRowCheckbox(row);
+                    const status = row.dataset.status;
+
+                    if (status === 'graduated' && checkbox) {
+                        checkbox.disabled = true;
+                        checkbox.title = "Cannot print IDs for graduated students";
+                        row.style.opacity = "0.6";
+                        row.style.cursor = "not-allowed";
+                    }
+                });
+            }
+
+            // Call this function after initializing rows
+            disableGraduatedCheckboxes();
 
             // ---- Bulk delete with refresh ----
             bulkDeleteBtn.addEventListener("click", function() {
@@ -1278,6 +1393,11 @@
             });
 
             classFilter.addEventListener("change", () => {
+                filterRows();
+            });
+
+            // Add event listener for graduation year filter
+            graduatedYearFilter.addEventListener("change", () => {
                 filterRows();
             });
 

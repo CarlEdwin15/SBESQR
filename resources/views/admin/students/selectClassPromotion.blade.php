@@ -64,7 +64,7 @@
                     </li>
                     <li class="menu-item active">
                         <a href="{{ route('students.promote') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">Student Promotion</div>
+                            <div class="text-warning">Class Re-Enrollment</div>
                         </a>
                     </li>
                 </ul>

@@ -63,7 +63,7 @@
                     </li>
                     <li class="menu-item">
                         <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Student Promotion</div>
+                            <div class="text-light">Class Re-Enrollment</div>
                         </a>
                     </li>
                 </ul>
@@ -161,6 +161,9 @@
     <!-- / Content wrapper -->
 
     <hr class="my-5" />
+
+    <!-- Overlay -->
+    <div class="layout-overlay layout-menu-toggle"></div>
 
 @endsection
 

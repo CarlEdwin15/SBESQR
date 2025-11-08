@@ -179,10 +179,21 @@
                                                 <h5 class="fw-bold text-primary">Grades</h5>
                                                 @php
                                                     $user = auth()->user();
+                                                    $isAdviserOfThisClass = false;
+
+                                                    // Check if user is teacher AND adviser of this specific class
+                                                    if ($user && $user->role === 'teacher') {
+                                                        $isAdviserOfThisClass = $classItem->advisers
+                                                            ->where(
+                                                                'pivot.school_year_id',
+                                                                $classItem->pivot->school_year_id,
+                                                            )
+                                                            ->contains('id', $user->id);
+                                                    }
                                                 @endphp
 
-                                                @if ($user && $user->role === 'teacher')
-                                                    <!-- Teacher-only export button -->
+                                                @if ($isAdviserOfThisClass)
+                                                    <!-- Teacher(adviser)-only export button -->
                                                     <a href="{{ route('teacher.student.card', [
                                                         'student_id' => $student->id,
                                                         'school_year' => $classItem->pivot->school_year_id,
