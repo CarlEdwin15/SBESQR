@@ -2,7 +2,6 @@
 
 @section('title', 'Admin | Re-Enrollment / Promotion')
 
-
 @section('content')
 
     <!-- Menu -->
@@ -158,11 +157,31 @@
 
         <h2 class="text-center text-info fw-bold">Re-Enrollment / Promotion for {{ $currentSchoolYear }}</h2>
 
-        {{-- Section Selection --}}
+        {{-- School Year and Section Selection --}}
         <div class="row mb-4 d-flex justify-content-between align-items-center">
+            {{-- School Year Selection --}}
+            <div class="col-md-4">
+                <form method="GET" action="{{ route('students.promote.view') }}" id="schoolYearForm">
+                    <label for="school_year" class="form-label">Select Previous School Year</label>
+                    <select name="school_year" id="school_year" class="form-select" onchange="this.form.submit()">
+                        @foreach ($availableSchoolYears as $schoolYear)
+                            <option value="{{ $schoolYear }}"
+                                {{ $selectedSchoolYear == $schoolYear ? 'selected' : '' }}>
+                                SY: {{ $schoolYear }}
+                                @if ($schoolYear == $previousSchoolYear)
+                                    (Most Recent)
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">Only previous school years are available for promotion tracking.</small>
+                </form>
+            </div>
+
             {{-- Section Selection --}}
             <div class="col-md-4">
-                <form method="GET" action="{{ route('students.promote.view') }}">
+                <form method="GET" action="{{ route('students.promote.view') }}" id="sectionForm">
+                    <input type="hidden" name="school_year" value="{{ $selectedSchoolYear }}">
                     <label for="section" class="form-label">Select Section</label>
                     <select name="section" id="section" class="form-select" onchange="this.form.submit()">
                         @foreach ($sections as $s)
@@ -174,66 +193,121 @@
                 </form>
             </div>
         </div>
-        {{-- / Section Selection --}}
+        {{-- / School Year and Section Selection --}}
+
+        <!-- Information Alert -->
+        {{-- @if ($selectedSchoolYear == $previousSchoolYear)
+            <div class="alert alert-info">
+                <i class="bx bx-info-circle me-2"></i>
+                <strong>Action Available:</strong> You are viewing the most recent previous school year
+                ({{ $previousSchoolYear }}).
+                Promotion/Re-enrollment actions are available for this year.
+            </div>
+        @else
+            <div class="alert alert-warning">
+                <i class="bx bx-time me-2"></i>
+                <strong>View Only:</strong> You are viewing historical data from SY: {{ $selectedSchoolYear }}.
+                Promotion actions are only available for the most recent previous school year ({{ $previousSchoolYear }}).
+            </div>
+        @endif --}}
 
         <!-- Card for All Grade Levels by Section -->
         <section id="services" class="services section">
             <div class="container" data-aos="fade-up" data-aos-delay="100">
                 <div class="row gy-5">
-                    {{-- @if ($classes->isEmpty())
-                                    <div class="col-12">
-                                        <div class="alert alert-warning text-center">
-                                            No students available for promotion in this section.
-                                        </div>
-                                    </div>
-                                @endif --}}
-
                     @php $iconIndex = 1; @endphp
 
                     @foreach ($classes as $class)
-                        @if ($class->promotable_count > 0)
-                            <div class="col-xl-4 col-md-6" data-aos="zoom-in">
-                                <div class="service-item">
-                                    <div class="img">
-                                        <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
-                                            class="img-fluid" alt="" />
+                        <div class="col-xl-4 col-md-6" data-aos="zoom-in">
+                            <div class="service-item {{ $class->promotable_count == 0 ? 'completed-class' : '' }}">
+                                <div class="img">
+                                    <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
+                                        class="img-fluid {{ $class->promotable_count == 0 ? 'darkened-image' : '' }}"
+                                        alt="" />
+                                    @if ($class->promotable_count == 0)
+                                        <div class="completed-badge">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span>Completed</span>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="details position-relative">
+                                    <div class="icon {{ $class->promotable_count == 0 ? 'completed-icon' : '' }}">
+                                        @if ($class->grade_level === 'kindergarten')
+                                            <i class="fa-solid fa-child"></i>
+                                        @else
+                                            <i class="fa-solid fa-{{ $iconIndex }}"></i>
+                                            @php $iconIndex++; @endphp
+                                        @endif
                                     </div>
-                                    <div class="details position-relative">
-                                        <div class="icon">
-                                            @if ($class->grade_level === 'kindergarten')
-                                                <i class="fa-solid fa-child"></i>
+                                    <a href="{{ route('students.promote.view') }}?grade_level={{ $class->grade_level }}&section={{ $class->section }}&school_year={{ $selectedSchoolYear }}"
+                                        class="stretched-link">
+                                        <h3 class="{{ $class->promotable_count == 0 ? 'text-muted' : '' }}">
+                                            @if (strtolower($class->grade_level) === 'kindergarten')
+                                                Kindergarten
                                             @else
-                                                <i class="fa-solid fa-{{ $iconIndex }}"></i>
-                                                @php $iconIndex++; @endphp
+                                                Grade
+                                                {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
+                                            @endif
+                                            - {{ $class->section }}
+                                        </h3>
+
+                                        <div class="student-stats mt-2">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-dark">Total Students:</small>
+                                                <strong
+                                                    class="{{ $class->promotable_count == 0 ? 'text-muted' : 'text-dark' }}">
+                                                    {{ $class->total_students }}
+                                                </strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-warning">Not Re-enrolled:</small>
+                                                <strong class="text-warning">
+                                                    {{ $class->promotable_count }}
+                                                </strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-success">Already Re-enrolled:</small>
+                                                <strong class="text-success">
+                                                    {{ $class->reenrolled_count }}
+                                                </strong>
+                                            </div>
+                                            @if ($class->graduated_count > 0)
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-info">Graduated:</small>
+                                                    <strong class="text-info">
+                                                        {{ $class->graduated_count }}
+                                                    </strong>
+                                                </div>
                                             @endif
                                         </div>
-                                        <a href="{{ route('students.promote.view') }}?grade_level={{ $class->grade_level }}&section={{ $class->section }}"
-                                            class="stretched-link">
-                                            <h3>
-                                                @if (strtolower($class->grade_level) === 'kindergarten')
-                                                    Kindergarten
-                                                @else
-                                                    Grade
-                                                    {{ preg_replace('/[^0-9]/', '', $class->grade_level) }}
-                                                @endif
-                                                - {{ $class->section }}
-                                            </h3>
-                                            <h5 class="text-warning mt-2">
-                                                {{ $class->promotable_count }}
-                                                student{{ $class->promotable_count > 1 ? 's' : '' }} ready for
-                                                promotion
-                                            </h5>
-                                        </a>
-                                    </div>
+
+                                        @if ($class->promotable_count > 0)
+                                            <div class="mt-2">
+                                                <span class="badge bg-warning text-dark">
+                                                    {{ $class->promotable_count }}
+                                                    student{{ $class->promotable_count > 1 ? 's' : '' }} ready for
+                                                    promotion
+                                                </span>
+                                            </div>
+                                        @else
+                                            <div class="mt-2">
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    All students processed
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </a>
                                 </div>
                             </div>
-                        @endif
+                        </div>
                     @endforeach
 
-                    @if ($classes->where('promotable_count', '>', 0)->isEmpty())
+                    @if ($classes->isEmpty())
                         <div class="col-12">
                             <div class="alert alert-warning text-center">
-                                No students available for promotion in this section.
+                                No classes found for this section in the selected school year.
                             </div>
                         </div>
                     @endif
@@ -287,6 +361,11 @@
                 }
             });
         @endif
+
+        // Update section form when school year changes
+        document.getElementById('school_year').addEventListener('change', function() {
+            document.getElementById('sectionForm').querySelector('input[name="school_year"]').value = this.value;
+        });
     </script>
 
     <!-- Font Awesome -->
@@ -301,4 +380,75 @@
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />
+
+    <style>
+        .completed-class {
+            opacity: 0.7;
+        }
+
+        .completed-class .service-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        .darkened-image {
+            filter: brightness(0.7);
+            transition: filter 0.3s ease;
+        }
+
+        .completed-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(40, 167, 69, 0.95);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .completed-badge i {
+            font-size: 0.7rem;
+        }
+
+        .completed-icon {
+            color: #6c757d !important;
+        }
+
+        .service-item {
+            position: relative;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .student-stats {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .img {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-item:hover .darkened-image {
+            filter: brightness(0.8);
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }
+    </style>
 @endpush

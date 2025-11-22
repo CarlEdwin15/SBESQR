@@ -371,7 +371,7 @@
 
                             <!-- Extension Name Field -->
                             <div class="col mb-2 mt-2">
-                                <label for="student_extName" class="form-label fw-bold">Extension Name</label>
+                                <label for="student_extName" class="form-label fw-bold">Extension Name (Optional)</label>
                                 <input type="text" name="student_extName" id="student_extName" class="form-control"
                                     value="{{ $student->student_extName }}" />
                             </div>

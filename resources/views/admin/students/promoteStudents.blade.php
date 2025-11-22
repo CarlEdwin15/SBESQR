@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Re-Enroll Students')
+@section('title', 'Admin | Re-Enroll Students')
 
 @section('content')
 

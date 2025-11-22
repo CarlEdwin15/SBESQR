@@ -1022,27 +1022,48 @@ class StudentController extends Controller
         $previousStartYear = explode('-', $currentSchoolYear)[0] - 1;
         $previousSchoolYear = $previousStartYear . '-' . ($previousStartYear + 1);
 
-        $previousSchoolYearRecord = SchoolYear::where('school_year', $previousSchoolYear)->first();
+        // Get available school years - only previous years (before current school year)
+        $availableSchoolYears = SchoolYear::where('school_year', '<', $currentSchoolYear)
+            ->orderBy('school_year', 'desc')
+            ->pluck('school_year')
+            ->toArray();
 
-        if (!$previousSchoolYearRecord) {
-            return redirect()->back()->with('error', 'Previous school year not found.');
+        // If no previous school years found, use only the immediate previous year
+        if (empty($availableSchoolYears)) {
+            $availableSchoolYears = [$previousSchoolYear];
         }
 
-        if (now()->lt(Carbon::parse($previousSchoolYearRecord->end_date))) {
-            return redirect()->back()->with('error', 'Promotion is not allowed until the previous school year has ended.');
+        // Set selected school year (default to previous school year)
+        $selectedSchoolYear = $request->get('school_year', $previousSchoolYear);
+        $selectedSchoolYearRecord = SchoolYear::where('school_year', $selectedSchoolYear)->first();
+
+        if (!$selectedSchoolYearRecord) {
+            // If selected school year doesn't exist, default to the first available previous year
+            $selectedSchoolYear = $availableSchoolYears[0] ?? $previousSchoolYear;
+            $selectedSchoolYearRecord = SchoolYear::where('school_year', $selectedSchoolYear)->first();
+
+            if (!$selectedSchoolYearRecord) {
+                return redirect()->back()->with('error', 'No valid previous school years found.');
+            }
         }
 
-        // 🔥 NEW: Automatically graduate eligible Grade 6 students when school year ends
-        $graduatedCount = $this->autoGraduateEligibleStudents($previousSchoolYearRecord, $currentSchoolYear);
+        // Only check for promotion eligibility if it's the previous school year
+        if ($selectedSchoolYear === $previousSchoolYear) {
+            if (now()->lt(Carbon::parse($selectedSchoolYearRecord->end_date))) {
+                return redirect()->back()->with('error', 'Promotion is not allowed until the school year has ended.');
+            }
 
-        if ($graduatedCount > 0) {
-            session()->flash('auto_graduated', "Automatically graduated {$graduatedCount} eligible Grade 6 students.");
+            // Auto-graduate eligible students only for previous school year
+            $graduatedCount = $this->autoGraduateEligibleStudents($selectedSchoolYearRecord, $currentSchoolYear);
+            if ($graduatedCount > 0) {
+                session()->flash('auto_graduated', "Automatically graduated {$graduatedCount} eligible Grade 6 students.");
+            }
         }
 
-        // Fetch available sections from the previous school year
+        // Fetch available sections from the selected school year
         $sections = DB::table('classes')
             ->join('class_student', 'classes.id', '=', 'class_student.class_id')
-            ->where('class_student.school_year_id', $previousSchoolYearRecord->id)
+            ->where('class_student.school_year_id', $selectedSchoolYearRecord->id)
             ->distinct()
             ->pluck('section');
 
@@ -1054,30 +1075,30 @@ class StudentController extends Controller
         if ($gradeLevel && $selectedSection) {
             $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
 
-            // 🔥 IMPROVED: Get all active students with better data retrieval
-            $activeStudents = DB::table('class_student AS cs_prev')
-                ->join('students', 'students.id', '=', 'cs_prev.student_id')
-                ->join('classes', 'classes.id', '=', 'cs_prev.class_id')
+            // Get students for the selected school year and section
+            $activeStudents = DB::table('class_student AS cs_selected')
+                ->join('students', 'students.id', '=', 'cs_selected.student_id')
+                ->join('classes', 'classes.id', '=', 'cs_selected.class_id')
                 ->leftJoin('class_student AS cs_curr', function ($join) use ($currentSchoolYearRecord) {
-                    $join->on('cs_curr.student_id', '=', 'cs_prev.student_id')
+                    $join->on('cs_curr.student_id', '=', 'cs_selected.student_id')
                         ->where('cs_curr.school_year_id', $currentSchoolYearRecord->id ?? null);
                 })
                 ->leftJoin('classes AS current_class', function ($join) {
                     $join->on('current_class.id', '=', 'cs_curr.class_id');
                 })
-                ->leftJoin('general_averages', function ($join) use ($previousSchoolYearRecord) {
+                ->leftJoin('general_averages', function ($join) use ($selectedSchoolYearRecord) {
                     $join->on('general_averages.student_id', '=', 'students.id')
-                        ->where('general_averages.school_year_id', $previousSchoolYearRecord->id);
+                        ->where('general_averages.school_year_id', $selectedSchoolYearRecord->id);
                 })
-                ->where('cs_prev.school_year_id', $previousSchoolYearRecord->id)
+                ->where('cs_selected.school_year_id', $selectedSchoolYearRecord->id)
                 ->where('classes.grade_level', $gradeLevel)
                 ->where('classes.section', $selectedSection)
                 ->select(
                     'students.*',
-                    'cs_prev.class_id',
-                    'cs_prev.enrollment_status as previous_enrollment_status',
-                    'cs_prev.enrollment_type as previous_enrollment_type',
-                    'cs_prev.updated_at as previous_enrollment_updated',
+                    'cs_selected.class_id',
+                    'cs_selected.enrollment_status as previous_enrollment_status',
+                    'cs_selected.enrollment_type as previous_enrollment_type',
+                    'cs_selected.updated_at as previous_enrollment_updated',
                     'cs_curr.enrollment_status as current_enrollment_status',
                     'cs_curr.enrollment_type as current_enrollment_type',
                     'cs_curr.class_id as current_class_id',
@@ -1086,7 +1107,7 @@ class StudentController extends Controller
                     'cs_curr.updated_at as re_enrollment_updated_date',
                     'classes.grade_level',
                     'classes.section',
-                    'cs_prev.school_year_id',
+                    'cs_selected.school_year_id',
                     'current_class.grade_level as current_grade_level',
                     'current_class.section as current_section',
                     'general_averages.general_average',
@@ -1095,7 +1116,7 @@ class StudentController extends Controller
                 ->get();
 
             // Add promotion eligibility to each student
-            $activeStudents = $activeStudents->map(function ($student) use ($gradeLevel, $currentSchoolYear, $previousSchoolYear) {
+            $activeStudents = $activeStudents->map(function ($student) use ($gradeLevel, $currentSchoolYear, $selectedSchoolYear) {
                 $student->promotion_eligibility = $this->determinePromotionEligibility($student, $gradeLevel);
 
                 // Add additional info for already re-enrolled students
@@ -1119,7 +1140,7 @@ class StudentController extends Controller
                 if ($student->current_enrollment_status === 'graduated' || $student->previous_enrollment_status === 'graduated') {
                     $graduationDate = $student->previous_enrollment_updated ?? $student->re_enrollment_updated_date ?? now();
                     $student->graduation_info = [
-                        'school_year' => $previousSchoolYear,
+                        'school_year' => $selectedSchoolYear,
                         'grade_level' => $student->grade_level,
                         'section' => $student->section,
                         'graduation_date' => $graduationDate,
@@ -1136,15 +1157,17 @@ class StudentController extends Controller
                 'selectedSection',
                 'previousSchoolYear',
                 'currentSchoolYear',
-                'defaultSchoolYear'
+                'defaultSchoolYear',
+                'selectedSchoolYear',
+                'availableSchoolYears'
             ));
         }
 
-        // Rest of your existing code for class selection view...
+        // Get classes for the selected school year with accurate student counts
         $classes = DB::table('classes')
-            ->join('class_student as cs_prev', 'classes.id', '=', 'cs_prev.class_id')
+            ->join('class_student as cs_selected', 'classes.id', '=', 'cs_selected.class_id')
             ->leftJoin('class_student as cs_curr', function ($join) use ($currentSchoolYear) {
-                $join->on('cs_curr.student_id', '=', 'cs_prev.student_id')
+                $join->on('cs_curr.student_id', '=', 'cs_selected.student_id')
                     ->where('cs_curr.school_year_id', '=', function ($query) use ($currentSchoolYear) {
                         $query->select('id')
                             ->from('school_years')
@@ -1152,13 +1175,20 @@ class StudentController extends Controller
                             ->limit(1);
                     });
             })
-            ->where('cs_prev.school_year_id', $previousSchoolYearRecord->id)
+            ->where('cs_selected.school_year_id', $selectedSchoolYearRecord->id)
             ->where('classes.section', $selectedSection)
             ->select(
                 'classes.grade_level',
                 'classes.section',
                 'classes.id',
-                DB::raw('COUNT(CASE WHEN cs_curr.enrollment_status = "not_enrolled" THEN 1 END) as promotable_count')
+                // Count students available for promotion (not enrolled in current SY)
+                DB::raw('COUNT(CASE WHEN cs_curr.enrollment_status = "not_enrolled" OR cs_curr.enrollment_status IS NULL THEN 1 END) as promotable_count'),
+                // Count total students in this class from selected SY
+                DB::raw('COUNT(DISTINCT cs_selected.student_id) as total_students'),
+                // Count already re-enrolled students
+                DB::raw('COUNT(CASE WHEN cs_curr.enrollment_status = "enrolled" THEN 1 END) as reenrolled_count'),
+                // Count graduated students (for Grade 6)
+                DB::raw('COUNT(CASE WHEN cs_selected.enrollment_status = "graduated" THEN 1 END) as graduated_count')
             )
             ->groupBy('classes.grade_level', 'classes.section', 'classes.id')
             ->get();
@@ -1169,7 +1199,9 @@ class StudentController extends Controller
             'currentSchoolYear',
             'defaultSchoolYear',
             'sections',
-            'selectedSection'
+            'selectedSection',
+            'availableSchoolYears',
+            'selectedSchoolYear'
         ));
     }
 

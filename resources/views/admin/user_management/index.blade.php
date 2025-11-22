@@ -515,19 +515,23 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">First Name</label>
-                            <input type="text" class="form-control" name="firstName" required>
+                            <input type="text" class="form-control" name="firstName" placeholder="Enter First Name"
+                                required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Middle Name</label>
-                            <input type="text" class="form-control" name="middleName">
+                            <input type="text" class="form-control" name="middleName"
+                                placeholder="Enter Middle Name">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Last Name</label>
-                            <input type="text" class="form-control" name="lastName">
+                            <input type="text" class="form-control" name="lastName" placeholder="Enter Last Name"
+                                required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Extension Name</label>
-                            <input type="text" class="form-control" name="extName">
+                            <label class="form-label fw-bold">Extension Name (Optional)</label>
+                            <input type="text" class="form-control" name="extName"
+                                placeholder="Enter Extension Name (e.g., Jr., Sr.)">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Email</label>
@@ -544,7 +548,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Phone</label>
-                            <input type="text" class="form-control" name="phone" required>
+                            <input type="text" class="form-control" name="phone"
+                                placeholder="Starts with 09 or +639 and 11 digits only" required>
                         </div>
                         <!-- Password Input -->
                         <div class="col-md-6 form-password-toggle">
@@ -647,22 +652,23 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">First Name</label>
-                            <input type="text" class="form-control" name="firstName" value="{{ old('firstName') }}"
-                                required>
+                            <input type="text" class="form-control" name="firstName" placeholder="Enter First Name"
+                                value="{{ old('firstName') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Middle Name</label>
-                            <input type="text" class="form-control" name="middleName"
+                            <input type="text" class="form-control" name="middleName" placeholder="Enter Middle Name"
                                 value="{{ old('middleName') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Last Name</label>
-                            <input type="text" class="form-control" name="lastName" value="{{ old('lastName') }}"
-                                required>
+                            <input type="text" class="form-control" name="lastName" placeholder="Enter Last Name"
+                                value="{{ old('lastName') }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Extension Name</label>
-                            <input type="text" class="form-control" name="extName" value="{{ old('extName') }}">
+                            <label class="form-label fw-bold">Extension Name (Optional)</label>
+                            <input type="text" class="form-control" name="extName"
+                                placeholder="Enter Extension Name (e.g., Jr., Sr.)" value="{{ old('extName') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Email</label>
@@ -679,7 +685,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Phone</label>
-                            <input type="text" class="form-control" name="phone" value="{{ old('phone') }}"
+                            <input type="text" class="form-control" name="phone"
+                                placeholder="Starts with 09 or +639 and 11 digits only" value="{{ old('phone') }}"
                                 required>
                         </div>
 
@@ -776,12 +783,12 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">House No.</label>
                                 <input type="text" class="form-control" name="house_no"
-                                    value="{{ old('house_no') }}" required>
+                                    placeholder="Enter House Number" value="{{ old('house_no') }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Street Name</label>
                                 <input type="text" class="form-control" name="street_name"
-                                    value="{{ old('street_name') }}" required>
+                                    placeholder="Enter Street Name" value="{{ old('street_name') }}" required>
                             </div>
                         </div>
 
@@ -789,12 +796,13 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Barangay</label>
                                 <input type="text" class="form-control" name="barangay"
-                                    value="{{ old('barangay') }}" required>
+                                    placeholder="Enter Barangay Name" value="{{ old('barangay') }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Municipality/City</label>
                                 <input type="text" class="form-control" name="municipality_city"
-                                    value="{{ old('municipality_city') }}" required>
+                                    placeholder="Enter Municipality or City Name" value="{{ old('municipality_city') }}"
+                                    required>
                             </div>
                         </div>
 
@@ -802,11 +810,11 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Province</label>
                                 <input type="text" class="form-control" name="province"
-                                    value="{{ old('province') }}" required>
+                                    placeholder="Enter Province Name" value="{{ old('province') }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Zip Code</label>
-                                <input type="text" class="form-control" name="zip_code"
+                                <input type="text" class="form-control" name="zip_code" placeholder="Enter Zip Code"
                                     value="{{ old('zip_code') }}" required>
                             </div>
                         </div>
@@ -873,19 +881,23 @@
                         <!-- Names & Contact -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">First Name</label>
-                            <input type="text" class="form-control" name="firstName" required>
+                            <input type="text" class="form-control" name="firstName" placeholder="Enter First Name"
+                                required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Middle Name</label>
-                            <input type="text" class="form-control" name="middleName">
+                            <input type="text" class="form-control" name="middleName"
+                                placeholder="Enter Middle Name">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Last Name</label>
-                            <input type="text" class="form-control" name="lastName" required>
+                            <input type="text" class="form-control" name="lastName" placeholder="Enter Last Name"
+                                required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Extension Name</label>
-                            <input type="text" class="form-control" name="extName">
+                            <label class="form-label fw-bold">Extension Name (Optional)</label>
+                            <input type="text" class="form-control" name="extName"
+                                placeholder="Enter Extension Name (e.g., Jr., Sr.)">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Email</label>
@@ -902,7 +914,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Phone</label>
-                            <input type="tel" class="form-control" name="phone" required>
+                            <input type="tel" class="form-control" name="phone" placeholder="Enter Phone Number"
+                                required>
                         </div>
 
                         <div class="col-md-6">
@@ -937,33 +950,33 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">House No.</label>
-                            <input type="text" class="form-control" name="house_no" value="{{ old('house_no') }}"
-                                required>
+                            <input type="text" class="form-control" name="house_no" placeholder="Enter House Number"
+                                value="{{ old('house_no') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Street Name</label>
                             <input type="text" class="form-control" name="street_name"
-                                value="{{ old('street_name') }}">
+                                placeholder="Enter Street Name" value="{{ old('street_name') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Barangay</label>
-                            <input type="text" class="form-control" name="barangay" value="{{ old('barangay') }}"
-                                required>
+                            <input type="text" class="form-control" name="barangay" placeholder="Enter Barangay Name"
+                                value="{{ old('barangay') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Municipality/City</label>
                             <input type="text" class="form-control" name="municipality_city"
-                                value="{{ old('municipality_city') }}">
+                                placeholder="Enter Municipality or City Name" value="{{ old('municipality_city') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Province</label>
-                            <input type="text" class="form-control" name="province" value="{{ old('province') }}"
-                                required>
+                            <input type="text" class="form-control" name="province" placeholder="Enter Province"
+                                value="{{ old('province') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Zip Code</label>
-                            <input type="text" class="form-control" name="zip_code" value="{{ old('zip_code') }}"
-                                required>
+                            <input type="text" class="form-control" name="zip_code" placeholder="Enter Zip Code"
+                                value="{{ old('zip_code') }}" required>
                         </div>
                     </div>
 
