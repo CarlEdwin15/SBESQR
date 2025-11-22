@@ -54,7 +54,7 @@
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <ul class="navbar-nav flex-row align-items-center ms-auto">
 
-            <button id="enablePush" class="btn btn-outline-primary">
+            <button id="enablePush" class="btn btn-outline-primary me-2">
                 <i class="bx bx-bell"></i> <span class="d-none d-sm-inline">Enable SBESqr notifications</span>
             </button>
 
@@ -62,7 +62,8 @@
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown" role="button"
                     data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class='bx bx-bell fs-4'></i>
+                    <i class='bx bxs-megaphone fs-4 text-primary'
+                        style="border-radius: 15%; border: 2px solid #0d6efd; padding: 7px;"></i>
                     @if ($notifications->count())
                         <span class="badge bg-danger rounded-pill badge-notifications">
                             {{ $notifications->count() }}

@@ -12,7 +12,7 @@ use App\Models\StudentAddress;
 use App\Models\SchoolYear;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf; // Make sure you have barryvdh/laravel-dompdf installed
+use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -238,6 +238,11 @@ class StudentController extends Controller
         $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
 
         $schoolYearId = optional($schoolYear)->id;
+
+        // 🔥 NEW: Auto-graduate eligible Grade 6 students for previous school years
+        if ($schoolYear && $schoolYear->school_year !== $currentSchoolYear) {
+            $this->autoGraduateEligibleStudents($schoolYear, $currentSchoolYear);
+        }
 
         // 1. Auto-archive "enrolled" from past years
         if ($currentSchoolYearRecord) {
@@ -1012,6 +1017,7 @@ class StudentController extends Controller
     public function showPromotionView(Request $request)
     {
         $currentSchoolYear = $this->getDefaultSchoolYear();
+        $defaultSchoolYear = $this->getDefaultSchoolYear();
 
         $previousStartYear = explode('-', $currentSchoolYear)[0] - 1;
         $previousSchoolYear = $previousStartYear . '-' . ($previousStartYear + 1);
@@ -1024,6 +1030,13 @@ class StudentController extends Controller
 
         if (now()->lt(Carbon::parse($previousSchoolYearRecord->end_date))) {
             return redirect()->back()->with('error', 'Promotion is not allowed until the previous school year has ended.');
+        }
+
+        // 🔥 NEW: Automatically graduate eligible Grade 6 students when school year ends
+        $graduatedCount = $this->autoGraduateEligibleStudents($previousSchoolYearRecord, $currentSchoolYear);
+
+        if ($graduatedCount > 0) {
+            session()->flash('auto_graduated', "Automatically graduated {$graduatedCount} eligible Grade 6 students.");
         }
 
         // Fetch available sections from the previous school year
@@ -1039,43 +1052,95 @@ class StudentController extends Controller
 
         // If grade level and section selected, show promoteStudents view
         if ($gradeLevel && $selectedSection) {
+            $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
+
+            // 🔥 IMPROVED: Get all active students with better data retrieval
             $activeStudents = DB::table('class_student AS cs_prev')
                 ->join('students', 'students.id', '=', 'cs_prev.student_id')
                 ->join('classes', 'classes.id', '=', 'cs_prev.class_id')
-                ->leftJoin('class_student AS cs_curr', function ($join) use ($currentSchoolYear) {
+                ->leftJoin('class_student AS cs_curr', function ($join) use ($currentSchoolYearRecord) {
                     $join->on('cs_curr.student_id', '=', 'cs_prev.student_id')
-                        ->where('cs_curr.school_year_id', '=', function ($query) use ($currentSchoolYear) {
-                            $query->select('id')
-                                ->from('school_years')
-                                ->where('school_year', $currentSchoolYear)
-                                ->limit(1);
-                        });
+                        ->where('cs_curr.school_year_id', $currentSchoolYearRecord->id ?? null);
+                })
+                ->leftJoin('classes AS current_class', function ($join) {
+                    $join->on('current_class.id', '=', 'cs_curr.class_id');
+                })
+                ->leftJoin('general_averages', function ($join) use ($previousSchoolYearRecord) {
+                    $join->on('general_averages.student_id', '=', 'students.id')
+                        ->where('general_averages.school_year_id', $previousSchoolYearRecord->id);
                 })
                 ->where('cs_prev.school_year_id', $previousSchoolYearRecord->id)
                 ->where('classes.grade_level', $gradeLevel)
                 ->where('classes.section', $selectedSection)
-                ->where('cs_curr.enrollment_status', 'not_enrolled')
                 ->select(
                     'students.*',
                     'cs_prev.class_id',
                     'cs_prev.enrollment_status as previous_enrollment_status',
+                    'cs_prev.enrollment_type as previous_enrollment_type',
+                    'cs_prev.updated_at as previous_enrollment_updated',
                     'cs_curr.enrollment_status as current_enrollment_status',
+                    'cs_curr.enrollment_type as current_enrollment_type',
+                    'cs_curr.class_id as current_class_id',
+                    'cs_curr.school_year_id as current_school_year_id',
+                    'cs_curr.created_at as re_enrollment_date',
+                    'cs_curr.updated_at as re_enrollment_updated_date',
                     'classes.grade_level',
                     'classes.section',
-                    'cs_prev.school_year_id'
+                    'cs_prev.school_year_id',
+                    'current_class.grade_level as current_grade_level',
+                    'current_class.section as current_section',
+                    'general_averages.general_average',
+                    'general_averages.remarks as promotion_status'
                 )
                 ->get();
+
+            // Add promotion eligibility to each student
+            $activeStudents = $activeStudents->map(function ($student) use ($gradeLevel, $currentSchoolYear, $previousSchoolYear) {
+                $student->promotion_eligibility = $this->determinePromotionEligibility($student, $gradeLevel);
+
+                // Add additional info for already re-enrolled students
+                if ($student->current_enrollment_status === 'enrolled') {
+                    $enrollmentType = $student->current_enrollment_type ?? 'regular';
+                    $reEnrollmentDate = $student->re_enrollment_updated_date ?? $student->re_enrollment_date ?? now();
+                    $reEnrollmentSchoolYear = $student->current_school_year_id
+                        ? SchoolYear::find($student->current_school_year_id)?->school_year
+                        : $currentSchoolYear;
+
+                    $student->re_enrollment_info = [
+                        'school_year' => $reEnrollmentSchoolYear,
+                        'grade_level' => $student->current_grade_level,
+                        'section' => $student->current_section,
+                        'enrollment_type' => $enrollmentType,
+                        're_enrollment_date' => $reEnrollmentDate
+                    ];
+                }
+
+                // For graduated students, add graduation info
+                if ($student->current_enrollment_status === 'graduated' || $student->previous_enrollment_status === 'graduated') {
+                    $graduationDate = $student->previous_enrollment_updated ?? $student->re_enrollment_updated_date ?? now();
+                    $student->graduation_info = [
+                        'school_year' => $previousSchoolYear,
+                        'grade_level' => $student->grade_level,
+                        'section' => $student->section,
+                        'graduation_date' => $graduationDate,
+                        'graduation_status' => 'Graduated'
+                    ];
+                }
+
+                return $student;
+            });
 
             return view('admin.students.promoteStudents', compact(
                 'activeStudents',
                 'gradeLevel',
                 'selectedSection',
                 'previousSchoolYear',
-                'currentSchoolYear'
+                'currentSchoolYear',
+                'defaultSchoolYear'
             ));
         }
 
-        // Otherwise, show the class promotion selection view
+        // Rest of your existing code for class selection view...
         $classes = DB::table('classes')
             ->join('class_student as cs_prev', 'classes.id', '=', 'cs_prev.class_id')
             ->leftJoin('class_student as cs_curr', function ($join) use ($currentSchoolYear) {
@@ -1102,9 +1167,66 @@ class StudentController extends Controller
             'classes',
             'previousSchoolYear',
             'currentSchoolYear',
+            'defaultSchoolYear',
             'sections',
             'selectedSection'
         ));
+    }
+
+    private function determinePromotionEligibility($student, $currentGradeLevel)
+    {
+        // If student is currently graduated but being ungraduated, show them as retainable
+        if ($student->current_enrollment_status === 'graduated') {
+            return [
+                'status' => 'retained_graduation',
+                'eligible' => false,
+                'message' => 'Retainable in Grade 6',
+                'average' => $student->general_average
+            ];
+        }
+
+        $average = $student->general_average;
+        $remarks = $student->promotion_status;
+
+        // Define passing criteria
+        $passingGrade = 75; // Minimum passing grade
+        $isGraduating = $currentGradeLevel === 'grade6';
+
+        if ($isGraduating) {
+            // For Grade 6 students - check if they can graduate
+            if ($average >= $passingGrade && $remarks === 'passed') {
+                return [
+                    'status' => 'eligible_graduation',
+                    'eligible' => true,
+                    'message' => 'Eligible for Graduation',
+                    'average' => $average
+                ];
+            } else {
+                return [
+                    'status' => 'retained_graduation',
+                    'eligible' => false,
+                    'message' => 'Retainable in Grade 6',
+                    'average' => $average
+                ];
+            }
+        } else {
+            // For other grades - check if they can be promoted
+            if ($average >= $passingGrade && $remarks === 'passed') {
+                return [
+                    'status' => 'eligible_promotion',
+                    'eligible' => true,
+                    'message' => 'Promotable',
+                    'average' => $average
+                ];
+            } else {
+                return [
+                    'status' => 'retained',
+                    'eligible' => false,
+                    'message' => 'Retainable',
+                    'average' => $average
+                ];
+            }
+        }
     }
 
     public function promoteStudents(Request $request)
@@ -1114,9 +1236,13 @@ class StudentController extends Controller
             'batch_grade' => 'required|string',
         ]);
 
+        // Remove duplicate student IDs
+        $selectedStudents = array_unique($request->input('selected_students'));
+
         $grade = $request->input('batch_grade');
         $section = $request->input('batch_section');
         $currentSchoolYearStr = $request->input('next_school_year');
+        $currentGradeLevel = $request->input('current_grade_level');
 
         [$start, $end] = explode('-', $currentSchoolYearStr);
         $schoolYear = SchoolYear::firstOrCreate(
@@ -1136,65 +1262,358 @@ class StudentController extends Controller
         $previousSchoolYearStr = $previousSchoolYearStart . '-' . ($previousSchoolYearStart + 1);
         $previousSchoolYear = SchoolYear::where('school_year', $previousSchoolYearStr)->first();
 
-        foreach ($request->selected_students as $studentId) {
-
+        foreach ($selectedStudents as $studentId) {
             if ($grade === 'graduated') {
-                // 🟦 Set previous year enrollment to 'graduated'
+                // 🔥 KEY CHANGE: Preserve the original enrollment type when graduating
+                $previousEnrollment = DB::table('class_student')
+                    ->where('student_id', $studentId)
+                    ->where('school_year_id', $previousSchoolYear->id)
+                    ->first();
+
+                $originalEnrollmentType = $previousEnrollment->enrollment_type ?? 'regular';
+
                 DB::table('class_student')
                     ->where('student_id', $studentId)
                     ->where('school_year_id', $previousSchoolYear->id)
                     ->update([
                         'enrollment_status' => 'graduated',
-                        'enrollment_type' => null,
+                        'enrollment_type' => $originalEnrollmentType, // Preserve original type
+                        'updated_at' => now(),
                     ]);
 
-                // 🟥 Remove future enrollment
+                // Remove future enrollment
                 DB::table('class_student')
                     ->where('student_id', $studentId)
                     ->where('school_year_id', $schoolYear->id)
                     ->where('enrollment_status', 'not_enrolled')
                     ->delete();
             } else {
-                // 🟨 Archive all other enrollments
-                DB::table('class_student')
-                    ->where('student_id', $studentId)
-                    ->where('school_year_id', '!=', $schoolYear->id)
-                    ->update(['enrollment_status' => 'archived']);
-
-                // 🟩 Promote student or insert if needed
                 $previousEnrollment = DB::table('class_student')
                     ->where('student_id', $studentId)
                     ->where('school_year_id', $previousSchoolYear->id)
                     ->first();
 
-                $enrollmentType = ($previousEnrollment && $previousEnrollment->class_id === $newClass->id) ? 'returnee' : 'regular';
+                // 🔥 KEY CHANGE: Better logic for determining enrollment type
+                $originalEnrollmentType = $previousEnrollment->enrollment_type ?? 'regular';
 
-                $updated = DB::table('class_student')
+                // Determine the new enrollment type
+                $enrollmentType = $originalEnrollmentType;
+
+                // If student is being retained in the same grade, mark as returnee
+                if ($grade === $currentGradeLevel) {
+                    $enrollmentType = 'returnee';
+                }
+                // If student is being promoted, keep their original type (regular/transferee)
+
+                // Archive all other enrollments except current and previous
+                DB::table('class_student')
+                    ->where('student_id', $studentId)
+                    ->whereNotIn('school_year_id', [$schoolYear->id, $previousSchoolYear->id])
+                    ->update(['enrollment_status' => 'archived']);
+
+                // Check if student already has an enrollment for the current school year
+                $existingEnrollment = DB::table('class_student')
                     ->where('student_id', $studentId)
                     ->where('school_year_id', $schoolYear->id)
-                    ->where('enrollment_status', 'not_enrolled')
-                    ->update([
-                        'class_id' => $newClass->id,
-                        'enrollment_status' => 'enrolled',
-                        'enrollment_type' => $enrollmentType,
-                        'updated_at' => now(),
-                    ]);
+                    ->first();
 
-                if ($updated === 0) {
-                    DB::table('class_student')->insert([
-                        'student_id' => $studentId,
-                        'class_id' => $newClass->id,
-                        'school_year_id' => $schoolYear->id,
-                        'enrollment_status' => 'enrolled',
-                        'enrollment_type' => $enrollmentType,
-                        'created_at' => now(),
+                if ($existingEnrollment) {
+                    // Update existing enrollment
+                    DB::table('class_student')
+                        ->where('student_id', $studentId)
+                        ->where('school_year_id', $schoolYear->id)
+                        ->update([
+                            'class_id' => $newClass->id,
+                            'enrollment_status' => 'enrolled',
+                            'enrollment_type' => $enrollmentType,
+                            'updated_at' => now(),
+                        ]);
+                } else {
+                    try {
+                        // Create new enrollment
+                        DB::table('class_student')->insert([
+                            'student_id' => $studentId,
+                            'class_id' => $newClass->id,
+                            'school_year_id' => $schoolYear->id,
+                            'enrollment_status' => 'enrolled',
+                            'enrollment_type' => $enrollmentType,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        if ($e->getCode() == 23000) {
+                            logger()->warning("Duplicate enrollment attempt for student {$studentId} in class {$newClass->id} for school year {$schoolYear->id}");
+                            continue;
+                        }
+                        throw $e;
+                    }
+                }
+
+                // Also update the previous year's enrollment status to 'archived'
+                DB::table('class_student')
+                    ->where('student_id', $studentId)
+                    ->where('school_year_id', $previousSchoolYear->id)
+                    ->update([
+                        'enrollment_status' => 'archived',
                         'updated_at' => now(),
                     ]);
-                }
             }
         }
 
-        return redirect()->route('students.promote.view')->with('success', 'Selected students promoted successfully!');
+        return redirect()->route('students.promote.view', [
+            'grade_level' => $request->input('current_grade_level', $grade),
+            'section' => $request->input('current_section', $section)
+        ])->with('success', 'Selected students promoted successfully!');
+    }
+
+    private function autoGraduateEligibleStudents($previousSchoolYearRecord, $currentSchoolYear)
+    {
+        try {
+            // Get current school year record
+            $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
+
+            if (!$currentSchoolYearRecord) {
+                return 0;
+            }
+
+            // Find Grade 6 students from previous school year who are eligible for graduation
+            $eligibleGraduates = DB::table('class_student AS cs_prev')
+                ->join('students', 'students.id', '=', 'cs_prev.student_id')
+                ->join('classes', 'classes.id', '=', 'cs_prev.class_id')
+                ->leftJoin('general_averages', function ($join) use ($previousSchoolYearRecord) {
+                    $join->on('general_averages.student_id', '=', 'students.id')
+                        ->where('general_averages.school_year_id', $previousSchoolYearRecord->id);
+                })
+                ->where('cs_prev.school_year_id', $previousSchoolYearRecord->id)
+                ->where('classes.grade_level', 'grade6')
+                ->where('cs_prev.enrollment_status', 'enrolled') // Only currently enrolled Grade 6 students
+                ->select(
+                    'students.id as student_id',
+                    'cs_prev.id as class_student_id',
+                    'cs_prev.enrollment_type', // 🔥 Get the enrollment type
+                    'general_averages.general_average',
+                    'general_averages.remarks',
+                    'cs_prev.updated_at'
+                )
+                ->get();
+
+            $graduatedCount = 0;
+
+            foreach ($eligibleGraduates as $student) {
+                // Check if student is eligible for graduation (average >= 75 and passed)
+                if ($student->general_average >= 75 && $student->remarks === 'passed') {
+
+                    // 🔥 KEY CHANGE: Preserve the original enrollment type when auto-graduating
+                    DB::table('class_student')
+                        ->where('id', $student->class_student_id)
+                        ->update([
+                            'enrollment_status' => 'graduated',
+                            'enrollment_type' => $student->enrollment_type, // Preserve original type
+                            'updated_at' => now(),
+                        ]);
+
+                    // Remove any "not_enrolled" record for current school year
+                    DB::table('class_student')
+                        ->where('student_id', $student->student_id)
+                        ->where('school_year_id', $currentSchoolYearRecord->id)
+                        ->where('enrollment_status', 'not_enrolled')
+                        ->delete();
+
+                    $graduatedCount++;
+                }
+            }
+
+            // Log the automatic graduation (optional)
+            if ($graduatedCount > 0) {
+                Log::info("Automatically graduated {$graduatedCount} Grade 6 students for SY {$previousSchoolYearRecord->school_year}");
+            }
+
+            return $graduatedCount;
+        } catch (\Exception $e) {
+            Log::error("Error in autoGraduateEligibleStudents: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function bulkUnenroll(Request $request)
+    {
+        try {
+            $studentIds = $request->input('student_ids', []);
+            $currentSchoolYear = $this->getDefaultSchoolYear();
+            $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
+
+            if (!$currentSchoolYearRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Current school year not found.'
+                ], 404);
+            }
+
+            $unenrolledCount = 0;
+
+            foreach ($studentIds as $studentId) {
+                // Find the current enrollment for this student
+                $currentEnrollment = DB::table('class_student')
+                    ->where('student_id', $studentId)
+                    ->where('school_year_id', $currentSchoolYearRecord->id)
+                    ->where('enrollment_status', 'enrolled')
+                    ->first();
+
+                if ($currentEnrollment) {
+                    // 🔥 KEY CHANGE: Preserve the enrollment type when unenrolling
+                    $originalEnrollmentType = $currentEnrollment->enrollment_type ?? 'regular';
+
+                    DB::table('class_student')
+                        ->where('student_id', $studentId)
+                        ->where('school_year_id', $currentSchoolYearRecord->id)
+                        ->update([
+                            'enrollment_status' => 'not_enrolled',
+                            'class_id' => null, // Remove class assignment
+                            'enrollment_type' => $originalEnrollmentType, // Preserve original type
+                            'updated_at' => now(),
+                        ]);
+
+                    $unenrolledCount++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully unenrolled {$unenrolledCount} student(s) from current school year with their enrollment types preserved."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error unenrolling students: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function bulkUngraduate(Request $request)
+    {
+        try {
+            $studentIds = $request->input('student_ids', []);
+
+            if (empty($studentIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No students selected for ungraduation.'
+                ], 400);
+            }
+
+            $currentSchoolYear = $this->getDefaultSchoolYear();
+            $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
+
+            if (!$currentSchoolYearRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Current school year not found.'
+                ], 404);
+            }
+
+            $previousStartYear = explode('-', $currentSchoolYear)[0] - 1;
+            $previousSchoolYear = $previousStartYear . '-' . ($previousStartYear + 1);
+            $previousSchoolYearRecord = SchoolYear::where('school_year', $previousSchoolYear)->first();
+
+            if (!$previousSchoolYearRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Previous school year not found.'
+                ], 404);
+            }
+
+            $ungraduatedCount = 0;
+            $errors = [];
+
+            foreach ($studentIds as $studentId) {
+                try {
+                    // Verify student exists
+                    $student = Student::find($studentId);
+                    if (!$student) {
+                        $errors[] = "Student ID {$studentId} not found.";
+                        continue;
+                    }
+
+                    // Find the student's enrollment in the PREVIOUS school year (where they were graduated)
+                    $previousEnrollment = DB::table('class_student')
+                        ->where('student_id', $studentId)
+                        ->where('school_year_id', $previousSchoolYearRecord->id)
+                        ->where('enrollment_status', 'graduated')
+                        ->first();
+
+                    if (!$previousEnrollment) {
+                        $errors[] = "Student {$studentId} is not graduated or already ungraduated.";
+                        continue;
+                    }
+
+                    // 🔥 KEY CHANGE: Preserve the original enrollment type when ungraduating
+                    $originalEnrollmentType = $previousEnrollment->enrollment_type ?? 'regular';
+
+                    DB::table('class_student')
+                        ->where('student_id', $studentId)
+                        ->where('school_year_id', $previousSchoolYearRecord->id)
+                        ->update([
+                            'enrollment_status' => 'archived',
+                            'enrollment_type' => $originalEnrollmentType, // Preserve original type
+                            'updated_at' => now(),
+                        ]);
+
+                    // Remove any current school year enrollment (if exists)
+                    $currentEnrollment = DB::table('class_student')
+                        ->where('student_id', $studentId)
+                        ->where('school_year_id', $currentSchoolYearRecord->id)
+                        ->first();
+
+                    if ($currentEnrollment) {
+                        // If they have current enrollment, update it to not_enrolled
+                        DB::table('class_student')
+                            ->where('student_id', $studentId)
+                            ->where('school_year_id', $currentSchoolYearRecord->id)
+                            ->update([
+                                'enrollment_status' => 'not_enrolled',
+                                'class_id' => null,
+                                'enrollment_type' => $originalEnrollmentType, // Preserve original type
+                                'updated_at' => now(),
+                            ]);
+                    } else {
+                        // Create a not_enrolled record for current school year
+                        DB::table('class_student')->insert([
+                            'student_id' => $studentId,
+                            'class_id' => null,
+                            'school_year_id' => $currentSchoolYearRecord->id,
+                            'enrollment_status' => 'not_enrolled',
+                            'enrollment_type' => $originalEnrollmentType, // Preserve original type
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
+                    $ungraduatedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Error processing student {$studentId}: " . $e->getMessage();
+                    Log::error("Error ungraduating student {$studentId}: " . $e->getMessage());
+                }
+            }
+
+            $message = "Successfully ungraduated {$ungraduatedCount} student(s). They have been moved back to 'Available for Re-Enrollment' with their original enrollment type preserved.";
+            if (!empty($errors)) {
+                $message .= " " . count($errors) . " error(s) occurred.";
+                Log::warning('Ungraduate errors: ' . implode(', ', $errors));
+            }
+
+            return response()->json([
+                'success' => $ungraduatedCount > 0,
+                'message' => $message,
+                'ungraduated_count' => $ungraduatedCount,
+                'errors' => $errors
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in bulkUngraduate: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'System error while ungraduating students: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getDefaultSchoolYear()

@@ -1,6 +1,6 @@
 @extends('./layouts.main')
 
-@section('title', 'Admin | Class Promotion')
+@section('title', 'Admin | Re-Enrollment / Promotion')
 
 
 @section('content')
@@ -64,7 +64,7 @@
                     </li>
                     <li class="menu-item active">
                         <a href="{{ route('students.promote') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">Class Re-Enrollment</div>
+                            <div class="text-warning">Re-Enrollment / Promotion</div>
                         </a>
                     </li>
                 </ul>
@@ -152,11 +152,11 @@
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4 text-warning"><span class="text-muted fw-light">
                 <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                <a class="text-muted fw-light" href="{{ route('show.students') }}"> Students / </a>
-            </span> Promote Students
+                <a class="text-muted fw-light" href="{{ route('student.management') }}"> Students / </a>
+            </span> Re-Enroll Students
         </h4>
 
-        <h2 class="text-center text-info fw-bold">Class Re-Enrollment for {{ $currentSchoolYear }}</h2>
+        <h2 class="text-center text-info fw-bold">Re-Enrollment / Promotion for {{ $currentSchoolYear }}</h2>
 
         {{-- Section Selection --}}
         <div class="row mb-4 d-flex justify-content-between align-items-center">
@@ -218,7 +218,7 @@
                                                 @endif
                                                 - {{ $class->section }}
                                             </h3>
-                                            <h5 class="text-primary mt-2">
+                                            <h5 class="text-warning mt-2">
                                                 {{ $class->promotable_count }}
                                                 student{{ $class->promotable_count > 1 ? 's' : '' }} ready for
                                                 promotion

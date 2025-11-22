@@ -14,13 +14,13 @@ class SubjectSeeder extends Seeder
 {
     public function run(): void
     {
-        // ✅ Ensure current school year exists
+        // Ensure current school year exists
         $schoolYear = SchoolYear::firstOrCreate(
             ['school_year' => '2024-2025'],
             ['start_date' => '2024-06-01', 'end_date' => '2025-03-31']
         );
 
-        // ✅ Default subject list
+        // Default subject list
         $defaultSubjects = [
             'Filipino',
             'English',
@@ -33,7 +33,7 @@ class SubjectSeeder extends Seeder
             'Mother Tongue',
         ];
 
-        // ✅ Insert into subjects table (only once globally)
+        // Insert into subjects table (only once globally)
         $subjectIds = [];
         foreach ($defaultSubjects as $name) {
             $subject = Subject::firstOrCreate(
@@ -43,7 +43,7 @@ class SubjectSeeder extends Seeder
             $subjectIds[] = $subject->id;
         }
 
-        // ✅ Attach subjects to each class for this school year
+        // Attach subjects to each class for this school year
         $classes = Classes::all();
 
         foreach ($classes as $class) {
@@ -57,7 +57,7 @@ class SubjectSeeder extends Seeder
                     ]
                 );
 
-                // ✅ Ensure 4 quarters exist per class_subject
+                // Ensure 4 quarters exist per class_subject
                 for ($q = 1; $q <= 4; $q++) {
                     Quarter::firstOrCreate(
                         [

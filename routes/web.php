@@ -109,6 +109,8 @@ Route::prefix('admin')
         Route::get('/editStudent/{id}', [StudentController::class, 'edit'])->name('edit.student');
         Route::post('/updateStudent/{id}', [StudentController::class, 'update'])->name('update.student');
         Route::delete('/unenrollStudent/{id}', [StudentController::class, 'unenroll'])->name('unenroll.student');
+        Route::post('/students/bulk-unenroll', [StudentController::class, 'bulkUnenroll'])->name('students.bulkUnenroll');
+        Route::post('/students/bulk-ungraduate', [StudentController::class, 'bulkUngraduate'])->name('students.bulkUngraduate');
         Route::delete('/deleteStudent/{id}', [StudentController::class, 'delete'])->name('delete.student');
         Route::delete('/deleteStudents/bulk', [StudentController::class, 'bulkDelete'])->name('students.bulkDelete');
         Route::get('/student-info/{id}', [StudentController::class, 'showStudentInfo'])->name('student.info');

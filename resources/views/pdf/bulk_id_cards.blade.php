@@ -5,6 +5,9 @@
     <meta charset="utf-8">
     <title>Bulk Student IDs</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ public_path('assets/img/logo.png') }}" />
+
     <!-- Core CSS -->
     <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/core.css') }}" />
     <link rel="stylesheet" href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" />

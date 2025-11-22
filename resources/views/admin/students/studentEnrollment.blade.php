@@ -63,7 +63,7 @@
                     </li>
                     <li class="menu-item">
                         <a href="{{ route('students.promote.view') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Class Re-Enrollment</div>
+                            <div class="text-light">Re-Enrollment / Promotion</div>
                         </a>
                     </li>
                 </ul>
@@ -277,11 +277,11 @@
                             </thead>
                             <tbody>
                                 @forelse ($students->sortBy([
-                                                                    ['student_lName', 'asc'],
-                                                                    ['student_fName', 'asc'],
-                                                                    ['student_mName', 'asc'],
-                                                                    ['student_extName', 'asc'],
-                                                                ]) as $student)
+                                                                        ['student_lName', 'asc'],
+                                                                        ['student_fName', 'asc'],
+                                                                        ['student_mName', 'asc'],
+                                                                        ['student_extName', 'asc'],
+                                                                    ]) as $student)
                                     {{-- Student rows unchanged --}}
                                     <tr class="student-row">
                                         <td>
@@ -328,7 +328,8 @@
                                         <td>
                                             @php
                                                 $type =
-                                                    optional($student->class->first())->pivot->enrollment_type ?? 'N/A';
+                                                    optional($student->class->first())->pivot->enrollment_type ??
+                                                    'regular';
                                                 $badgeClass = match ($type) {
                                                     'regular' => 'bg-label-primary',
                                                     'transferee' => 'bg-label-info',
@@ -850,6 +851,14 @@
             });
         });
     </script>
+
+    {{-- Add this after your error display --}}
+    @if (session('auto_graduated'))
+        <div class="alert alert-info">
+            <i class="bx bx-graduation me-2"></i>
+            {{ session('auto_graduated') }}
+        </div>
+    @endif
 @endpush
 
 @push('styles')
