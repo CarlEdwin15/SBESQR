@@ -157,43 +157,123 @@
 
         <h2 class="text-center text-info fw-bold">Re-Enrollment / Promotion for {{ $currentSchoolYear }}</h2>
 
-        {{-- School Year and Section Selection --}}
-        <div class="row mb-4 d-flex justify-content-between align-items-center">
-            {{-- School Year Selection --}}
-            <div class="col-md-4">
-                <form method="GET" action="{{ route('students.promote.view') }}" id="schoolYearForm">
-                    <label for="school_year" class="form-label">Select Previous School Year</label>
-                    <select name="school_year" id="school_year" class="form-select" onchange="this.form.submit()">
-                        @foreach ($availableSchoolYears as $schoolYear)
-                            <option value="{{ $schoolYear }}"
-                                {{ $selectedSchoolYear == $schoolYear ? 'selected' : '' }}>
-                                SY: {{ $schoolYear }}
-                                @if ($schoolYear == $previousSchoolYear)
-                                    (Most Recent)
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    <small class="text-muted">Only previous school years are available for promotion tracking.</small>
-                </form>
+        {{-- Combined Filters and Search Card --}}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bx bx-filter-alt me-2"></i>
+                    Filter & Search Classes
+                </h5>
             </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {{-- Search Function --}}
+                    <div class="col-md-4">
+                        <label for="studentSearch" class="form-label fw-semibold">
+                            <i class="bx bx-search me-1"></i>Search Students
+                        </label>
+                        <div class="input-group">
+                            <input type="text" id="studentSearch" class="form-control"
+                                placeholder="Search by name or LRN..." aria-label="Search students">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch"
+                                title="Clear search">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Type to filter classes by student name or LRN</small>
+                    </div>
 
-            {{-- Section Selection --}}
-            <div class="col-md-4">
-                <form method="GET" action="{{ route('students.promote.view') }}" id="sectionForm">
-                    <input type="hidden" name="school_year" value="{{ $selectedSchoolYear }}">
-                    <label for="section" class="form-label">Select Section</label>
-                    <select name="section" id="section" class="form-select" onchange="this.form.submit()">
-                        @foreach ($sections as $s)
-                            <option value="{{ $s }}" {{ $selectedSection == $s ? 'selected' : '' }}>
-                                Section {{ $s }}
-                            </option>
-                        @endforeach
-                    </select>
-                </form>
+                    {{-- Section Selection --}}
+                    <div class="col-md-4">
+                        <label for="section" class="form-label fw-semibold">
+                            <i class="bx bx-group me-1"></i>Section
+                        </label>
+                        <form method="GET" action="{{ route('students.promote.view') }}" id="sectionForm"
+                            class="mb-0">
+                            <input type="hidden" name="school_year" value="{{ $selectedSchoolYear }}">
+                            <select name="section" id="section" class="form-select" onchange="this.form.submit()">
+                                @foreach ($sections as $s)
+                                    <option value="{{ $s }}" {{ $selectedSection == $s ? 'selected' : '' }}>
+                                        Section {{ $s }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                        <small class="text-muted">Choose class section to view</small>
+                    </div>
+
+                    {{-- School Year Selection --}}
+                    <div class="col-md-4">
+                        <label for="school_year" class="form-label fw-semibold">
+                            <i class="bx bx-calendar me-1"></i>School Year
+                        </label>
+                        <form method="GET" action="{{ route('students.promote.view') }}" id="schoolYearForm"
+                            class="mb-0">
+                            <select name="school_year" id="school_year" class="form-select"
+                                onchange="this.form.submit()">
+                                @foreach ($availableSchoolYears as $schoolYear)
+                                    <option value="{{ $schoolYear }}"
+                                        {{ $selectedSchoolYear == $schoolYear ? 'selected' : '' }}>
+                                        SY: {{ $schoolYear }}
+                                        @if ($schoolYear == $previousSchoolYear)
+                                            (Most Recent)
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                        <small class="text-muted">Select previous school year for promotion tracking</small>
+                    </div>
+                </div>
+
+                {{-- Quick Stats --}}
+                <div class="row mt-3 pt-3 border-top">
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap gap-4">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-dark rounded-pill p-2 me-2">
+                                    <i class="bx bx-user"></i>
+                                </span>
+                                <div>
+                                    <small class="text-muted d-block">Total Students</small>
+                                    <strong>{{ $classes->sum('total_students') }}</strong>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success rounded-pill p-2 me-2">
+                                    <i class="bx bx-check-circle"></i>
+                                </span>
+                                <div>
+                                    <small class="text-muted d-block">Re-enrolled</small>
+                                    <strong>{{ $classes->sum('reenrolled_count') }}</strong>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-info rounded-pill p-2 me-2">
+                                    <i class="bx bxs-graduation"></i>
+                                </span>
+                                <div>
+                                    <small class="text-muted d-block">Graduated</small>
+                                    <strong>{{ $classes->sum('graduated_count') }}</strong>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-warning rounded-pill p-2 me-2">
+                                    <i class="bx bx-user-plus"></i>
+                                </span>
+                                <div>
+                                    <small class="text-muted d-block">Pending Re-enrollment</small>
+                                    <strong>{{ $classes->sum('promotable_count') }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{-- / Quick Stats --}}
+
             </div>
         </div>
-        {{-- / School Year and Section Selection --}}
+        {{-- / Combined Filters and Search Card --}}
 
         <!-- Information Alert -->
         {{-- @if ($selectedSchoolYear == $previousSchoolYear)
@@ -214,11 +294,13 @@
         <!-- Card for All Grade Levels by Section -->
         <section id="services" class="services section">
             <div class="container" data-aos="fade-up" data-aos-delay="100">
-                <div class="row gy-5">
+                <div class="row gy-5" id="classesContainer">
                     @php $iconIndex = 1; @endphp
 
                     @foreach ($classes as $class)
-                        <div class="col-xl-4 col-md-6" data-aos="zoom-in">
+                        <div class="col-xl-4 col-md-6 class-card" data-aos="zoom-in"
+                            data-student-names="{{ $class->student_names ?? '' }}"
+                            data-student-lrns="{{ $class->student_lrns ?? '' }}">
                             <div class="service-item {{ $class->promotable_count == 0 ? 'completed-class' : '' }}">
                                 <div class="img">
                                     <img src="{{ asset('assets/img/classes/' . strtolower($class->grade_level) . '.jpg') }}"
@@ -261,13 +343,13 @@
                                                 </strong>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <small class="text-warning">Not Re-enrolled:</small>
+                                                <small class="text-warning">Ready for Re-Enrollment:</small>
                                                 <strong class="text-warning">
                                                     {{ $class->promotable_count }}
                                                 </strong>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <small class="text-success">Already Re-enrolled:</small>
+                                                <small class="text-success">Re-enrolled:</small>
                                                 <strong class="text-success">
                                                     {{ $class->reenrolled_count }}
                                                 </strong>
@@ -284,10 +366,10 @@
 
                                         @if ($class->promotable_count > 0)
                                             <div class="mt-2">
-                                                <span class="badge bg-warning text-dark">
-                                                    {{ $class->promotable_count }}
+                                                <span class="badge bg-label-warning text-dark">
+                                                    <strong>{{ $class->promotable_count }}</strong>
                                                     student{{ $class->promotable_count > 1 ? 's' : '' }} ready for
-                                                    promotion
+                                                    re-enrollment
                                                 </span>
                                             </div>
                                         @else
@@ -312,6 +394,16 @@
                         </div>
                     @endif
 
+                </div>
+
+                {{-- No Results Message --}}
+                <div id="noResults" class="d-none">
+                    <div class="col-12">
+                        <div class="alert alert-info text-center">
+                            <i class="bx bx-search-alt me-2"></i>
+                            No classes found matching your search criteria.
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -365,6 +457,62 @@
         // Update section form when school year changes
         document.getElementById('school_year').addEventListener('change', function() {
             document.getElementById('sectionForm').querySelector('input[name="school_year"]').value = this.value;
+        });
+
+        // Search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('studentSearch');
+            const clearSearch = document.getElementById('clearSearch');
+            const classCards = document.querySelectorAll('.class-card');
+            const classesContainer = document.getElementById('classesContainer');
+            const noResults = document.getElementById('noResults');
+
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                let hasVisibleResults = false;
+
+                classCards.forEach(card => {
+                    const studentNames = card.getAttribute('data-student-names').toLowerCase();
+                    const studentLRNs = card.getAttribute('data-student-lrns').toLowerCase();
+
+                    const matchesName = studentNames.includes(searchTerm);
+                    const matchesLRN = studentLRNs.includes(searchTerm);
+
+                    if (searchTerm === '' || matchesName || matchesLRN) {
+                        card.style.display = 'block';
+                        hasVisibleResults = true;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Show/hide no results message
+                if (!hasVisibleResults && searchTerm !== '') {
+                    noResults.classList.remove('d-none');
+                    classesContainer.classList.add('d-none');
+                } else {
+                    noResults.classList.add('d-none');
+                    classesContainer.classList.remove('d-none');
+                }
+            }
+
+            // Search on input
+            searchInput.addEventListener('input', performSearch);
+
+            // Clear search
+            clearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+
+            // Search on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
         });
     </script>
 
@@ -449,6 +597,25 @@
         .badge {
             font-size: 0.75rem;
             padding: 4px 8px;
+        }
+
+        /* Search styles */
+        #studentSearch {
+            border-right: none;
+        }
+
+        #clearSearch {
+            border-left: none;
+            border-color: #ced4da;
+        }
+
+        #clearSearch:hover {
+            background-color: #f8f9fa;
+            border-color: #ced4da;
+        }
+
+        .class-card {
+            transition: all 0.3s ease;
         }
     </style>
 @endpush

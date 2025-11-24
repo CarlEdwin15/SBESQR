@@ -160,250 +160,422 @@
             </h3>
         </div>
 
-        <div class="row mb-3 align-items-center">
-            {{-- Search Bar --}}
-            <div class="col-md-6 d-flex justify-content-start gap-2">
-                <div class="d-flex align-items-center w-100" style="max-width: 400px;">
-                    <i class="bx bx-search fs-4 lh-0 me-2"></i>
-                    <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
-                        placeholder="Search..." aria-label="Search..." />
-                </div>
-
-                <!-- Enrolled Student Button trigger modal -->
-                <div class="d-flex align-items-center w-100">
-                    <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
-                        data-bs-target="#registerModal">
-                        <i class='bx bx-user-plus me-2'></i>
-                        <span class="d-none d-sm-block">Enroll Student</span>
-                    </button>
-                </div>
-            </div>
-
-            {{-- School Year Selection --}}
-            <div class="col-md-6 d-flex justify-content-end">
-                <!-- School Year Dropdown -->
-                <div class="dropdown">
-                    <button class="btn btn-info text-white dropdown-toggle w-100 text-start" type="button"
-                        id="yearDropdownStudents" data-bs-toggle="dropdown" aria-expanded="false">
-                        {{ $selectedYear }}
-                    </button>
-                    <ul class="dropdown-menu w-100" aria-labelledby="yearDropdownStudents">
-                        @foreach ($schoolYears as $year)
-                            <li>
-                                <a class="dropdown-item @if ($year === $selectedYear) active fw-bold @endif"
-                                    href="{{ route(
-                                        'show.students',
-                                        array_filter([
-                                            'school_year' => $year,
-                                            'section' => $selectedSection ?? null,
-                                        ]),
-                                    ) }}">
-                                    {{ $year }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-
-                <!-- "Now" button -->
-                <form method="GET" action="{{ route('show.students') }}">
-                    <input type="hidden" name="school_year" value="{{ $currentYear . '-' . ($currentYear + 1) }}">
-                    @if ($selectedSection)
-                        <input type="hidden" name="section" value="{{ $selectedSection }}">
-                    @endif
-                    <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
-                        Now
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div id="noResultsMessage" class="alert alert-info text-center d-none">
-            No search found.
-        </div>
-
-        {{-- Card --}}
-        @foreach ($groupedStudents as $grade => $students)
+        <div class="row mb-2 g-2">
             @php
-                // Calculate counts for header display - COUNT ALL STUDENTS IN THE LIST
-                $totalStudents = $students->count();
-                $studentCount = $totalStudents; // This now counts all students listed
+                // Get counts for the selected school year
+                $selectedYearRecord = \App\Models\SchoolYear::where('school_year', $selectedYear)->first();
+                $schoolYearId = $selectedYearRecord ? $selectedYearRecord->id : null;
 
-                // Collect unique adviser and subject teacher counts
-                $adviserCount = $students
-                    ->map(fn($s) => optional($s->class->first())->adviser)
-                    ->filter()
-                    ->unique('id')
-                    ->count();
+                // Total students who were enrolled in selected school year (including archived and graduated)
+                $totalEnrolledStudents = \App\Models\ClassStudent::where('school_year_id', $schoolYearId)
+                    ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated'])
+                    ->distinct('student_id')
+                    ->count('student_id');
 
-                $subjectTeacherCount = $students
-                    ->flatMap(fn($s) => optional($s->class->first())->subjectTeachers ?? [])
-                    ->unique('id')
-                    ->count();
+                // Count by enrollment type for selected school year (including archived and graduated)
+                $regularCount = \App\Models\ClassStudent::where('school_year_id', $schoolYearId)
+                    ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated'])
+                    ->where('enrollment_type', 'regular')
+                    ->distinct('student_id')
+                    ->count('student_id');
+
+                $returneeCount = \App\Models\ClassStudent::where('school_year_id', $schoolYearId)
+                    ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated'])
+                    ->where('enrollment_type', 'returnee')
+                    ->distinct('student_id')
+                    ->count('student_id');
+
+                $transfereeCount = \App\Models\ClassStudent::where('school_year_id', $schoolYearId)
+                    ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated'])
+                    ->where('enrollment_type', 'transferee')
+                    ->distinct('student_id')
+                    ->count('student_id');
             @endphp
 
-            <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
-                {{-- Header with toggle --}}
-                <div class="card-header bg-light d-flex justify-content-between align-items-center collapse-toggle"
-                    data-bs-toggle="collapse" data-bs-target="#collapse-{{ Str::slug($grade) }}" aria-expanded="false"
-                    aria-controls="collapse-{{ Str::slug($grade) }}" style="cursor: pointer;">
-
-                    <h5 class="fw-bold text-primary mb-0">{{ $grade }} (
-                        @if ($studentCount > 0)
-                            <span class="text-success fw-bold">{{ $studentCount }} students</span>
-                        @else
-                            <span class="text-muted">No students</span>
-                        @endif)
-                    </h5>
-
-                    <i class="bx bx-chevron-down fs-4 transition-all"></i>
-                </div>
-
-                {{-- Collapsible Content --}}
-                <div id="collapse-{{ Str::slug($grade) }}" class="collapse">
-                    <div class="table-responsive text-nowrap">
-                        <table class="table table-hover table-bordered text-center mb-0"
-                            id="table-{{ Str::slug($grade) }}">
-                            <thead>
-                                <tr>
-                                    <th style="min-width: 220px;">Full Name</th>
-                                    <th style="width: 10%;">Photo</th>
-                                    <th style="width: 15%;">LRN</th>
-                                    <th style="width: 20%;">Grade & Section</th>
-                                    <th style="width: 15%;">Enrollment Status</th>
-                                    <th style="width: 15%;">Enrollment Type</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($students->sortBy([
-                                                                        ['student_lName', 'asc'],
-                                                                        ['student_fName', 'asc'],
-                                                                        ['student_mName', 'asc'],
-                                                                        ['student_extName', 'asc'],
-                                                                    ]) as $student)
-                                    {{-- Student rows unchanged --}}
-                                    <tr class="student-row">
-                                        <td>
-                                            <a class="text-primary"
-                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                {{ $student->student_lName }}, {{ $student->student_fName }}
-                                                {{ $student->student_mName }} {{ $student->student_extName }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a class="text-primary"
-                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                @if ($student->student_photo)
-                                                    <img src="{{ asset('public/uploads/' . $student->student_photo) }}"
-                                                        alt="Profile Photo" width="30" height="30"
-                                                        style="object-fit: cover; border-radius: 50%;">
-                                                @else
-                                                    <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
-                                                        alt="No Profile" width="30" height="30"
-                                                        style="object-fit: cover; border-radius: 50%;">
-                                                @endif
-                                            </a>
-                                        </td>
-                                        <td>{{ $student->student_lrn }}</td>
-                                        <td>{{ optional($student->class->first())->formatted_grade_level }} -
-                                            {{ optional($student->class->first())->section }}</td>
-                                        <td>
-                                            @php
-                                                $status =
-                                                    optional($student->class->first())->pivot->enrollment_status ??
-                                                    'N/A';
-                                                $badgeClass = match ($status) {
-                                                    'enrolled' => 'bg-label-success',
-                                                    'not_enrolled' => 'bg-label-secondary',
-                                                    'archived' => 'bg-label-warning',
-                                                    'graduated' => 'bg-label-info',
-                                                    default => 'bg-label-dark',
-                                                };
-                                            @endphp
-                                            <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                                {{ strtoupper(str_replace('_', ' ', $status)) }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            @php
-                                                $type =
-                                                    optional($student->class->first())->pivot->enrollment_type ??
-                                                    'regular';
-                                                $badgeClass = match ($type) {
-                                                    'regular' => 'bg-label-primary',
-                                                    'transferee' => 'bg-label-info',
-                                                    'returnee' => 'bg-label-warning',
-                                                    default => 'bg-label-dark',
-                                                };
-                                            @endphp
-                                            <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
-                                                {{ strtoupper(str_replace('_', ' ', $type)) }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="dropdown">
-                                                <button class="btn p-0 dropdown-toggle hide-arrow"
-                                                    data-bs-toggle="dropdown">
-                                                    <i class="bx bx-dots-vertical-rounded"></i>
-                                                </button>
-                                                <div class="dropdown-menu">
-                                                    <a class="dropdown-item text-info"
-                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
-                                                        <i class="bx bxs-user-badge me-1"></i> View Profile
-                                                    </a>
-                                                    @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
-                                                        <button type="button" class="dropdown-item text-danger"
-                                                            onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}', '{{ $selectedYear }}')">
-                                                            <i class="bx bx-user-x me-1"></i> Unenroll
-                                                        </button>
-
-                                                        <form id="unenroll-form-{{ $student->id }}"
-                                                            action="{{ route('unenroll.student', $student->id) }}"
-                                                            method="POST" style="display: none;">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <input type="hidden" name="school_year"
-                                                                value="{{ $selectedYear }}">
-                                                        </form>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr class="text-muted">
-                                        <td colspan="8">No students in {{ $grade }}.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {{-- Pagination --}}
-                    <div class="d-flex justify-content-between align-items-center flex-wrap px-3 py-2 border-top gap-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="length-{{ Str::slug($grade) }}" class="mb-0">Show</label>
-                            <select id="length-{{ Str::slug($grade) }}" class="form-select form-select-sm w-auto">
-                                <option value="5" selected>5</option>
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                            <span>entries</span>
-                        </div>
-                        <div class="flex-grow-1 text-center">
-                            <small id="info-{{ Str::slug($grade) }}" class="text-muted"></small>
-                        </div>
-                        <nav aria-label="Page navigation" class="ms-auto">
-                            <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
-                        </nav>
+            <!-- Total Students Card -->
+            <div class="col-6 col-md-3">
+                <div class="card h-85 card-hover">
+                    <div class="card-body">
+                        <span class="fw-semibold d-block mb-1 text-success">Total Students</span>
+                        <h3 class="card-title mb-2 text-success fw-bold">{{ $totalEnrolledStudents }}</h3>
+                        <small class="text-muted">All students in {{ $selectedYear }}</small>
                     </div>
                 </div>
             </div>
-        @endforeach
-        {{-- / Card --}}
+
+            <!-- Regular Students Card -->
+            <div class="col-6 col-md-3">
+                <div class="card h-85 card-hover">
+                    <div class="card-body">
+                        <span class="fw-semibold d-block mb-1 text-primary">Regular Students</span>
+                        <h3 class="card-title mb-2 text-primary fw-bold">{{ $regularCount }}</h3>
+                        <small class="text-muted">Regular enrollment type</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Returnee Students Card -->
+            <div class="col-6 col-md-3">
+                <div class="card h-85 card-hover">
+                    <div class="card-body">
+                        <span class="fw-semibold d-block mb-1 text-warning">Returnee Students</span>
+                        <h3 class="card-title mb-2 text-warning fw-bold">{{ $returneeCount }}</h3>
+                        <small class="text-muted">Returning students</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transferee Students Card -->
+            <div class="col-6 col-md-3">
+                <div class="card h-85 card-hover">
+                    <div class="card-body">
+                        <span class="fw-semibold d-block mb-1 text-info">Transferee Students</span>
+                        <h3 class="card-title mb-2 text-info fw-bold">{{ $transfereeCount }}</h3>
+                        <small class="text-muted">Transferred students</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <div class="row mb-3 align-items-center">
+                    {{-- Search Bar --}}
+                    <div class="col-md-6 d-flex justify-content-start gap-2 mb-2">
+                        <div class="d-flex align-items-center w-100" style="max-width: 400px;">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bx bx-search"></i></span>
+                                <input type="text" id="studentSearch" class="form-control border-1 shadow-none"
+                                    placeholder="Search..." aria-label="Search..." />
+                            </div>
+                        </div>
+
+                        <!-- Enrolled Student Button trigger modal -->
+                        <div class="d-flex align-items-center w-100">
+                            <button type="button" class="btn btn-primary d-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#registerModal">
+                                <i class='bx bx-user-plus me-2'></i>
+                                <span class="d-none d-sm-block">Enroll Student</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- School Year Selection and Enrollment Type Filter --}}
+                    <div class="col-md-6 d-flex justify-content-end gap-2">
+                        <!-- Enrollment Type Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button"
+                                id="enrollmentTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                @php
+                                    $selectedEnrollmentType = request('enrollment_type', 'all');
+                                    $enrollmentTypeLabels = [
+                                        'all' => 'All Enrollment Types',
+                                        'regular' => 'Regular',
+                                        'returnee' => 'Returnee',
+                                        'transferee' => 'Transferee',
+                                    ];
+                                @endphp
+                                <i class="bx bx-filter enrollment-icon"></i>
+                                <span class="enrollment-label">
+                                    {{ $enrollmentTypeLabels[$selectedEnrollmentType] }}
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="enrollmentTypeDropdown">
+                                <li>
+                                    <a class="dropdown-item @if ($selectedEnrollmentType === 'all') active fw-bold @endif"
+                                        href="{{ route(
+                                            'show.students',
+                                            array_filter([
+                                                'school_year' => $selectedYear,
+                                                'section' => $selectedSection ?? null,
+                                                'enrollment_type' => 'all',
+                                            ]),
+                                        ) }}">
+                                        All Enrollment Types
+                                    </a>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <a class="dropdown-item @if ($selectedEnrollmentType === 'regular') active fw-bold @endif"
+                                        href="{{ route(
+                                            'show.students',
+                                            array_filter([
+                                                'school_year' => $selectedYear,
+                                                'section' => $selectedSection ?? null,
+                                                'enrollment_type' => 'regular',
+                                            ]),
+                                        ) }}">
+                                        Regular
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item @if ($selectedEnrollmentType === 'returnee') active fw-bold @endif"
+                                        href="{{ route(
+                                            'show.students',
+                                            array_filter([
+                                                'school_year' => $selectedYear,
+                                                'section' => $selectedSection ?? null,
+                                                'enrollment_type' => 'returnee',
+                                            ]),
+                                        ) }}">
+                                        Returnee
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item @if ($selectedEnrollmentType === 'transferee') active fw-bold @endif"
+                                        href="{{ route(
+                                            'show.students',
+                                            array_filter([
+                                                'school_year' => $selectedYear,
+                                                'section' => $selectedSection ?? null,
+                                                'enrollment_type' => 'transferee',
+                                            ]),
+                                        ) }}">
+                                        Transferee
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- School Year Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-info text-white dropdown-toggle w-100 text-start" type="button"
+                                id="yearDropdownStudents" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ $selectedYear }}
+                            </button>
+                            <ul class="dropdown-menu w-100" aria-labelledby="yearDropdownStudents">
+                                @foreach ($schoolYears as $year)
+                                    <li>
+                                        <a class="dropdown-item @if ($year === $selectedYear) active fw-bold @endif"
+                                            href="{{ route(
+                                                'show.students',
+                                                array_filter([
+                                                    'school_year' => $year,
+                                                    'section' => $selectedSection ?? null,
+                                                    'enrollment_type' => $selectedEnrollmentType,
+                                                ]),
+                                            ) }}">
+                                            {{ $year }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <!-- "Now" button -->
+                        <form method="GET" action="{{ route('show.students') }}">
+                            <input type="hidden" name="school_year"
+                                value="{{ $currentYear . '-' . ($currentYear + 1) }}">
+                            @if ($selectedSection)
+                                <input type="hidden" name="section" value="{{ $selectedSection }}">
+                            @endif
+                            @if ($selectedEnrollmentType !== 'all')
+                                <input type="hidden" name="enrollment_type" value="{{ $selectedEnrollmentType }}">
+                            @endif
+                            <button type="submit" class="btn btn-sm btn-primary ms-2" style="height: 38px;">
+                                Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="noResultsMessage" class="alert alert-info text-center d-none">
+                    No search found.
+                </div>
+
+                <hr class="my-3" />
+
+                {{-- Card --}}
+                @foreach ($groupedStudents as $grade => $students)
+                    @php
+                        // Calculate counts for header display - COUNT ALL STUDENTS IN THE LIST
+                        $totalStudents = $students->count();
+                        $studentCount = $totalStudents; // This now counts all students listed
+
+                        // Collect unique adviser and subject teacher counts
+                        $adviserCount = $students
+                            ->map(fn($s) => optional($s->class->first())->adviser)
+                            ->filter()
+                            ->unique('id')
+                            ->count();
+
+                        $subjectTeacherCount = $students
+                            ->flatMap(fn($s) => optional($s->class->first())->subjectTeachers ?? [])
+                            ->unique('id')
+                            ->count();
+                    @endphp
+
+                    <div class="card d-flex flex-column mb-4 grade-card" data-grade="{{ strtolower($grade) }}">
+                        {{-- Header with toggle --}}
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center collapse-toggle"
+                            data-bs-toggle="collapse" data-bs-target="#collapse-{{ Str::slug($grade) }}"
+                            aria-expanded="false" aria-controls="collapse-{{ Str::slug($grade) }}"
+                            style="cursor: pointer;">
+
+                            <h5 class="fw-bold text-primary mb-0">{{ $grade }} (
+                                @if ($studentCount > 0)
+                                    <span class="text-success fw-bold">{{ $studentCount }} students</span>
+                                @else
+                                    <span class="text-muted">No students</span>
+                                @endif)
+                            </h5>
+
+                            <i class="bx bx-chevron-down fs-4 transition-all"></i>
+                        </div>
+
+                        {{-- Collapsible Content --}}
+                        <div id="collapse-{{ Str::slug($grade) }}" class="collapse">
+                            <div class="table-responsive text-nowrap">
+                                <table class="table table-hover table-bordered text-center mb-0"
+                                    id="table-{{ Str::slug($grade) }}">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width: 220px;">Full Name</th>
+                                            <th style="width: 10%;">Photo</th>
+                                            <th style="width: 15%;">LRN</th>
+                                            <th style="width: 20%;">Grade & Section</th>
+                                            <th style="width: 15%;">Enrollment Status</th>
+                                            <th style="width: 15%;">Enrollment Type</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($students->sortBy([
+                                                                                                                            ['student_lName', 'asc'],
+                                                                                                                            ['student_fName', 'asc'],
+                                                                                                                            ['student_mName', 'asc'],
+                                                                                                                            ['student_extName', 'asc'],
+                                                                                                                        ]) as $student)
+                                            {{-- Student rows unchanged --}}
+                                            <tr class="student-row">
+                                                <td>
+                                                    <a class="text-primary"
+                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                        {{ $student->student_lName }}, {{ $student->student_fName }}
+                                                        {{ $student->student_mName }} {{ $student->student_extName }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <a class="text-primary"
+                                                        href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                        @if ($student->student_photo)
+                                                            <img src="{{ asset('public/uploads/' . $student->student_photo) }}"
+                                                                alt="Profile Photo" width="30" height="30"
+                                                                style="object-fit: cover; border-radius: 50%;">
+                                                        @else
+                                                            <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
+                                                                alt="No Profile" width="30" height="30"
+                                                                style="object-fit: cover; border-radius: 50%;">
+                                                        @endif
+                                                    </a>
+                                                </td>
+                                                <td>{{ $student->student_lrn }}</td>
+                                                <td>{{ optional($student->class->first())->formatted_grade_level }} -
+                                                    {{ optional($student->class->first())->section }}</td>
+                                                <td>
+                                                    @php
+                                                        $status =
+                                                            optional($student->class->first())->pivot
+                                                                ->enrollment_status ?? 'N/A';
+                                                        $badgeClass = match ($status) {
+                                                            'enrolled' => 'bg-label-success',
+                                                            'not_enrolled' => 'bg-label-secondary',
+                                                            'archived' => 'bg-label-warning',
+                                                            'graduated' => 'bg-label-info',
+                                                            default => 'bg-label-dark',
+                                                        };
+                                                    @endphp
+                                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    @php
+                                                        $type =
+                                                            optional($student->class->first())->pivot
+                                                                ->enrollment_type ?? 'regular';
+                                                        $badgeClass = match ($type) {
+                                                            'regular' => 'bg-label-primary',
+                                                            'transferee' => 'bg-label-info',
+                                                            'returnee' => 'bg-label-warning',
+                                                            default => 'bg-label-dark',
+                                                        };
+                                                    @endphp
+                                                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-1">
+                                                        {{ strtoupper(str_replace('_', ' ', $type)) }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="dropdown">
+                                                        <button class="btn p-0 dropdown-toggle hide-arrow"
+                                                            data-bs-toggle="dropdown">
+                                                            <i class="bx bx-dots-vertical-rounded"></i>
+                                                        </button>
+                                                        <div class="dropdown-menu">
+                                                            <a class="dropdown-item text-info"
+                                                                href="{{ route('student.info', ['id' => $student->id, 'school_year' => $schoolYearId]) }}">
+                                                                <i class="bx bxs-user-badge me-1"></i> View Profile
+                                                            </a>
+                                                            @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
+                                                                <button type="button" class="dropdown-item text-danger"
+                                                                    onclick="confirmUnenroll({{ $student->id }}, '{{ $student->student_fName }}', '{{ $student->student_lName }}', '{{ $selectedYear }}')">
+                                                                    <i class="bx bx-user-x me-1"></i> Unenroll
+                                                                </button>
+
+                                                                <form id="unenroll-form-{{ $student->id }}"
+                                                                    action="{{ route('unenroll.student', $student->id) }}"
+                                                                    method="POST" style="display: none;">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <input type="hidden" name="school_year"
+                                                                        value="{{ $selectedYear }}">
+                                                                </form>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr class="text-muted">
+                                                <td colspan="8">No students in {{ $grade }}.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {{-- Pagination --}}
+                            <div
+                                class="d-flex justify-content-between align-items-center flex-wrap px-3 py-2 border-top gap-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label for="length-{{ Str::slug($grade) }}" class="mb-0">Show</label>
+                                    <select id="length-{{ Str::slug($grade) }}"
+                                        class="form-select form-select-sm w-auto">
+                                        <option value="5" selected>5</option>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span>entries</span>
+                                </div>
+                                <div class="flex-grow-1 text-center">
+                                    <small id="info-{{ Str::slug($grade) }}" class="text-muted"></small>
+                                </div>
+                                <nav aria-label="Page navigation" class="ms-auto">
+                                    <ul class="pagination mb-0" id="pagination-{{ Str::slug($grade) }}"></ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+                {{-- / Card --}}
+            </div>
+        </div>
 
         <hr class="my-5" />
 
@@ -501,11 +673,65 @@
 @push('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-
             // ========= GLOBAL STATE ==========
             const paginators = {};
             const visibleRowsMap = {};
-            const tableSettings = {}; // { rowsPerPage, currentPage }
+            const tableSettings = {};
+
+            // Get the current enrollment type filter value
+            const currentEnrollmentType = '{{ $selectedEnrollmentType }}';
+
+            // ========= ENROLLMENT TYPE FILTERING ==========
+            function filterByEnrollmentType() {
+                const gradeCards = document.querySelectorAll(".grade-card");
+                let anyVisible = false;
+
+                gradeCards.forEach(card => {
+                    const table = card.querySelector("table");
+                    const rows = Array.from(table.querySelectorAll("tbody tr.student-row"));
+                    const tableId = table.id;
+
+                    if (currentEnrollmentType === 'all') {
+                        // Show all cards and reset all rows
+                        card.classList.remove("d-none");
+                        rows.forEach(row => row.style.display = "table-row");
+                        visibleRowsMap[tableId] = rows;
+                        if (paginators[tableId]) paginators[tableId]();
+                        anyVisible = true;
+                    } else {
+                        // Filter by enrollment type
+                        let anyMatch = false;
+
+                        rows.forEach(row => {
+                            // Find the enrollment type badge in this row
+                            const enrollmentBadge = row.querySelector('td:nth-child(6) .badge');
+                            const rowEnrollmentType = enrollmentBadge ? enrollmentBadge.textContent
+                                .trim().toLowerCase() : '';
+
+                            // Check if this row matches the selected enrollment type
+                            const match = rowEnrollmentType.includes(currentEnrollmentType);
+                            row.style.display = match ? "table-row" : "none";
+                            if (match) anyMatch = true;
+                        });
+
+                        visibleRowsMap[tableId] = rows.filter(r => r.style.display !== "none");
+
+                        if (anyMatch) {
+                            card.classList.remove("d-none");
+                            anyVisible = true;
+                            if (paginators[tableId]) paginators[tableId]();
+                        } else {
+                            card.classList.add("d-none");
+                        }
+                    }
+                });
+
+                // Show/hide no results message
+                const noResultsMessage = document.getElementById("noResultsMessage");
+                if (noResultsMessage) {
+                    noResultsMessage.classList.toggle("d-none", anyVisible || currentEnrollmentType === 'all');
+                }
+            }
 
             // ========= PAGINATION FUNCTION ==========
             function paginateTable(tableId, paginationId, infoId, lengthSelectId, defaultRowsPerPage = 5,
@@ -633,16 +859,8 @@
                     noResultsMessage.classList.toggle("d-none", overallMatch || query === "");
 
                     if (query === "") {
-                        gradeCards.forEach(card => {
-                            const table = card.querySelector("table");
-                            const rows = Array.from(table.querySelectorAll("tbody tr.student-row"));
-                            const tableId = table.id;
-
-                            rows.forEach(r => r.style.display = "table-row");
-                            visibleRowsMap[tableId] = rows;
-                            if (paginators[tableId]) paginators[tableId]();
-                            card.classList.remove("d-none");
-                        });
+                        // When search is cleared, reapply enrollment type filter
+                        filterByEnrollmentType();
                     }
                 });
             }
@@ -671,6 +889,17 @@
                 });
             }
 
+            // ========= URL PARAMETER HANDLING ==========
+            function handleUrlParameters() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const enrollmentType = urlParams.get('enrollment_type');
+
+                // If we have an enrollment type filter in URL, apply it
+                if (enrollmentType && enrollmentType !== 'all') {
+                    filterByEnrollmentType();
+                }
+            }
+
             // ========= INITIALIZATION ==========
             const gradeLevels = @json(array_keys($groupedStudents->toArray()));
             gradeLevels.forEach(grade => {
@@ -678,8 +907,12 @@
                 paginateTable(`table-${slug}`, `pagination-${slug}`, `info-${slug}`, `length-${slug}`);
             });
 
+            // Apply enrollment type filter on page load
+            filterByEnrollmentType();
+
             setupSearchAndFilters();
             setupAccordion();
+            handleUrlParameters();
         });
     </script>
 
@@ -908,6 +1141,54 @@
         .ts-dropdown .option.active {
             background-color: #e3f2fd;
             color: #1976d2;
+        }
+
+        /* Ensure smooth transitions for showing/hiding cards */
+        .grade-card {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .grade-card.d-none {
+            display: none !important;
+        }
+
+        /* Style for the enrollment type filter dropdown to show active state */
+        .dropdown-item.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* Make the no results message more prominent */
+        #noResultsMessage {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 767.98px) {
+            .mobile-stack>* {
+                width: 100% !important;
+                margin-bottom: 10px;
+            }
+
+            .mobile-stack .btn,
+            .mobile-stack .dropdown-toggle {
+                width: 100% !important;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .enrollment-label {
+                display: none !important;
+            }
+        }
+
+        /* Show label only on desktop */
+        @media (min-width: 768px) {
+            .enrollment-icon {
+                margin-right: 6px;
+            }
         }
     </style>
 @endpush

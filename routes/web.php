@@ -34,9 +34,15 @@ Route::view('/error/banned', 'errors.403_banned')->name('error.banned');
 
 
 // GENERAL & AUTH ROUTES
-Route::middleware(['auth', 'verified', \App\Http\Middleware\CheckUserStatus::class])
-    ->get('/home', [HomeController::class, 'index'])
-    ->name('home');
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard data routes
+    Route::get('/admin/dashboard/enrollment-data', [HomeController::class, 'getEnrollmentData'])->name('admin.dashboard.enrollment-data');
+    Route::get('/admin/dashboard/gender-data', [HomeController::class, 'getGenderData'])->name('admin.dashboard.gender-data');
+    Route::get('/admin/dashboard/school-year-info', [HomeController::class, 'getSchoolYearInfo'])->name('admin.dashboard.school-year-info');
+
+    // Main dashboard route
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+});
 
 // Public welcome page
 Route::get('/', function () {
@@ -116,6 +122,7 @@ Route::prefix('admin')
         Route::get('/student-info/{id}', [StudentController::class, 'showStudentInfo'])->name('student.info');
         Route::get('/promote-students', [StudentController::class, 'showPromotionView'])->name('students.promote.view');
         Route::post('/promote-students', [StudentController::class, 'promoteStudents'])->name('students.promote');
+        Route::get('/admin/students/search-classes', [StudentController::class, 'searchClasses'])->name('students.search.classes');
 
         // ID Management
         Route::get('/students/{id}/generate-id', [IdController::class, 'generateID'])->name('students.generateID');

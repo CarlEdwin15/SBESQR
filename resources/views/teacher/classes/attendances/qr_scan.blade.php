@@ -326,21 +326,33 @@
         {{-- /Card --}}
 
 
-        <!-- Floating Attendance Notification -->
+        <!-- Enhanced Floating Attendance Notification with Compact Padding -->
         <div id="attendance-popup" class="position-fixed top-0 start-50 translate-middle-x d-none"
             style="margin-top: 20px; z-index: 9999;">
-            <div class="alert alert-success shadow-lg d-flex align-items-center justify-content-between gap-3 px-4 py-3 rounded-3 border-0"
-                id="popup-content" style="min-width: 320px;">
+
+            <div class="alert alert-success position-relative d-flex gap-3 px-1 py-1" id="popup-content"
+                style="min-width: 300px;">
+
+                <!-- Close Button (Top-Right Corner) -->
+                <button type="button" class="btn-close position-absolute" id="popup-close" aria-label="Close"
+                    style="top: 8px; right: 8px; transform: scale(1.2);"></button>
+
+                <!-- Content Wrapper -->
                 <div class="d-flex align-items-center gap-3">
-                    <div id="popup-icon" class="fs-3">✅</div>
-                    <div>
-                        <h6 class="mb-0 fw-bold" id="popup-name">John Doe</h6>
-                        <small id="popup-status">Marked as Present</small>
+
+                    <!-- Larger Student Image -->
+                    <img id="popup-student-image" src="" alt="Student Photo" class="shadow"
+                        style="width: 100px; height: 100px; object-fit: cover; border: 3px solid rgba(255, 255, 255, 0.5);">
+
+                    <!-- Name + Status -->
+                    <div class="d-flex flex-column">
+                        <h6 class="mb-1 fw-bold" id="popup-name">John Doe</h6>
+                        <p class="mb-0 fs-6 fw-semibold" id="popup-status">Marked as Present</p>
                     </div>
                 </div>
+
             </div>
         </div>
-
 
         <hr class="my-5" />
     </div>
@@ -593,7 +605,7 @@
 
                             const device = detectDeviceType();
                             const shouldMirror = device
-                            .isDesktop; // Mirror on desktop, don't mirror on mobile
+                                .isDesktop; // Mirror on desktop, don't mirror on mobile
 
                             scanner.mirror = shouldMirror;
                             currentCamera = nextCamera;
@@ -652,7 +664,7 @@
                                 document.getElementById('success-sound-2').play();
                             }
 
-                            showPopup(res.student, res.status);
+                            showPopup(res.student, res.status, res.student_photo);
 
                             const row = document.querySelector(`tr[data-student-id="${res.student_id}"]`);
                             if (row) {
@@ -762,45 +774,66 @@
 
         let popupTimeout;
 
-        // Function to show the floating popup
-        function showPopup(studentName, status) {
+        // Function to show the enhanced floating popup
+        function showPopup(studentName, status, studentPhoto = null) {
             const popup = document.getElementById('attendance-popup');
             const content = document.getElementById('popup-content');
             const name = document.getElementById('popup-name');
             const statusText = document.getElementById('popup-status');
-            const icon = document.getElementById('popup-icon');
+            const studentImage = document.getElementById('popup-student-image');
+            const closeButton = document.getElementById('popup-close');
 
             name.textContent = studentName;
             statusText.textContent = `Marked as ${capitalize(status)}`;
 
+            // Set student image
+            if (studentPhoto) {
+                studentImage.src = studentPhoto;
+            } else {
+                // Use default image if no photo provided
+                studentImage.src =
+                    "{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}";
+            }
+
             let colorClass = 'alert-success';
-            let emoji = '✅';
             if (status === 'late') {
                 colorClass = 'alert-warning';
-                emoji = '⏰';
             } else if (status === 'absent') {
                 colorClass = 'alert-danger';
-                emoji = '❌';
             } else if (status === 'excused') {
                 colorClass = 'alert-dark';
-                emoji = '📘';
             }
 
             content.className =
-                `alert ${colorClass} shadow-lg d-flex align-items-center justify-content-between gap-3 px-4 py-3 rounded-3 border-0`;
-            icon.textContent = emoji;
+                `alert ${colorClass} shadow-lg d-flex align-items-center justify-content-between gap-4 px-5 py-4 rounded-4 border-0`;
 
             popup.classList.remove('d-none');
             popup.style.opacity = 1;
 
+            // Clear any existing timeout
             if (popupTimeout) {
                 clearTimeout(popupTimeout);
             }
 
+            // Set longer timeout (8 seconds instead of 3.5)
             popupTimeout = setTimeout(() => {
-                popup.style.opacity = 0;
-                setTimeout(() => popup.classList.add('d-none'), 600);
-            }, 3500);
+                hidePopup();
+            }, 8000);
+
+            // Add close button event listener
+            closeButton.onclick = hidePopup;
+        }
+
+        // Function to hide the popup
+        function hidePopup() {
+            const popup = document.getElementById('attendance-popup');
+            popup.style.opacity = 0;
+            setTimeout(() => popup.classList.add('d-none'), 600);
+
+            // Clear the timeout if manually closed
+            if (popupTimeout) {
+                clearTimeout(popupTimeout);
+            }
         }
 
         // Function to set custom timeout
@@ -914,7 +947,11 @@
                                             }
                                         }
 
-                                        showPopup(res.student, res.status);
+                                        // Get student photo from the table row
+                                        const studentPhoto = row ? row.querySelector(
+                                            '.student-photo').src : null;
+                                        showPopup(res.student, res.status,
+                                            studentPhoto);
 
                                         // Play sounds only if sound is enabled
                                         if (soundEnabled) {
@@ -964,6 +1001,34 @@
         /* Style for the mute button */
         #mute-btn {
             margin-left: 0;
+        }
+
+        /* Enhanced popup styles */
+        #attendance-popup {
+            transition: opacity 0.6s ease-in-out;
+        }
+
+        #popup-student-image {
+            transition: transform 0.3s ease;
+        }
+
+        #popup-student-image:hover {
+            transform: scale(1.05);
+        }
+
+        #popup-close {
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        #popup-close:hover {
+            opacity: 1;
+        }
+
+        /* Larger notification styling */
+        .btn-close-lg {
+            width: 0.1em;
+            height: 0.1em;
         }
     </style>
 @endpush

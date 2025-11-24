@@ -348,6 +348,7 @@
     <!-- Main CSS File -->
     <link href="{{ asset('assets/css/main.css') }}" rel="stylesheet" />
     <link href="{{ asset('assetsDashboard/vendor/css/core.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assetsDashboard/vendor/css/theme-default.css') }}" rel="stylesheet" />
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet" />

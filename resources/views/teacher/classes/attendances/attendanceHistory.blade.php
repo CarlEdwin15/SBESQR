@@ -192,6 +192,14 @@
                             $now = \Carbon\Carbon::now();
                         @endphp
 
+                        @php
+                            // Determine if the schedule is done (current time is after end_time of this schedule for the selected date)
+                            $scheduleEnd = \Carbon\Carbon::parse($schedule->end_time)
+                                ->copy()
+                                ->setDateFrom(\Carbon\Carbon::parse($targetDate));
+                            $isScheduleDone = \Carbon\Carbon::now()->greaterThan($scheduleEnd);
+                        @endphp
+
                         @if ($now->between($scheduleStart, $scheduleEnd))
                             <div class="d-flex align-items-center justify-content-between mb-3" style="padding: 0 20px;">
                                 <button class="btn btn-primary my-2"
@@ -258,26 +266,30 @@
                                                         {{ $student->student_extName }}</td>
                                                     <td>
                                                         <div
-                                                            class="d-flex justify-content-between align-items-center gap-2">
+                                                            class="d-flex {{ $isScheduleDone ? 'justify-content-between' : 'justify-content-center' }} align-items-center gap-2">
                                                             <span
                                                                 class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
-                                                            <select name="attendance[{{ $student->id }}][status]"
-                                                                class="form-select w-auto">
-                                                                <option value="present"
-                                                                    {{ $status == 'present' ? 'selected' : '' }}>
-                                                                    Present</option>
-                                                                <option value="absent"
-                                                                    {{ $status == 'absent' || is_null($status) ? 'selected' : '' }}>
-                                                                    Absent</option>
-                                                                <option value="late"
-                                                                    {{ $status == 'late' ? 'selected' : '' }}>
-                                                                    Late</option>
-                                                                <option value="excused"
-                                                                    {{ $status == 'excused' ? 'selected' : '' }}>
-                                                                    Excused</option>
-                                                            </select>
+
+                                                            @if ($isScheduleDone)
+                                                                <select name="attendance[{{ $student->id }}][status]"
+                                                                    class="form-select w-auto">
+                                                                    <option value="present"
+                                                                        {{ $status == 'present' ? 'selected' : '' }}>
+                                                                        Present</option>
+                                                                    <option value="absent"
+                                                                        {{ $status == 'absent' || is_null($status) ? 'selected' : '' }}>
+                                                                        Absent</option>
+                                                                    <option value="late"
+                                                                        {{ $status == 'late' ? 'selected' : '' }}>Late
+                                                                    </option>
+                                                                    <option value="excused"
+                                                                        {{ $status == 'excused' ? 'selected' : '' }}>
+                                                                        Excused</option>
+                                                                </select>
+                                                            @endif
                                                         </div>
                                                     </td>
+
                                                     <td class="text-center">
                                                         {{ $existing?->time_in ? \Carbon\Carbon::parse($existing->time_in)->format('g:i A') : '-' }}
                                                     </td>
@@ -333,26 +345,30 @@
                                                         {{ $student->student_mName }}</td>
                                                     <td>
                                                         <div
-                                                            class="d-flex justify-content-between align-items-center gap-2">
+                                                            class="d-flex {{ $isScheduleDone ? 'justify-content-between' : 'justify-content-center' }} align-items-center gap-2">
                                                             <span
                                                                 class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
-                                                            <select name="attendance[{{ $student->id }}][status]"
-                                                                class="form-select w-auto">
-                                                                <option value="present"
-                                                                    {{ $status == 'present' ? 'selected' : '' }}>
-                                                                    Present</option>
-                                                                <option value="absent"
-                                                                    {{ $status == 'absent' || is_null($status) ? 'selected' : '' }}>
-                                                                    Absent</option>
-                                                                <option value="late"
-                                                                    {{ $status == 'late' ? 'selected' : '' }}>
-                                                                    Late</option>
-                                                                <option value="excused"
-                                                                    {{ $status == 'excused' ? 'selected' : '' }}>
-                                                                    Excused</option>
-                                                            </select>
+
+                                                            @if ($isScheduleDone)
+                                                                <select name="attendance[{{ $student->id }}][status]"
+                                                                    class="form-select w-auto">
+                                                                    <option value="present"
+                                                                        {{ $status == 'present' ? 'selected' : '' }}>
+                                                                        Present</option>
+                                                                    <option value="absent"
+                                                                        {{ $status == 'absent' || is_null($status) ? 'selected' : '' }}>
+                                                                        Absent</option>
+                                                                    <option value="late"
+                                                                        {{ $status == 'late' ? 'selected' : '' }}>Late
+                                                                    </option>
+                                                                    <option value="excused"
+                                                                        {{ $status == 'excused' ? 'selected' : '' }}>
+                                                                        Excused</option>
+                                                                </select>
+                                                            @endif
                                                         </div>
                                                     </td>
+
                                                     <td class="text-center">
                                                         {{ $existing?->time_in ? \Carbon\Carbon::parse($existing->time_in)->format('g:i A') : '-' }}
                                                     </td>
@@ -367,14 +383,6 @@
                                         </tbody>
                                     </table>
                                 </div>
-
-                                @php
-                                    // Determine if the schedule is done (current time is after end_time of this schedule for the selected date)
-                                    $scheduleEnd = \Carbon\Carbon::parse($schedule->end_time)
-                                        ->copy()
-                                        ->setDateFrom(\Carbon\Carbon::parse($targetDate));
-                                    $isScheduleDone = \Carbon\Carbon::now()->greaterThan($scheduleEnd);
-                                @endphp
 
                                 @if ($isScheduleDone)
                                     <div class="text-end mt-3">
@@ -510,7 +518,8 @@
             const selectedDate = document.getElementById('date').value;
             const schoolYear = document.querySelector('input[name="school_year"]').value;
 
-            const baseUrl = "{{ url('teacher/attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
+            const baseUrl =
+                "{{ url('teacher/attendanceHistory/' . $class->grade_level . '/' . $class->section) }}";
             const finalUrl = selectedDate ?
                 `${baseUrl}/${selectedDate}?school_year=${encodeURIComponent(schoolYear)}` :
                 `${baseUrl}?school_year=${encodeURIComponent(schoolYear)}`;

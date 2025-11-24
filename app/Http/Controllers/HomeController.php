@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use App\Models\SchoolYear;
 use App\Models\Classes;
 use App\Models\Announcement;
+use App\Models\ClassStudent;
 
 class HomeController extends Controller
 {
@@ -159,5 +160,79 @@ class HomeController extends Controller
         }
 
         return redirect()->route('welcome');
+    }
+
+    public function getEnrollmentData(Request $request)
+    {
+        $schoolYearId = $request->get('school_year_id');
+
+        $enrollmentData = ClassStudent::where('class_student.school_year_id', $schoolYearId)
+            ->whereIn('class_student.enrollment_status', ['enrolled', 'archived', 'graduated'])
+            ->join('classes', 'class_student.class_id', '=', 'classes.id')
+            ->selectRaw('classes.grade_level, COUNT(DISTINCT class_student.student_id) as student_count')
+            ->groupBy('classes.grade_level')
+            ->get();
+
+        $gradeLevels = ['kindergarten', 'grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6'];
+        $formattedData = [];
+
+        foreach ($gradeLevels as $grade) {
+            $found = $enrollmentData->firstWhere('grade_level', $grade);
+            $formattedData[] = $found ? $found->student_count : 0;
+        }
+
+        return response()->json([
+            'enrollment_data' => $formattedData,
+            'grade_labels' => ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']
+        ]);
+    }
+
+    /**
+     * Get gender data by school year for AJAX
+     */
+    public function getGenderData(Request $request)
+    {
+        $schoolYearId = $request->get('school_year_id');
+
+        $genderData = ClassStudent::where('school_year_id', $schoolYearId)
+            ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated'])
+            ->join('students', 'class_student.student_id', '=', 'students.id')
+            ->selectRaw('
+            COUNT(DISTINCT students.id) as total,
+            SUM(CASE WHEN LOWER(students.student_sex) IN ("f", "female") THEN 1 ELSE 0 END) as female_count,
+            SUM(CASE WHEN LOWER(students.student_sex) IN ("m", "male") THEN 1 ELSE 0 END) as male_count
+        ')
+            ->first();
+
+        $total = $genderData->total ?? 0;
+        $femaleCount = $genderData->female_count ?? 0;
+        $maleCount = $genderData->male_count ?? 0;
+
+        $response = [
+            'total' => $total,
+            'female_count' => $femaleCount,
+            'male_count' => $maleCount,
+            'female_percentage' => $total > 0 ? round(($femaleCount / $total) * 100, 1) : 0,
+            'male_percentage' => $total > 0 ? round(($maleCount / $total) * 100, 1) : 0,
+        ];
+
+        return response()->json($response);
+    }
+
+    /**
+     * Get school year info for AJAX
+     */
+    public function getSchoolYearInfo(Request $request)
+    {
+        $schoolYearId = $request->get('school_year_id');
+        $schoolYear = SchoolYear::find($schoolYearId);
+
+        if (!$schoolYear) {
+            return response()->json(['error' => 'School year not found'], 404);
+        }
+
+        return response()->json([
+            'school_year_text' => $schoolYear->school_year
+        ]);
     }
 }

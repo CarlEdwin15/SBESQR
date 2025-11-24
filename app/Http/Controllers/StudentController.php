@@ -207,13 +207,6 @@ class StudentController extends Controller
         // Fetch all saved school years from DB
         $savedYears = SchoolYear::pluck('school_year')->toArray();
 
-        // Determine current school year string
-        $now = now();
-        $year = $now->year;
-        $cutoff = $now->copy()->setMonth(6)->setDay(1);
-        $currentYear = $now->lt($cutoff) ? $year - 1 : $year;
-        $currentSchoolYear = $currentYear . '-' . ($currentYear + 1);
-
         // Filter to include only saved years <= current school year
         $schoolYears = collect($savedYears)
             ->filter(function ($sy) use ($currentYear) {
@@ -233,6 +226,7 @@ class StudentController extends Controller
 
         $selectedYear = $request->query('school_year', $currentSchoolYear);
         $selectedSection = $request->query('section');
+        $selectedEnrollmentType = $request->query('enrollment_type', 'all'); // New filter
 
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
         $currentSchoolYearRecord = SchoolYear::where('school_year', $currentSchoolYear)->first();
@@ -294,10 +288,16 @@ class StudentController extends Controller
                 $query->where('class_student.school_year_id', $schoolYear->id);
             })->pluck('section')->unique()->sort()->values()->all();
 
-            $students = Student::whereHas('class', function ($query) use ($schoolYear, $selectedSection) {
+            $students = Student::whereHas('class', function ($query) use ($schoolYear, $selectedSection, $selectedEnrollmentType) {
                 $query->where('class_student.school_year_id', $schoolYear->id);
+
                 if (!empty($selectedSection)) {
                     $query->where('section', $selectedSection);
+                }
+
+                // NEW: Filter by enrollment type
+                if ($selectedEnrollmentType !== 'all') {
+                    $query->where('class_student.enrollment_type', $selectedEnrollmentType);
                 }
             })->with([
                 'address',
@@ -334,6 +334,7 @@ class StudentController extends Controller
             'selectedSection',
             'currentYear',
             'schoolYearId',
+            'selectedEnrollmentType' // Pass the selected enrollment type to view
         ));
     }
 
@@ -1014,6 +1015,49 @@ class StudentController extends Controller
         return response()->json(['message' => 'Selected students deleted successfully.']);
     }
 
+    // public function searchClasses(Request $request)
+    // {
+    //     $searchTerm = $request->get('search');
+    //     $schoolYear = $request->get('school_year');
+    //     $section = $request->get('section');
+
+    //     $classes = DB::table('classes')
+    //         ->join('class_student as cs_selected', 'classes.id', '=', 'cs_selected.class_id')
+    //         ->join('students', 'students.id', '=', 'cs_selected.student_id')
+    //         ->leftJoin('class_student as cs_curr', function ($join) use ($schoolYear) {
+    //             $currentSchoolYearRecord = SchoolYear::where('school_year', '>', $schoolYear)->first();
+    //             if ($currentSchoolYearRecord) {
+    //                 $join->on('cs_curr.student_id', '=', 'cs_selected.student_id')
+    //                     ->where('cs_curr.school_year_id', $currentSchoolYearRecord->id);
+    //             }
+    //         })
+    //         ->where('cs_selected.school_year_id', function ($query) use ($schoolYear) {
+    //             $query->select('id')
+    //                 ->from('school_years')
+    //                 ->where('school_year', $schoolYear)
+    //                 ->limit(1);
+    //         })
+    //         ->where('classes.section', $section)
+    //         ->where(function ($query) use ($searchTerm) {
+    //             $query->where('students.student_fName', 'like', "%{$searchTerm}%")
+    //                 ->orWhere('students.student_lName', 'like', "%{$searchTerm}%")
+    //                 ->orWhere('students.student_mName', 'like', "%{$searchTerm}%")
+    //                 ->orWhere('students.student_lrn', 'like', "%{$searchTerm}%");
+    //         })
+    //         ->select(
+    //             'classes.grade_level',
+    //             'classes.section',
+    //             'classes.id',
+    //             DB::raw('COUNT(DISTINCT cs_selected.student_id) as total_students'),
+    //             DB::raw('COUNT(CASE WHEN cs_curr.enrollment_status = "enrolled" THEN 1 END) as reenrolled_count'),
+    //             DB::raw('COUNT(CASE WHEN cs_selected.enrollment_status = "graduated" THEN 1 END) as graduated_count')
+    //         )
+    //         ->groupBy('classes.grade_level', 'classes.section', 'classes.id')
+    //         ->get();
+
+    //     return response()->json($classes);
+    // }
+
     public function showPromotionView(Request $request)
     {
         $currentSchoolYear = $this->getDefaultSchoolYear();
@@ -1181,8 +1225,8 @@ class StudentController extends Controller
                 'classes.grade_level',
                 'classes.section',
                 'classes.id',
-                // Count students available for promotion (not enrolled in current SY)
-                DB::raw('COUNT(CASE WHEN cs_curr.enrollment_status = "not_enrolled" OR cs_curr.enrollment_status IS NULL THEN 1 END) as promotable_count'),
+                // Count students available for promotion (not enrolled in current SY AND not graduated)
+                DB::raw('COUNT(CASE WHEN (cs_curr.enrollment_status = "not_enrolled" OR cs_curr.enrollment_status IS NULL) AND cs_selected.enrollment_status != "graduated" THEN 1 END) as promotable_count'),
                 // Count total students in this class from selected SY
                 DB::raw('COUNT(DISTINCT cs_selected.student_id) as total_students'),
                 // Count already re-enrolled students
@@ -1192,6 +1236,13 @@ class StudentController extends Controller
             )
             ->groupBy('classes.grade_level', 'classes.section', 'classes.id')
             ->get();
+
+        // Add search data to each class
+        $classes = $classes->map(function ($class) use ($selectedSchoolYear) {
+            $class->student_names = $this->getClassStudentNames($class, $selectedSchoolYear);
+            $class->student_lrns = $this->getClassStudentLRNs($class, $selectedSchoolYear);
+            return $class;
+        });
 
         return view('admin.students.selectClassPromotion', compact(
             'classes',
@@ -1203,6 +1254,53 @@ class StudentController extends Controller
             'availableSchoolYears',
             'selectedSchoolYear'
         ));
+    }
+
+    private function getClassStudentNames($class, $selectedSchoolYear)
+    {
+        $studentNames = DB::table('class_student AS cs_selected')
+            ->join('students', 'students.id', '=', 'cs_selected.student_id')
+            ->join('classes', 'classes.id', '=', 'cs_selected.class_id')
+            ->where('cs_selected.school_year_id', function ($query) use ($selectedSchoolYear) {
+                $query->select('id')
+                    ->from('school_years')
+                    ->where('school_year', $selectedSchoolYear)
+                    ->limit(1);
+            })
+            ->where('classes.grade_level', $class->grade_level)
+            ->where('classes.section', $class->section)
+            ->select(
+                'students.student_fName',
+                'students.student_mName',
+                'students.student_lName',
+                'students.student_extName'
+            )
+            ->get()
+            ->map(function ($student) {
+                return trim("{$student->student_lName}, {$student->student_fName} {$student->student_mName} {$student->student_extName}");
+            })
+            ->implode('|');
+
+        return $studentNames;
+    }
+
+    private function getClassStudentLRNs($class, $selectedSchoolYear)
+    {
+        $studentLRNs = DB::table('class_student AS cs_selected')
+            ->join('students', 'students.id', '=', 'cs_selected.student_id')
+            ->join('classes', 'classes.id', '=', 'cs_selected.class_id')
+            ->where('cs_selected.school_year_id', function ($query) use ($selectedSchoolYear) {
+                $query->select('id')
+                    ->from('school_years')
+                    ->where('school_year', $selectedSchoolYear)
+                    ->limit(1);
+            })
+            ->where('classes.grade_level', $class->grade_level)
+            ->where('classes.section', $class->section)
+            ->pluck('students.student_lrn')
+            ->implode('|');
+
+        return $studentLRNs;
     }
 
     private function determinePromotionEligibility($student, $currentGradeLevel)

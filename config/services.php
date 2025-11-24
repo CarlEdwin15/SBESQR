@@ -61,7 +61,7 @@ return [
 
     'semaphore' => [
         'api_key' => env('SEMAPHORE_API_KEY'),
-        'sender'  => env('SEMAPHORE_SENDER'),
+        'sender'  => env('SEMAPHORE_SENDER', 'SBESQR'),
     ],
 
     'philsms' => [

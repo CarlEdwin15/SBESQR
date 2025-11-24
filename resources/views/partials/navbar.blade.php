@@ -7,7 +7,7 @@
         </a>
     </div>
 
-    {{-- @php
+    @php
         $now = now();
         $year = $now->year;
         $cutoff = $now->copy()->setMonth(6)->setDay(1);
@@ -16,8 +16,9 @@
     @endphp
 
     <div class="d-flex align-items-center ms-3">
-        <h5 class="mb-0">Current School Year: {{ $schoolYear }}</h5>
-    </div> --}}
+        <h5 class="mb-0 d-none d-sm-block">Current School Year: {{ $schoolYear }}</h5>
+        <h5 class="mb-0 d-block d-sm-none">Current SY: {{ $schoolYear }}</h5>
+    </div>
 
 
 

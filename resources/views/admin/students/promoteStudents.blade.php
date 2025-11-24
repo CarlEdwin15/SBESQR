@@ -165,14 +165,6 @@
             </div>
         @endif
 
-        {{-- Add this after your error display --}}
-        @if (session('auto_graduated'))
-            <div class="alert alert-info">
-                <i class="bx bx-graduation me-2"></i>
-                {{ session('auto_graduated') }}
-            </div>
-        @endif
-
         <div class="mb-4 text-center">
             <h4 class="fw-bold text-primary">
                 Re-Enroll Students from {{ $previousSchoolYear }} to {{ $currentSchoolYear }}
@@ -358,7 +350,7 @@
                                                     'eligible_promotion' => 'bg-label-success',
                                                     'eligible_graduation' => 'bg-label-info',
                                                     'retained' => 'bg-label-warning',
-                                                    'retained_graduation' => 'bg-label-danger',
+                                                    'retained_graduation' => 'bg-label-warning',
                                                     'no_grades' => 'bg-label-secondary',
                                                     default => 'bg-label-secondary',
                                                 };
@@ -2512,7 +2504,7 @@
                         }
                         if (retainedBtn) {
                             retainedBtn.innerHTML =
-                                `<i class="bx bx-error-circle me-1"></i>Re-Enroll ${selectedCount} Retained Student${selectedCount !== 1 ? 's' : ''} <span class="selected-count-badge bg-white text-danger ms-1 px-2 py-1 rounded" id="retainedCount">${selectedCount}</span>`;
+                                `<i class="bx bx-error-circle me-1"></i>Re-Enroll ${selectedCount} Retained Student${selectedCount !== 1 ? 's' : ''} <span class="selected-count-badge bg-white text-warning ms-1 px-2 py-1 rounded" id="retainedCount">${selectedCount}</span>`;
                         }
                     }
                 }
