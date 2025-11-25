@@ -187,9 +187,7 @@ class HomeController extends Controller
         ]);
     }
 
-    /**
-     * Get gender data by school year for AJAX
-     */
+    // Get gender data by school year for AJAX
     public function getGenderData(Request $request)
     {
         $schoolYearId = $request->get('school_year_id');
@@ -219,9 +217,7 @@ class HomeController extends Controller
         return response()->json($response);
     }
 
-    /**
-     * Get school year info for AJAX
-     */
+    //Get school year info for AJAX
     public function getSchoolYearInfo(Request $request)
     {
         $schoolYearId = $request->get('school_year_id');
@@ -234,5 +230,27 @@ class HomeController extends Controller
         return response()->json([
             'school_year_text' => $schoolYear->school_year
         ]);
+    }
+
+    public function getActiveUsers()
+    {
+        $users = User::whereNotNull('last_sign_in_at') // Only users who have logged in at least once
+            ->get()
+            ->sortBy(fn($user) => sprintf('%d-%s', $user->is_online ? 0 : 1, strtolower($user->full_name)))
+            ->values()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                    'role' => $user->role,
+                    'profile_photo' => $user->profile_photo,
+                    'is_online' => $user->is_online,
+                    'last_seen' => $user->last_seen,
+                    'last_sign_in_at' => $user->last_sign_in_at ? $user->last_sign_in_at->toISOString() : null,
+                    'sign_in_at' => $user->sign_in_at ? $user->sign_in_at->toISOString() : null,
+                ];
+            });
+
+        return response()->json($users);
     }
 }

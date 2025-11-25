@@ -39,6 +39,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/dashboard/enrollment-data', [HomeController::class, 'getEnrollmentData'])->name('admin.dashboard.enrollment-data');
     Route::get('/admin/dashboard/gender-data', [HomeController::class, 'getGenderData'])->name('admin.dashboard.gender-data');
     Route::get('/admin/dashboard/school-year-info', [HomeController::class, 'getSchoolYearInfo'])->name('admin.dashboard.school-year-info');
+    Route::get('/admin/active-users', [HomeController::class, 'getActiveUsers'])
+        ->name('admin.active-users');
 
     // Main dashboard route
     Route::get('/home', [HomeController::class, 'index'])->name('home');

@@ -525,8 +525,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Last Name</label>
-                            <input type="text" class="form-control" name="lastName" placeholder="Enter Last Name"
-                                required>
+                            <input type="text" class="form-control" name="lastName" placeholder="Enter Last Name">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Extension Name (Optional)</label>
@@ -549,7 +548,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Phone</label>
                             <input type="text" class="form-control" name="phone"
-                                placeholder="Starts with 09 or +639 and 11 digits only" required>
+                                placeholder="Starts with 09 or +639 and 11 digits only">
                         </div>
                         <!-- Password Input -->
                         <div class="col-md-6 form-password-toggle">

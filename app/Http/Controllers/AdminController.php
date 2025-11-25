@@ -78,7 +78,7 @@ class AdminController extends Controller
             'firstName'  => 'required|string|max:255',
             'middleName' => 'nullable|string|max:255',
             'extName'    => 'nullable|string|max:255',
-            'lastName'   => 'required|string|max:255',
+            'lastName'   => 'nullable|string|max:255',
             'email'      => [
                 'required',
                 'string',
