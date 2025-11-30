@@ -41,7 +41,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/dashboard/school-year-info', [HomeController::class, 'getSchoolYearInfo'])->name('admin.dashboard.school-year-info');
     Route::get('/admin/active-users', [HomeController::class, 'getActiveUsers'])
         ->name('admin.active-users');
+    Route::get('/admin/dashboard/grade-sections', [HomeController::class, 'getGradeSections'])->name('admin.dashboard.grade-sections');
+    Route::get('/admin/dashboard/gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('admin.dashboard.gender-data-filtered');
 
+    Route::get('/admin/payment-requests/check-dashboard', [SchoolFeeController::class, 'checkDashboardRequests'])
+        ->name('admin.payment-requests.check-dashboard');
+    Route::get('/admin/school-fees/notification-counts', [SchoolFeeController::class, 'getNotificationCounts'])->name('admin.school-fees.notification-counts');
+    Route::get('/admin/school-fees/payment-notification-counts', [SchoolFeeController::class, 'getPaymentNotificationCounts'])->name('admin.school-fees.payment-notification-counts');
+    // Add this route to your admin routes group
+Route::get('/admin/dashboard/school-fees-data', [HomeController::class, 'getSchoolFeesData'])->name('admin.dashboard.school-fees-data');
     // Main dashboard route
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 });
@@ -162,6 +170,8 @@ Route::prefix('admin')
         Route::get('/payment-requests', [SchoolFeeController::class, 'viewRequests'])->name('admin.payment.requests');
         Route::post('/payment-requests/{id}/approve', [SchoolFeeController::class, 'approveRequest'])->name('admin.payment.requests.approve');
         Route::post('/payment-requests/{id}/deny', [SchoolFeeController::class, 'denyRequest'])->name('admin.payment.requests.deny');
+        Route::get('/payment-requests/check-new', [SchoolFeeController::class, 'checkNewRequests'])
+            ->name('admin.payment-requests.check-new');
         Route::delete('/payments/history/{id}', [SchoolFeeController::class, 'deleteHistory'])->name('admin.payments.history.delete');
         Route::post('/payments/bulk-add-payment', [SchoolFeeController::class, 'bulkAddPayment'])->name('admin.payments.bulkAddPayment');
         Route::post('/payments/{paymentName}/add-students', [SchoolFeeController::class, 'addStudents'])->name('admin.payments.addStudents');

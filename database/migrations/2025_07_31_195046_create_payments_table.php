@@ -39,7 +39,7 @@ return new class extends Migration {
 
             // Link to the original payment
             $table->foreignId('payment_id')->constrained('payments')->onDelete('cascade');
-            $table->enum('payment_method', ['cash_on_hand', 'gcash', 'credit_card'])->default('cash_on_hand');
+            $table->enum('payment_method', ['cash_on_hand', 'gcash', 'paymaya'])->default('cash_on_hand');
             $table->foreignId('added_by')->constrained('users')->onDelete('cascade');
 
             $table->decimal('amount_paid', 10, 2);
@@ -55,10 +55,11 @@ return new class extends Migration {
             $table->foreignId('parent_id')->constrained('users')->onDelete('cascade');
 
             $table->decimal('amount_paid', 10, 2);
-            $table->enum('payment_method', ['cash_on_hand', 'gcash']);
+            $table->enum('payment_method', ['gcash', 'paymaya']);
             $table->string('reference_number')->nullable();
             $table->string('receipt_image')->nullable(); // for proof upload
             $table->enum('status', ['pending', 'approved', 'denied'])->default('pending');
+            $table->unsignedInteger('attempt_number')->default(1);
             $table->text('admin_remarks')->nullable();
             $table->datetime('requested_at')->default(now());
             $table->datetime('reviewed_at')->nullable();

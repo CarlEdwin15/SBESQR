@@ -165,14 +165,28 @@ class HomeController extends Controller
     public function getEnrollmentData(Request $request)
     {
         $schoolYearId = $request->get('school_year_id');
+        $gradeLevel = $request->get('grade_level');
+        $section = $request->get('section');
 
-        $enrollmentData = ClassStudent::where('class_student.school_year_id', $schoolYearId)
-            ->whereIn('class_student.enrollment_status', ['enrolled', 'archived', 'graduated'])
-            ->join('classes', 'class_student.class_id', '=', 'classes.id')
-            ->selectRaw('classes.grade_level, COUNT(DISTINCT class_student.student_id) as student_count')
+        $query = ClassStudent::where('class_student.school_year_id', $schoolYearId)
+            ->whereIn('class_student.enrollment_status', ['enrolled', 'archived']) // Only active students
+            ->join('classes', 'class_student.class_id', '=', 'classes.id');
+
+        // Apply grade level filter if provided
+        if ($gradeLevel) {
+            $query->where('classes.grade_level', $gradeLevel);
+        }
+
+        // Apply section filter if provided
+        if ($section) {
+            $query->where('classes.section', $section);
+        }
+
+        $enrollmentData = $query->selectRaw('classes.grade_level, COUNT(DISTINCT class_student.student_id) as student_count')
             ->groupBy('classes.grade_level')
             ->get();
 
+        // Get all possible grade levels to ensure consistent ordering
         $gradeLevels = ['kindergarten', 'grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6'];
         $formattedData = [];
 
@@ -181,19 +195,22 @@ class HomeController extends Controller
             $formattedData[] = $found ? $found->student_count : 0;
         }
 
+        // Calculate total for this filtered view
+        $totalEnrolled = array_sum($formattedData);
+
         return response()->json([
             'enrollment_data' => $formattedData,
+            'total_enrolled' => $totalEnrolled,
             'grade_labels' => ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']
         ]);
     }
 
-    // Get gender data by school year for AJAX
     public function getGenderData(Request $request)
     {
         $schoolYearId = $request->get('school_year_id');
 
         $genderData = ClassStudent::where('school_year_id', $schoolYearId)
-            ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated'])
+            ->whereIn('enrollment_status', ['enrolled', 'archived']) // Consistent with enrollment data
             ->join('students', 'class_student.student_id', '=', 'students.id')
             ->selectRaw('
             COUNT(DISTINCT students.id) as total,
@@ -215,6 +232,65 @@ class HomeController extends Controller
         ];
 
         return response()->json($response);
+    }
+
+    public function getGenderDataFiltered(Request $request)
+    {
+        $schoolYearId = $request->get('school_year_id');
+        $gradeLevel = $request->get('grade_level');
+        $section = $request->get('section');
+
+        $query = ClassStudent::where('school_year_id', $schoolYearId)
+            ->whereIn('enrollment_status', ['enrolled', 'archived']) // Consistent with main gender data
+            ->join('students', 'class_student.student_id', '=', 'students.id')
+            ->join('classes', 'class_student.class_id', '=', 'classes.id');
+
+        // Apply grade level filter if provided
+        if ($gradeLevel) {
+            $query->where('classes.grade_level', $gradeLevel);
+        }
+
+        // Apply section filter if provided
+        if ($section) {
+            $query->where('classes.section', $section);
+        }
+
+        $genderData = $query->selectRaw('
+        COUNT(DISTINCT students.id) as total,
+        SUM(CASE WHEN LOWER(students.student_sex) IN ("f", "female") THEN 1 ELSE 0 END) as female_count,
+        SUM(CASE WHEN LOWER(students.student_sex) IN ("m", "male") THEN 1 ELSE 0 END) as male_count
+    ')->first();
+
+        $total = $genderData->total ?? 0;
+        $femaleCount = $genderData->female_count ?? 0;
+        $maleCount = $genderData->male_count ?? 0;
+
+        $response = [
+            'total' => $total,
+            'female_count' => $femaleCount,
+            'male_count' => $maleCount,
+            'female_percentage' => $total > 0 ? round(($femaleCount / $total) * 100, 1) : 0,
+            'male_percentage' => $total > 0 ? round(($maleCount / $total) * 100, 1) : 0,
+        ];
+
+        return response()->json($response);
+    }
+
+    public function getGradeSections(Request $request)
+    {
+        $schoolYearId = $request->get('school_year_id');
+        $gradeLevel = $request->get('grade_level');
+
+        $sections = Classes::where('grade_level', $gradeLevel)
+            ->whereHas('classStudents', function ($query) use ($schoolYearId) {
+                $query->where('school_year_id', $schoolYearId)
+                    ->whereIn('enrollment_status', ['enrolled', 'archived', 'graduated']);
+            })
+            ->pluck('section')
+            ->unique()
+            ->values();
+
+        return response()->json($sections);
     }
 
     //Get school year info for AJAX

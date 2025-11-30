@@ -375,109 +375,282 @@
                     </a>
                 </div>
 
-                <!-- PAYMENT REQUESTS -->
+                <!-- SCHOOL FEES CARD -->
                 @php
+                    use App\Models\Payment;
                     use App\Models\PaymentRequest;
 
-                    // Get recent payment requests with related data
-                    $paymentRequests = PaymentRequest::with([
-                        'payment.classStudent.student',
-                        'payment.classStudent.class',
-                        'parent',
-                    ])
-                        ->where('status', 'pending') // Show only pending requests
-                        ->orderBy('requested_at', 'desc')
-                        ->limit(7) // Show up to 7 requests
-                        ->get();
+                    // Get all school years for the filter
+                    $allSchoolYears = SchoolYear::orderBy('start_date', 'asc')->get();
 
-                    $totalPendingRequests = PaymentRequest::where('status', 'pending')->count();
+                    if ($allSchoolYears->isNotEmpty()) {
+                        $firstSchoolYear = $allSchoolYears->first();
+
+                        if ($currentSchoolYear) {
+                            // Filter school years from first to current (inclusive)
+                            $schoolYearsForFilter = $allSchoolYears
+                                ->filter(function ($schoolYear) use ($firstSchoolYear, $currentSchoolYear) {
+                                    return $schoolYear->start_date >= $firstSchoolYear->start_date &&
+                                        $schoolYear->start_date <= $currentSchoolYear->start_date;
+                                })
+                                ->sortByDesc('start_date')
+                                ->values();
+                        } else {
+                            // If no current school year, just use all available school years
+                            $schoolYearsForFilter = $allSchoolYears->sortByDesc('start_date')->values();
+                        }
+                    } else {
+                        $schoolYearsForFilter = collect();
+                    }
+
+                    // Get selected school year from request or use current
+                    $selectedSchoolYearFilter = request()->get(
+                        'school_fee_year',
+                        $currentSchoolYear ? $currentSchoolYear->school_year : null,
+                    );
+
+                    // Get school fees for selected school year, grouped by payment name
+                    $schoolFees = Payment::with([
+                        'classStudent.student',
+                        'classStudent.class',
+                        'classStudent.schoolYear',
+                    ])
+                        ->whereHas('classStudent.schoolYear', function ($q) use ($selectedSchoolYearFilter) {
+                            if ($selectedSchoolYearFilter) {
+                                $q->where('school_year', $selectedSchoolYearFilter);
+                            }
+                        })
+                        ->get()
+                        ->groupBy('payment_name');
+
+                    $totalSchoolFees = $schoolFees->count();
+
+                    // Get pending payment requests count for each payment name
+                    $paymentRequestsCounts = [];
+                    foreach ($schoolFees as $paymentName => $groupedPayments) {
+                        $pendingCount = PaymentRequest::where('status', 'pending')
+                            ->whereHas('payment', function ($q) use ($paymentName, $selectedSchoolYearFilter) {
+                                $q->where('payment_name', $paymentName);
+                                if ($selectedSchoolYearFilter) {
+                                    $q->whereHas('classStudent.schoolYear', function ($q2) use (
+                                        $selectedSchoolYearFilter,
+                                    ) {
+                                        $q2->where('school_year', $selectedSchoolYearFilter);
+                                    });
+                                }
+                            })
+                            ->count();
+
+                        $paymentRequestsCounts[$paymentName] = $pendingCount;
+                    }
                 @endphp
 
-                <div class="card h-100 grid-span-rows">
+                <div class="card h-100 grid-span-rows" id="schoolFeesDashboardCard">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <!-- Image Icon -->
                         <div class="me-3 d-none d-sm-block">
-                            <img src="{{ asset('assetsDashboard/img/icons/dashIcon/payment-request.png') }}"
-                                alt="Payment Requests" class="rounded" width="50" height="50">
+                            <img src="{{ asset('assetsDashboard/img/icons/dashIcon/school-fee.png') }}" alt="School Fees"
+                                class="rounded" width="50" height="50">
                         </div>
                         <div class="me-3 d-block d-sm-none">
-                            <img src="{{ asset('assetsDashboard/img/icons/dashIcon/payment-request.png') }}"
-                                alt="Payment Requests" class="rounded" width="75" height="75">
+                            <img src="{{ asset('assetsDashboard/img/icons/dashIcon/school-fee.png') }}" alt="School Fees"
+                                class="rounded" width="75" height="75">
                         </div>
 
                         <!-- Title & Total -->
                         <div class="d-flex flex-column align-items-center ms-auto">
-                            <h5 class="fw-semibold text-primary mb-1 d-none d-sm-block">Payment Requests</h5>
-                            <h2 class="fw-semibold text-primary mb-1 d-sm-none d-block">Payment Requests</h2>
-                            <h1 class="mb-0">{{ $totalPendingRequests }}</h1>
+                            <h5 class="fw-semibold text-primary mb-1 d-none d-sm-block">School Fees</h5>
+                            <h2 class="fw-semibold text-primary mb-1 d-sm-none d-block">School Fees</h2>
+                            <h1 class="mb-0" id="schoolFeesTotalCount">{{ $totalSchoolFees }}</h1>
                         </div>
                     </div>
-                    <div class="card-body">
-                        @if ($paymentRequests->count() > 0)
-                            <ul class="p-0 m-0">
-                                @foreach ($paymentRequests as $request)
-                                    @php
-                                        $student = $request->payment->classStudent->student ?? null;
-                                        $class = $request->payment->classStudent->class ?? null;
-                                        $parent = $request->parent ?? null;
-                                        $paymentName = $request->payment->payment_name ?? 'Unknown Payment';
-                                        $amount = $request->amount_paid ?? 0;
-                                    @endphp
 
-                                    <li class="d-flex mb-2 pb-1">
-                                        <div class="me-1">
-                                            <img src="{{ asset('assetsDashboard/img/icons/unicons/wallet.png') }}"
-                                                width="30" alt="Payment">
-                                        </div>
-                                        <div class="d-flex flex-grow-1 align-items-center justify-content-between">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <small class="text-muted d-block mb-1 text-truncate">
-                                                    @if ($student)
-                                                        {{ $student->student_fName }} {{ $student->student_lName }}
-                                                    @else
-                                                        Unknown Student
-                                                    @endif
-                                                </small>
-                                                <h6 class="mb-0 text-truncate" title="{{ $paymentName }}">
-                                                    {{ $paymentName }}
-                                                </h6>
-                                                @if ($parent)
-                                                    <small class="text-muted">
-                                                        Parent: {{ $parent->firstName }} {{ $parent->lastName }}
-                                                    </small>
-                                                @endif
-                                            </div>
-                                            <div class="text-end ms-2">
-                                                <span
-                                                    class="text-success fw-semibold">₱{{ number_format($amount, 2) }}</span>
-                                                <div>
-                                                    <small class="text-warning">
-                                                        <i class="bx bx-time"></i> Pending
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <div class="text-center py-4">
-                                <i class="bx bx-check-circle fs-1 text-muted"></i>
-                                <p class="text-muted mb-0 mt-2">No pending payment requests</p>
-                                <small class="text-muted">All requests have been processed</small>
+                    <!-- School Year Filter -->
+                    <div class="card-body border-bottom py-2">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12">
+                                <select id="schoolFeeYearFilter" class="form-select form-select-sm">
+                                    @foreach ($schoolYearsForFilter as $schoolYear)
+                                        <option value="{{ $schoolYear->school_year }}"
+                                            {{ $selectedSchoolYearFilter == $schoolYear->school_year ? 'selected' : '' }}>
+                                            {{ $schoolYear->school_year }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                        @endif
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0" style="display: flex; flex-direction: column; height: 100%;">
+                        <!-- Loading State -->
+                        <div id="schoolFeesLoading" class="text-center py-4" style="display: none;">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <small class="text-muted d-block mt-1">Loading school fees...</small>
+                        </div>
+
+                        <!-- School Fees Content -->
+                        <div id="schoolFeesContent">
+                            @if ($schoolFees->count() > 0)
+                                <!-- Scrollable School Fees List -->
+                                <div class="school-fees-scrollable" style="flex: 1; overflow-y: auto; max-height: 250px;">
+                                    <ul class="p-0 m-0" id="schoolFeesList">
+                                        @foreach ($schoolFees->take(7) as $paymentName => $groupedPayments)
+                                            @php
+                                                $firstPayment = $groupedPayments->first();
+                                                $totalStudents = $groupedPayments->count();
+                                                $paidCount = $groupedPayments->where('status', 'paid')->count();
+                                                $partialCount = $groupedPayments->where('status', 'partial')->count();
+                                                $unpaidCount = $groupedPayments->where('status', 'unpaid')->count();
+
+                                                // Calculate collection percentage
+                                                $totalExpected = $firstPayment->amount_due * $totalStudents;
+                                                $totalCollected = $groupedPayments->sum('total_paid');
+                                                $percentage =
+                                                    $totalExpected > 0
+                                                        ? round(($totalCollected / $totalExpected) * 100)
+                                                        : 0;
+
+                                                // Generate color based on payment name for consistency
+                                                $color1 = '#' . substr(md5($paymentName), 0, 6);
+
+                                                // Get pending requests count for this payment
+                                                $pendingRequestsCount = $paymentRequestsCounts[$paymentName] ?? 0;
+
+                                                // FIX: Ensure school year is properly set with fallback
+                                                $schoolYearForUrl =
+                                                    $selectedSchoolYearFilter ?:
+                                                    ($currentSchoolYear
+                                                        ? $currentSchoolYear->school_year
+                                                        : '2024-2025');
+                                                $schoolYearForData =
+                                                    $selectedSchoolYearFilter ?:
+                                                    ($currentSchoolYear
+                                                        ? $currentSchoolYear->school_year
+                                                        : '2024-2025');
+                                            @endphp
+
+                                            <!-- School Fee Item - ENTIRE ITEM IS NOW CLICKABLE -->
+                                            <li class="d-flex school-fee-item border-bottom clickable-school-fee-item"
+                                                data-payment-name="{{ $paymentName }}"
+                                                data-pending-count="{{ $pendingRequestsCount }}"
+                                                data-school-year="{{ $schoolYearForData }}"
+                                                data-url="{{ route('admin.school-fees.show', [
+                                                    'paymentName' => $paymentName,
+                                                    'school_year' => $schoolYearForUrl,
+                                                ]) }}">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white"
+                                                        style="width: 40px; height: 40px; background-color: {{ $color1 }};">
+                                                        <i class="bx bx-wallet fs-6"></i>
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex-grow-1" style="min-width: 0;">
+                                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                                        <!-- Payment Name - Now as span instead of link since entire item is clickable -->
+                                                        <div
+                                                            class="text-decoration-none text-dark flex-grow-1 payment-name-container">
+                                                            <h6 class="mb-0 text-truncate" title="{{ $paymentName }}">
+                                                                {{ $paymentName }}
+                                                            </h6>
+                                                        </div>
+
+                                                        <!-- Notification Badge for Payment Requests -->
+                                                        @if ($pendingRequestsCount > 0)
+                                                            <span
+                                                                class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge
+                                                @if ($pendingRequestsCount > 0) pulse-badge @endif"
+                                                                style="font-size: 0.65rem; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;"
+                                                                data-payment-name="{{ $paymentName }}"
+                                                                data-school-year="{{ $schoolYearForData }}">
+                                                                <span
+                                                                    class="pending-count">{{ $pendingRequestsCount }}</span>
+                                                                <span class="visually-hidden">pending payment
+                                                                    requests</span>
+                                                            </span>
+                                                        @else
+                                                            <span
+                                                                class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge"
+                                                                style="font-size: 0.65rem; min-width: 20px; height: 20px; display: none; align-items: center; justify-content: center;"
+                                                                data-payment-name="{{ $paymentName }}"
+                                                                data-school-year="{{ $schoolYearForData }}">
+                                                                <span class="pending-count">0</span>
+                                                            </span>
+                                                        @endif
+                                                    </div>
+
+                                                    <!-- Payment Details -->
+                                                    <div class="mt-0">
+                                                        <small class="text-muted">
+                                                            Due:
+                                                            {{ \Carbon\Carbon::parse($firstPayment->due_date)->format('M d, Y') }}
+                                                        </small>
+                                                        <small class="text-muted">
+                                                            <span class="mx-2">•</span>
+                                                            ₱{{ number_format($firstPayment->amount_due, 2) }}
+                                                        </small>
+                                                    </div>
+
+                                                    <!-- Progress bar -->
+                                                    <div class="mt-1">
+                                                        <div class="d-flex justify-content-between small text-muted mb-1">
+                                                            <span>Collection Progress</span>
+                                                            <span>{{ $percentage }}%</span>
+                                                        </div>
+                                                        <div class="progress" style="height: 6px;">
+                                                            <div class="progress-bar" role="progressbar"
+                                                                style="width: {{ $percentage }}%; background-color: {{ $color1 }};"
+                                                                aria-valuenow="{{ $percentage }}" aria-valuemin="0"
+                                                                aria-valuemax="100">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @else
+                                <div class="text-center py-2"
+                                    style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                                    <i class="bx bx-wallet fs-1 text-muted"></i>
+                                    <p class="text-muted mb-0 mt-2" id="schoolFeesEmptyMessage">
+                                        @if ($selectedSchoolYearFilter)
+                                            No school fees for {{ $selectedSchoolYearFilter }}
+                                        @else
+                                            No school fees created yet
+                                        @endif
+                                    </p>
+                                    <small class="text-muted" id="schoolFeesEmptySubmessage">
+                                        @if ($selectedSchoolYearFilter)
+                                            Create school fees for this school year to track payments
+                                        @else
+                                            Create school fees to track payments
+                                        @endif
+                                    </small>
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- View All Button -->
-                    @if ($totalPendingRequests > 0)
-                        <div class="card-footer text-center">
-                            <a href="{{ route('admin.school-fees.index') }}" class="btn btn-sm btn-primary">
+                    <div class="card-footer text-center" id="schoolFeesFooter">
+                        @if ($totalSchoolFees > 0)
+                            <a href="{{ route('admin.school-fees.index', ['school_year' => $selectedSchoolYearFilter]) }}"
+                                class="btn btn-sm btn-primary" id="viewAllSchoolFeesBtn">
                                 <i class="bx bx-list-ul me-1"></i>
-                                View All Requests
+                                View All School Fees
                             </a>
-                        </div>
-                    @endif
+                        @else
+                            <a href="{{ route('admin.school-fees.index', ['school_year' => $selectedSchoolYearFilter]) }}"
+                                class="btn btn-sm btn-outline-primary" id="createSchoolFeesBtn">
+                                <i class="bx bx-plus me-1"></i>
+                                Create School Fees
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- RECENT USERS -->
@@ -681,34 +854,66 @@
                 <!-- Gender Distribution Card -->
                 <div class="col-md-6 col-lg-4 col-xl-4 order-0 mb-2">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-center align-items-center mb-0">
+                        <div class="card-header d-flex justify-content-between align-items-center mb-0">
                             <div class="justify-content-center align-items-center card-title mb-0">
-                                <h2 class="m-0 me-2 d-sm-none d-block">Student Gender Ratio</h2>
-                                <h3 class="m-0 me-2 d-sm-block d-none">Student Gender Ratio</h3>
+                                <!-- Web View Title -->
+                                <h5 class="m-0 me-2 d-none d-sm-block">
+                                    Student Gender Ratio for SY:
+                                    <span class="school-year-display">{{ $schoolYearText }}</span>
+                                </h5>
+                                <!-- Mobile View Title -->
+                                <h6 class="m-0 me-2 d-sm-none d-block">
+                                    Student Gender Ratio for SY:
+                                    <span class="school-year-display">{{ $schoolYearText }}</span>
+                                </h6>
                             </div>
-                            {{-- <div class="dropdown">
+                            <div class="dropdown">
                                 <button class="btn btn-sm btn-info text-white dropdown-toggle" type="button"
                                     id="genderYearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    {{ $schoolYearText }}
+                                    <span class="current-school-year">{{ $schoolYearText }}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="genderYearDropdown">
                                     @foreach ($schoolYears as $sy)
                                         <li>
                                             <a class="dropdown-item gender-year-filter" href="#"
-                                                data-year="{{ $sy->id }}">
+                                                data-year="{{ $sy->id }}" data-year-text="{{ $sy->school_year }}">
                                                 {{ $sy->school_year }}
                                             </a>
                                         </li>
                                     @endforeach
                                 </ul>
-                            </div> --}}
+                            </div>
                         </div>
+
+                        <!-- Grade Level & Section Filters -->
+                        <div class="card-body border-bottom py-2">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select id="gradeLevelFilter" class="form-select form-select-sm">
+                                        <option value="">All Grade Levels</option>
+                                        @foreach (['kindergarten', 'grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6'] as $grade)
+                                            <option value="{{ $grade }}">
+                                                {{ ucfirst(str_replace('grade', 'Grade ', $grade)) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select id="sectionFilter" class="form-select form-select-sm" disabled>
+                                        <option value="">All Sections</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div class="d-flex flex-column align-items-center gap-1">
-                                    <h2 class="mb-2">{{ $genderStats['total'] ?? 0 }}</h2>
+                                    <h2 class="mb-2" id="genderTotalStudents">{{ $genderStats['total'] ?? 0 }}</h2>
                                     <span>Total Students</span>
-                                    <span>for SY: {{ $schoolYearText }}</span>
+                                    <!-- School year display that updates dynamically -->
+                                    <span id="genderSchoolYearText" class="school-year-text">for SY:
+                                        {{ $schoolYearText }}</span>
+                                    <small class="text-muted" id="genderFilterText"></small>
                                 </div>
                                 <div id="genderStatisticsChart"></div>
                             </div>
@@ -722,12 +927,12 @@
                                     <div class="d-flex w-100 justify-content-between">
                                         <div>
                                             <h6 class="mb-0">Female</h6>
-                                            <small class="text-muted">{{ $genderStats['female_count'] ?? 0 }}
-                                                Students</small>
+                                            <small class="text-muted"
+                                                id="femaleCount">{{ $genderStats['female_count'] ?? 0 }} Students</small>
                                         </div>
                                         <div class="user-progress">
-                                            <small
-                                                class="fw-semibold">{{ $genderStats['female_percentage'] ?? 0 }}%</small>
+                                            <h6 class="fw-semibold" id="femalePercentage">
+                                                {{ $genderStats['female_percentage'] ?? 0 }}%</h6>
                                         </div>
                                     </div>
                                 </li>
@@ -740,11 +945,12 @@
                                     <div class="d-flex w-100 justify-content-between">
                                         <div>
                                             <h6 class="mb-0">Male</h6>
-                                            <small class="text-muted">{{ $genderStats['male_count'] ?? 0 }}
-                                                Students</small>
+                                            <small class="text-muted"
+                                                id="maleCount">{{ $genderStats['male_count'] ?? 0 }} Students</small>
                                         </div>
                                         <div class="user-progress">
-                                            <small class="fw-semibold">{{ $genderStats['male_percentage'] ?? 0 }}%</small>
+                                            <h6 class="fw-semibold" id="malePercentage">
+                                                {{ $genderStats['male_percentage'] ?? 0 }}%</h6>
                                         </div>
                                     </div>
                                 </li>
@@ -752,7 +958,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Gender Distribution Card -->
             </div>
             <!-- / Enrollees and Gender Chart Section (Compact) -->
 
@@ -927,9 +1132,13 @@
 
     <!-- Chart Initialization Script -->
     <script>
-        // Global variables to store chart instances
+        // Global variables to store chart instances and shared state
         let enrolleesChartInstance = null;
         let genderChartInstance = null;
+        let currentSchoolYearId = {{ $schoolYearId ?? 'null' }};
+        let currentSchoolYearText = '{{ $schoolYearText }}';
+        let currentGenderGradeLevel = '';
+        let currentGenderSection = '';
 
         // Initialize Enrollees Chart with smooth transitions
         function initializeEnrolleesChart(enrollmentData, gradeLabels) {
@@ -1035,7 +1244,7 @@
             }, 100);
         }
 
-        // Initialize Gender Chart with smooth transitions
+        // Initialize Gender Chart with dynamic total display
         function initializeGenderChart(femalePercentage, malePercentage, femaleCount, maleCount) {
             const chartGenderStatistics = document.querySelector('#genderStatisticsChart');
 
@@ -1046,6 +1255,9 @@
             if (chartGenderStatistics) {
                 chartGenderStatistics.innerHTML = '';
             }
+
+            // Calculate total students
+            const totalStudents = femaleCount + maleCount;
 
             // Small delay for smooth transition
             setTimeout(() => {
@@ -1131,8 +1343,11 @@
                                         fontSize: '0.8125rem',
                                         color: '#aaa',
                                         label: 'Gender Ratio',
-                                        formatter: function() {
-                                            return '100%';
+                                        formatter: function(w) {
+                                            // Calculate actual total percentage (should be 100% unless there are no students)
+                                            const totalPercentage = totalStudents > 0 ?
+                                                Math.round(femalePercentage + malePercentage) : 0;
+                                            return totalPercentage + '%';
                                         }
                                     }
                                 }
@@ -1154,37 +1369,132 @@
             }, 100);
         }
 
+        // Function to load sections based on grade level and school year
+        function loadSections(gradeLevel, schoolYearId) {
+            const sectionFilter = document.getElementById('sectionFilter');
+
+            if (!gradeLevel || !schoolYearId) {
+                sectionFilter.innerHTML = '<option value="">All Sections</option>';
+                sectionFilter.disabled = true;
+                return;
+            }
+
+            sectionFilter.disabled = true;
+            sectionFilter.innerHTML = '<option value="">Loading sections...</option>';
+
+            fetch(`/admin/dashboard/grade-sections?school_year_id=${schoolYearId}&grade_level=${gradeLevel}`)
+                .then(response => response.json())
+                .then(sections => {
+                    let options = '<option value="">All Sections</option>';
+                    sections.forEach(section => {
+                        options += `<option value="${section}">${section}</option>`;
+                    });
+                    sectionFilter.innerHTML = options;
+                    sectionFilter.disabled = false;
+
+                    // Restore previous section selection if available
+                    if (currentGenderSection && sections.includes(currentGenderSection)) {
+                        sectionFilter.value = currentGenderSection;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading sections:', error);
+                    sectionFilter.innerHTML = '<option value="">All Sections</option>';
+                    sectionFilter.disabled = false;
+                });
+        }
+
+        // Function to update gender chart with filters
+        function updateGenderChartWithFilters(schoolYearId, gradeLevel = '', section = '') {
+            const chartContainer = document.querySelector('#genderStatisticsChart');
+            if (chartContainer) {
+                chartContainer.classList.add('chart-loading');
+            }
+
+            // Build query parameters
+            let url = `/admin/dashboard/gender-data-filtered?school_year_id=${schoolYearId}`;
+            if (gradeLevel) url += `&grade_level=${gradeLevel}`;
+            if (section) url += `&section=${section}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    initializeGenderChart(
+                        data.female_percentage,
+                        data.male_percentage,
+                        data.female_count,
+                        data.male_count
+                    );
+                    updateGenderUI(data);
+                    updateFilterText(gradeLevel, section);
+                })
+                .catch(error => {
+                    console.error('Error fetching filtered gender data:', error);
+                    if (chartContainer) {
+                        chartContainer.classList.remove('chart-loading');
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to load gender data for the selected filters.',
+                    });
+                });
+        }
+
+        // Function to update filter display text
+        function updateFilterText(gradeLevel, section) {
+            const filterText = document.getElementById('genderFilterText');
+            let textParts = [];
+
+            if (gradeLevel) {
+                const gradeDisplay = gradeLevel === 'kindergarten' ? 'Kindergarten' :
+                    gradeLevel.replace('grade', 'Grade ');
+                textParts.push(gradeDisplay);
+            }
+
+            if (section) {
+                textParts.push(`Section ${section}`);
+            }
+
+            if (textParts.length > 0) {
+                filterText.textContent = textParts.join(' - ');
+                filterText.style.display = 'block';
+            } else {
+                filterText.textContent = '';
+                filterText.style.display = 'none';
+            }
+        }
+
         // Update UI with gender data
         function updateGenderUI(genderData) {
-            // Add transition effects to UI updates
             const elementsToUpdate = [{
-                    selector: '.card-body .d-flex.flex-column.align-items-center.gap-1 h2.mb-2',
+                    selector: '#genderTotalStudents',
                     value: genderData.total || 0,
                     transition: 'count-up'
                 },
                 {
-                    selector: 'li.d-flex.mb-3 small.text-muted',
+                    selector: '#femaleCount',
                     value: (genderData.female_count || 0) + ' Students',
                     transition: 'fade'
                 },
                 {
-                    selector: 'li.d-flex.mb-3 small.fw-semibold',
+                    selector: '#femalePercentage',
                     value: (genderData.female_percentage || 0) + '%',
                     transition: 'fade'
                 },
                 {
-                    selector: 'li.d-flex:not(.mb-3) small.text-muted',
+                    selector: '#maleCount',
                     value: (genderData.male_count || 0) + ' Students',
                     transition: 'fade'
                 },
                 {
-                    selector: 'li.d-flex:not(.mb-3) small.fw-semibold',
+                    selector: '#malePercentage',
                     value: (genderData.male_percentage || 0) + '%',
-                    transition: 'fade'
-                },
-                {
-                    selector: '.card-header .text-muted',
-                    value: 'Total: ' + (genderData.total || 0) + ' Students',
                     transition: 'fade'
                 }
             ];
@@ -1237,12 +1547,24 @@
         // Update chart titles with school year
         function updateChartTitles(schoolYearText) {
             const elementsToUpdate = [{
-                    selector: '.card-body .card-title.m-0',
-                    text: 'Total enrollees for School Year ' + schoolYearText
+                    selector: '.card-body .card-title.m-0.d-sm-block.d-none',
+                    text: 'Total Enrollees for School Year ' + schoolYearText
                 },
                 {
-                    selector: '.d-flex.flex-column.align-items-center.gap-1 span:nth-child(3)',
+                    selector: '.card-body .card-title.m-0.d-sm-none.d-block',
+                    text: 'Total Enrollees for School Year ' + schoolYearText
+                },
+                {
+                    selector: '#genderSchoolYearText',
                     text: 'for SY: ' + schoolYearText
+                },
+                {
+                    selector: '.school-year-display',
+                    text: schoolYearText
+                },
+                {
+                    selector: '.current-school-year',
+                    text: schoolYearText
                 }
             ];
 
@@ -1258,7 +1580,73 @@
             });
         }
 
-        // AJAX for school year filtering with loading states
+        // Enhanced filter functions with loading states
+        function updateEnrolleesChart(schoolYearId) {
+            const chartContainer = document.getElementById('enrolleesChart').parentElement;
+            chartContainer.classList.add('chart-loading');
+
+            fetch(`/admin/dashboard/enrollment-data?school_year_id=${schoolYearId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    initializeEnrolleesChart(data.enrollment_data, data.grade_labels);
+                })
+                .catch(error => {
+                    console.error('Error fetching enrollment data:', error);
+                    chartContainer.classList.remove('chart-loading');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to load enrollment data for the selected school year.',
+                    });
+                });
+        }
+
+        // Synchronized school year change function
+        function changeSchoolYear(schoolYearId, schoolYearText, source) {
+            // Update global state
+            currentSchoolYearId = schoolYearId;
+            currentSchoolYearText = schoolYearText;
+
+            // Update both dropdowns
+            updateDropdownText('yearDropdown', schoolYearText);
+            updateDropdownText('genderYearDropdown', schoolYearText);
+
+            // Update chart titles
+            updateChartTitles(schoolYearText);
+
+            // Update enrollees chart
+            updateEnrolleesChart(schoolYearId);
+
+            // Update gender chart with current filters
+            updateGenderChartWithFilters(schoolYearId, currentGenderGradeLevel, currentGenderSection);
+
+            // Reload sections if grade level is selected
+            if (currentGenderGradeLevel) {
+                loadSections(currentGenderGradeLevel, schoolYearId);
+            } else {
+                // Reset section filter
+                document.getElementById('sectionFilter').innerHTML = '<option value="">All Sections</option>';
+                document.getElementById('sectionFilter').disabled = true;
+            }
+        }
+
+        function updateDropdownText(dropdownId, text) {
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) {
+                dropdown.style.opacity = '0.7';
+                dropdown.textContent = text;
+                setTimeout(() => {
+                    dropdown.style.opacity = '1';
+                }, 300);
+            }
+        }
+
+        // AJAX for school year filtering with synchronized behavior
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize charts with current data
             const initialEnrollmentData = @json($enrollmentByGrade);
@@ -1276,81 +1664,14 @@
             initializeGenderChart(initialFemalePercentage, initialMalePercentage, initialFemaleCount,
                 initialMaleCount);
 
-            // Enhanced filter functions with loading states
-            function updateEnrolleesChart(schoolYearId) {
-                const chartContainer = document.getElementById('enrolleesChart').parentElement;
-                chartContainer.classList.add('chart-loading');
-
-                fetch(`/admin/dashboard/enrollment-data?school_year_id=${schoolYearId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        initializeEnrolleesChart(data.enrollment_data, data.grade_labels);
-                    })
-                    .catch(error => {
-                        console.error('Error fetching enrollment data:', error);
-                        chartContainer.classList.remove('chart-loading');
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Failed to load enrollment data for the selected school year.',
-                        });
-                    });
-            }
-
-            function updateGenderChart(schoolYearId) {
-                const chartContainer = document.querySelector('#genderStatisticsChart');
-                if (chartContainer) {
-                    chartContainer.classList.add('chart-loading');
-                }
-
-                fetch(`/admin/dashboard/gender-data?school_year_id=${schoolYearId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        initializeGenderChart(
-                            data.female_percentage,
-                            data.male_percentage,
-                            data.female_count,
-                            data.male_count
-                        );
-                        updateGenderUI(data);
-                    })
-                    .catch(error => {
-                        console.error('Error fetching gender data:', error);
-                        if (chartContainer) {
-                            chartContainer.classList.remove('chart-loading');
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Failed to load gender data for the selected school year.',
-                        });
-                    });
-            }
-
-            // Event listeners for dropdown filters
+            // Event listeners for synchronized school year filters
             document.querySelectorAll('.school-year-filter').forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     const schoolYearId = this.getAttribute('data-year');
                     const schoolYearText = this.textContent.trim();
 
-                    updateEnrolleesChart(schoolYearId);
-                    updateDropdownText('yearDropdown', schoolYearText);
-                    updateChartTitles(schoolYearText);
-
-                    // Also update gender chart to keep them in sync
-                    updateGenderChart(schoolYearId);
-                    updateDropdownText('genderYearDropdown', schoolYearText);
+                    changeSchoolYear(schoolYearId, schoolYearText, 'enrollees');
                 });
             });
 
@@ -1360,27 +1681,41 @@
                     const schoolYearId = this.getAttribute('data-year');
                     const schoolYearText = this.textContent.trim();
 
-                    updateGenderChart(schoolYearId);
-                    updateDropdownText('genderYearDropdown', schoolYearText);
-                    updateChartTitles(schoolYearText);
-
-                    // Also update enrollees chart to keep them in sync
-                    updateEnrolleesChart(schoolYearId);
-                    updateDropdownText('yearDropdown', schoolYearText);
+                    changeSchoolYear(schoolYearId, schoolYearText, 'gender');
                 });
             });
-        });
 
-        function updateDropdownText(dropdownId, text) {
-            const dropdown = document.getElementById(dropdownId);
-            if (dropdown) {
-                dropdown.style.opacity = '0.7';
-                dropdown.textContent = text;
-                setTimeout(() => {
-                    dropdown.style.opacity = '1';
-                }, 300);
+            // Event listeners for grade level and section filters
+            document.getElementById('gradeLevelFilter').addEventListener('change', function() {
+                currentGenderGradeLevel = this.value;
+
+                // Reset section filter when grade level changes
+                document.getElementById('sectionFilter').value = '';
+                currentGenderSection = '';
+
+                if (currentGenderGradeLevel && currentSchoolYearId) {
+                    loadSections(currentGenderGradeLevel, currentSchoolYearId);
+                } else {
+                    document.getElementById('sectionFilter').disabled = true;
+                    document.getElementById('sectionFilter').innerHTML =
+                        '<option value="">All Sections</option>';
+                }
+
+                updateGenderChartWithFilters(currentSchoolYearId, currentGenderGradeLevel,
+                    currentGenderSection);
+            });
+
+            document.getElementById('sectionFilter').addEventListener('change', function() {
+                currentGenderSection = this.value;
+                updateGenderChartWithFilters(currentSchoolYearId, currentGenderGradeLevel,
+                    currentGenderSection);
+            });
+
+            // Initialize with current school year
+            if (currentSchoolYearId) {
+                updateGenderChartWithFilters(currentSchoolYearId);
             }
-        }
+        });
     </script>
 
     <!-- Logout Confirmation Script -->
@@ -1812,10 +2147,667 @@
             setInterval(loadActiveUsers, 30000);
         });
     </script>
+
+    <!-- School Fees Real-time Notification System -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const schoolFeesList = document.getElementById('schoolFeesList');
+            let lastCheckedAt = localStorage.getItem('schoolFeesLastChecked') || new Date().toISOString();
+
+            // Initialize notification display
+            updateAllNotificationBadges();
+
+            // Function to update notification badge for a specific payment
+            function updateNotificationBadge(paymentName, pendingCount) {
+                const badge = document.querySelector(
+                    `.school-fee-notification-badge[data-payment-name="${paymentName}"]`);
+                const countSpan = badge?.querySelector('.pending-count');
+
+                if (badge && countSpan) {
+                    if (pendingCount > 0) {
+                        countSpan.textContent = pendingCount;
+                        badge.style.display = 'flex';
+
+                        // Add pulse animation for new requests
+                        if (pendingCount > 0) {
+                            badge.classList.add('pulse-badge');
+                        } else {
+                            badge.classList.remove('pulse-badge');
+                        }
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+
+            // Function to update all notification badges
+            function updateAllNotificationBadges() {
+                const schoolFeeItems = document.querySelectorAll('.school-fee-item');
+
+                schoolFeeItems.forEach(item => {
+                    const paymentName = item.dataset.paymentName;
+                    const currentCount = parseInt(item.dataset.pendingCount) || 0;
+                    updateNotificationBadge(paymentName, currentCount);
+                });
+            }
+
+            // Real-time updates using polling (every 30 seconds)
+            function checkForNewPaymentRequests() {
+                fetch('{{ route('admin.payment-requests.check-dashboard') }}', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update counts for each payment
+                            if (data.payment_counts) {
+                                Object.entries(data.payment_counts).forEach(([paymentName, pendingCount]) => {
+                                    updateNotificationBadge(paymentName, pendingCount);
+
+                                    // Update the data attribute for future reference
+                                    const item = document.querySelector(
+                                        `.school-fee-item[data-payment-name="${paymentName}"]`);
+                                    if (item) {
+                                        item.dataset.pendingCount = pendingCount;
+                                    }
+                                });
+                            }
+
+                            // Show notification for new requests
+                            if (data.total_new_count > 0) {
+                                showNewRequestNotification(data.total_new_count);
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error checking payment requests:', error));
+            }
+
+            // Show desktop notification for new requests
+            function showNewRequestNotification(count) {
+                if (Notification.permission === 'granted') {
+                    new Notification(`New Payment Request${count > 1 ? 's' : ''}`, {
+                        body: `You have ${count} new payment request${count > 1 ? 's' : ''} pending review`,
+                        icon: '{{ asset('assetsDashboard/img/logo.png') }}',
+                        tag: 'payment-requests-dashboard',
+                        url: '{{ route('admin.school-fees.index') }}'
+                    });
+                }
+            }
+
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            // Start polling for updates
+            setInterval(checkForNewPaymentRequests, 30000); // Check every 30 seconds
+
+            // Enhanced click behavior for school fee items
+            document.querySelectorAll('.school-fee-item').forEach(item => {
+                const paymentName = item.dataset.paymentName;
+                const schoolYear = item.dataset.schoolYear;
+                const pendingCount = parseInt(item.dataset.pendingCount) || 0;
+
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on the link or badge directly
+                    if (e.target.closest('a') || e.target.closest(
+                            '.school-fee-notification-badge')) {
+                        return;
+                    }
+
+                    e.preventDefault();
+
+                    if (pendingCount > 0) {
+                        // Store the intention to open payment requests for this specific payment with school year
+                        localStorage.setItem('openPaymentRequests', 'true');
+                        localStorage.setItem('targetPaymentName', paymentName);
+                        localStorage.setItem('targetSchoolYear', schoolYear);
+                        localStorage.setItem('schoolFeesLastChecked', new Date().toISOString());
+                    }
+
+                    // Navigate to the specific school fee page with school year context
+                    const url =
+                        '{{ route('admin.school-fees.show', ['paymentName' => ':paymentName', 'school_year' => ':schoolYear']) }}'
+                        .replace(':paymentName', paymentName)
+                        .replace(':schoolYear', schoolYear);
+                    window.location.href = url;
+                });
+            });
+
+            // Enhanced click behavior for notification badges
+            document.querySelectorAll('.school-fee-notification-badge').forEach(badge => {
+                badge.style.cursor = 'pointer';
+                badge.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const paymentName = this.dataset.paymentName;
+                    const schoolYear = this.dataset.schoolYear;
+
+                    // Store the intention to open payment requests with school year context
+                    localStorage.setItem('openPaymentRequests', 'true');
+                    localStorage.setItem('targetPaymentName', paymentName);
+                    localStorage.setItem('targetSchoolYear', schoolYear);
+                    localStorage.setItem('schoolFeesLastChecked', new Date().toISOString());
+
+                    // Navigate to the specific school fee page with school year context
+                    const url =
+                        '{{ route('admin.school-fees.show', ['paymentName' => ':paymentName', 'school_year' => ':schoolYear']) }}'
+                        .replace(':paymentName', paymentName)
+                        .replace(':schoolYear', schoolYear);
+                    window.location.href = url;
+                });
+            });
+
+            // Check if we need to auto-open payment requests modal on school fees page
+            function checkAutoOpenModal() {
+                const shouldOpenRequests = localStorage.getItem('openPaymentRequests');
+                const targetPaymentName = localStorage.getItem('targetPaymentName');
+                const targetSchoolYear = localStorage.getItem('targetSchoolYear');
+                const currentPath = window.location.pathname;
+
+                if (shouldOpenRequests === 'true' && targetPaymentName && targetSchoolYear) {
+                    // Check if we're on the correct school fee page
+                    const isOnTargetPage = currentPath.includes('school-fees') &&
+                        currentPath.includes(targetPaymentName);
+
+                    if (isOnTargetPage) {
+                        // Clear the flags
+                        localStorage.removeItem('openPaymentRequests');
+                        localStorage.removeItem('targetPaymentName');
+                        localStorage.removeItem('targetSchoolYear');
+
+                        // Look for payment requests button and click it
+                        setTimeout(() => {
+                            const paymentRequestsBtn = document.getElementById('paymentRequestsBtn');
+                            if (paymentRequestsBtn) {
+                                paymentRequestsBtn.click();
+
+                                // After modal opens, ensure the correct school year filter is applied
+                                setTimeout(() => {
+                                    const modal = document.getElementById('paymentRequestsModal');
+                                    if (modal) {
+                                        modal.scrollIntoView({
+                                            behavior: 'smooth',
+                                            block: 'start'
+                                        });
+
+                                        // Set the school year filter in the modal if it exists
+                                        const schoolYearFilter = document.querySelector(
+                                            'select[name="school_year"]');
+                                        if (schoolYearFilter && targetSchoolYear) {
+                                            schoolYearFilter.value = targetSchoolYear;
+                                            // Trigger change event to refresh the data
+                                            const event = new Event('change');
+                                            schoolYearFilter.dispatchEvent(event);
+                                        }
+                                    }
+                                }, 500);
+                            }
+                        }, 1000); // Delay to ensure page is fully loaded
+                    }
+                }
+            }
+
+            // Run auto-open check when page loads (for school fees pages)
+            if (window.location.pathname.includes('school-fees')) {
+                checkAutoOpenModal();
+            }
+        });
+    </script>
+
+    <!-- School Year Filter for School Fees -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const schoolFeeYearFilter = document.getElementById('schoolFeeYearFilter');
+
+            if (schoolFeeYearFilter) {
+                schoolFeeYearFilter.addEventListener('change', function() {
+                    const selectedYear = this.value;
+
+                    // Create a URL with the selected school year filter
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('school_fee_year', selectedYear);
+
+                    // Reload the page with the new filter
+                    window.location.href = currentUrl.toString();
+                });
+            }
+        });
+    </script>
+
+    <!-- Enhanced School Fee Items Click Handling -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Enhanced click handling for entire school fee items
+            document.querySelectorAll('.clickable-school-fee-item').forEach(item => {
+                const paymentName = item.dataset.paymentName;
+                const schoolYear = item.dataset.schoolYear;
+                const pendingCount = parseInt(item.dataset.pendingCount) || 0;
+                const targetUrl = item.dataset.url;
+
+                // Make the entire item visually clickable
+                item.style.cursor = 'pointer';
+                item.classList.add('clickable-item');
+
+                item.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on specific elements that have their own handlers
+                    if (e.target.closest('.school-fee-notification-badge') ||
+                        e.target.closest('.progress') ||
+                        e.target.closest('.progress-bar')) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    console.log('School fee item clicked:', {
+                        paymentName: paymentName,
+                        schoolYear: schoolYear,
+                        pendingCount: pendingCount,
+                        targetUrl: targetUrl
+                    });
+
+                    // Store the intention to open payment requests if there are pending requests
+                    if (pendingCount > 0) {
+                        localStorage.setItem('openPaymentRequests', 'true');
+                        localStorage.setItem('targetPaymentName', paymentName);
+                        localStorage.setItem('targetSchoolYear', schoolYear);
+                        localStorage.setItem('schoolFeesLastChecked', new Date().toISOString());
+
+                        console.log('Setting auto-open flags for payment requests');
+                    }
+
+                    // Navigate to the specific school fee page
+                    console.log('Redirecting to:', targetUrl);
+                    window.location.href = targetUrl;
+                });
+
+                // Add hover effects
+                item.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                    this.style.transform = 'translateX(5px)';
+                });
+
+                item.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                    this.style.transform = '';
+                });
+            });
+
+            // Enhanced click behavior for notification badges (separate from item click)
+            document.querySelectorAll('.school-fee-notification-badge').forEach(badge => {
+                badge.style.cursor = 'pointer';
+
+                badge.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const paymentName = this.dataset.paymentName;
+                    const schoolYear = this.dataset.schoolYear;
+
+                    console.log('Notification badge clicked:', {
+                        paymentName: paymentName,
+                        schoolYear: schoolYear
+                    });
+
+                    // Store the intention to open payment requests with school year context
+                    localStorage.setItem('openPaymentRequests', 'true');
+                    localStorage.setItem('targetPaymentName', paymentName);
+                    localStorage.setItem('targetSchoolYear', schoolYear);
+                    localStorage.setItem('schoolFeesLastChecked', new Date().toISOString());
+
+                    // Navigate to the specific school fee page
+                    const url =
+                        '{{ route('admin.school-fees.show', ['paymentName' => ':paymentName', 'school_year' => ':schoolYear']) }}'
+                        .replace(':paymentName', encodeURIComponent(paymentName))
+                        .replace(':schoolYear', encodeURIComponent(schoolYear));
+
+                    console.log('Redirecting to:', url);
+                    window.location.href = url;
+                });
+            });
+
+            // Enhanced auto-open payment requests modal function
+            function checkAutoOpenModal() {
+                const shouldOpenRequests = localStorage.getItem('openPaymentRequests');
+                const targetPaymentName = localStorage.getItem('targetPaymentName');
+                const targetSchoolYear = localStorage.getItem('targetSchoolYear');
+                const currentPath = window.location.pathname;
+
+                console.log('Auto-open check:', {
+                    shouldOpenRequests,
+                    targetPaymentName,
+                    targetSchoolYear,
+                    currentPath
+                });
+
+                if (shouldOpenRequests === 'true' && targetPaymentName && targetSchoolYear) {
+                    // Check if we're on the correct school fee page
+                    const isOnTargetPage = currentPath.includes('school-fees') &&
+                        currentPath.includes(targetPaymentName);
+
+                    console.log('Is on target page:', isOnTargetPage);
+
+                    if (isOnTargetPage) {
+                        // Clear the flags
+                        localStorage.removeItem('openPaymentRequests');
+                        localStorage.removeItem('targetPaymentName');
+                        localStorage.removeItem('targetSchoolYear');
+
+                        console.log('Auto-opening payment requests modal...');
+
+                        // Open the payment requests modal
+                        setTimeout(() => {
+                            const paymentRequestsBtn = document.getElementById('paymentRequestsBtn');
+                            if (paymentRequestsBtn) {
+                                console.log('Found payment requests button, clicking...');
+                                paymentRequestsBtn.click();
+
+                                // After modal opens, ensure the correct school year filter is applied
+                                setTimeout(() => {
+                                    const modal = document.getElementById('paymentRequestsModal');
+                                    if (modal) {
+                                        console.log('Modal opened, ensuring correct data...');
+
+                                        // Force refresh of the requests table if needed
+                                        const searchInput = document.getElementById(
+                                            'requestsSearch');
+                                        if (searchInput) {
+                                            searchInput.value = '';
+                                            const event = new Event('input', {
+                                                bubbles: true
+                                            });
+                                            searchInput.dispatchEvent(event);
+                                        }
+                                    }
+                                }, 500);
+                            } else {
+                                console.error('Payment requests button not found');
+                            }
+                        }, 1000);
+                    }
+                }
+            }
+
+            // Run auto-open check when page loads (for school fees pages)
+            if (window.location.pathname.includes('school-fees')) {
+                checkAutoOpenModal();
+            }
+        });
+    </script>
+
+    <!-- School Year Filter for School Fees - AJAX Version -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const schoolFeeYearFilter = document.getElementById('schoolFeeYearFilter');
+            const schoolFeesCard = document.getElementById('schoolFeesDashboardCard');
+            const schoolFeesContent = document.getElementById('schoolFeesContent');
+            const schoolFeesLoading = document.getElementById('schoolFeesLoading');
+            const schoolFeesTotalCount = document.getElementById('schoolFeesTotalCount');
+            const schoolFeesList = document.getElementById('schoolFeesList');
+            const schoolFeesEmptyMessage = document.getElementById('schoolFeesEmptyMessage');
+            const schoolFeesEmptySubmessage = document.getElementById('schoolFeesEmptySubmessage');
+            const schoolFeesFooter = document.getElementById('schoolFeesFooter');
+            const viewAllSchoolFeesBtn = document.getElementById('viewAllSchoolFeesBtn');
+            const createSchoolFeesBtn = document.getElementById('createSchoolFeesBtn');
+
+            if (schoolFeeYearFilter) {
+                schoolFeeYearFilter.addEventListener('change', function() {
+                    const selectedYear = this.value;
+                    loadSchoolFeesData(selectedYear);
+                });
+            }
+
+            function loadSchoolFeesData(schoolYear) {
+                // Show loading state
+                if (schoolFeesLoading) schoolFeesLoading.style.display = 'block';
+                if (schoolFeesContent) schoolFeesContent.style.display = 'none';
+
+                // Add loading class to card
+                schoolFeesCard.classList.add('card-loading');
+
+                // Make AJAX request
+                fetch(`/admin/dashboard/school-fees-data?school_year=${encodeURIComponent(schoolYear)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                'content')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        updateSchoolFeesCard(data, schoolYear);
+                    })
+                    .catch(error => {
+                        console.error('Error loading school fees data:', error);
+                        // Fallback to page reload if AJAX fails
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.set('school_fee_year', schoolYear);
+                        window.location.href = currentUrl.toString();
+                    })
+                    .finally(() => {
+                        // Hide loading state
+                        if (schoolFeesLoading) schoolFeesLoading.style.display = 'none';
+                        if (schoolFeesContent) schoolFeesContent.style.display = 'block';
+                        schoolFeesCard.classList.remove('card-loading');
+                    });
+            }
+
+            function updateSchoolFeesCard(data, schoolYear) {
+                // Update total count
+                if (schoolFeesTotalCount) {
+                    schoolFeesTotalCount.textContent = data.total_count;
+                }
+
+                // Update school fees list
+                if (schoolFeesList && data.school_fees && data.school_fees.length > 0) {
+                    schoolFeesList.innerHTML = data.school_fees.map(fee => `
+                    <li class="d-flex school-fee-item border-bottom clickable-school-fee-item"
+                        data-payment-name="${fee.payment_name}"
+                        data-pending-count="${fee.pending_requests_count}"
+                        data-school-year="${schoolYear}"
+                        data-url="${fee.url}">
+                        <div class="flex-shrink-0 me-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white"
+                                style="width: 40px; height: 40px; background-color: ${fee.color};">
+                                <i class="bx bx-wallet fs-6"></i>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div class="text-decoration-none text-dark flex-grow-1 payment-name-container">
+                                    <h6 class="mb-0 text-truncate" title="${fee.payment_name}">
+                                        ${fee.payment_name}
+                                    </h6>
+                                </div>
+
+                                ${fee.pending_requests_count > 0 ? `
+                                        <span class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge pulse-badge"
+                                            style="font-size: 0.65rem; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;"
+                                            data-payment-name="${fee.payment_name}"
+                                            data-school-year="${schoolYear}">
+                                            <span class="pending-count">${fee.pending_requests_count}</span>
+                                            <span class="visually-hidden">pending payment requests</span>
+                                        </span>
+                                    ` : `
+                                        <span class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge"
+                                            style="font-size: 0.65rem; min-width: 20px; height: 20px; display: none; align-items: center; justify-content: center;"
+                                            data-payment-name="${fee.payment_name}"
+                                            data-school-year="${schoolYear}">
+                                            <span class="pending-count">0</span>
+                                        </span>
+                                    `}
+                            </div>
+
+                            <div class="mt-0">
+                                <small class="text-muted">
+                                    Due: ${fee.due_date}
+                                </small>
+                                <small class="text-muted">
+                                    <span class="mx-2">•</span>
+                                    ₱${fee.amount_due}
+                                </small>
+                            </div>
+
+                            <div class="mt-1">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Collection Progress</span>
+                                    <span>${fee.percentage}%</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar" role="progressbar"
+                                        style="width: ${fee.percentage}%; background-color: ${fee.color};"
+                                        aria-valuenow="${fee.percentage}" aria-valuemin="0"
+                                        aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                `).join('');
+
+                    // Show the list and hide empty state
+                    schoolFeesList.style.display = 'block';
+                    if (schoolFeesEmptyMessage) schoolFeesEmptyMessage.style.display = 'none';
+                    if (schoolFeesEmptySubmessage) schoolFeesEmptySubmessage.style.display = 'none';
+                } else {
+                    // Show empty state
+                    if (schoolFeesList) schoolFeesList.style.display = 'none';
+                    if (schoolFeesEmptyMessage) {
+                        schoolFeesEmptyMessage.textContent = `No school fees for ${schoolYear}`;
+                        schoolFeesEmptyMessage.style.display = 'block';
+                    }
+                    if (schoolFeesEmptySubmessage) {
+                        schoolFeesEmptySubmessage.textContent =
+                            'Create school fees for this school year to track payments';
+                        schoolFeesEmptySubmessage.style.display = 'block';
+                    }
+                }
+
+                // Update footer buttons
+                updateFooterButtons(data.total_count > 0, schoolYear);
+
+                // Re-attach click event handlers
+                attachSchoolFeeItemClickHandlers();
+            }
+
+            function updateFooterButtons(hasFees, schoolYear) {
+                if (!schoolFeesFooter) return;
+
+                if (hasFees) {
+                    schoolFeesFooter.innerHTML = `
+                    <a href="/admin/school-fees?school_year=${encodeURIComponent(schoolYear)}"
+                       class="btn btn-sm btn-primary" id="viewAllSchoolFeesBtn">
+                        <i class="bx bx-list-ul me-1"></i>
+                        View All School Fees
+                    </a>
+                `;
+                } else {
+                    schoolFeesFooter.innerHTML = `
+                    <a href="/admin/school-fees?school_year=${encodeURIComponent(schoolYear)}"
+                       class="btn btn-sm btn-outline-primary" id="createSchoolFeesBtn">
+                        <i class="bx bx-plus me-1"></i>
+                        Create School Fees
+                    </a>
+                `;
+                }
+            }
+
+            function attachSchoolFeeItemClickHandlers() {
+                // Re-attach click handlers to school fee items
+                document.querySelectorAll('.clickable-school-fee-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        if (e.target.closest('.school-fee-notification-badge') ||
+                            e.target.closest('.progress') ||
+                            e.target.closest('.progress-bar')) {
+                            return;
+                        }
+
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const paymentName = this.dataset.paymentName;
+                        const schoolYear = this.dataset.schoolYear;
+                        const pendingCount = parseInt(this.dataset.pendingCount) || 0;
+                        const targetUrl = this.dataset.url;
+
+                        if (pendingCount > 0) {
+                            localStorage.setItem('openPaymentRequests', 'true');
+                            localStorage.setItem('targetPaymentName', paymentName);
+                            localStorage.setItem('targetSchoolYear', schoolYear);
+                            localStorage.setItem('schoolFeesLastChecked', new Date().toISOString());
+                        }
+
+                        window.location.href = targetUrl;
+                    });
+                });
+
+                // Re-attach click handlers to notification badges
+                document.querySelectorAll('.school-fee-notification-badge').forEach(badge => {
+                    badge.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const paymentName = this.dataset.paymentName;
+                        const schoolYear = this.dataset.schoolYear;
+
+                        localStorage.setItem('openPaymentRequests', 'true');
+                        localStorage.setItem('targetPaymentName', paymentName);
+                        localStorage.setItem('targetSchoolYear', schoolYear);
+                        localStorage.setItem('schoolFeesLastChecked', new Date().toISOString());
+
+                        const url = '/admin/school-fees/' + encodeURIComponent(paymentName) +
+                            '?school_year=' + encodeURIComponent(schoolYear);
+                        window.location.href = url;
+                    });
+                });
+            }
+
+            // Initialize click handlers
+            attachSchoolFeeItemClickHandlers();
+        });
+    </script>
 @endpush
 
 @push('styles')
     <style>
+        /* Notification badge styles for school fee items */
+        .school-fee-notification-badge {
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 5px rgba(220, 53, 69, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+
         /* ===== DASHBOARD GRID LAYOUT ===== */
         .dashboard-grid {
             display: grid;
@@ -2295,5 +3287,204 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
+
+        /* Filter section styling */
+        #genderFilterText {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #6c757d;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 576px) {
+            .card-body.border-bottom.py-2 .row.g-2 {
+                margin: -0.25rem;
+            }
+
+            .card-body.border-bottom.py-2 .col-6 {
+                padding: 0.25rem;
+            }
+        }
+
+        /* Make dropdown menus scrollable */
+        .dropdown-menu {
+            max-height: 300px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f8f9fa;
+        }
+
+        .dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .dropdown-menu::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .dropdown-menu::-webkit-scrollbar-thumb {
+            background-color: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background-color: #a8a8a8;
+        }
+
+        /* Ensure dropdown items are properly styled */
+        .dropdown-item {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0.5rem 1rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: #e9ecef;
+        }
+
+        /* School Fees Scrollable Styles */
+        .school-fees-scrollable {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 transparent;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .school-fees-scrollable::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .school-fees-scrollable::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+            margin: 5px;
+        }
+
+        .school-fees-scrollable::-webkit-scrollbar-thumb {
+            background-color: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        .school-fees-scrollable::-webkit-scrollbar-thumb:hover {
+            background-color: #a8a8a8;
+        }
+
+        /* School fee item hover effects */
+        .school-fee-item {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 12px 8px;
+            margin: 4px 0;
+        }
+
+        .school-fee-item:hover {
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Ensure proper text truncation with badge */
+        .school-fee-item .flex-grow-1 {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .school-fee-item h6.text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .school-fees-scrollable {
+                max-height: 250px !important;
+            }
+
+            .school-fee-item {
+                padding: 10px 6px;
+                margin: 3px 0;
+            }
+
+            .school-fee-item:hover {
+                transform: translateX(3px);
+            }
+        }
     </style>
+
+    {{-- <style>
+
+
+        /* School fee item hover effects */
+        .school-fee-item {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 12px 8px;
+            margin: 4px 0;
+        }
+
+        .school-fee-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Badge positioning */
+        .school-fee-item .d-flex.justify-content-between {
+            align-items: flex-start;
+        }
+
+        .school-fee-item h6 {
+            margin-right: 8px;
+            line-height: 1.2;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .school-fee-notification-badge {
+                animation: none;
+                /* Disable animation on mobile for performance */
+                font-size: 0.6rem !important;
+                min-width: 18px !important;
+                height: 18px !important;
+            }
+
+            .school-fee-item {
+                padding: 10px 6px;
+                margin: 3px 0;
+            }
+
+            .school-fee-item:hover {
+                transform: translateX(3px);
+            }
+        }
+
+        /* Ensure proper text truncation with badge */
+        .school-fee-item .flex-grow-1 {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .school-fee-item h6.text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 1;
+        }
+
+        /* Smooth transitions for badge updates */
+        .school-fee-notification-badge {
+            transition: all 0.3s ease;
+        }
+
+        /* Highlight effect for items with pending requests */
+        .school-fee-item[data-pending-count="0"] {
+            opacity: 0.9;
+        }
+
+        .school-fee-item[data-pending-count="0"]:hover {
+            opacity: 1;
+        }
+    </style> --}}
 @endpush

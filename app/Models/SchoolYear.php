@@ -50,4 +50,16 @@ class SchoolYear extends Model
     {
         return $this->hasMany(Subject::class, 'school_year_id');
     }
+
+    public function payments()
+    {
+        return $this->hasManyThrough(
+            Payment::class,
+            ClassStudent::class,
+            'school_year_id', // Foreign key on ClassStudent table...
+            'class_student_id', // Foreign key on Payment table...
+            'id', // Local key on SchoolYear table...
+            'id'  // Local key on ClassStudent table...
+        );
+    }
 }

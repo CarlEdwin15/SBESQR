@@ -207,8 +207,7 @@
                                                 @elseif($payment->status === 'partial')
                                                     <li class="d-flex mb-2 pb-1">
                                                         <div class="avatar flex-shrink-0 me-3">
-                                                            <span
-                                                                class="avatar-initial rounded bg-label-warning text-dark">
+                                                            <span class="avatar-initial rounded bg-label-warning text-dark">
                                                                 <i class="bx bx-file fs-4 text-warning"></i>
                                                             </span>
                                                         </div>
@@ -467,25 +466,6 @@
                                                         Method</label>
 
                                                     <div class="d-flex flex-column gap-2">
-                                                        <!-- Cash on Hand -->
-                                                        <label
-                                                            class="payment-option d-flex align-items-center justify-content-between border rounded px-3 py-1"
-                                                            style="cursor: pointer;">
-                                                            <div class="d-flex align-items-center">
-                                                                <img src="{{ asset('assetsDashboard/img/icons/unicons/coh.png') }}"
-                                                                    alt="Cash" width="35" height="20"
-                                                                    class="me-2">
-                                                                <div class="lh-sm">
-                                                                    <div class="fw-semibold small">Cash on Hand</div>
-                                                                    <small class="text-muted">Pay at the school
-                                                                        treasurer/admin</small>
-                                                                </div>
-                                                            </div>
-                                                            <input type="radio" name="payment_method"
-                                                                id="cash_method_{{ $payment->id }}" value="cash_on_hand"
-                                                                class="form-check-input mt-0 fs-6" required checked>
-                                                        </label>
-
                                                         <!-- GCash -->
                                                         <label
                                                             class="payment-option d-flex align-items-center justify-content-between border rounded px-3 py-1"
@@ -502,6 +482,25 @@
                                                             </div>
                                                             <input type="radio" name="payment_method"
                                                                 id="gcash_method_{{ $payment->id }}" value="gcash"
+                                                                class="form-check-input mt-0 fs-6" required checked>
+                                                        </label>
+
+                                                        <!-- PayMaya -->
+                                                        <label
+                                                            class="payment-option d-flex align-items-center justify-content-between border rounded px-3 py-1"
+                                                            style="cursor: pointer;">
+                                                            <div class="d-flex align-items-center">
+                                                                <img src="{{ asset('assetsDashboard/img/icons/unicons/paymaya_logo.png') }}"
+                                                                    alt="PayMaya" width="45" height="20"
+                                                                    class="me-2">
+                                                                <div class="lh-sm">
+                                                                    <div class="fw-semibold small">PayMaya</div>
+                                                                    <small class="text-muted">Use your PayMaya
+                                                                        account</small>
+                                                                </div>
+                                                            </div>
+                                                            <input type="radio" name="payment_method"
+                                                                id="paymaya_method_{{ $payment->id }}" value="paymaya"
                                                                 class="form-check-input mt-0 fs-6" required>
                                                         </label>
 
@@ -511,13 +510,109 @@
                                                         @enderror
                                                     </div>
 
-                                                    <!-- CASH ON HAND Section -->
+                                                    <!-- GCash Section -->
                                                     <div class="payment-section mt-3"
-                                                        id="cash_section_{{ $payment->id }}">
-                                                        <div class="alert alert-info small mb-3">
-                                                            <i class="bi bi-info-circle me-1"></i>
-                                                            Please hand your payment directly to the school treasurer/admin
-                                                            for confirmation.
+                                                        id="gcash_section_{{ $payment->id }}">
+                                                        <div class="border rounded-4 shadow-sm bg-white p-4">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <img src="{{ asset('assetsDashboard/img/icons/unicons/gcash_logo.png') }}"
+                                                                    alt="GCash" width="90" class="me-4">
+                                                                <div>
+                                                                    <h6 class="fw-bold mb-0 text-primary">Pay with GCash
+                                                                    </h6>
+                                                                    <small class="text-muted">Fast & secure mobile
+                                                                        payment</small>
+                                                                </div>
+                                                            </div>
+
+                                                            <hr class="text-muted my-3">
+
+                                                            <div class="text-center mb-4">
+                                                                <p class="fw-semibold mb-1 text-dark">Scan QR to Pay</p>
+                                                                <img src="{{ asset('assetsDashboard/img/backgrounds/gcash_qr.png') }}"
+                                                                    alt="GCash QR"
+                                                                    class="img-fluid rounded-3 border shadow-sm mb-2"
+                                                                    style="width: 500px;">
+                                                                <div class="small text-muted">Use the GCash app to scan
+                                                                    this QR code</div>
+                                                            </div>
+
+                                                            <div class="bg-light p-3 rounded-3 mb-3">
+                                                                <p class="fw-semibold mb-2 text-primary">Payment Details
+                                                                </p>
+                                                                <p class="mb-1"><strong>Account Name:</strong> Carl Edwin
+                                                                    Conde (SBES TREASURER)</p>
+                                                                <p class="mb-0"><strong>GCash Number:</strong>
+                                                                    0951-932-2506</p>
+                                                            </div>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">GCash Reference
+                                                                    Number</label>
+                                                                <input type="text" name="reference_number"
+                                                                    class="form-control border-primary"
+                                                                    placeholder="Enter 13-digit GCash Ref. No." required>
+                                                            </div>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Upload GCash Receipt
+                                                                    Screenshot</label>
+                                                                <input type="file" name="receipt_image"
+                                                                    class="form-control" accept="image/*" required>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- PayMaya Section -->
+                                                    <div class="payment-section d-none mt-3"
+                                                        id="paymaya_section_{{ $payment->id }}">
+                                                        <div class="border rounded-4 shadow-sm bg-white p-4">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <img src="{{ asset('assetsDashboard/img/icons/unicons/paymaya_logo.png') }}"
+                                                                    alt="PayMaya" width="120" class="me-2">
+                                                                <div>
+                                                                    <h6 class="fw-bold mb-0 text-primary">Pay with PayMaya
+                                                                    </h6>
+                                                                    <small class="text-muted">Fast & secure mobile
+                                                                        payment</small>
+                                                                </div>
+                                                            </div>
+
+                                                            <hr class="text-muted my-3">
+
+                                                            <div class="text-center mb-4">
+                                                                <p class="fw-semibold mb-1 text-dark">Scan QR to Pay</p>
+                                                                <img src="{{ asset('assetsDashboard/img/backgrounds/maya_qr.png') }}"
+                                                                    alt="PayMaya QR"
+                                                                    class="img-fluid rounded-3 border shadow-sm mb-2"
+                                                                    style="width: 500px;">
+                                                                <div class="small text-muted">Use the PayMaya app to scan
+                                                                    this QR code</div>
+                                                            </div>
+
+                                                            <div class="bg-light p-3 rounded-3 mb-3">
+                                                                <p class="fw-semibold mb-2 text-primary">Payment Details
+                                                                </p>
+                                                                <p class="mb-1"><strong>Account Name:</strong> Carl Edwin
+                                                                    Conde (SBES TREASURER)</p>
+                                                                <p class="mb-0"><strong>PayMaya Number:</strong>
+                                                                    0951-932-2506</p>
+                                                            </div>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">PayMaya Reference
+                                                                    Number</label>
+                                                                <input type="text" name="reference_number"
+                                                                    class="form-control border-primary"
+                                                                    placeholder="Enter PayMaya Ref. No." required>
+                                                            </div>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Upload PayMaya
+                                                                    Receipt Screenshot</label>
+                                                                <input type="file" name="receipt_image"
+                                                                    class="form-control" accept="image/*" required>
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -540,10 +635,10 @@
 
                                                             <div class="text-center mb-4">
                                                                 <p class="fw-semibold mb-1 text-dark">Scan QR to Pay</p>
-                                                                <img src="{{ asset('assetsDashboard/img/backgrounds/qr.png') }}"
+                                                                <img src="{{ asset('assetsDashboard/img/backgrounds/gcash_qr.png') }}"
                                                                     alt="GCash QR"
                                                                     class="img-fluid rounded-3 border shadow-sm mb-2"
-                                                                    style="max-width: 180px;">
+                                                                    style="width: 500px;">
                                                                 <div class="small text-muted">Use the GCash app to scan
                                                                     this QR code</div>
                                                             </div>
@@ -551,10 +646,10 @@
                                                             <div class="bg-light p-3 rounded-3 mb-3">
                                                                 <p class="fw-semibold mb-2 text-primary">Payment Details
                                                                 </p>
-                                                                <p class="mb-1"><strong>Account Name:</strong> St. Mary’s
-                                                                    Academy</p>
+                                                                <p class="mb-1"><strong>Account Name:</strong> Carl Edwin
+                                                                    Conde (SBES TREASURER)</p>
                                                                 <p class="mb-0"><strong>GCash Number:</strong>
-                                                                    0917-123-4567</p>
+                                                                    0951-932-2506</p>
                                                             </div>
 
                                                             <div class="mb-3">
@@ -655,11 +750,11 @@
                 const radios = modal.querySelectorAll('input[name="payment_method"]');
 
                 const sections = {
-                    cash_on_hand: modal.querySelector(`#cash_section_${paymentId}`),
-                    gcash: modal.querySelector(`#gcash_section_${paymentId}`)
+                    gcash: modal.querySelector(`#gcash_section_${paymentId}`),
+                    paymaya: modal.querySelector(`#paymaya_section_${paymentId}`)
                 };
 
-                // Initial visibility
+                // Initial visibility - show GCash by default
                 const initialChecked = modal.querySelector('input[name="payment_method"]:checked');
                 Object.entries(sections).forEach(([key, section]) => {
                     if (!initialChecked || initialChecked.value !== key) {

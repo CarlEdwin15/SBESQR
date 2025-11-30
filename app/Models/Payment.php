@@ -104,4 +104,9 @@ class Payment extends Model
     {
         return $this->latestPaymentHistory()?->payment_date;
     }
+
+    public function paymentRequests()
+    {
+        return $this->hasMany(PaymentRequest::class, 'payment_id');
+    }
 }

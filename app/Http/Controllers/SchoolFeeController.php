@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class SchoolFeeController extends Controller
 {
@@ -106,35 +107,29 @@ class SchoolFeeController extends Controller
 
         $schoolYear = SchoolYear::where('school_year', $request->school_year)->firstOrFail();
 
-        // Case 1: Payments for specific students
-        if ($request->filled('class_student_ids')) {
-            foreach ($request->class_student_ids as $csId) {
-                $classStudent = ClassStudent::where('id', $csId)
-                    ->where('school_year_id', $schoolYear->id)
-                    ->where('enrollment_status', 'enrolled')
-                    ->first();
+        // Check if payment name already exists for any student in the selected classes/students
+        $existingPayments = collect();
 
-                if ($classStudent) {
-                    Payment::firstOrCreate(
-                        [
-                            'class_student_id' => $classStudent->id,
-                            'payment_name'     => $request->payment_name,
-                        ],
-                        [
-                            'created_by'   => Auth::id(),
-                            'amount_due'   => $request->amount_due,
-                            'due_date'     => $request->due_date,
-                        ]
-                    );
+        if ($request->filled('class_student_ids')) {
+            // Case 1: Check for specific students
+            foreach ($request->class_student_ids as $csId) {
+                $existing = Payment::where('class_student_id', $csId)
+                    ->where('payment_name', $request->payment_name)
+                    ->exists();
+
+                if ($existing) {
+                    $classStudent = ClassStudent::with(['student', 'class'])->find($csId);
+                    $existingPayments->push([
+                        'student_name' => $classStudent->student->student_fName . ' ' . $classStudent->student->student_lName,
+                        'class' => $classStudent->class->formattedGradeLevel . ' - ' . $classStudent->class->section
+                    ]);
                 }
             }
-        }
-        // Case 2: Payments for multiple classes OR "All Classes"
-        else {
+        } else {
+            // Case 2: Check for classes
             $classIds = $request->class_ids ?? [];
 
             if (in_array('all', $classIds)) {
-                // Only classes with enrolled students
                 $classIds = Classes::whereHas('classStudents', function ($q) use ($schoolYear) {
                     $q->where('school_year_id', $schoolYear->id)
                         ->where('enrollment_status', 'enrolled');
@@ -142,26 +137,98 @@ class SchoolFeeController extends Controller
             }
 
             foreach ($classIds as $classId) {
-                $classStudents = ClassStudent::where('class_id', $classId)
-                    ->where('school_year_id', $schoolYear->id)
-                    ->where('enrollment_status', 'enrolled')
-                    ->get();
+                $existing = Payment::whereHas('classStudent', function ($q) use ($classId, $schoolYear) {
+                    $q->where('class_id', $classId)
+                        ->where('school_year_id', $schoolYear->id);
+                })
+                    ->where('payment_name', $request->payment_name)
+                    ->exists();
 
-                foreach ($classStudents as $classStudent) {
-                    Payment::firstOrCreate(
-                        [
-                            'class_student_id' => $classStudent->id,
-                            'payment_name'     => $request->payment_name,
-                        ],
-                        [
-                            'created_by'   => Auth::id(),
-                            'amount_due'   => $request->amount_due,
-                            'due_date'     => $request->due_date,
-                        ]
-                    );
+                if ($existing) {
+                    $class = Classes::find($classId);
+                    $existingPayments->push([
+                        'class' => $class->formattedGradeLevel . ' - ' . $class->section
+                    ]);
                 }
             }
         }
+
+        // If there are existing payments, return error
+        if ($existingPayments->isNotEmpty()) {
+            $errorMessage = "School fee '{$request->payment_name}' already exists for:\\n\\n";
+
+            foreach ($existingPayments->take(5) as $existing) { // Show first 5 to avoid overwhelming message
+                if (isset($existing['student_name'])) {
+                    $errorMessage .= "• Student: {$existing['student_name']} ({$existing['class']})\\n";
+                } else {
+                    $errorMessage .= "• Class: {$existing['class']}\\n";
+                }
+            }
+
+            if ($existingPayments->count() > 5) {
+                $errorMessage .= "• ... and " . ($existingPayments->count() - 5) . " more\\n";
+            }
+
+            $errorMessage .= "\\nPlease use a different school fee name or delete the existing one first.";
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $errorMessage);
+        }
+
+        // If no existing payments, proceed with creation
+        DB::transaction(function () use ($request, $schoolYear) {
+            // Case 1: Payments for specific students
+            if ($request->filled('class_student_ids')) {
+                foreach ($request->class_student_ids as $csId) {
+                    $classStudent = ClassStudent::where('id', $csId)
+                        ->where('school_year_id', $schoolYear->id)
+                        ->where('enrollment_status', 'enrolled')
+                        ->first();
+
+                    if ($classStudent) {
+                        Payment::create([
+                            'class_student_id' => $classStudent->id,
+                            'payment_name'     => $request->payment_name,
+                            'created_by'       => Auth::id(),
+                            'amount_due'       => $request->amount_due,
+                            'due_date'         => $request->due_date,
+                            'status'           => 'unpaid',
+                        ]);
+                    }
+                }
+            }
+            // Case 2: Payments for multiple classes OR "All Classes"
+            else {
+                $classIds = $request->class_ids ?? [];
+
+                if (in_array('all', $classIds)) {
+                    // Only classes with enrolled students
+                    $classIds = Classes::whereHas('classStudents', function ($q) use ($schoolYear) {
+                        $q->where('school_year_id', $schoolYear->id)
+                            ->where('enrollment_status', 'enrolled');
+                    })->pluck('id')->toArray();
+                }
+
+                foreach ($classIds as $classId) {
+                    $classStudents = ClassStudent::where('class_id', $classId)
+                        ->where('school_year_id', $schoolYear->id)
+                        ->where('enrollment_status', 'enrolled')
+                        ->get();
+
+                    foreach ($classStudents as $classStudent) {
+                        Payment::create([
+                            'class_student_id' => $classStudent->id,
+                            'payment_name'     => $request->payment_name,
+                            'created_by'       => Auth::id(),
+                            'amount_due'       => $request->amount_due,
+                            'due_date'         => $request->due_date,
+                            'status'           => 'unpaid',
+                        ]);
+                    }
+                }
+            }
+        });
 
         return redirect()->route('admin.school-fees.index', [
             'school_year' => $request->school_year,
@@ -171,7 +238,7 @@ class SchoolFeeController extends Controller
 
     public function show(Request $request, $paymentName)
     {
-        $selectedYear = $request->input('school_year');
+        $selectedYear = $request->get('school_year', $this->getDefaultSchoolYear());
         $selectedClass = $request->input('class_id');
 
         $baseQuery = Payment::with([
@@ -303,7 +370,7 @@ class SchoolFeeController extends Controller
 
         $request->validate([
             'amount_paid' => 'required|numeric|min:0.01',
-            'payment_method' => 'required|in:cash_on_hand,gcash,credit_card',
+            'payment_method' => 'required|in:cash_on_hand,gcash,paymaya',
         ]);
 
         $amountPaid = $request->amount_paid;
@@ -381,7 +448,7 @@ class SchoolFeeController extends Controller
             'payment_ids.*' => 'exists:payments,id',
             'amount_paid'   => 'required|numeric|min:0.01',
             'payment_date'  => 'required|date',
-            'payment_method' => 'required|in:cash_on_hand,gcash,credit_card', // new
+            'payment_method' => 'required|in:cash_on_hand,gcash,paymaya',
         ]);
 
         $invalidStudents = [];
@@ -445,12 +512,31 @@ class SchoolFeeController extends Controller
 
     public function destroy($paymentName)
     {
-        $deleted = Payment::where('payment_name', $paymentName)->delete();
+        try {
+            DB::transaction(function () use ($paymentName) {
+                // First, permanently delete any payment histories and payment requests
+                $paymentIds = Payment::withTrashed()
+                    ->where('payment_name', $paymentName)
+                    ->pluck('id');
 
-        if ($deleted) {
-            return response()->json(['message' => 'Payments deleted successfully.'], 200);
-        } else {
-            return response()->json(['message' => 'No payments found.'], 404);
+                if ($paymentIds->isNotEmpty()) {
+                    // Delete payment histories
+                    PaymentHistory::whereIn('payment_id', $paymentIds)->delete();
+
+                    // Delete payment requests
+                    PaymentRequest::whereIn('payment_id', $paymentIds)->delete();
+
+                    // Permanently delete the payments (force delete)
+                    Payment::withTrashed()
+                        ->where('payment_name', $paymentName)
+                        ->forceDelete();
+                }
+            });
+
+            return response()->json(['message' => 'Payments permanently deleted successfully.'], 200);
+        } catch (\Exception $e) {
+            Log::error('Error permanently deleting payments: ' . $e->getMessage());
+            return response()->json(['message' => 'Error deleting payments: ' . $e->getMessage()], 500);
         }
     }
 
@@ -459,9 +545,9 @@ class SchoolFeeController extends Controller
         $request->validate([
             'payment_id' => 'required|exists:payments,id',
             'amount_paid' => 'required|numeric|min:1',
-            'payment_method' => 'required|in:cash_on_hand,gcash',
-            'gcash_reference' => 'nullable|string',
-            'gcash_receipt' => 'nullable|image|max:2048',
+            'payment_method' => 'required|in:gcash,paymaya',
+            'reference_number' => 'nullable|string',
+            'receipt_image' => 'nullable|image|max:2048',
         ]);
 
         $payment = Payment::findOrFail($request->payment_id);
@@ -473,19 +559,19 @@ class SchoolFeeController extends Controller
             return back()->withErrors(['amount_paid' => 'Payment exceeds remaining balance of ₱' . number_format($remainingBalance, 2)]);
         }
 
-        // Handle receipt upload if GCash
+        // Handle receipt upload
         $receiptPath = null;
-        if ($request->payment_method === 'gcash' && $request->hasFile('gcash_receipt')) {
-            $receiptPath = $request->file('gcash_receipt')->store('receipts', 'public');
+        if ($request->hasFile('receipt_image')) {
+            $receiptPath = $request->file('receipt_image')->store('receipts', 'public');
         }
 
         // Create payment request
-        \App\Models\PaymentRequest::create([
+        PaymentRequest::create([
             'payment_id' => $payment->id,
             'parent_id' => $parent->id,
             'amount_paid' => $request->amount_paid,
             'payment_method' => $request->payment_method,
-            'reference_number' => $request->gcash_reference,
+            'reference_number' => $request->reference_number,
             'receipt_image' => $receiptPath,
             'status' => 'pending',
             'requested_at' => now(),
@@ -516,48 +602,262 @@ class SchoolFeeController extends Controller
     // Approve a payment request
     public function approveRequest($id, Request $request)
     {
-        $paymentRequest = PaymentRequest::with('payment')->findOrFail($id);
+        try {
+            $paymentRequest = PaymentRequest::with('payment')->findOrFail($id);
 
-        // Prevent double approval
-        if ($paymentRequest->status !== 'pending') {
-            return back()->with('error', 'This request has already been reviewed.');
+            // Prevent double approval
+            if ($paymentRequest->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This request has already been reviewed.'
+                ], 400);
+            }
+
+            DB::transaction(function () use ($paymentRequest, $request) {
+                // Create a payment history record
+                PaymentHistory::create([
+                    'payment_id' => $paymentRequest->payment_id,
+                    'payment_method' => $paymentRequest->payment_method,
+                    'added_by' => Auth::id(),
+                    'amount_paid' => $paymentRequest->amount_paid,
+                    'payment_date' => now(),
+                ]);
+
+                // Update the request status
+                $paymentRequest->update([
+                    'status' => 'approved',
+                    'admin_remarks' => $request->admin_remarks,
+                    'reviewed_at' => now(),
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request approved and recorded in history.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error approving payment request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve payment request: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Create a payment history record
-        PaymentHistory::create([
-            'payment_id' => $paymentRequest->payment_id,
-            'payment_method' => $paymentRequest->payment_method,
-            'added_by' => Auth::id(),
-            'amount_paid' => $paymentRequest->amount_paid,
-            'payment_date' => now(),
-        ]);
-
-        // Update the request status
-        $paymentRequest->update([
-            'status' => 'approved',
-            'admin_remarks' => $request->admin_remarks,
-            'reviewed_at' => now(),
-        ]);
-
-        return back()->with('success', 'Payment request approved and recorded in history.');
     }
 
     // Deny a payment request
     public function denyRequest($id, Request $request)
     {
-        $paymentRequest = PaymentRequest::findOrFail($id);
+        try {
+            $paymentRequest = PaymentRequest::findOrFail($id);
 
-        if ($paymentRequest->status !== 'pending') {
-            return back()->with('error', 'This request has already been reviewed.');
+            if ($paymentRequest->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This request has already been reviewed.'
+                ], 400);
+            }
+
+            $paymentRequest->update([
+                'status' => 'denied',
+                'admin_remarks' => $request->admin_remarks,
+                'reviewed_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request denied.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error denying payment request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to deny payment request: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function checkNewRequests(Request $request)
+    {
+        $paymentName = $request->query('payment_name');
+        $selectedYear = $request->query('school_year');
+
+        $query = PaymentRequest::with(['payment.classStudent.student', 'parent'])
+            ->where('status', 'pending');
+
+        if ($paymentName && $selectedYear) {
+            $query->whereHas('payment', function ($q) use ($paymentName, $selectedYear) {
+                $q->where('payment_name', $paymentName)
+                    ->whereHas('classStudent.schoolYear', function ($q2) use ($selectedYear) {
+                        $q2->where('school_year', $selectedYear);
+                    });
+            });
         }
 
-        $paymentRequest->update([
-            'status' => 'denied',
-            'admin_remarks' => $request->admin_remarks,
-            'reviewed_at' => now(),
-        ]);
+        $pendingRequests = $query->get();
+        $newRequests = $pendingRequests->filter(function ($request) {
+            return $request->requested_at->gt(now()->subDay());
+        });
 
-        return back()->with('success', 'Payment request denied.');
+        return response()->json([
+            'success' => true,
+            'pending_count' => $pendingRequests->count(),
+            'new_count' => $newRequests->count(),
+            'last_checked' => now()->toISOString()
+        ]);
+    }
+
+    public function checkDashboardRequests(Request $request)
+    {
+        $currentSchoolYear = $this->getDefaultSchoolYear();
+
+        // Get all payment names with pending requests for current school year
+        $paymentNames = Payment::whereHas('classStudent.schoolYear', function ($q) use ($currentSchoolYear) {
+            $q->where('school_year', $currentSchoolYear);
+        })
+            ->pluck('payment_name')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $paymentCounts = [];
+        $totalNewCount = 0;
+
+        foreach ($paymentNames as $paymentName) {
+            $pendingCount = PaymentRequest::where('status', 'pending')
+                ->whereHas('payment', function ($q) use ($paymentName, $currentSchoolYear) {
+                    $q->where('payment_name', $paymentName)
+                        ->whereHas('classStudent.schoolYear', function ($q2) use ($currentSchoolYear) {
+                            $q2->where('school_year', $currentSchoolYear);
+                        });
+                })
+                ->count();
+
+            $newCount = PaymentRequest::where('status', 'pending')
+                ->where('requested_at', '>', now()->subDay())
+                ->whereHas('payment', function ($q) use ($paymentName, $currentSchoolYear) {
+                    $q->where('payment_name', $paymentName)
+                        ->whereHas('classStudent.schoolYear', function ($q2) use ($currentSchoolYear) {
+                            $q2->where('school_year', $currentSchoolYear);
+                        });
+                })
+                ->count();
+
+            $paymentCounts[$paymentName] = $pendingCount;
+            $totalNewCount += $newCount;
+        }
+
+        return response()->json([
+            'success' => true,
+            'payment_counts' => $paymentCounts,
+            'total_new_count' => $totalNewCount,
+            'last_checked' => now()->toISOString()
+        ]);
+    }
+
+    // Add this method to get notification counts
+    public function getNotificationCounts(Request $request)
+    {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+        $selectedClass = $request->query('class_id');
+
+        try {
+            $query = PaymentRequest::where('status', 'pending');
+
+            if ($selectedYear) {
+                $query->whereHas('payment.classStudent.schoolYear', function ($q) use ($selectedYear) {
+                    $q->where('school_year', $selectedYear);
+                });
+            }
+
+            if ($selectedClass) {
+                $query->whereHas('payment.classStudent', function ($q) use ($selectedClass) {
+                    $q->where('class_id', $selectedClass);
+                });
+            }
+
+            $totalPendingCount = $query->count();
+
+            // Count new requests (last 24 hours)
+            $newRequestsCount = $query->where('requested_at', '>', now()->subDay())->count();
+
+            return response()->json([
+                'success' => true,
+                'total_pending' => $totalPendingCount,
+                'new_requests' => $newRequestsCount,
+                'last_updated' => now()->toISOString()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching notification counts: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'total_pending' => 0,
+                'new_requests' => 0
+            ]);
+        }
+    }
+
+    // Add this method to get payment-specific counts
+    public function getPaymentNotificationCounts(Request $request)
+    {
+        $selectedYear = $request->query('school_year', $this->getDefaultSchoolYear());
+        $selectedClass = $request->query('class_id');
+
+        try {
+            $paymentCounts = [];
+
+            // Get all payment names for the current filters
+            $paymentsQuery = Payment::query();
+
+            if ($selectedYear) {
+                $paymentsQuery->whereHas('classStudent.schoolYear', function ($q) use ($selectedYear) {
+                    $q->where('school_year', $selectedYear);
+                });
+            }
+
+            if ($selectedClass) {
+                $paymentsQuery->whereHas('classStudent', function ($q) use ($selectedClass) {
+                    $q->where('class_id', $selectedClass);
+                });
+            }
+
+            $paymentNames = $paymentsQuery->pluck('payment_name')->unique();
+
+            foreach ($paymentNames as $paymentName) {
+                $count = PaymentRequest::where('status', 'pending')
+                    ->whereHas('payment', function ($q) use ($paymentName, $selectedYear, $selectedClass) {
+                        $q->where('payment_name', $paymentName);
+
+                        if ($selectedYear) {
+                            $q->whereHas('classStudent.schoolYear', function ($q2) use ($selectedYear) {
+                                $q2->where('school_year', $selectedYear);
+                            });
+                        }
+
+                        if ($selectedClass) {
+                            $q->whereHas('classStudent', function ($q2) use ($selectedClass) {
+                                $q2->where('class_id', $selectedClass);
+                            });
+                        }
+                    })
+                    ->count();
+
+                if ($count > 0) {
+                    $paymentCounts[$paymentName] = $count;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'payment_counts' => $paymentCounts,
+                'last_updated' => now()->toISOString()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment notification counts: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'payment_counts' => []
+            ]);
+        }
     }
 
     public function getDefaultSchoolYear()

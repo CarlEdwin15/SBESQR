@@ -33,6 +33,7 @@ class PaymentHistory extends Model
         return match ($this->payment_method) {
             'cash_on_hand' => 'Cash on Hand',
             'gcash' => 'GCash',
+            'paymaya' => 'PayMaya',
             default => '—',
         };
     }

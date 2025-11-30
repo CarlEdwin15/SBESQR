@@ -320,9 +320,9 @@ class ParentController extends Controller
     {
         $request->validate([
             'amount_paid' => 'required|numeric|min:1',
-            'payment_method' => 'required|in:cash_on_hand,gcash',
-            'gcash_reference' => 'nullable|string',
-            'gcash_receipt' => 'nullable|image|max:2048',
+            'payment_method' => 'required|in:gcash,paymaya', // Updated validation
+            'reference_number' => 'nullable|string',
+            'receipt_image' => 'nullable|image|max:2048',
         ]);
 
         $parent = Auth::user();
@@ -341,8 +341,8 @@ class ParentController extends Controller
 
         // Handle receipt upload
         $receiptPath = null;
-        if ($request->hasFile('gcash_receipt')) {
-            $receiptPath = $request->file('gcash_receipt')->store('receipts', 'public');
+        if ($request->hasFile('receipt_image')) {
+            $receiptPath = $request->file('receipt_image')->store('receipts', 'public');
         }
 
         // Create payment request
@@ -351,7 +351,7 @@ class ParentController extends Controller
             'parent_id' => $parent->id,
             'amount_paid' => $request->amount_paid,
             'payment_method' => $request->payment_method,
-            'reference_number' => $request->gcash_reference ?? null,
+            'reference_number' => $request->reference_number ?? null,
             'receipt_image' => $receiptPath,
             'status' => 'pending',
             'requested_at' => now(),

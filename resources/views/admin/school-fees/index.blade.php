@@ -103,18 +103,29 @@
             <li class="menu-item active open">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-wallet-alt"></i>
-                    <div>School Fees</div>
+                    <div>
+                        School Fees
+                        <!-- Notification Badge for Sidebar -->
+                        <span class="notification-badge-sidebar badge bg-danger rounded-pill ms-2"
+                            style="display: none;">0</span>
+                    </div>
                 </a>
                 <ul class="menu-sub">
                     <li class="menu-item active">
                         <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
-                            <div class="text-warning">All School Fees</div>
+                            <div class="text-warning">All School Fees
+                                <!-- Notification Badge for Payment Requests -->
+                                <span class="notification-badge-requests badge bg-danger rounded-pill ms-2"
+                                    style="display: none;">0</span>
+                            </div>
                         </a>
                     </li>
 
                     <li class="menu-item">
                         <a href="{{ route('admin.payment.requests') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">Payment Requests</div>
+                            <div class="text-light">
+                                Payment Requests
+                            </div>
                         </a>
                     </li>
                 </ul>
@@ -162,34 +173,9 @@
             All School Fees
         </h4>
 
-        {{-- Notification when year is changed --}}
-        {{-- @if (session('school_year_notice'))
-            <div class="alert alert-info alert-dismissible fade show mt-2 text-center text-primary fw-bold" role="alert"
-                id="school-year-alert">
-                {{ session('school_year_notice') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        <script>
-            setTimeout(function() {
-                var alertElem = document.getElementById('school-year-alert');
-                if (alertElem) {
-                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alertElem);
-                    bsAlert.close();
-                }
-            }, 10000);
-        </script> --}}
-
         {{-- Add Button & Classes Filter --}}
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-start">
-                {{-- <a href="{{ session('back_url', url()->previous()) }}"
-                    class="btn btn-danger mb-3 d-flex align-items-center me-2">
-                    <i class='bx bx-chevrons-left'></i>
-                    <span class="d-none d-sm-block">Back</span>
-                </a> --}}
-
                 @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
                     <!-- Add Payment Button -->
                     <button type="button" class="mb-3 d-flex align-items-center btn btn-primary" id="openAddPayment">
@@ -241,7 +227,7 @@
         {{-- /Add Button & Classes Filter --}}
 
         {{-- Payment Statistics Cards --}}
-        <div class="card p-4 shadow-sm">
+        <div class="card p-1 shadow-sm">
             <div class="card-body">
                 <h4 class="fw-bold mb-4">
                     @if ($selectedClass)
@@ -286,10 +272,19 @@
                             @endphp
 
                             <div class="col-md-4 col-sm-6">
-                                <div class="card payment-card border-0 shadow-lg rounded-4 h-100 overflow-hidden"
+                                <div class="card payment-card border-0 shadow-lg rounded-4 h-100 overflow-hidden position-relative"
                                     data-paid="{{ $paidCount }}" data-partial="{{ $partialCount }}"
                                     data-unpaid="{{ $unpaidCount }}" data-total="{{ $totalStudents }}"
-                                    data-percentage="{{ $percentage }}">
+                                    data-percentage="{{ $percentage }}" data-payment-name="{{ $paymentName }}">
+
+                                    <!-- Notification Badge for Payment Card - Positioned in upper right corner of card -->
+                                    <span
+                                        class="notification-badge-payment badge bg-danger rounded-pill position-absolute top-0 end-0 m-2 p-3"
+                                        data-payment-name="{{ $paymentName }}"
+                                        style="display: none; z-index: 10; font-size: 1rem;">
+                                        0
+                                    </span>
+
                                     <a href="{{ route('admin.school-fees.show', ['paymentName' => $paymentName, 'school_year' => $selectedYear, 'class_id' => $selectedClass]) }}"
                                         class="text-decoration-none text-dark">
 
@@ -297,7 +292,9 @@
                                         <div class="card-header text-white border-0 position-relative"
                                             style="background-color: {{ $color1 }}; height: 140px;">
                                             <div class="d-flex justify-content-between align-items-start">
-                                                <h4 class="card-title text-white fw-bold mb-1">{{ $paymentName }}</h4>
+                                                <h4 class="card-title text-white fw-bold mb-1">
+                                                    {{ $paymentName }}
+                                                </h4>
                                             </div>
                                             <div class="position-absolute bottom-0 start-0 p-3 w-100"
                                                 style="background: rgba(0, 0, 0, 0.2);">
@@ -521,6 +518,156 @@
 @endsection
 
 @push('scripts')
+    <!-- Real-time Notification System -->
+    <script>
+        class NotificationManager {
+            constructor() {
+                this.lastChecked = null;
+                this.pollingInterval = 30000; // 30 seconds
+                this.isPolling = false;
+                this.init();
+            }
+
+            init() {
+                this.loadInitialCounts();
+                this.startPolling();
+                this.setupEventListeners();
+            }
+
+            async loadInitialCounts() {
+                try {
+                    await this.updateAllCounts();
+                } catch (error) {
+                    console.error('Error loading initial notification counts:', error);
+                }
+            }
+
+            startPolling() {
+                if (this.isPolling) return;
+
+                this.isPolling = true;
+
+                setInterval(() => {
+                    this.updateAllCounts();
+                }, this.pollingInterval);
+            }
+
+            async updateAllCounts() {
+                try {
+                    await Promise.all([
+                        this.updateSidebarCounts(),
+                        this.updatePaymentCardCounts()
+                    ]);
+                } catch (error) {
+                    console.error('Error updating notification counts:', error);
+                }
+            }
+
+            async updateSidebarCounts() {
+                try {
+                    const response = await fetch('{{ route('admin.school-fees.notification-counts') }}?' +
+                        new URLSearchParams({
+                            school_year: '{{ $selectedYear }}',
+                            class_id: '{{ $selectedClass }}'
+                        }));
+
+                    if (!response.ok) throw new Error('Network response was not ok');
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.updateSidebarBadge(data.total_pending);
+                        this.updateRequestsBadge(data.total_pending);
+                    }
+                } catch (error) {
+                    console.error('Error updating sidebar counts:', error);
+                }
+            }
+
+            async updatePaymentCardCounts() {
+                try {
+                    const response = await fetch('{{ route('admin.school-fees.payment-notification-counts') }}?' +
+                        new URLSearchParams({
+                            school_year: '{{ $selectedYear }}',
+                            class_id: '{{ $selectedClass }}'
+                        }));
+
+                    if (!response.ok) throw new Error('Network response was not ok');
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.updatePaymentCardBadges(data.payment_counts);
+                    }
+                } catch (error) {
+                    console.error('Error updating payment card counts:', error);
+                }
+            }
+
+            updateSidebarBadge(count) {
+                const badge = document.querySelector('.notification-badge-sidebar');
+                this.updateBadge(badge, count);
+            }
+
+            updateRequestsBadge(count) {
+                const badge = document.querySelector('.notification-badge-requests');
+                this.updateBadge(badge, count);
+            }
+
+            updatePaymentCardBadges(paymentCounts) {
+                // Update all payment card badges
+                document.querySelectorAll('.notification-badge-payment').forEach(badge => {
+                    const paymentName = badge.dataset.paymentName;
+                    const count = paymentCounts[paymentName] || 0;
+                    this.updateBadge(badge, count);
+                });
+            }
+
+            updateBadge(badge, count) {
+                if (!badge) return;
+
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'inline-block';
+
+                    // Add pulse animation for new notifications
+                    if (count > parseInt(badge.textContent) || badge.style.display === 'none') {
+                        badge.classList.add('pulse-animation');
+                        setTimeout(() => {
+                            badge.classList.remove('pulse-animation');
+                        }, 2000);
+                    }
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            setupEventListeners() {
+                // Refresh counts when filters change
+                document.getElementById('classFilter')?.addEventListener('change', () => {
+                    setTimeout(() => this.updateAllCounts(), 1000);
+                });
+
+                document.getElementById('yearFilter')?.addEventListener('change', () => {
+                    setTimeout(() => this.updateAllCounts(), 1000);
+                });
+
+                // Manual refresh button (optional - you can add one if needed)
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'r') {
+                        e.preventDefault();
+                        this.updateAllCounts();
+                    }
+                });
+            }
+        }
+
+        // Initialize notification manager when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.notificationManager = new NotificationManager();
+        });
+    </script>
+
     <!-- Logout -->
     <script>
         // alert for logout
@@ -557,7 +704,7 @@
         }
     </script>
 
-    <!-- Delete -->
+    <!-- Delete with Detailed Error Handling -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const deleteButtons = document.querySelectorAll('.delete-payment');
@@ -568,36 +715,140 @@
 
                     Swal.fire({
                         title: 'Are you sure?',
-                        text: `You are about to delete all payments for "${paymentName}". This action cannot be undone.`,
+                        html: `
+                <div class="text-center">
+                    <p>You are about to <strong class="text-danger">permanently delete</strong> all payments for:</p>
+                    <h2 class="fw-bold text-danger">"${paymentName}"</h2>
+                    <p class="text-muted small">
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        This action cannot be undone and will permanently remove all payment records,
+                        payment histories, and payment requests for this school fee.
+                    </p>
+                </div>
+            `,
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, delete permanently!',
+                        cancelButtonText: 'Cancel',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
                     }).then((result) => {
                         if (result.isConfirmed) {
+                            // Show loading state
+                            const swalInstance = Swal.fire({
+                                title: 'Permanently Deleting Payment Records',
+                                html: `
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Permanently deleting all payments for "${paymentName}"...</p>
+                            <small class="text-muted">This may take a moment.</small>
+                        </div>
+                    `,
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                customClass: {
+                                    container: 'my-swal-container'
+                                }
+                            });
+
                             // Send DELETE request via fetch
-                            fetch(`{{ url('payments') }}/${encodeURIComponent(paymentName)}`, {
+                            fetch(`/admin/payments/${encodeURIComponent(paymentName)}`, {
                                     method: 'DELETE',
                                     headers: {
                                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                        'Content-Type': 'application/json'
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
                                     },
                                 })
-                                .then(response => {
-                                    if (response.ok) {
-                                        Swal.fire(
-                                            'Deleted!',
-                                            'Payment(s) have been deleted.',
-                                            'success'
-                                        ).then(() => location.reload());
-                                    } else {
-                                        Swal.fire(
-                                            'Error!',
-                                            'There was a problem deleting the payment(s).',
-                                            'error'
-                                        );
+                                .then(async (response) => {
+                                    const contentType = response.headers.get(
+                                        'content-type');
+
+                                    if (!response.ok) {
+                                        let errorMessage =
+                                            'Network response was not ok';
+
+                                        if (contentType && contentType.includes(
+                                                'application/json')) {
+                                            const errorData = await response.json();
+                                            errorMessage = errorData.message ||
+                                                errorMessage;
+                                        } else {
+                                            const text = await response.text();
+                                            errorMessage = text || errorMessage;
+                                        }
+
+                                        throw new Error(errorMessage);
                                     }
+
+                                    if (contentType && contentType.includes(
+                                            'application/json')) {
+                                        return response.json();
+                                    } else {
+                                        return {
+                                            message: 'Payments permanently deleted successfully'
+                                        };
+                                    }
+                                })
+                                .then(data => {
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        html: `
+                                <div class="text-center">
+                                    <i class="bx bx-check-circle text-success fs-1 mb-3"></i>
+                                    <p class="fw-bold text-success">${data.message || 'Payment records permanently deleted successfully!'}</p>
+                                </div>
+                            `,
+                                        icon: 'success',
+                                        confirmButtonColor: '#06D001',
+                                        confirmButtonText: 'Continue',
+                                        customClass: {
+                                            container: 'my-swal-container'
+                                        }
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Delete error details:', error);
+
+                                    let errorMessage =
+                                        'There was a problem deleting the payment(s).';
+
+                                    if (error.message.includes('Network')) {
+                                        errorMessage =
+                                            'Network error: Please check your internet connection and try again.';
+                                    } else if (error.message.includes('404')) {
+                                        errorMessage =
+                                            'Payment records not found. They may have already been deleted.';
+                                    } else if (error.message.includes('500')) {
+                                        errorMessage =
+                                            'Server error: Please try again later or contact support.';
+                                    } else {
+                                        errorMessage = error.message || errorMessage;
+                                    }
+
+                                    Swal.fire({
+                                        title: 'Delete Failed',
+                                        html: `
+                                <div class="text-center">
+                                    <i class="bx bx-error-circle text-danger fs-1 mb-3"></i>
+                                    <p class="text-danger">${errorMessage}</p>
+                                </div>
+                            `,
+                                        icon: 'error',
+                                        confirmButtonColor: '#d33',
+                                        confirmButtonText: 'Try Again',
+                                        customClass: {
+                                            container: 'my-swal-container'
+                                        }
+                                    });
                                 });
                         }
                     });
@@ -606,7 +857,7 @@
         });
     </script>
 
-    <!-- Error -->
+    <!-- Error messages from server-->
     <script>
         @if ($errors->any())
             Swal.fire({
@@ -619,6 +870,53 @@
                 }
             });
         @endif
+
+        // Handle error
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'School Fee Already Exists',
+                    html: `{!! session('error') !!}`,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                });
+            @endif
+        });
+    </script>
+
+    <!-- Update the modal form submission to handle errors -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // For Batch/Class Modal
+            const batchModal = document.getElementById('addPaymentBatchModal');
+            if (batchModal) {
+                const batchForm = batchModal.querySelector('form');
+                batchForm.addEventListener('submit', function(e) {
+                    // Remove any existing error alerts
+                    const existingAlert = batchModal.querySelector('.alert-danger');
+                    if (existingAlert) {
+                        existingAlert.remove();
+                    }
+                });
+            }
+
+            // For Specific Students Modal
+            const studentsModal = document.getElementById('addPaymentStudentsModal');
+            if (studentsModal) {
+                const studentsForm = studentsModal.querySelector('form');
+                studentsForm.addEventListener('submit', function(e) {
+                    // Remove any existing error alerts
+                    const existingAlert = studentsModal.querySelector('.alert-danger');
+                    if (existingAlert) {
+                        existingAlert.remove();
+                    }
+                });
+            }
+        });
     </script>
 
     <!-- Class Filter -->
