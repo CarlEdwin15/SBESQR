@@ -1635,6 +1635,35 @@ class TeacherController extends Controller
         }
         // === END STATUS LOGIC ===
 
+        // === ADD SCHOOL FEES LOGIC ===
+        // Handle school fees year filter (separate from main school year)
+        $feesSchoolYear = $request->query('school_year_fees');
+        if (!$feesSchoolYear) {
+            $feesSchoolYear = \App\Models\SchoolYear::latest('start_date')->value('school_year');
+        }
+
+        $selectedFeesYear = $feesSchoolYear;
+
+        // Get school years for dropdown
+        $schoolYears = \App\Models\SchoolYear::orderBy('start_date', 'desc')
+            ->pluck('school_year')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // Get school fees payments for the selected year
+        $schoolFeesPayments = $student->payments()
+            ->with([
+                'classStudent.class',
+                'classStudent.student',
+                'histories.addedBy'
+            ])
+            ->whereHas('schoolYear', function ($query) use ($selectedFeesYear) {
+                $query->where('school_year', $selectedFeesYear);
+            })
+            ->get();
+        // === END SCHOOL FEES LOGIC ===
+
         // Fetch and reorder classes (latest/current first)
         $classHistory = $student->class()
             ->with([
@@ -1743,7 +1772,10 @@ class TeacherController extends Controller
             'gradesByClass',
             'generalAverages',
             'studentStatus',
-            'statusInfo'
+            'statusInfo',
+            'schoolFeesPayments',
+            'schoolYears',
+            'selectedFeesYear'
         ));
     }
 

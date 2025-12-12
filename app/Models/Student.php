@@ -28,7 +28,7 @@ class Student extends Model
     public function parents()
     {
         return $this->belongsToMany(User::class, 'student_parent', 'student_id', 'parent_id')
-            ->where('role', 'parent');
+            ->whereIn('role', ['parent']);
     }
 
     public function class()

@@ -807,6 +807,35 @@ class StudentController extends Controller
         $class = $student->class()->where('school_year_id', $schoolYearId)->first();
         $schoolYear = SchoolYear::find($schoolYearId);
 
+        // === ADD SCHOOL FEES LOGIC ===
+        // Handle school fees year filter (separate from main school year)
+        $feesSchoolYear = $request->query('school_year_fees');
+        if (!$feesSchoolYear) {
+            $feesSchoolYear = \App\Models\SchoolYear::latest('start_date')->value('school_year');
+        }
+
+        $selectedFeesYear = $feesSchoolYear;
+
+        // Get school years for dropdown
+        $schoolYears = \App\Models\SchoolYear::orderBy('start_date', 'desc')
+            ->pluck('school_year')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // Get school fees payments for the selected year
+        $schoolFeesPayments = $student->payments()
+            ->with([
+                'classStudent.class',
+                'classStudent.student',
+                'histories.addedBy'
+            ])
+            ->get()
+            ->groupBy(function ($payment) {
+                return $payment->classStudent->school_year_id ?? 'unknown';
+            });
+        // === END SCHOOL FEES LOGIC ===
+
         // Determine status
         $latestEnrollment = $student->classStudents()->latest()->first();
         $studentStatus = $latestEnrollment->enrollment_status ?? 'not_enrolled';
@@ -933,7 +962,10 @@ class StudentController extends Controller
             'gradesByClass',
             'generalAverages',
             'studentStatus',
-            'statusInfo'
+            'statusInfo',
+            'schoolFeesPayments',
+            'schoolYears',
+            'selectedFeesYear'
         ));
     }
 

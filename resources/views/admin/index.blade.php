@@ -2191,52 +2191,52 @@
                 });
             }
 
-            // Real-time updates using polling (every 30 seconds)
-            function checkForNewPaymentRequests() {
-                fetch('{{ route('admin.payment-requests.check-dashboard') }}', {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Update counts for each payment
-                            if (data.payment_counts) {
-                                Object.entries(data.payment_counts).forEach(([paymentName, pendingCount]) => {
-                                    updateNotificationBadge(paymentName, pendingCount);
+            // // Real-time updates using polling (every 30 seconds)
+            // function checkForNewPaymentRequests() {
+            //     fetch('{{ route('admin.payment-requests.check-dashboard') }}', {
+            //             method: 'GET',
+            //             headers: {
+            //                 'Content-Type': 'application/json',
+            //                 'X-Requested-With': 'XMLHttpRequest'
+            //             }
+            //         })
+            //         .then(response => response.json())
+            //         .then(data => {
+            //             if (data.success) {
+            //                 // Update counts for each payment
+            //                 if (data.payment_counts) {
+            //                     Object.entries(data.payment_counts).forEach(([paymentName, pendingCount]) => {
+            //                         updateNotificationBadge(paymentName, pendingCount);
 
-                                    // Update the data attribute for future reference
-                                    const item = document.querySelector(
-                                        `.school-fee-item[data-payment-name="${paymentName}"]`);
-                                    if (item) {
-                                        item.dataset.pendingCount = pendingCount;
-                                    }
-                                });
-                            }
+            //                         // Update the data attribute for future reference
+            //                         const item = document.querySelector(
+            //                             `.school-fee-item[data-payment-name="${paymentName}"]`);
+            //                         if (item) {
+            //                             item.dataset.pendingCount = pendingCount;
+            //                         }
+            //                     });
+            //                 }
 
-                            // Show notification for new requests
-                            if (data.total_new_count > 0) {
-                                showNewRequestNotification(data.total_new_count);
-                            }
-                        }
-                    })
-                    .catch(error => console.error('Error checking payment requests:', error));
-            }
+            //                 // Show notification for new requests
+            //                 if (data.total_new_count > 0) {
+            //                     showNewRequestNotification(data.total_new_count);
+            //                 }
+            //             }
+            //         })
+            //         .catch(error => console.error('Error checking payment requests:', error));
+            // }
 
-            // Show desktop notification for new requests
-            function showNewRequestNotification(count) {
-                if (Notification.permission === 'granted') {
-                    new Notification(`New Payment Request${count > 1 ? 's' : ''}`, {
-                        body: `You have ${count} new payment request${count > 1 ? 's' : ''} pending review`,
-                        icon: '{{ asset('assetsDashboard/img/logo.png') }}',
-                        tag: 'payment-requests-dashboard',
-                        url: '{{ route('admin.school-fees.index') }}'
-                    });
-                }
-            }
+            // // Show desktop notification for new requests
+            // function showNewRequestNotification(count) {
+            //     if (Notification.permission === 'granted') {
+            //         new Notification(`New Payment Request${count > 1 ? 's' : ''}`, {
+            //             body: `You have ${count} new payment request${count > 1 ? 's' : ''} pending review`,
+            //             icon: '{{ asset('assetsDashboard/img/logo.png') }}',
+            //             tag: 'payment-requests-dashboard',
+            //             url: '{{ route('admin.school-fees.index') }}'
+            //         });
+            //     }
+            // }
 
             // Request notification permission
             if ('Notification' in window && Notification.permission === 'default') {

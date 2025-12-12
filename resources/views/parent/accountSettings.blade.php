@@ -29,12 +29,12 @@
             </li>
 
             {{-- School Fees sidebar --}}
-            <li class="menu-item">
+            {{-- <li class="menu-item">
                 <a href="{{ route('parent.school-fees.index') }}" class="menu-link bg-dark text-light">
                     <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
                     <div class="text-light">School Fees</div>
                 </a>
-            </li>
+            </li> --}}
 
             {{-- Announcements sidebar --}}
             {{-- <li class="menu-item">

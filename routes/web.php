@@ -32,6 +32,76 @@ Route::view('/error/inactive', 'errors.423_inactive')->name('error.inactive');
 Route::view('/error/suspended', 'errors.402_suspended')->name('error.suspended');
 Route::view('/error/banned', 'errors.403_banned')->name('error.banned');
 
+// Clear announcement session flags
+Route::post('/clear-announcement-session', function (Request $request) {
+    $type = $request->input('type', 'all');
+
+    if ($type === 'login' || $type === 'all') {
+        session()->forget('show_announcements_on_login');
+        session()->forget('active_announcements_on_login');
+    }
+
+    if ($type === 'manual' || $type === 'all') {
+        session()->forget('manual_announcement_id');
+        session()->forget('login_announcement_id');
+    }
+
+    return response()->json(['success' => true]);
+})->middleware('auth');
+
+// Clear announcement check flag after showing announcements
+Route::post('/clear-announcement-check-flag', function (Request $request) {
+    session()->forget('check_announcements');
+    session()->forget('page_loaded');
+    return response()->json(['success' => true]);
+})->middleware('auth');
+
+// Update the /get-active-announcements route
+Route::get('/get-active-announcements', function (Request $request) {
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json(['announcements' => []]);
+    }
+
+    $now = now();
+
+    // Get announcements that are active AND applicable to the user
+    $announcements = Announcement::with('schoolYear', 'user')
+        ->where(function ($query) use ($now) {
+            // Date-based active status
+            $query->where('effective_date', '<=', $now)
+                ->where(function ($subQuery) use ($now) {
+                    $subQuery->where('end_date', '>=', $now)
+                        ->orWhereNull('end_date');
+                });
+        })
+        ->where('status', 'active')
+        ->where(function ($query) use ($user) {
+            // Recipient-based filtering
+            // Announcements specifically sent to this user
+            $query->whereHas('recipients', function ($subQuery) use ($user) {
+                $subQuery->where('user_id', $user->id);
+            })
+                // OR general announcements (no specific recipients)
+                ->orWhereDoesntHave('recipients');
+        })
+        ->orderByDesc('date_published')
+        ->get()
+        ->map(function ($announcement) {
+            return [
+                'id' => $announcement->id,
+                'title' => $announcement->title,
+                'body' => $announcement->body,
+                'date_published' => $announcement->date_published?->format('M d, Y h:i A'),
+                'author_name' => $announcement->author_name,
+            ];
+        })
+        ->values();
+
+    return response()->json(['announcements' => $announcements]);
+})->middleware('auth');
+
 
 // GENERAL & AUTH ROUTES
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -49,8 +119,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/school-fees/notification-counts', [SchoolFeeController::class, 'getNotificationCounts'])->name('admin.school-fees.notification-counts');
     Route::get('/admin/school-fees/payment-notification-counts', [SchoolFeeController::class, 'getPaymentNotificationCounts'])->name('admin.school-fees.payment-notification-counts');
     // Add this route to your admin routes group
-Route::get('/admin/dashboard/school-fees-data', [HomeController::class, 'getSchoolFeesData'])->name('admin.dashboard.school-fees-data');
+    Route::get('/admin/dashboard/school-fees-data', [HomeController::class, 'getSchoolFeesData'])->name('admin.dashboard.school-fees-data');
     // Main dashboard route
+    Route::get('/admin/payment-requests/check-new', [SchoolFeeController::class, 'checkNewRequests'])
+        ->name('admin.payment-requests.check-new');
+
+
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 });
 
@@ -271,6 +345,9 @@ Route::prefix('parent')
         // Attendance for Parent
         Route::get('/student/{student}/attendance/{schoolYearId}/{classId}/{year}/{month}', [AttendanceController::class, 'fetchMonth'])
             ->name('attendance.fetchMonth');
+
+        Route::get('/parent/check-attempts/{paymentId}', [ParentController::class, 'checkAttempts'])
+            ->name('parent.check-attempts');
     });
 
 // Announcement Management (on ADMIN Dashboard)

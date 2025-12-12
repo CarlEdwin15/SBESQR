@@ -46,6 +46,7 @@ class SchoolFeeController extends Controller
 
         $selectedYear = $request->query('school_year', $currentSchoolYear);
         $selectedClass = $request->query('class_id');
+        $searchTerm = $request->query('search');
 
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->first();
 
@@ -71,6 +72,9 @@ class SchoolFeeController extends Controller
                     $q->where('class_id', $selectedClass);
                 });
             })
+            ->when($searchTerm, function ($query) use ($searchTerm) {
+                $query->where('payment_name', 'LIKE', "%{$searchTerm}%");
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -88,7 +92,8 @@ class SchoolFeeController extends Controller
             'currentYear',
             'allClasses',
             'selectedClass',
-            'totalEnrolled'
+            'totalEnrolled',
+            'searchTerm' // Add this line
         ));
     }
 
@@ -246,7 +251,7 @@ class SchoolFeeController extends Controller
             'classStudent.class',
             'schoolYear',
             'paymentHistories' => function ($q) {
-                $q->orderBy('payment_date'); // 👈 latest first
+                $q->orderBy('payment_date');
             },
             'paymentHistories.addedBy'
         ])->where('payment_name', $paymentName);
@@ -265,6 +270,23 @@ class SchoolFeeController extends Controller
 
         $first = $payments->first();
 
+        // Calculate payment request counts
+        $totalPendingCount = PaymentRequest::whereHas('payment', function ($query) use ($paymentName, $selectedYear) {
+            $query->where('payment_name', $paymentName)
+                ->whereHas('classStudent.schoolYear', function ($q) use ($selectedYear) {
+                    $q->where('school_year', $selectedYear);
+                });
+        })->where('status', 'pending')->count();
+
+        $newRequestsCount = PaymentRequest::whereHas('payment', function ($query) use ($paymentName, $selectedYear) {
+            $query->where('payment_name', $paymentName)
+                ->whereHas('classStudent.schoolYear', function ($q) use ($selectedYear) {
+                    $q->where('school_year', $selectedYear);
+                });
+        })->where('status', 'pending')
+            ->where('requested_at', '>=', now()->subDay())
+            ->count();
+
         $classes = Classes::all();
         $schoolYears = SchoolYear::all();
 
@@ -279,7 +301,9 @@ class SchoolFeeController extends Controller
             'selectedYear',
             'selectedClass',
             'classes',
-            'schoolYears'
+            'schoolYears',
+            'totalPendingCount',
+            'newRequestsCount'
         ));
     }
 
@@ -678,31 +702,29 @@ class SchoolFeeController extends Controller
 
     public function checkNewRequests(Request $request)
     {
-        $paymentName = $request->query('payment_name');
-        $selectedYear = $request->query('school_year');
+        $paymentName = $request->get('payment_name');
+        $schoolYear = $request->get('school_year');
 
-        $query = PaymentRequest::with(['payment.classStudent.student', 'parent'])
-            ->where('status', 'pending');
+        $query = PaymentRequest::query();
 
-        if ($paymentName && $selectedYear) {
-            $query->whereHas('payment', function ($q) use ($paymentName, $selectedYear) {
+        if ($paymentName && $schoolYear) {
+            $query->whereHas('payment', function ($q) use ($paymentName, $schoolYear) {
                 $q->where('payment_name', $paymentName)
-                    ->whereHas('classStudent.schoolYear', function ($q2) use ($selectedYear) {
-                        $q2->where('school_year', $selectedYear);
+                    ->whereHas('classStudent.schoolYear', function ($subQ) use ($schoolYear) {
+                        $subQ->where('school_year', $schoolYear);
                     });
             });
         }
 
-        $pendingRequests = $query->get();
-        $newRequests = $pendingRequests->filter(function ($request) {
-            return $request->requested_at->gt(now()->subDay());
-        });
+        $pendingCount = $query->where('status', 'pending')->count();
+        $newCount = $query->where('status', 'pending')
+            ->where('requested_at', '>=', now()->subDay())
+            ->count();
 
         return response()->json([
             'success' => true,
-            'pending_count' => $pendingRequests->count(),
-            'new_count' => $newRequests->count(),
-            'last_checked' => now()->toISOString()
+            'pending_count' => $pendingCount,
+            'new_count' => $newCount
         ]);
     }
 

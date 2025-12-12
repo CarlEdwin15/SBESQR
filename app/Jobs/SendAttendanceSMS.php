@@ -81,23 +81,23 @@ class SendAttendanceSMS implements ShouldQueue
             // Match controller message format by attendance status
             switch ($this->status) {
                 case 'present':
-                    $message = "Hello {$parent->firstName}! Your child {$studentFullName} was marked as PRESENT today ({$formattedDate}) in {$subject}. Time In: {$timeIn}, Expected Time Out: {$timeOut}. - {$currentClass}";
+                    $message = "Hello {$parent->firstName}! {$studentFullName} was marked as PRESENT today ({$formattedDate}) in {$subject}. Time In: {$timeIn}, Expected Time Out: {$timeOut}. - {$currentClass}";
                     break;
 
                 case 'late':
-                    $message = "Hello {$parent->firstName}! Your child {$studentFullName} was marked as LATE today ({$formattedDate}) in {$subject}. Time In: {$timeIn}, Expected Time Out: {$timeOut}. - {$currentClass}";
+                    $message = "Hello {$parent->firstName}! {$studentFullName} was marked as LATE today ({$formattedDate}) in {$subject}. Time In: {$timeIn}, Expected Time Out: {$timeOut}. - {$currentClass}";
                     break;
 
                 case 'absent':
-                    $message = "Hello {$parent->firstName}! Your child {$studentFullName} was marked as ABSENT today ({$formattedDate}) in {$subject}. - {$currentClass}";
+                    $message = "Hello {$parent->firstName}! {$studentFullName} was marked as ABSENT today ({$formattedDate}) in {$subject}. - {$currentClass}";
                     break;
 
                 case 'excused':
-                    $message = "Hello {$parent->firstName}! Your child {$studentFullName} was marked as EXCUSED today ({$formattedDate}) in {$subject}. - {$currentClass}";
+                    $message = "Hello {$parent->firstName}! {$studentFullName} was marked as EXCUSED today ({$formattedDate}) in {$subject}. - {$currentClass}";
                     break;
 
                 default:
-                    $message = "Hello {$parent->firstName}! Your child {$studentFullName} was marked as '{$this->status}' today ({$formattedDate}) in {$subject}. Time In: {$timeIn}, Expected Time Out: {$timeOut}. - {$currentClass}";
+                    $message = "Hello {$parent->firstName}! {$studentFullName} was marked as '{$this->status}' today ({$formattedDate}) in {$subject}. Time In: {$timeIn}, Expected Time Out: {$timeOut}. - {$currentClass}";
                     break;
             }
 

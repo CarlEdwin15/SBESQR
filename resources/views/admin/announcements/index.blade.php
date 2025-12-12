@@ -170,7 +170,7 @@
             </div>
 
             {{-- Add New Button (left on mobile, center on desktop) --}}
-            <div class="col-6 col-md-4">
+            <div class="col-4 col-md-4">
                 <button class="btn btn-primary d-flex justify-content-center align-items-center" data-bs-toggle="modal"
                     data-bs-target="#createAnnouncementModal">
                     <i class='bx bx-message-alt-add me-2'></i>
@@ -179,15 +179,13 @@
             </div>
 
             {{-- School Year Filter + Now Button (right on mobile, right-aligned on desktop) --}}
-            <div class="col-6 col-md-4 d-flex justify-content-between align-items-end gap-2">
+            <div class="col-8 col-md-3 d-flex justify-content-between align-items-end gap-2">
                 <form method="GET" action="{{ route('announcements.index') }}"
                     class="d-flex align-items-center gap-2 flex-grow-1">
-                    <span class="form-label mb-0 d-none d-sm-inline">School Year</span>
                     <select name="school_year" class="form-select" onchange="this.form.submit()">
-                        <option value="">All</option>
                         @foreach ($schoolYears as $year)
                             <option value="{{ $year->id }}"
-                                {{ request('school_year') == $year->id ? 'selected' : '' }}>
+                                {{ request('school_year') == $year->id || (!request('school_year') && $year->id == $defaultSchoolYear->id) ? 'selected' : '' }}>
                                 {{ $year->school_year }}
                             </option>
                         @endforeach

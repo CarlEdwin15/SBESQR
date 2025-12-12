@@ -109,24 +109,17 @@
 <div class="mb-3 row">
     <div class="col">
         <label for="school_year_id">School Year</label>
-        <select name="school_year_id" class="form-select">
-            <option value="">None</option>
-            @foreach ($schoolYears->filter(function ($year) {
-        $now = now();
-        $next = now()->copy()->addYear();
-        return in_array($year->school_year, [$now->year . '-' . ($now->year + 1), $next->year . '-' . ($next->year + 1)]);
-    }) as $year)
-                <option value="{{ $year->id }}"
-                    @if (isset($announcement)) {{ old('school_year_id', $announcement->school_year_id) == $year->id ? 'selected' : '' }}
-                @elseif (isset($defaultSchoolYear))
-                    {{ old('school_year_id', $defaultSchoolYear->id) == $year->id ? 'selected' : '' }} @endif>
-                    {{ $year->school_year }}
-                </option>
-            @endforeach
-        </select>
+
+        {{-- Always use the default school year provided by the controller --}}
+        <input type="text" class="form-control" value="{{ $defaultSchoolYear->school_year ?? 'N/A' }}" disabled>
+
+        <input type="hidden" name="school_year_id" value="{{ $defaultSchoolYear->id ?? '' }}">
+
         @error('school_year_id')
             <div class="text-danger">{{ $message }}</div>
         @enderror
+
+        <small class="text-muted">Automatically set to current school year</small>
     </div>
 </div>
 
@@ -437,6 +430,49 @@
                 }
                 selectAllLabel.textContent = labelText;
             }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('createAnnouncementForm');
+            const recipientsSelect = new TomSelect('#recipients', {
+                plugins: ['remove_button'],
+                maxItems: null,
+                placeholder: "Search users by name or email...",
+                valueField: 'id',
+                labelField: 'text',
+                searchField: 'text',
+                load: function(query, callback) {
+                    if (!query.length) return callback();
+                    fetch(`{{ route('search.user') }}?q=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(users => callback(users.map(u => ({
+                            id: u.id,
+                            text: `${u.firstName} ${u.lastName} (${u.email})`
+                        }))))
+                        .catch(() => callback());
+                }
+            });
+
+            // Client-side validation for recipients
+            form.addEventListener('submit', function(e) {
+                const selectedRecipients = recipientsSelect.items;
+
+                if (selectedRecipients.length === 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Recipients Required',
+                        text: 'Please select at least one recipient for the announcement.',
+                        icon: 'warning',
+                        confirmButtonText: 'OK',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                    return false;
+                }
+            });
         });
     </script>
 @endpush

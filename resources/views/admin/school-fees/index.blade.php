@@ -173,25 +173,40 @@
             All School Fees
         </h4>
 
-        {{-- Add Button & Classes Filter --}}
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-start">
+        {{-- Add Button, Search & Filters --}}
+        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-3">
+
+            {{-- ROW 1: Search + Add --}}
+            <div class="d-flex gap-2 w-100">
+
+                {{-- Search Input --}}
+                <div class="position-relative flex-grow-1" style="min-width: 200px;">
+                    <input type="text" id="paymentSearch" class="form-control" placeholder="Search school fees..."
+                        value="{{ request('search', '') }}">
+
+                    <span class="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i class="bx bx-search"></i>
+                    </span>
+                </div>
+
                 @if ($selectedYear == $currentYear . '-' . ($currentYear + 1))
-                    <!-- Add Payment Button -->
-                    <button type="button" class="mb-3 d-flex align-items-center btn btn-primary" id="openAddPayment">
-                        <i class='bx bxs-plus-square me-1 align-items-center'></i>
-                        <span class="d-none d-sm-block">Add School Fee</span>
+                    <button type="button" class="btn btn-warning d-flex align-items-center" id="openAddPayment">
+                        <i class='bx bxs-plus-square me-1'></i>
+                        <span class="d-none d-sm-inline">Add School Fee</span>
                     </button>
                 @endif
+
             </div>
 
-            {{-- Classes & School Year Selection --}}
-            <div class="d-flex justify-content-end gap-2 mb-2">
+            {{-- ROW 2: Filters --}}
+            <div class="d-flex flex-wrap gap-2 justify-content-start justify-content-sm-end w-100">
 
-                {{-- Classes Filter (Tom Select) --}}
-                <form method="GET" action="{{ route('admin.school-fees.index') }}" style="min-width: 130px;">
+                {{-- Classes Filter --}}
+                <form method="GET" action="{{ route('admin.school-fees.index') }}" class="flex-fill"
+                    style="max-width: 160px;">
                     <input type="hidden" name="school_year" value="{{ $selectedYear }}">
-                    <select id="classFilter" name="class_id" autocomplete="off">
+                    <input type="hidden" name="search" value="{{ request('search', '') }}">
+                    <select id="classFilter" name="class_id">
                         <option value="">All Classes</option>
                         @foreach ($allClasses as $class)
                             <option value="{{ $class->id }}" {{ $selectedClass == $class->id ? 'selected' : '' }}>
@@ -202,10 +217,12 @@
                     </select>
                 </form>
 
-                {{-- School Year Filter (Tom Select) --}}
-                <form method="GET" action="{{ route('admin.school-fees.index') }}" style="min-width: 100px;">
+                {{-- School Year Filter --}}
+                <form method="GET" action="{{ route('admin.school-fees.index') }}" class="flex-fill"
+                    style="max-width: 140px;">
                     <input type="hidden" name="class_id" value="{{ $selectedClass }}">
-                    <select id="yearFilter" name="school_year" autocomplete="off">
+                    <input type="hidden" name="search" value="{{ request('search', '') }}">
+                    <select id="yearFilter" name="school_year">
                         @foreach ($schoolYears as $year)
                             <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>
                                 {{ $year }}
@@ -214,17 +231,21 @@
                     </select>
                 </form>
 
-                <!-- "Now" button -->
+                {{-- Now Button --}}
                 <form method="GET" action="{{ route('admin.school-fees.index') }}">
                     <input type="hidden" name="school_year" value="{{ $currentYear . '-' . ($currentYear + 1) }}">
                     <input type="hidden" name="class_id" value="{{ request('class_id') }}">
-                    <button type="submit" class="btn btn-sm btn-primary" style="height: 38px;">
+                    <input type="hidden" name="search" value="{{ request('search', '') }}">
+
+                    <button type="submit" class="btn btn-primary w-100" style="height:38px; min-width:70px">
                         Now
                     </button>
                 </form>
+
             </div>
         </div>
-        {{-- /Add Button & Classes Filter --}}
+        {{-- /Add Button, Search & Filters --}}
+
 
         {{-- Payment Statistics Cards --}}
         <div class="card p-1 shadow-sm">
@@ -239,16 +260,26 @@
                     @else
                         School Fees for All Classes ({{ $selectedYear }})
                     @endif
+
+                    @if (request('search'))
+                        <span class="text-muted fs-6"> - Searching: "{{ request('search') }}"</span>
+                    @endif
                 </h4>
 
                 @if ($payments->isEmpty())
                     <div class="text-center py-5">
                         <i class="bi bi-credit-card-2-front text-info display-4"></i>
-                        <h5 class="mt-3 fw-bold text-secondary">No payments yet</h5>
-                        <p class="text-muted">Start by adding a new payment record for this class.</p>
+                        <h5 class="mt-3 fw-bold text-secondary">No payments found</h5>
+                        <p class="text-muted">
+                            @if (request('search'))
+                                No school fees match your search criteria.
+                            @else
+                                Start by adding a new payment record for this class.
+                            @endif
+                        </p>
                     </div>
                 @else
-                    <div class="row g-4">
+                    <div class="row g-4" id="paymentCardsContainer">
                         @foreach ($payments->groupBy('payment_name') as $paymentName => $groupedPayments)
                             @php
                                 $first = $groupedPayments->first();
@@ -271,11 +302,12 @@
                                 $percentage = $totalExpected > 0 ? round(($totalCollected / $totalExpected) * 100) : 0;
                             @endphp
 
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-4 col-sm-6 payment-card-item">
                                 <div class="card payment-card border-0 shadow-lg rounded-4 h-100 overflow-hidden position-relative"
                                     data-paid="{{ $paidCount }}" data-partial="{{ $partialCount }}"
                                     data-unpaid="{{ $unpaidCount }}" data-total="{{ $totalStudents }}"
-                                    data-percentage="{{ $percentage }}" data-payment-name="{{ $paymentName }}">
+                                    data-percentage="{{ $percentage }}" data-payment-name="{{ $paymentName }}"
+                                    data-payment-name-lower="{{ strtolower($paymentName) }}">
 
                                     <!-- Notification Badge for Payment Card - Positioned in upper right corner of card -->
                                     <span
@@ -292,7 +324,7 @@
                                         <div class="card-header text-white border-0 position-relative"
                                             style="background-color: {{ $color1 }}; height: 140px;">
                                             <div class="d-flex justify-content-between align-items-start">
-                                                <h4 class="card-title text-white fw-bold mb-1">
+                                                <h4 class="card-title text-white fw-bold mb-1 payment-name">
                                                     {{ $paymentName }}
                                                 </h4>
                                             </div>
@@ -396,6 +428,13 @@
                                 </div>
                             </div>
                         @endforeach
+                    </div>
+
+                    {{-- No Results Message (hidden by default) --}}
+                    <div id="noResultsMessage" class="text-center py-5" style="display: none;">
+                        <i class="bi bi-search text-secondary display-4"></i>
+                        <h5 class="mt-3 fw-bold text-secondary">No matching school fees found</h5>
+                        <p class="text-muted">Try adjusting your search term or filters</p>
                     </div>
                 @endif
             </div>
@@ -1248,6 +1287,116 @@
             });
         });
     </script>
+
+    <!-- Search Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('paymentSearch');
+            const paymentCards = document.querySelectorAll('.payment-card-item');
+            const noResultsMessage = document.getElementById('noResultsMessage');
+
+            // Function to filter payment cards
+            function filterPaymentCards() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                let hasVisibleCards = false;
+
+                paymentCards.forEach(card => {
+                    const paymentName = card.querySelector('.payment-name').textContent.toLowerCase();
+                    const paymentNameLower = card.dataset.paymentNameLower;
+
+                    if (paymentName.includes(searchTerm) || paymentNameLower.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        hasVisibleCards = true;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Show/hide no results message
+                if (noResultsMessage) {
+                    if (hasVisibleCards || searchTerm === '') {
+                        noResultsMessage.style.display = 'none';
+                    } else {
+                        noResultsMessage.style.display = 'block';
+                    }
+                }
+            }
+
+            // Real-time filtering as user types
+            searchInput.addEventListener('input', filterPaymentCards);
+
+            // Clear search button functionality (optional)
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    filterPaymentCards();
+                }
+            });
+
+            // Debounced search for better performance
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(filterPaymentCards, 300);
+            });
+        });
+    </script>
+
+    <!-- Server-side search form submission -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('paymentSearch');
+            let searchTimeout;
+
+            // Submit form when user stops typing (for server-side search)
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    // Get current filters
+                    const classId = document.querySelector('#classFilter')?.value || '';
+                    const schoolYear = document.querySelector('#yearFilter')?.value || '';
+
+                    // Build URL with all parameters
+                    let url = new URL(window.location.href);
+                    url.searchParams.set('search', searchInput.value.trim());
+                    url.searchParams.set('class_id', classId);
+                    url.searchParams.set('school_year', schoolYear);
+
+                    // Remove empty parameters
+                    url.searchParams.forEach((value, key) => {
+                        if (value === '' || value === null || value === undefined) {
+                            url.searchParams.delete(key);
+                        }
+                    });
+
+                    // Navigate to filtered URL
+                    window.location.href = url.toString();
+                }, 1000); // 1 second delay before submitting
+            });
+
+            // Also allow pressing Enter for immediate search
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(searchTimeout);
+                    const classId = document.querySelector('#classFilter')?.value || '';
+                    const schoolYear = document.querySelector('#yearFilter')?.value || '';
+
+                    let url = new URL(window.location.href);
+                    url.searchParams.set('search', searchInput.value.trim());
+                    url.searchParams.set('class_id', classId);
+                    url.searchParams.set('school_year', schoolYear);
+
+                    url.searchParams.forEach((value, key) => {
+                        if (value === '' || value === null || value === undefined) {
+                            url.searchParams.delete(key);
+                        }
+                    });
+
+                    window.location.href = url.toString();
+                }
+            });
+        });
+    </script>
 @endpush
 
 @push('styles')
@@ -1324,6 +1473,26 @@
         .ts-dropdown .option.active {
             background-color: #e3f2fd;
             color: #1976d2;
+        }
+
+        /* Search input styling */
+        #paymentSearch {
+            padding-right: 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        #paymentSearch:focus {
+            border-color: #42a5f5;
+            box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.1);
+        }
+
+        /* Search results highlight */
+        .highlighted {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
         }
     </style>
 @endpush

@@ -106,6 +106,35 @@ class ParentController extends Controller
         }
         // === END STATUS LOGIC ===
 
+        // === ADD SCHOOL FEES LOGIC ===
+        // Handle school fees year filter (separate from main school year)
+        $feesSchoolYear = $request->query('school_year_fees');
+        if (!$feesSchoolYear) {
+            $feesSchoolYear = \App\Models\SchoolYear::latest('start_date')->value('school_year');
+        }
+
+        $selectedFeesYear = $feesSchoolYear;
+
+        // Get school years for dropdown
+        $schoolYears = \App\Models\SchoolYear::orderBy('start_date', 'desc')
+            ->pluck('school_year')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // Get school fees payments for the selected year
+        $schoolFeesPayments = $child->payments()
+            ->with([
+                'classStudent.class',
+                'classStudent.student',
+                'histories.addedBy'
+            ])
+            ->whereHas('schoolYear', function ($query) use ($selectedFeesYear) {
+                $query->where('school_year', $selectedFeesYear);
+            })
+            ->get();
+        // === END SCHOOL FEES LOGIC ===
+
         // Fetch all classes the child has been in (class history)
         $classHistory = $child->class()
             ->with([
@@ -202,7 +231,10 @@ class ParentController extends Controller
             'gradesByClass',
             'generalAverages',
             'studentStatus',
-            'statusInfo'
+            'statusInfo',
+            'schoolFeesPayments',
+            'schoolYears',
+            'selectedFeesYear'
         ));
     }
 
@@ -317,48 +349,62 @@ class ParentController extends Controller
     }
 
     public function addPayment(Request $request, $paymentId)
-    {
-        $request->validate([
-            'amount_paid' => 'required|numeric|min:1',
-            'payment_method' => 'required|in:gcash,paymaya', // Updated validation
-            'reference_number' => 'nullable|string',
-            'receipt_image' => 'nullable|image|max:2048',
-        ]);
+{
+    $request->validate([
+        'amount_paid' => 'required|numeric|min:1',
+        'payment_method' => 'required|in:gcash,paymaya',
+        'reference_number' => 'nullable|string',
+        'receipt_image' => 'nullable|image|max:2048',
+    ]);
 
-        $parent = Auth::user();
-        $payment = Payment::findOrFail($paymentId);
+    $parent = Auth::user();
+    $payment = Payment::findOrFail($paymentId);
 
-        // Ensure parent is linked to this student
-        $isAuthorized = DB::table('student_parent')
-            ->join('class_student', 'student_parent.student_id', '=', 'class_student.student_id')
-            ->where('student_parent.parent_id', $parent->id)
-            ->where('class_student.id', $payment->class_student_id)
-            ->exists();
+    // Ensure parent is linked to this student
+    $isAuthorized = DB::table('student_parent')
+        ->join('class_student', 'student_parent.student_id', '=', 'class_student.student_id')
+        ->where('student_parent.parent_id', $parent->id)
+        ->where('class_student.id', $payment->class_student_id)
+        ->exists();
 
-        if (!$isAuthorized) {
-            abort(403, 'Unauthorized payment request.');
-        }
-
-        // Handle receipt upload
-        $receiptPath = null;
-        if ($request->hasFile('receipt_image')) {
-            $receiptPath = $request->file('receipt_image')->store('receipts', 'public');
-        }
-
-        // Create payment request
-        PaymentRequest::create([
-            'payment_id' => $payment->id,
-            'parent_id' => $parent->id,
-            'amount_paid' => $request->amount_paid,
-            'payment_method' => $request->payment_method,
-            'reference_number' => $request->reference_number ?? null,
-            'receipt_image' => $receiptPath,
-            'status' => 'pending',
-            'requested_at' => now(),
-        ]);
-
-        return redirect()->back()->with('success', 'Your payment request has been submitted and is pending review.');
+    if (!$isAuthorized) {
+        abort(403, 'Unauthorized payment request.');
     }
+
+    // CHECK MAX ATTEMPTS (3 attempts)
+    $previousAttemptsCount = PaymentRequest::where('payment_id', $paymentId)
+        ->where('parent_id', $parent->id)
+        ->whereIn('status', ['pending', 'denied'])
+        ->count();
+
+    if ($previousAttemptsCount >= 3) {
+        return redirect()->back()->with('error', 'You have reached the maximum of 3 payment request attempts for this fee. Please contact the administrator for assistance.');
+    }
+
+    // Determine attempt number
+    $attemptNumber = $previousAttemptsCount + 1;
+
+    // Handle receipt upload
+    $receiptPath = null;
+    if ($request->hasFile('receipt_image')) {
+        $receiptPath = $request->file('receipt_image')->store('receipts', 'public');
+    }
+
+    // Create payment request
+    PaymentRequest::create([
+        'payment_id' => $payment->id,
+        'parent_id' => $parent->id,
+        'amount_paid' => $request->amount_paid,
+        'payment_method' => $request->payment_method,
+        'reference_number' => $request->reference_number ?? null,
+        'receipt_image' => $receiptPath,
+        'attempt_number' => $attemptNumber,
+        'status' => 'pending',
+        'requested_at' => now(),
+    ]);
+
+    return redirect()->back()->with('success', 'Your payment request (Attempt #' . $attemptNumber . ') has been submitted and is pending review.');
+}
 
     public function reviewPaymentRequest($id, Request $request)
     {
@@ -421,4 +467,28 @@ class ParentController extends Controller
 
         return view('parent.accountSettings', compact('user'));
     }
+
+    public function checkAttempts($paymentId)
+{
+    $parent = Auth::user();
+
+    if ($parent->role !== 'parent') {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $previousAttemptsCount = PaymentRequest::where('payment_id', $paymentId)
+        ->where('parent_id', $parent->id)
+        ->whereIn('status', ['pending', 'denied'])
+        ->count();
+
+    $canRequest = $previousAttemptsCount < 3;
+    $remainingAttempts = 3 - $previousAttemptsCount;
+
+    return response()->json([
+        'can_request' => $canRequest,
+        'previous_attempts' => $previousAttemptsCount,
+        'remaining_attempts' => $remainingAttempts,
+        'is_last_attempt' => $remainingAttempts === 1
+    ]);
+}
 }

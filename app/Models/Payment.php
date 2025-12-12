@@ -109,4 +109,11 @@ class Payment extends Model
     {
         return $this->hasMany(PaymentRequest::class, 'payment_id');
     }
+
+    public function hasPendingPaymentRequest()
+    {
+        return $this->paymentRequests()
+            ->where('status', 'pending')
+            ->exists();
+    }
 }

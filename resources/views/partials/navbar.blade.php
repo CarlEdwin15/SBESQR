@@ -16,8 +16,8 @@
     @endphp
 
     <div class="d-flex align-items-center ms-3">
-        <h5 class="mb-0 d-none d-sm-block">Current School Year: {{ $schoolYear }}</h5>
-        <h5 class="mb-0 d-block d-sm-none">Current SY: {{ $schoolYear }}</h5>
+        <h6 class="mb-0 d-none d-sm-block">Current School Year: {{ $schoolYear }}</h6>
+        <h6 class="mb-0 d-block d-sm-none">Current SY: {{ $schoolYear }}</h6>
     </div>
 
 
@@ -54,10 +54,6 @@
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <ul class="navbar-nav flex-row align-items-center ms-auto">
-
-            <button id="enablePush" class="btn btn-outline-primary me-2">
-                <i class="bx bx-bell"></i> <span class="d-none d-sm-inline">Enable SBESqr notifications</span>
-            </button>
 
             <!-- Notification Dropdown -->
             <li class="nav-item dropdown">

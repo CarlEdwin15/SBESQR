@@ -10,14 +10,12 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
-use NotificationChannels\WebPush\HasPushSubscriptions;
-use App\Models\Student;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasProfilePhoto, Notifiable, TwoFactorAuthenticatable, HasPushSubscriptions;
+    use HasApiTokens, HasFactory, HasProfilePhoto, Notifiable, TwoFactorAuthenticatable;
 
     protected $fillable = [
         'firstName',
@@ -127,11 +125,6 @@ class User extends Authenticatable
         return $this->belongsToMany(Announcement::class, 'announcement_user', 'user_id', 'announcement_id')
             ->withPivot('read_at')
             ->withTimestamps();
-    }
-
-    public function pushSubscriptions()
-    {
-        return $this->hasMany(\App\Models\PushSubscription::class);
     }
 
     protected $appends = ['is_online', 'last_seen'];

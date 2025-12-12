@@ -22,71 +22,56 @@ class HomeController extends Controller
         $user = Auth::user();
         $role = $user->role ?? 'parent';
 
-        // Handle announcement redirect from push notification
-        $announcementId = null;
-
-        // Check for announcement ID from notification redirect
-        if (session()->has('notification_announcement_id')) {
-            $announcementId = session('notification_announcement_id');
-            session()->forget('notification_announcement_id'); // Clear it after use
-        }
-
-        // Also check for announcement ID from login redirect
-        if (session()->has('login_redirect_announcement')) {
-            $announcementId = session('login_redirect_announcement');
-            session()->forget('login_redirect_announcement'); // Clear it after use
-        }
-
-        // Check URL parameter as fallback
-        if ($request->has('announcement_id')) {
-            $announcementId = $request->get('announcement_id');
-        }
-
-        // Flash login success message (only once per session)
-        if (!session()->has('login_success_shown')) {
-            session()->flash('success', 'Login successful!');
-            session(['login_success_shown' => true]);
-        }
-
-        // Get user-specific announcements
-        $notifications = Announcement::where(function ($q) use ($user, $role) {
-            // Admins see all announcements
-            if ($role === 'admin') {
-                return;
-            }
-
-            // For non-admins: announcements specifically assigned to them
-            $q->whereHas('recipients', function ($r) use ($user) {
-                $r->where('users.id', $user->id);
-            });
-
-            // OR general (no recipients, meaning sent to everyone)
-            $q->orWhereDoesntHave('recipients');
+        // Always fetch notifications for dropdown
+        $notifications = Announcement::where(function ($query) use ($user) {
+            $query->whereHas('recipients', function ($subQuery) use ($user) {
+                $subQuery->where('users.id', $user->id);
+            })->orWhereDoesntHave('recipients');
         })
+            ->where('status', 'active')
+            ->where('effective_date', '<=', now())
+            ->where(function ($query) {
+                $query->where('end_date', '>=', now())
+                    ->orWhereNull('end_date');
+            })
             ->orderByDesc('date_published')
             ->take(99)
             ->get();
 
-        // Fetch active announcements based on date range
-        $activeAnnouncements = Announcement::where(function ($q) use ($user, $role) {
-            // Admins see all active announcements
-            if ($role === 'admin') {
-                return;
-            }
+        // Check if we should show announcements on login
+        $shouldShowOnLogin = session('show_announcements_on_login', false);
 
-            // Non-admins: announcements sent to them OR general (no recipients)
-            $q->whereHas('recipients', function ($r) use ($user) {
-                $r->where('users.id', $user->id);
-            })->orWhereDoesntHave('recipients');
-        })
-            ->where(function ($q) {
-                $q->whereDate('effective_date', '<=', now())
-                    ->whereDate('end_date', '>=', now());
-            })
-            ->orderByDesc('effective_date')
-            ->get();
+        // Clear the flag immediately to prevent showing on refresh
+        if ($shouldShowOnLogin) {
+            session()->forget('show_announcements_on_login');
+        }
 
-        // Handle different user roles
+        // Handle specific announcement from URL or session
+        $announcementId = null;
+
+        // Priority 1: Check URL parameter
+        if ($request->has('announcement_id')) {
+            $announcementId = $request->get('announcement_id');
+        }
+        // Priority 2: Check session for manual announcement
+        elseif (session()->has('manual_announcement_id')) {
+            $announcementId = session('manual_announcement_id');
+            session()->forget('manual_announcement_id');
+        }
+        // Priority 3: Check for login redirect announcement
+        elseif (session()->has('login_redirect_announcement')) {
+            $announcementId = session('login_redirect_announcement');
+            session()->forget('login_redirect_announcement');
+        }
+        // Priority 4: Check for login announcement ID
+        elseif (session()->has('login_announcement_id')) {
+            $announcementId = session('login_announcement_id');
+            session()->forget('login_announcement_id');
+        }
+
+        // We'll fetch active announcements via AJAX, not here
+        // This prevents page load delays
+
         if ($role == 'teacher') {
             $currentSchoolYear = SchoolYear::where('start_date', '<=', now())
                 ->where('end_date', '>=', now())
@@ -105,23 +90,20 @@ class HomeController extends Controller
                 'class',
                 'currentSchoolYear',
                 'notifications',
-                'activeAnnouncements',
-                'announcementId'
+                'announcementId',
+                'shouldShowOnLogin'
             ));
         }
 
         if ($role == 'admin') {
-            // All school years for dropdown
             $schoolYears = SchoolYear::orderBy('start_date', 'desc')->get();
 
-            // Selected school year (via ?school_year_id= or current active)
             $selectedSchoolYear = request()->get('school_year_id')
                 ? SchoolYear::find(request()->get('school_year_id'))
                 : SchoolYear::where('start_date', '<=', now())
                 ->where('end_date', '>=', now())
                 ->first();
 
-            // Default empty collection
             $enrolleesByGrade = collect();
 
             if ($selectedSchoolYear) {
@@ -147,15 +129,15 @@ class HomeController extends Controller
                 'selectedSchoolYear',
                 'enrolleesByGrade',
                 'announcementId',
-                'activeAnnouncements'
+                'shouldShowOnLogin'
             ));
         }
 
         if ($role == 'parent') {
             return view('parent.index', compact(
                 'notifications',
-                'activeAnnouncements',
-                'announcementId'
+                'announcementId',
+                'shouldShowOnLogin'
             ));
         }
 

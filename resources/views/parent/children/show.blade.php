@@ -33,12 +33,12 @@
             </li>
 
             {{-- School Fees sidebar --}}
-            <li class="menu-item">
+            {{-- <li class="menu-item">
                 <a href="{{ route('parent.school-fees.index') }}" class="menu-link bg-dark text-light">
                     <i class="menu-icon tf-icons bx bx-wallet-alt text-light"></i>
                     <div class="text-light">School Fees</div>
                 </a>
-            </li>
+            </li> --}}
 
             {{-- Announcements sidebar --}}
             {{-- <li class="menu-item">
@@ -50,7 +50,7 @@
 
             {{-- Account Settings sidebar --}}
             <li class="menu-item">
-                <a href="" class="menu-link bg-dark text-light">
+                <a href="{{ route('parent.account.settings') }}" class="menu-link bg-dark text-light">
                     <i class="bx bx-cog me-3 text-light"></i>
                     <div class="text-light">Account Settings</div>
                 </a>
@@ -89,8 +89,8 @@
             <div class="col-md-4 mb-4">
                 <div class="card shadow p-3 align-items-center text-center">
                     @if ($child->student_photo)
-                        <img src="{{ asset('public/uploads/' . $child->student_photo) }}" alt="Student Photo" class="mb-3 mt-2"
-                            style="object-fit: cover; height: 200px; width: 200px;">
+                        <img src="{{ asset('public/uploads/' . $child->student_photo) }}" alt="Student Photo"
+                            class="mb-3 mt-2" style="object-fit: cover; height: 200px; width: 200px;">
                     @else
                         <img src="{{ asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg') }}"
                             alt="Default Photo" class="mb-3 mt-2" style="object-fit: cover; height: 200px; width: 200px;">
@@ -112,12 +112,14 @@
                                 'enrolled' => 'Enrolled',
                                 'graduated' => 'Graduated',
                                 'archived', 'not_enrolled' => 'Inactive',
+                                'dropped' => 'Dropped',
                                 default => ucfirst($studentStatus),
                             };
 
                             $badgeClass = match ($displayStatus) {
                                 'Enrolled' => 'bg-label-success fw-bold',
                                 'Inactive' => 'bg-label-secondary fw-bold',
+                                'Dropped' => 'bg-label-danger fw-bold',
                                 'Graduated' => 'bg-label-info fw-bold',
                                 default => 'bg-label-warning fw-bold',
                             };

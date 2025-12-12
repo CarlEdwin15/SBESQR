@@ -16,8 +16,7 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('assets/img/logo.png') }}" />
 
-    <link rel="icon" type="image/png" href="{{ asset('assets/img/favicon-96x96.png') }}"
-        sizes="96x96" />
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/favicon-96x96.png') }}" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/favicon.svg') }}" />
     <link rel="shortcut icon" href="{{ asset('assets/img/favicon.ico') }}" />
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}" />
@@ -137,92 +136,7 @@
         </div>
     @endif
 
-    {{-- <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const htmlEl = document.documentElement;
-            const toggles = document.querySelectorAll('.layout-menu-toggle');
-            const overlay = document.querySelector('.layout-overlay');
-
-            const DESKTOP_BREAKPOINT = 1200; // Sneat default
-
-            function isDesktop() {
-                return window.innerWidth >= DESKTOP_BREAKPOINT;
-            }
-
-            function closeMobileMenu() {
-                htmlEl.classList.remove('layout-menu-expanded');
-            }
-
-            function toggleMenu() {
-                if (isDesktop()) {
-                    // ✅ Desktop toggle (collapse/expand sidebar)
-                    htmlEl.classList.toggle('layout-menu-collapsed');
-                    htmlEl.classList.remove('layout-menu-expanded');
-                } else {
-                    // ✅ Mobile toggle (overlay slide in/out)
-                    htmlEl.classList.toggle('layout-menu-expanded');
-                }
-            }
-
-            // Bind toggle button
-            toggles.forEach(btn => btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                toggleMenu();
-            }));
-
-            // Overlay click closes mobile menu
-            overlay?.addEventListener('click', closeMobileMenu);
-
-            // ESC closes mobile menu
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') closeMobileMenu();
-            });
-
-            // Resize handler keeps state clean
-            let rt;
-            window.addEventListener('resize', function() {
-                clearTimeout(rt);
-                rt = setTimeout(function() {
-                    if (isDesktop()) {
-                        htmlEl.classList.remove('layout-menu-expanded');
-                    } else {
-                        htmlEl.classList.remove('layout-menu-collapsed');
-                    }
-                }, 150);
-            });
-        });
-    </script> --}}
-
-    {{-- @if ($errors->any())
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            Swal.fire({
-                                title: 'Error!',
-                                html: `<ul style="text-align: left;">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>`,
-                                icon: 'error',
-                                confirmButtonText: 'OK',
-                                customClass: {
-                                    container: 'my-swal-container'
-                                }
-                            });
-                        });
-                    </script>
-                @endif --}}
-
-    <!-- Make table rows clickable -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            document.querySelectorAll(".t-row").forEach(row => {
-                row.addEventListener("click", function() {
-                    window.location = this.dataset.href;
-                });
-            });
-        });
-    </script>
+    <!-- ... existing table rows clickable script ... -->
 
     <!-- Core JS -->
     <!-- build:assetsDashboard/vendor/js/core.js -->
@@ -253,162 +167,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
     <script>
-        // Handle navigation messages from service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('message', event => {
-                if (event.data && event.data.type === 'NAVIGATE_TO_ANNOUNCEMENT') {
-                    console.log('Received navigation request:', event.data.url);
-                    window.location.href = event.data.url;
-                }
-            });
-        }
-
-        // Optional: Let service worker know we're ready
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-                console.log('Service Worker is ready');
-            });
-        }
-    </script>
-
-    <script>
-        // Create a SweetAlert mixin so we don’t repeat customClass everywhere
-        const MySwal = Swal.mixin({
-            customClass: {
-                container: 'my-swal-container'
-            }
-        });
-
-        document.getElementById('enablePush')?.addEventListener('click', async () => {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                MySwal.fire({
-                    title: "Unsupported",
-                    text: "🚫 Your browser does not support push notifications.",
-                    icon: "error"
-                });
-                return;
-            }
-
-            try {
-                // 1. Register service worker
-                const reg = await navigator.serviceWorker.register('/sw.js');
-
-                // 2. Check current permission
-                if (Notification.permission === "denied") {
-                    MySwal.fire({
-                        title: "Notifications Blocked",
-                        html: "🚫 You have blocked notifications.<br><br>To enable push, please allow notifications in your browser's site settings.",
-                        icon: "warning"
-                    });
-                    return;
-                }
-
-                if (Notification.permission !== "granted") {
-                    const permission = await Notification.requestPermission();
-                    if (permission !== "granted") {
-                        MySwal.fire({
-                            title: "Permission Needed",
-                            html: "❌ You must allow notifications in the popup to enable push.<br><br>If you don’t see the popup, check your browser's site settings.",
-                            icon: "error"
-                        });
-                        return;
-                    }
-                }
-
-                // 3. Get or create subscription
-                let sub = await reg.pushManager.getSubscription();
-                if (!sub) {
-                    sub = await reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array(
-                            "{{ trim(env('VAPID_PUBLIC_KEY')) }}"),
-                    });
-                }
-
-                // 5. Send subscription to backend
-                const res = await fetch("{{ route('push.subscribe') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                    body: JSON.stringify({
-                        endpoint: sub.endpoint,
-                        expirationTime: sub.expirationTime,
-                        keys: sub.toJSON().keys
-                    }),
-                });
-
-                const data = await res.json();
-                if (res.ok) {
-                    // Save flag so we remember across reloads
-                    localStorage.setItem("notificationsEnabled", "true");
-
-                    MySwal.fire({
-                        title: "Success!",
-                        text: "✅ Notifications enabled successfully!",
-                        icon: "success"
-                    });
-
-                    // display the announcement section
-                    const section = document.getElementById('announcement-section');
-                    if (section) {
-                        section.style.display = 'block';
-                    }
-
-                    // display the announcement nav item
-                    const navItem = document.getElementById('announcement-nav');
-                    if (navItem) {
-                        navItem.style.display = 'inline-block';
-                    }
-
-                } else {
-                    MySwal.fire({
-                        title: "Error",
-                        text: "❌ Failed to save subscription: " + JSON.stringify(data),
-                        icon: "error"
-                    });
-                }
-            } catch (err) {
-                console.error("Push registration failed:", err);
-                MySwal.fire({
-                    title: "Error",
-                    text: "❌ Push registration failed. Check console for details.",
-                    icon: "error"
-                });
-            }
-        });
-
-        // Helper: convert VAPID key from base64 to Uint8Array
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
-
-        // Show announcement section if user already subscribed before
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem("notificationsEnabled") === "true") {
-                const section = document.getElementById('announcement-section');
-                if (section) {
-                    section.style.display = 'block';
-                }
-
-                const navItem = document.getElementById('announcement-nav');
-                if (navItem) {
-                    navItem.style.display = 'inline-block';
-                }
-            }
-        });
-    </script>
-
-    <!-- SweetAlert toast for success and error messages -->
-    <script>
+        // SweetAlert toast for success and error messages
         document.addEventListener("DOMContentLoaded", function() {
             @if (session('success'))
                 Swal.fire({
@@ -428,6 +187,184 @@
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Checking for announcements...');
+
+            // Check if user is logged in
+            const isLoggedIn = @json(Auth::check());
+
+            if (!isLoggedIn) {
+                console.log('User not logged in, skipping announcement check');
+                return;
+            }
+
+            // Get data from server
+            const specificAnnouncementId = @json($announcementId ?? null);
+            const activeAnnouncements = @json($activeAnnouncements ?? []);
+            const showAnnouncementsOnLogin = @json(session('show_announcements_on_login') ?? false);
+
+            console.log('Announcement Data:', {
+                specificId: specificAnnouncementId,
+                activeCount: activeAnnouncements.length,
+                showOnLogin: showAnnouncementsOnLogin
+            });
+
+            // Function to show single announcement modal
+            function showAnnouncementModal(announcementId) {
+                console.log('Showing announcement modal for ID:', announcementId);
+
+                fetch(`/announcements/${announcementId}/show-ajax`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch announcement details');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Announcement data loaded:', data);
+
+                        Swal.fire({
+                            title: data.title,
+                            html: `
+                        <div class="text-start">
+                            <p><strong>Published:</strong> ${data.published}</p>
+                            <p><strong>Author:</strong> ${data.author}</p>
+                            <div class="border rounded p-3 mt-3 bg-light quill-content" style="max-height: 400px; overflow-y: auto;">
+                                ${data.body}
+                            </div>
+                        </div>
+                    `,
+                            showCloseButton: true,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Close',
+                            width: '800px',
+                            customClass: {
+                                container: 'my-swal-container'
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching announcement details:', error);
+                        window.location.href = `/announcement/redirect/${announcementId}`;
+                    });
+            }
+
+            // Function to show all active announcements in sequence
+            function showAllActiveAnnouncements(announcements) {
+                if (!announcements || announcements.length === 0) return;
+
+                let currentIndex = 0;
+
+                function showNextAnnouncement() {
+                    if (currentIndex >= announcements.length) {
+                        // Clear the session via AJAX when all announcements are shown
+                        fetch('/clear-announcement-session', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            },
+                            body: JSON.stringify({
+                                type: 'login'
+                            })
+                        });
+                        return;
+                    }
+
+                    const announcement = announcements[currentIndex];
+                    const isLast = currentIndex === announcements.length - 1;
+
+                    Swal.fire({
+                        title: `📢 Announcement ${currentIndex + 1} of ${announcements.length}`,
+                        html: `
+                    <div class="text-start">
+                        <h5 class="text-primary">${announcement.title}</h5>
+                        <p><strong>Published:</strong> ${announcement.date_published}</p>
+                        <p><strong>Author:</strong> ${announcement.author_name}</p>
+                        <div class="border rounded p-3 mt-3 bg-light quill-content" style="max-height: 400px; overflow-y: auto;">
+                            ${announcement.body}
+                        </div>
+                    </div>
+                `,
+                        showCloseButton: true,
+                        showConfirmButton: true,
+                        showDenyButton: !isLast,
+                        confirmButtonText: isLast ? 'Close' : 'Next',
+                        denyButtonText: 'Skip Remaining',
+                        width: '800px',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then((result) => {
+                        if (result.isDenied) {
+                            // Skip remaining announcements
+                            currentIndex = announcements.length;
+                            showNextAnnouncement();
+                        } else {
+                            // Continue to next announcement
+                            currentIndex++;
+                            showNextAnnouncement();
+                        }
+                    });
+                }
+
+                showNextAnnouncement();
+            }
+
+            // Priority 1: Show specific announcement if ID exists
+            if (specificAnnouncementId) {
+                console.log('Found specific announcement ID:', specificAnnouncementId);
+                showAnnouncementModal(specificAnnouncementId);
+            }
+            // Priority 2: Show all active announcements on login
+            else if (activeAnnouncements.length > 0) {
+                console.log('Showing announcements on login:', activeAnnouncements.length);
+                showAllActiveAnnouncements(activeAnnouncements);
+            }
+
+            // Make function globally available
+            window.showAnnouncementModal = showAnnouncementModal;
+            window.openAnnouncementModal = showAnnouncementModal; // For backward compatibility
+        });
+    </script>
+
+    <script>
+        // Add this to your existing JavaScript
+        window.openAnnouncementModal = function(announcementId) {
+            // Fetch announcement details
+            fetch(`/announcements/${announcementId}/show-ajax`)
+                .then(response => response.json())
+                .then(data => {
+                    // Create and show modal with announcement content
+                    Swal.fire({
+                        title: data.title,
+                        html: `
+                        <div class="text-start">
+                            <p><strong>Published:</strong> ${data.published}</p>
+                            <p><strong>Author:</strong> ${data.author}</p>
+                            <div class="border rounded p-3 mt-3 bg-light">
+                                ${data.body}
+                            </div>
+                        </div>
+                    `,
+                        showCloseButton: true,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Close',
+                        width: '800px',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching announcement:', error);
+                    // Fallback: redirect to announcement page
+                    window.location.href = `/announcement/redirect/${announcementId}`;
+                });
+        };
+    </script>
+
     @if (!empty($announcementId))
         <script>
             document.addEventListener('DOMContentLoaded', () => {
@@ -438,14 +375,8 @@
         </script>
     @endif
 
-    {{-- <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script> --}}
-
     <!-- Additional scripts can be stacked from views -->
     @stack('scripts')
-
-    {{-- </div>
-    </div>
-    </div> --}}
 </body>
 
 </html>
