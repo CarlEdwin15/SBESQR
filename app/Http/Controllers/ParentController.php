@@ -349,62 +349,62 @@ class ParentController extends Controller
     }
 
     public function addPayment(Request $request, $paymentId)
-{
-    $request->validate([
-        'amount_paid' => 'required|numeric|min:1',
-        'payment_method' => 'required|in:gcash,paymaya',
-        'reference_number' => 'nullable|string',
-        'receipt_image' => 'nullable|image|max:2048',
-    ]);
+    {
+        $request->validate([
+            'amount_paid' => 'required|numeric|min:1',
+            'payment_method' => 'required|in:gcash,paymaya',
+            'reference_number' => 'nullable|string',
+            'receipt_image' => 'nullable|image|max:2048',
+        ]);
 
-    $parent = Auth::user();
-    $payment = Payment::findOrFail($paymentId);
+        $parent = Auth::user();
+        $payment = Payment::findOrFail($paymentId);
 
-    // Ensure parent is linked to this student
-    $isAuthorized = DB::table('student_parent')
-        ->join('class_student', 'student_parent.student_id', '=', 'class_student.student_id')
-        ->where('student_parent.parent_id', $parent->id)
-        ->where('class_student.id', $payment->class_student_id)
-        ->exists();
+        // Ensure parent is linked to this student
+        $isAuthorized = DB::table('student_parent')
+            ->join('class_student', 'student_parent.student_id', '=', 'class_student.student_id')
+            ->where('student_parent.parent_id', $parent->id)
+            ->where('class_student.id', $payment->class_student_id)
+            ->exists();
 
-    if (!$isAuthorized) {
-        abort(403, 'Unauthorized payment request.');
+        if (!$isAuthorized) {
+            abort(403, 'Unauthorized payment request.');
+        }
+
+        // CHECK MAX ATTEMPTS (3 attempts)
+        $previousAttemptsCount = PaymentRequest::where('payment_id', $paymentId)
+            ->where('parent_id', $parent->id)
+            ->whereIn('status', ['pending', 'denied'])
+            ->count();
+
+        if ($previousAttemptsCount >= 3) {
+            return redirect()->back()->with('error', 'You have reached the maximum of 3 payment request attempts for this fee. Please contact the administrator for assistance.');
+        }
+
+        // Determine attempt number
+        $attemptNumber = $previousAttemptsCount + 1;
+
+        // Handle receipt upload
+        $receiptPath = null;
+        if ($request->hasFile('receipt_image')) {
+            $receiptPath = $request->file('receipt_image')->store('receipts', 'public');
+        }
+
+        // Create payment request
+        PaymentRequest::create([
+            'payment_id' => $payment->id,
+            'parent_id' => $parent->id,
+            'amount_paid' => $request->amount_paid,
+            'payment_method' => $request->payment_method,
+            'reference_number' => $request->reference_number ?? null,
+            'receipt_image' => $receiptPath,
+            'attempt_number' => $attemptNumber,
+            'status' => 'pending',
+            'requested_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Your payment request (Attempt #' . $attemptNumber . ') has been submitted and is pending review.');
     }
-
-    // CHECK MAX ATTEMPTS (3 attempts)
-    $previousAttemptsCount = PaymentRequest::where('payment_id', $paymentId)
-        ->where('parent_id', $parent->id)
-        ->whereIn('status', ['pending', 'denied'])
-        ->count();
-
-    if ($previousAttemptsCount >= 3) {
-        return redirect()->back()->with('error', 'You have reached the maximum of 3 payment request attempts for this fee. Please contact the administrator for assistance.');
-    }
-
-    // Determine attempt number
-    $attemptNumber = $previousAttemptsCount + 1;
-
-    // Handle receipt upload
-    $receiptPath = null;
-    if ($request->hasFile('receipt_image')) {
-        $receiptPath = $request->file('receipt_image')->store('receipts', 'public');
-    }
-
-    // Create payment request
-    PaymentRequest::create([
-        'payment_id' => $payment->id,
-        'parent_id' => $parent->id,
-        'amount_paid' => $request->amount_paid,
-        'payment_method' => $request->payment_method,
-        'reference_number' => $request->reference_number ?? null,
-        'receipt_image' => $receiptPath,
-        'attempt_number' => $attemptNumber,
-        'status' => 'pending',
-        'requested_at' => now(),
-    ]);
-
-    return redirect()->back()->with('success', 'Your payment request (Attempt #' . $attemptNumber . ') has been submitted and is pending review.');
-}
 
     public function reviewPaymentRequest($id, Request $request)
     {
@@ -469,6 +469,30 @@ class ParentController extends Controller
     }
 
     public function checkAttempts($paymentId)
+    {
+        $parent = Auth::user();
+
+        if ($parent->role !== 'parent') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $previousAttemptsCount = PaymentRequest::where('payment_id', $paymentId)
+            ->where('parent_id', $parent->id)
+            ->whereIn('status', ['pending', 'denied'])
+            ->count();
+
+        $canRequest = $previousAttemptsCount < 3;
+        $remainingAttempts = 3 - $previousAttemptsCount;
+
+        return response()->json([
+            'can_request' => $canRequest,
+            'previous_attempts' => $previousAttemptsCount,
+            'remaining_attempts' => $remainingAttempts,
+            'is_last_attempt' => $remainingAttempts === 1
+        ]);
+    }
+
+    public function deletePaymentRequest($id)
 {
     $parent = Auth::user();
 
@@ -476,19 +500,39 @@ class ParentController extends Controller
         return response()->json(['error' => 'Unauthorized'], 403);
     }
 
-    $previousAttemptsCount = PaymentRequest::where('payment_id', $paymentId)
-        ->where('parent_id', $parent->id)
-        ->whereIn('status', ['pending', 'denied'])
-        ->count();
+    try {
+        $paymentRequest = PaymentRequest::findOrFail($id);
 
-    $canRequest = $previousAttemptsCount < 3;
-    $remainingAttempts = 3 - $previousAttemptsCount;
+        // Ensure parent can only delete their own pending requests
+        if ($paymentRequest->parent_id !== $parent->id || $paymentRequest->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unauthorized or cannot delete this request'
+            ], 403);
+        }
 
-    return response()->json([
-        'can_request' => $canRequest,
-        'previous_attempts' => $previousAttemptsCount,
-        'remaining_attempts' => $remainingAttempts,
-        'is_last_attempt' => $remainingAttempts === 1
-    ]);
+        // Get attempt number before deleting
+        $attemptNumber = $paymentRequest->attempt_number;
+
+        // Delete the payment request
+        $paymentRequest->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request deleted successfully.',
+            'attempt_number' => $attemptNumber
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Payment request not found'
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Failed to delete request: ' . $e->getMessage()
+        ], 500);
+    }
 }
 }

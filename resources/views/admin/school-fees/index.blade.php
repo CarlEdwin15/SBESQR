@@ -106,8 +106,8 @@
                     <div>
                         School Fees
                         <!-- Notification Badge for Sidebar -->
-                        <span class="notification-badge-sidebar badge bg-danger rounded-pill ms-2"
-                            style="display: none;">0</span>
+                        {{-- <span class="notification-badge-sidebar badge bg-danger rounded-pill ms-2"
+                            style="display: none;">0</span> --}}
                     </div>
                 </a>
                 <ul class="menu-sub">
@@ -115,16 +115,8 @@
                         <a href="{{ route('admin.school-fees.index') }}" class="menu-link bg-dark text-light">
                             <div class="text-warning">All School Fees
                                 <!-- Notification Badge for Payment Requests -->
-                                <span class="notification-badge-requests badge bg-danger rounded-pill ms-2"
-                                    style="display: none;">0</span>
-                            </div>
-                        </a>
-                    </li>
-
-                    <li class="menu-item">
-                        <a href="{{ route('admin.payment.requests') }}" class="menu-link bg-dark text-light">
-                            <div class="text-light">
-                                Payment Requests
+                                {{-- <span class="notification-badge-requests badge bg-danger rounded-pill ms-2"
+                                    style="display: none;">0</span> --}}
                             </div>
                         </a>
                     </li>

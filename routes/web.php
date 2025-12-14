@@ -207,6 +207,7 @@ Route::prefix('admin')
         Route::get('/promote-students', [StudentController::class, 'showPromotionView'])->name('students.promote.view');
         Route::post('/promote-students', [StudentController::class, 'promoteStudents'])->name('students.promote');
         Route::get('/admin/students/search-classes', [StudentController::class, 'searchClasses'])->name('students.search.classes');
+        Route::get('/student/form10/{student_id}', [TeacherController::class, 'studentForm10'])->name('admin.student.form10');
 
         // ID Management
         Route::get('/students/{id}/generate-id', [IdController::class, 'generateID'])->name('students.generateID');
@@ -295,7 +296,6 @@ Route::prefix('teacher')
 
         // Student Reports
         Route::get('/student/{student_id}/report_card/export', [TeacherController::class, 'studentReportCard'])->name('teacher.student.card');
-        Route::get('/student/form10/{student_id}', [TeacherController::class, 'studentForm10'])->name('teacher.student.form10');
         Route::post('/student/bulk-print-grades', [TeacherController::class, 'studentGradeSlip'])->name('teacher.print.grade.slip');
         Route::get('/studentInfo/{id}', [TeacherController::class, 'studentInfo'])->name('teacher.student.info');
         Route::get('/editStudentInfo/{id}', [TeacherController::class, 'editStudentInfo'])->name('teacher.edit.student');
@@ -348,6 +348,10 @@ Route::prefix('parent')
 
         Route::get('/parent/check-attempts/{paymentId}', [ParentController::class, 'checkAttempts'])
             ->name('parent.check-attempts');
+
+        // Parent payment request deletion
+        Route::delete('/payment-requests/{id}', [ParentController::class, 'deletePaymentRequest'])
+            ->name('parent.payment-requests.delete');
     });
 
 // Announcement Management (on ADMIN Dashboard)

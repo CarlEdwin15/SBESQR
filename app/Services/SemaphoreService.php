@@ -43,7 +43,6 @@ class SemaphoreService
 
         $output = curl_exec($ch);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($curlError) {
             Log::error('Semaphore cURL Error: ' . $curlError, [

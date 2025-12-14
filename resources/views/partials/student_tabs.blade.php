@@ -93,9 +93,9 @@
                 @if ($user && $user->role === 'admin')
                     <div class="d-flex justify-content-between mb-3">
                         <h5 class="fw-bold text-primary mb-3">Classes and Grades</h5>
-                        <a href="{{ route('teacher.student.form10', ['student_id' => $student->id]) }}" target="_blank"
-                            class="btn btn-success btn-sm align-items-center">
-                            <i class="bx bx-printer"></i> Export Form 10 (Cumulative Grades)
+                        <a href="{{ route('admin.student.form10', ['student_id' => $student->id]) }}" target="_blank"
+                            class="d-flex btn btn-success btn-sm align-items-center">
+                            <i class="bx bx-printer me-1"></i> Export Form 10
                         </a>
                     </div>
                 @endif
@@ -977,12 +977,7 @@ if (
 
                                                                     <!-- Modal Footer -->
                                                                     <div
-                                                                        class="modal-footer d-flex justify-content-end">
-                                                                        <button type="button"
-                                                                            class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Close</button>
-
-                                                                        <!-- In your blade file, find the Add Payment button and add this logic -->
+                                                                        class="modal-footer d-flex justify-content-end flex-column">
                                                                         @if (auth()->user() && auth()->user()->role === 'parent')
                                                                             @php
                                                                                 // Count previous attempts for this payment by this parent
@@ -1002,34 +997,42 @@ if (
                                                                                     3 - $previousAttemptsCount;
                                                                             @endphp
 
-                                                                            <button type="button"
-                                                                                class="btn btn-primary add-payment-btn"
-                                                                                data-payment-id="{{ $payment->id }}"
-                                                                                data-payment-name="{{ $payment->payment_name }}"
-                                                                                data-student-name="{{ $student->full_name }}"
-                                                                                data-total-paid="{{ $paid }}"
-                                                                                data-amount-due="{{ $payment->amount_due }}"
-                                                                                data-balance="{{ max($paymentBalance, 0) }}"
-                                                                                @if (!$canRequestPayment) disabled @endif>
-                                                                                <i class="bx bx-credit-card me-1"></i>
-                                                                                Add Payment
-                                                                            </button>
+                                                                            <div
+                                                                                class="d-flex justify-content-between w-100">
+                                                                                <button type="button"
+                                                                                    class="btn btn-secondary"
+                                                                                    data-bs-dismiss="modal">
+                                                                                    Close
+                                                                                </button>
+
+                                                                                <button type="button"
+                                                                                    class="btn btn-primary add-payment-btn"
+                                                                                    data-payment-id="{{ $payment->id }}"
+                                                                                    data-payment-name="{{ $payment->payment_name }}"
+                                                                                    data-student-name="{{ $student->full_name }}"
+                                                                                    data-total-paid="{{ $paid }}"
+                                                                                    data-amount-due="{{ $payment->amount_due }}"
+                                                                                    data-balance="{{ max($paymentBalance, 0) }}"
+                                                                                    @if (!$canRequestPayment) disabled @endif>
+                                                                                    <i
+                                                                                        class="bx bx-credit-card me-1"></i>
+                                                                                    Add Payment
+                                                                                </button>
+                                                                            </div>
 
                                                                             @if (!$canRequestPayment)
                                                                                 <div
-                                                                                    class="alert alert-warning mt-2 small">
+                                                                                    class="alert alert-warning mt-2 small w-100">
                                                                                     <i class="bx bx-error"></i>
                                                                                     You have used all 3 payment request
                                                                                     attempts. Please contact the
                                                                                     administrator.
                                                                                 </div>
-                                                                            @elseif($remainingAttempts < 3)
-                                                                                <div class="text-muted small mt-1">
-                                                                                    <i class="bx bx-info-circle"></i>
-                                                                                    {{ $remainingAttempts }} attempt(s)
-                                                                                    remaining
-                                                                                </div>
                                                                             @endif
+                                                                        @else
+                                                                            <button type="button"
+                                                                                class="btn btn-secondary"
+                                                                                data-bs-dismiss="modal">Close</button>
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -1065,7 +1068,6 @@ if (
                                                                                     data-bs-toggle="tab"
                                                                                     data-bs-target="#history-{{ $payment->id }}"
                                                                                     type="button" role="tab">
-                                                                                    <i class="bx bx-history me-1"></i>
                                                                                     Official Payments
                                                                                 </button>
                                                                             </li>
@@ -1075,8 +1077,6 @@ if (
                                                                                     data-bs-toggle="tab"
                                                                                     data-bs-target="#requests-{{ $payment->id }}"
                                                                                     type="button" role="tab">
-                                                                                    <i
-                                                                                        class="bx bx-time-five me-1"></i>
                                                                                     Payment Requests
                                                                                     @if ($payment->paymentRequests()->where('status', 'pending')->count() > 0)
                                                                                         <span
@@ -1188,231 +1188,110 @@ if (
                                                                             </div>
 
                                                                             <!-- Payment Requests Tab -->
-                                                                            <div class="tab-pane fade"
-                                                                                id="requests-{{ $payment->id }}"
-                                                                                role="tabpanel">
+                                                                            <div class="tab-pane fade" id="requests-{{ $payment->id }}" role="tabpanel">
                                                                                 @php
-                                                                                    // Get payment requests for this payment
                                                                                     $paymentRequests = $payment
                                                                                         ->paymentRequests()
                                                                                         ->with(['parent'])
-                                                                                        ->orderBy(
-                                                                                            'requested_at',
-                                                                                            'desc',
-                                                                                        )
+                                                                                        ->orderBy('requested_at', 'desc')
                                                                                         ->get();
+                                                                                    $currentParentId = auth()->id();
+                                                                                    $currentUserRole = auth()->user()->role;
                                                                                 @endphp
 
                                                                                 @if ($paymentRequests->count() > 0)
-                                                                                    <div class="table-responsive"
-                                                                                        style="max-height: 350px; overflow-y: auto;">
-                                                                                        <table
-                                                                                            class="table table-sm table-hover align-middle">
+                                                                                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                                                                        <table class="table table-sm table-hover align-middle">
                                                                                             <thead class="table-light">
-                                                                                                <tr
-                                                                                                    class="text-center">
+                                                                                                <tr class="text-center">
                                                                                                     <th>#</th>
-                                                                                                    <th>Requested By
-                                                                                                    </th>
+                                                                                                    <th>Requested By</th>
                                                                                                     <th>Amount</th>
                                                                                                     <th>Status</th>
-                                                                                                    <th>Payment Method
-                                                                                                    </th>
-                                                                                                    <th>Requested At
-                                                                                                    </th>
-                                                                                                    <th>Actions</th>
+                                                                                                    <th>Payment Method</th>
+                                                                                                    <th>Requested At</th>
+                                                                                                    <!-- Conditionally show Actions column header -->
+                                                                                                    @if($currentUserRole === 'parent')
+                                                                                                        <th>Actions</th>
+                                                                                                    @endif
                                                                                                 </tr>
                                                                                             </thead>
                                                                                             <tbody>
                                                                                                 @foreach ($paymentRequests as $i => $request)
                                                                                                     @php
-                                                                                                        $statusBadgeClass = match (
-                                                                                                            $request->status
-                                                                                                        ) {
-                                                                                                            'pending'
-                                                                                                                => 'bg-label-warning',
-                                                                                                            'approved'
-                                                                                                                => 'bg-label-success',
-                                                                                                            'denied'
-                                                                                                                => 'bg-label-danger',
-                                                                                                            default
-                                                                                                                => 'bg-label-secondary',
+                                                                                                        $statusBadgeClass = match ($request->status) {
+                                                                                                            'pending' => 'bg-label-warning',
+                                                                                                            'approved' => 'bg-label-success',
+                                                                                                            'denied' => 'bg-label-danger',
+                                                                                                            default => 'bg-label-secondary',
                                                                                                         };
 
-                                                                                                        $statusIcon = match (
-                                                                                                            $request->status
-                                                                                                        ) {
-                                                                                                            'pending'
-                                                                                                                => 'bx bx-time',
-                                                                                                            'approved'
-                                                                                                                => 'bx bx-check-circle',
-                                                                                                            'denied'
-                                                                                                                => 'bx bx-x-circle',
-                                                                                                            default
-                                                                                                                => 'bx bx-question-mark',
+                                                                                                        $statusIcon = match ($request->status) {
+                                                                                                            'pending' => 'bx bx-time',
+                                                                                                            'approved' => 'bx bx-check-circle',
+                                                                                                            'denied' => 'bx bx-x-circle',
+                                                                                                            default => 'bx bx-question-mark',
                                                                                                         };
                                                                                                     @endphp
-                                                                                                    <tr
-                                                                                                        class="text-center">
-                                                                                                        <td>{{ $i + 1 }}
-                                                                                                        </td>
-                                                                                                        <td>{{ $request->parent->full_name ?? '—' }}
-                                                                                                        </td>
-                                                                                                        <td>₱{{ number_format($request->amount_paid, 2) }}
-                                                                                                        </td>
+                                                                                                    <tr class="text-center">
+                                                                                                        <td>{{ $i + 1 }}</td>
+                                                                                                        <td>{{ $request->parent->full_name ?? '—' }}</td>
+                                                                                                        <td>₱{{ number_format($request->amount_paid, 2) }}</td>
                                                                                                         <td>
-                                                                                                            <span
-                                                                                                                class="badge {{ $statusBadgeClass }}">
-                                                                                                                <i
-                                                                                                                    class="{{ $statusIcon }} me-1"></i>
+                                                                                                            <span class="badge {{ $statusBadgeClass }}">
+                                                                                                                <i class="{{ $statusIcon }} me-1"></i>
                                                                                                                 {{ ucfirst($request->status) }}
                                                                                                             </span>
                                                                                                             @if ($request->admin_remarks)
                                                                                                                 <br>
-                                                                                                                <small
-                                                                                                                    class="text-muted">{{ $request->admin_remarks }}</small>
+                                                                                                                <small class="text-muted">{{ $request->admin_remarks }}</small>
                                                                                                             @endif
                                                                                                         </td>
                                                                                                         <td>
                                                                                                             @php
-                                                                                                                $method = strtolower(
-                                                                                                                    $request->payment_method,
-                                                                                                                );
-                                                                                                                $imagePath =
-                                                                                                                    '';
+                                                                                                                $method = strtolower($request->payment_method);
+                                                                                                                $imagePath = '';
 
-                                                                                                                if (
-                                                                                                                    $method ===
-                                                                                                                    'gcash'
-                                                                                                                ) {
-                                                                                                                    $imagePath = asset(
-                                                                                                                        'assetsDashboard/img/icons/unicons/gcash_logo.png',
-                                                                                                                    );
-                                                                                                                } elseif (
-                                                                                                                    $method ===
-                                                                                                                    'paymaya'
-                                                                                                                ) {
-                                                                                                                    $imagePath = asset(
-                                                                                                                        'assetsDashboard/img/icons/unicons/paymaya_logo.png',
-                                                                                                                    );
+                                                                                                                if ($method === 'gcash') {
+                                                                                                                    $imagePath = asset('assetsDashboard/img/icons/unicons/gcash_logo.png');
+                                                                                                                } elseif ($method === 'paymaya') {
+                                                                                                                    $imagePath = asset('assetsDashboard/img/icons/unicons/paymaya_logo.png');
                                                                                                                 }
                                                                                                             @endphp
 
                                                                                                             @if ($imagePath)
-                                                                                                                <img src="{{ $imagePath }}"
-                                                                                                                    alt="{{ $request->payment_method }}"
+                                                                                                                <img src="{{ $imagePath }}" alt="{{ $request->payment_method }}"
                                                                                                                     title="{{ $request->payment_method }}"
                                                                                                                     style="width: 80px; height: auto; object-fit: contain;">
                                                                                                             @else
                                                                                                                 {{ $request->payment_method_name ?? '—' }}
                                                                                                             @endif
                                                                                                         </td>
-                                                                                                        <td>{{ \Carbon\Carbon::parse($request->requested_at)->format('M d, Y h:i A') }}
-                                                                                                        </td>
-                                                                                                        <td>
-                                                                                                            @if (auth()->user()->role === 'admin' && $request->status === 'pending')
-                                                                                                                <div class="btn-group btn-group-sm"
-                                                                                                                    role="group">
-                                                                                                                    <button
-                                                                                                                        type="button"
-                                                                                                                        class="btn btn-success btn-sm approve-request-btn"
-                                                                                                                        data-request-id="{{ $request->id }}"
-                                                                                                                        data-payment-id="{{ $payment->id }}">
-                                                                                                                        <i
-                                                                                                                            class="bx bx-check"></i>
+                                                                                                        <td>{{ \Carbon\Carbon::parse($request->requested_at)->format('M d, Y h:i A') }}</td>
+                                                                                                        <!-- Conditionally show Actions column data cell -->
+                                                                                                        @if($currentUserRole === 'parent')
+                                                                                                            <td>
+                                                                                                                <!-- Only show delete button for parent's own pending payment request -->
+                                                                                                                @if($request->parent_id == $currentParentId && $request->status === 'pending')
+                                                                                                                    <button type="button"
+                                                                                                                            class="btn btn-danger btn-sm delete-request-btn"
+                                                                                                                            data-request-id="{{ $request->id }}"
+                                                                                                                            data-payment-id="{{ $payment->id }}"
+                                                                                                                            data-attempt-number="{{ $request->attempt_number }}">
+                                                                                                                        <i class="bx bx-trash"></i>
                                                                                                                     </button>
-                                                                                                                    <button
-                                                                                                                        type="button"
-                                                                                                                        class="btn btn-danger btn-sm deny-request-btn"
-                                                                                                                        data-request-id="{{ $request->id }}"
-                                                                                                                        data-payment-id="{{ $payment->id }}">
-                                                                                                                        <i
-                                                                                                                            class="bx bx-x"></i>
-                                                                                                                    </button>
-                                                                                                                </div>
-                                                                                                            @elseif($request->receipt_image)
-                                                                                                                <button
-                                                                                                                    type="button"
-                                                                                                                    class="btn btn-info btn-sm view-receipt-btn"
-                                                                                                                    data-receipt-url="{{ asset('public/uploads/' . $request->receipt_image) }}">
-                                                                                                                    <i
-                                                                                                                        class="bx bx-image-alt"></i>
-                                                                                                                </button>
-                                                                                                            @endif
-                                                                                                        </td>
+                                                                                                                @endif
+                                                                                                            </td>
+                                                                                                        @endif
                                                                                                     </tr>
                                                                                                 @endforeach
                                                                                             </tbody>
                                                                                         </table>
                                                                                     </div>
-
-                                                                                    <!-- Admin Remarks Modal -->
-                                                                                    <div class="modal fade"
-                                                                                        id="adminRemarksModal{{ $payment->id }}"
-                                                                                        tabindex="-1"
-                                                                                        aria-hidden="true">
-                                                                                        <div
-                                                                                            class="modal-dialog modal-dialog-centered">
-                                                                                            <div class="modal-content">
-                                                                                                <div
-                                                                                                    class="modal-header">
-                                                                                                    <h5
-                                                                                                        class="modal-title">
-                                                                                                        Payment Request
-                                                                                                        Review</h5>
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        class="btn-close"
-                                                                                                        data-bs-dismiss="modal"
-                                                                                                        aria-label="Close"></button>
-                                                                                                </div>
-                                                                                                <form
-                                                                                                    id="reviewRequestForm{{ $payment->id }}">
-                                                                                                    @csrf
-                                                                                                    <input
-                                                                                                        type="hidden"
-                                                                                                        name="request_id"
-                                                                                                        id="requestId{{ $payment->id }}">
-                                                                                                    <input
-                                                                                                        type="hidden"
-                                                                                                        name="action"
-                                                                                                        id="action{{ $payment->id }}">
-
-                                                                                                    <div
-                                                                                                        class="modal-body">
-                                                                                                        <div
-                                                                                                            class="mb-3">
-                                                                                                            <label
-                                                                                                                for="adminRemarks{{ $payment->id }}"
-                                                                                                                class="form-label">Remarks
-                                                                                                                (Optional)
-                                                                                                            </label>
-                                                                                                            <textarea class="form-control" id="adminRemarks{{ $payment->id }}" name="remarks" rows="3"
-                                                                                                                placeholder="Enter remarks for this payment request..."></textarea>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div
-                                                                                                        class="modal-footer">
-                                                                                                        <button
-                                                                                                            type="button"
-                                                                                                            class="btn btn-secondary"
-                                                                                                            data-bs-dismiss="modal">Cancel</button>
-                                                                                                        <button
-                                                                                                            type="submit"
-                                                                                                            class="btn btn-primary"
-                                                                                                            id="submitReviewBtn{{ $payment->id }}">
-                                                                                                            Submit
-                                                                                                            Review
-                                                                                                        </button>
-                                                                                                    </div>
-                                                                                                </form>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
                                                                                 @else
-                                                                                    <p
-                                                                                        class="text-muted small mb-0 text-center">
-                                                                                        No payment requests found.</p>
+                                                                                    <p class="text-muted small mb-0 text-center">
+                                                                                        No payment requests found.
+                                                                                    </p>
                                                                                 @endif
                                                                             </div>
                                                                         </div>
@@ -1435,36 +1314,6 @@ if (
                                                             </div>
                                                         </div>
                                                         <!-- /Payment History Modal -->
-
-                                                        <!-- Receipt Preview Modal -->
-                                                        <div class="modal fade" id="receiptPreviewModal"
-                                                            tabindex="-1" aria-hidden="true">
-                                                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title">Receipt Preview</h5>
-                                                                        <button type="button" class="btn-close"
-                                                                            data-bs-dismiss="modal"
-                                                                            aria-label="Close"></button>
-                                                                    </div>
-                                                                    <div class="modal-body text-center">
-                                                                        <img id="receiptImage" src=""
-                                                                            alt="Receipt"
-                                                                            class="img-fluid rounded-3">
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button"
-                                                                            class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Close</button>
-                                                                        <a id="downloadReceiptBtn" href="#"
-                                                                            class="btn btn-primary" download>
-                                                                            <i class="bx bx-download me-1"></i>
-                                                                            Download
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
 
                                                         <!-- Add Payment Modal - GCash -->
                                                         <div class="modal fade"
@@ -2906,6 +2755,147 @@ if (
                         }
                     });
                 });
+            });
+        </script>
+
+        <script>
+            // Add this to your existing JavaScript in the blade file
+            document.addEventListener('DOMContentLoaded', function() {
+                // Handle delete request button click with SweetAlert
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('.delete-request-btn')) {
+                        const button = e.target.closest('.delete-request-btn');
+                        const requestId = button.getAttribute('data-request-id');
+                        const paymentId = button.getAttribute('data-payment-id');
+                        const attemptNumber = button.getAttribute('data-attempt-number');
+
+                        // Show SweetAlert confirmation
+                        Swal.fire({
+                            title: 'Delete Payment Request?',
+                            html: `
+                                <div class="text-center">
+                                    <i class="bx bx-trash text-danger display-4 mb-3"></i>
+                                    <h5 class="fw-bold">Are you sure?</h5>
+                                    <p class="text-muted">
+                                        You are about to delete Payment Request (Attempt #${attemptNumber}).
+                                    </p>
+                                    <div class="alert alert-warning text-start small">
+                                        <i class="bx bx-error-circle me-1"></i>
+                                        <strong>Warning:</strong> This action cannot be undone. The attempt will be deducted from your available attempts.
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, delete it!',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#dc3545',
+                            cancelButtonColor: '#6c757d',
+                            reverseButtons: true,
+                            customClass: {
+                                confirmButton: 'btn btn-danger',
+                                cancelButton: 'btn btn-secondary',
+                                container: 'my-swal-container',
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Send AJAX request to delete
+                                deletePaymentRequest(requestId, paymentId, attemptNumber, button);
+                            }
+                        });
+                    }
+                });
+
+                // Function to handle the AJAX deletion
+                function deletePaymentRequest(requestId, paymentId, attemptNumber, button) {
+                    // Show loading state
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="bx bx-loader bx-spin me-1"></i>';
+                    button.disabled = true;
+
+                    // Send AJAX request
+                    // Use this fetch URL
+                    fetch(`/parent/payment-requests/${requestId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                    'content')
+                            }
+                        })
+                        .then(response => {
+                            // Check if response is JSON
+                            const contentType = response.headers.get("content-type");
+                            if (!response.ok) {
+                                return response.text().then(text => {
+                                    throw new Error(
+                                        `HTTP error! Status: ${response.status}, Body: ${text}`);
+                                });
+                            }
+                            if (contentType && contentType.includes("application/json")) {
+                                return response.json();
+                            } else {
+                                return response.text().then(text => {
+                                    throw new Error(`Expected JSON but got: ${text.substring(0, 100)}`);
+                                });
+                            }
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // Show success message
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted!',
+                                    html: `
+                                    <div class="text-center">
+                                        <i class="bx bx-check-circle text-success display-4 mb-3"></i>
+                                        <h5 class="fw-bold">Payment Request Deleted</h5>
+                                        <p class="text-muted">
+                                            Payment request (Attempt #${attemptNumber}) has been successfully deleted.
+                                        </p>
+                                    </div>
+                                `,
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#198754',
+                                    customClass: {
+                                        container: 'my-swal-container',
+                                    },
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    // Reload the page to show updated status
+                                    location.reload();
+                                });
+                            } else {
+                                throw new Error(data.message || 'Failed to delete request');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+
+                            // Show error message
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                html: `
+                                <div class="text-center">
+                                    <i class="bx bx-error-circle text-danger display-4 mb-3"></i>
+                                    <h5 class="fw-bold">Delete Failed</h5>
+                                    <p class="text-muted">
+                                        ${error.message || 'Failed to delete request. Please try again.'}
+                                    </p>
+                                </div>
+                            `,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#dc3545'
+                            });
+
+                            // Reset button state
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                        });
+                }
             });
         </script>
 

@@ -699,11 +699,12 @@
                                                             <td>
                                                                 <form
                                                                     action="{{ route('admin.payments.history.delete', $history->id) }}"
-                                                                    method="POST"
-                                                                    onsubmit="return confirm('Delete this transaction?');">
+                                                                    method="POST" class="delete-history-form"
+                                                                    data-id="{{ $history->id }}">
                                                                     @csrf
                                                                     @method('DELETE')
-                                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                                    <button type="button"
+                                                                        class="btn btn-sm btn-danger delete-history-btn">
                                                                         <i class="bx bx-trash"></i>
                                                                     </button>
                                                                 </form>
@@ -1245,32 +1246,6 @@
             </div>
             <!-- /Add Students Modal -->
 
-            <!-- Denial Remarks Modal -->
-            <div class="modal fade" id="denialRemarksModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Reason for Denial</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="denialRemarksTextarea" class="form-label">Please provide a reason for denying
-                                    this payment request:</label>
-                                <textarea class="form-control" id="denialRemarksTextarea" rows="4" placeholder="Enter your remarks here..."
-                                    required></textarea>
-                                <div class="invalid-feedback">Please provide a reason for denial.</div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-danger" id="confirmDenialBtn">Deny Request</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
         <!-- /Payments Card -->
     </div>
@@ -1412,6 +1387,31 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Denial Remarks Modal -->
+    <div class="modal fade" id="denialRemarksModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reason for Denial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="denialRemarksTextarea" class="form-label">Please provide a reason for denying
+                            this payment request:</label>
+                        <textarea class="form-control" id="denialRemarksTextarea" rows="4" placeholder="Enter your remarks here..."
+                            required></textarea>
+                        <div class="invalid-feedback">Please provide a reason for denial.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDenialBtn">Deny Request</button>
                 </div>
             </div>
         </div>
@@ -3535,6 +3535,63 @@
                 if (receiptImage && receiptImage.style.display !== 'none' && receiptImageContainer) {
                     applyAutoEnlargedReceipt(receiptImage, receiptImageContainer);
                 }
+            });
+        });
+    </script>
+
+    <!-- Payment History Delete with SweetAlert -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle payment history delete buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('delete-history-btn') ||
+                    e.target.closest('.delete-history-btn')) {
+                    e.preventDefault();
+
+                    const button = e.target.classList.contains('delete-history-btn') ?
+                        e.target :
+                        e.target.closest('.delete-history-btn');
+                    const form = button.closest('.delete-history-form');
+                    const historyId = form ? form.dataset.id : '';
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "You are about to delete this payment transaction. This action cannot be undone!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel',
+                        customClass: {
+                            container: 'my-swal-container'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading state
+                            Swal.fire({
+                                title: 'Deleting...',
+                                text: 'Please wait while we delete the transaction',
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            // Submit the form
+                            form.submit();
+                        }
+                    });
+                }
+            });
+
+            // Handle form submission to prevent default behavior
+            document.querySelectorAll('.delete-history-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    // If we're here, it means the form was submitted programmatically
+                    // after SweetAlert confirmation, so we don't prevent default
+                    return true;
+                });
             });
         });
     </script>

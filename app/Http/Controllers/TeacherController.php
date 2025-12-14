@@ -24,6 +24,8 @@ use Barryvdh\DomPDF\Facade\Pdf; // make sure barryvdh/laravel-dompdf is installe
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Exports\Form10Export;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TeacherController extends Controller
 {
@@ -1919,7 +1921,9 @@ class TeacherController extends Controller
         return $pdf->stream($filename);
     }
 
-    public function studentForm10($student_id)
+
+
+    public function studentForm10($student_id, $format = 'pdf')
     {
         // Load student with necessary relationships
         $student = Student::with(['address', 'parents'])->findOrFail($student_id);
@@ -1940,7 +1944,7 @@ class TeacherController extends Controller
         // Preload school years for efficiency
         $schoolYears = SchoolYear::whereIn('id', $classHistory->pluck('pivot.school_year_id'))->pluck('school_year', 'id');
 
-        // Prepare grades data (similar to studentInfo method)
+        // Prepare grades data
         $gradesByClass = [];
         $generalAverages = [];
 
@@ -1999,13 +2003,19 @@ class TeacherController extends Controller
             }
         }
 
-        // Prepare data for PDF
+        // Return based on requested format
+        if ($format === 'excel') {
+            $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.xlsx';
+            return Excel::download(new Form10Export($student, $classHistory, $gradesByClass, $generalAverages, $schoolYears), $filename);
+        }
+
+        // Default: PDF export
         $data = [
             'student' => $student,
             'classHistory' => $classHistory,
             'gradesByClass' => $gradesByClass,
             'generalAverages' => $generalAverages,
-            'schoolYears' => $schoolYears, // Add this
+            'schoolYears' => $schoolYears,
             'school' => [
                 'name' => 'STA. BARBARA ELEMENTARY SCHOOL',
                 'division' => 'Schools Division Office of Camarines Sur',
@@ -2014,11 +2024,9 @@ class TeacherController extends Controller
             ],
         ];
 
-        // Generate PDF with custom paper size (8.5 x 13 inches in points)
         $pdf = Pdf::loadView('pdf.student_form10', $data)
-            ->setPaper([0, 0, 612, 936], 'portrait'); // 8.5" width, 13" height
+            ->setPaper([0, 0, 612, 936], 'portrait');
 
-        // Stream the PDF
         $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.pdf';
         return $pdf->stream($filename);
     }
