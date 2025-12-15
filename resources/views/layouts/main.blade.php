@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light-style layout-menu-fixed" dir="ltr"
     data-theme="theme-default" data-template="vertical-menu-template-free">
 
@@ -62,6 +61,10 @@
     @push('styles')
         <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
         <style>
+            .swal2-container {
+                z-index: 999999 !important;
+            }
+
             .my-swal-container {
                 /* For Log out sweet alert*/
                 z-index: 10000;
@@ -103,6 +106,77 @@
             .t-row:hover {
                 background-color: #f1f1f1;
             }
+
+            /* Quill font sizes */
+            .ql-size-small {
+                font-size: 0.75em;
+            }
+
+            .ql-size-large {
+                font-size: 1.5em;
+            }
+
+            .ql-size-huge {
+                font-size: 2.5em;
+            }
+
+            /* Quill font families */
+            .ql-font-sans-serif {
+                font-family: sans-serif;
+            }
+
+            .ql-font-serif {
+                font-family: serif;
+            }
+
+            .ql-font-monospace {
+                font-family: monospace;
+            }
+
+            /* Active announcement styling */
+            .active-announcement {
+                border-left: 4px solid #198754;
+            }
+
+            /* Tom Select styling */
+            .ts-control {
+                background-color: #e0f7fa;
+                border-color: #42a5f5;
+            }
+
+            .ts-control .item {
+                background-color: #4dd0e1;
+                color: white;
+                border-radius: 4px;
+                padding: 3px 8px;
+                margin-right: 4px;
+            }
+
+            .ts-dropdown .option.active {
+                background-color: #e3f2fd;
+                color: #1976d2;
+            }
+
+            /* Sticker container (relative to modal) */
+            .swal2-popup {
+                position: relative !important;
+            }
+
+            /* Announcement sticker image */
+            .swal-announcement-sticker {
+                position: absolute;
+                top: -15px;
+                /* pulls image outside modal */
+                left: -25px;
+                /* overlaps left edge */
+                width: 100px;
+                /* adjust to match your image */
+                height: auto;
+                z-index: 9999;
+                pointer-events: none;
+                /* prevents blocking clicks */
+                filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+            }
         </style>
     @endpush
 
@@ -135,8 +209,6 @@
             </div>
         </div>
     @endif
-
-    <!-- ... existing table rows clickable script ... -->
 
     <!-- Core JS -->
     <!-- build:assetsDashboard/vendor/js/core.js -->
@@ -187,6 +259,19 @@
         });
     </script>
 
+    @if (!empty($announcementId))
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const announcementId = {{ $announcementId }};
+                // Call your existing JS function to open the modal
+                if (typeof window.openAnnouncementModal === 'function') {
+                    window.openAnnouncementModal(announcementId);
+                }
+            });
+        </script>
+    @endif
+
+    <!-- Announcement Handling Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded - Checking for announcements...');
@@ -204,11 +289,24 @@
             const activeAnnouncements = @json($activeAnnouncements ?? []);
             const showAnnouncementsOnLogin = @json(session('show_announcements_on_login') ?? false);
 
+            // Asset URL for announcement sticker icon
+            const announcementStickerUrl = "{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}";
+
             console.log('Announcement Data:', {
                 specificId: specificAnnouncementId,
                 activeCount: activeAnnouncements.length,
-                showOnLogin: showAnnouncementsOnLogin
+                showOnLogin: showAnnouncementsOnLogin,
+                announcements: activeAnnouncements
             });
+
+            // Sort announcements by created_at in descending order (newest first)
+            function sortAnnouncements(announcements) {
+                return [...announcements].sort((a, b) => {
+                    const dateA = new Date(a.created_at || a.date_published);
+                    const dateB = new Date(b.created_at || b.date_published);
+                    return dateB - dateA; // Newest first
+                });
+            }
 
             // Function to show single announcement modal
             function showAnnouncementModal(announcementId) {
@@ -227,20 +325,21 @@
                         Swal.fire({
                             title: data.title,
                             html: `
-                        <div class="text-start">
-                            <p><strong>Published:</strong> ${data.published}</p>
-                            <p><strong>Author:</strong> ${data.author}</p>
-                            <div class="border rounded p-3 mt-3 bg-light quill-content" style="max-height: 400px; overflow-y: auto;">
-                                ${data.body}
-                            </div>
+                    <div class="text-start">
+                        <p><strong>Published:</strong> ${data.published}</p>
+                        <p><strong>Author:</strong> ${data.author}</p>
+                        <div class="border rounded p-3 mt-3 bg-light quill-content" style="max-height: 400px; overflow-y: auto;">
+                            ${data.body}
                         </div>
-                    `,
+                    </div>
+                `,
                             showCloseButton: true,
                             showConfirmButton: true,
                             confirmButtonText: 'Close',
                             width: '800px',
                             customClass: {
-                                container: 'my-swal-container'
+                                container: 'my-swal-container',
+                                actions: 'swal2-actions-centered'
                             }
                         });
                     })
@@ -254,10 +353,15 @@
             function showAllActiveAnnouncements(announcements) {
                 if (!announcements || announcements.length === 0) return;
 
-                let currentIndex = 0;
+                // Sort announcements: newest first (by created_at)
+                const sortedAnnouncements = sortAnnouncements(announcements);
+                console.log('Sorted announcements (newest first):', sortedAnnouncements);
 
-                function showNextAnnouncement() {
-                    if (currentIndex >= announcements.length) {
+                let currentIndex = 0;
+                let swalInstance = null;
+
+                function showCurrentAnnouncement() {
+                    if (currentIndex >= sortedAnnouncements.length) {
                         // Clear the session via AJAX when all announcements are shown
                         fetch('/clear-announcement-session', {
                             method: 'POST',
@@ -272,108 +376,128 @@
                         return;
                     }
 
-                    const announcement = announcements[currentIndex];
-                    const isLast = currentIndex === announcements.length - 1;
+                    const announcement = sortedAnnouncements[currentIndex];
+                    const totalAnnouncements = sortedAnnouncements.length;
+                    const isFirst = currentIndex === 0;
+                    const isLast = currentIndex === totalAnnouncements - 1;
 
-                    Swal.fire({
-                        title: `📢 Announcement ${currentIndex + 1} of ${announcements.length}`,
+                    console.log(`Showing announcement ${currentIndex + 1} of ${totalAnnouncements}:`, announcement
+                        .title);
+
+                    swalInstance = Swal.fire({
+                        title: announcement.title,
                         html: `
-                    <div class="text-start">
-                        <h5 class="text-primary">${announcement.title}</h5>
-                        <p><strong>Published:</strong> ${announcement.date_published}</p>
-                        <p><strong>Author:</strong> ${announcement.author_name}</p>
-                        <div class="border rounded p-3 mt-3 bg-light quill-content" style="max-height: 400px; overflow-y: auto;">
-                            ${announcement.body}
+                        <img
+                            src="${announcementStickerUrl}"
+                            class="swal-announcement-sticker"
+                            alt="Announcement Sticker"
+                        />
+
+                        <div class="text-start mt-0">
+                            <div class="border rounded p-3 mt-3 bg-light quill-content"
+                                style="max-height: 400px; overflow-y: auto;">
+                                ${announcement.body}
+                                <p class="mt-2 text-start fw-bold" style="font-size: 1.3rem; color: 001BB7; font-family: 'Times New Roman', Times, serif;">— ${announcement.author_name}</p>
+                            </div>
+                            <p class="mt-2 text-end" style="font-size: 1rem;">${announcement.date_published}</p>
                         </div>
-                    </div>
-                `,
+                    `,
+
+
                         showCloseButton: true,
                         showConfirmButton: true,
-                        showDenyButton: !isLast,
+                        showDenyButton: !isFirst, // Show Previous button except for first
                         confirmButtonText: isLast ? 'Close' : 'Next',
-                        denyButtonText: 'Skip Remaining',
+                        denyButtonText: 'Previous',
+                        reverseButtons: true,
                         width: '800px',
+                        focusConfirm: false,
                         customClass: {
-                            container: 'my-swal-container'
+                            container: 'my-swal-container',
+                            actions: 'swal2-actions-centered'
+                        },
+                        didOpen: () => {
+                            // Add custom close button functionality
+                            const closeButton = document.querySelector('.swal2-close');
+                            if (closeButton) {
+                                closeButton.addEventListener('click', () => {
+                                    // Skip remaining announcements when X is clicked
+                                    currentIndex = sortedAnnouncements.length;
+                                    if (swalInstance) {
+                                        swalInstance.close();
+                                    }
+                                    showCurrentAnnouncement();
+                                });
+                            }
+
+                            // Style buttons to be centered
+                            setTimeout(() => {
+                                const actions = document.querySelector('.swal2-actions');
+                                if (actions) {
+                                    // Center all buttons
+                                    actions.classList.add('d-flex', 'justify-content-center',
+                                        'align-items-center', 'gap-3');
+                                }
+                            }, 10);
                         }
                     }).then((result) => {
                         if (result.isDenied) {
-                            // Skip remaining announcements
-                            currentIndex = announcements.length;
-                            showNextAnnouncement();
-                        } else {
-                            // Continue to next announcement
-                            currentIndex++;
-                            showNextAnnouncement();
+                            // Previous button clicked
+                            if (currentIndex > 0) {
+                                currentIndex--;
+                                showCurrentAnnouncement();
+                            }
+                        } else if (result.isConfirmed) {
+                            // Next button clicked
+                            if (!isLast) {
+                                currentIndex++;
+                                showCurrentAnnouncement();
+                            } else {
+                                // Last announcement - Close button clicked
+                                currentIndex = sortedAnnouncements.length;
+                                showCurrentAnnouncement();
+                            }
+                        } else if (result.dismiss === Swal.DismissReason.close) {
+                            // X button clicked
+                            currentIndex = sortedAnnouncements.length;
+                            showCurrentAnnouncement();
                         }
                     });
                 }
 
-                showNextAnnouncement();
+                showCurrentAnnouncement();
             }
 
             // Priority 1: Show specific announcement if ID exists
             if (specificAnnouncementId) {
                 console.log('Found specific announcement ID:', specificAnnouncementId);
-                showAnnouncementModal(specificAnnouncementId);
+                setTimeout(() => {
+                    showAnnouncementModal(specificAnnouncementId);
+                }, 500);
             }
             // Priority 2: Show all active announcements on login
             else if (activeAnnouncements.length > 0) {
-                console.log('Showing announcements on login:', activeAnnouncements.length);
-                showAllActiveAnnouncements(activeAnnouncements);
+                console.log('Active announcements found:', activeAnnouncements.length);
+
+                // Check if announcements should be shown on login
+                const cameFromLogin = document.referrer.includes('/login') ||
+                    document.referrer.includes('/welcome') ||
+                    window.location.pathname === '/home';
+
+                if (cameFromLogin) {
+                    // Add a small delay to ensure DOM is fully loaded
+                    setTimeout(() => {
+                        showAllActiveAnnouncements(activeAnnouncements);
+                    }, 800);
+                }
             }
 
-            // Make function globally available
+            // Make functions globally available for navbar and other components
             window.showAnnouncementModal = showAnnouncementModal;
+            window.showAllActiveAnnouncements = showAllActiveAnnouncements;
             window.openAnnouncementModal = showAnnouncementModal; // For backward compatibility
         });
     </script>
-
-    <script>
-        // Add this to your existing JavaScript
-        window.openAnnouncementModal = function(announcementId) {
-            // Fetch announcement details
-            fetch(`/announcements/${announcementId}/show-ajax`)
-                .then(response => response.json())
-                .then(data => {
-                    // Create and show modal with announcement content
-                    Swal.fire({
-                        title: data.title,
-                        html: `
-                        <div class="text-start">
-                            <p><strong>Published:</strong> ${data.published}</p>
-                            <p><strong>Author:</strong> ${data.author}</p>
-                            <div class="border rounded p-3 mt-3 bg-light">
-                                ${data.body}
-                            </div>
-                        </div>
-                    `,
-                        showCloseButton: true,
-                        showConfirmButton: true,
-                        confirmButtonText: 'Close',
-                        width: '800px',
-                        customClass: {
-                            container: 'my-swal-container'
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching announcement:', error);
-                    // Fallback: redirect to announcement page
-                    window.location.href = `/announcement/redirect/${announcementId}`;
-                });
-        };
-    </script>
-
-    @if (!empty($announcementId))
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const announcementId = {{ $announcementId }};
-                // 👇 Call your existing JS function to open the modal
-                openAnnouncementModal(announcementId);
-            });
-        </script>
-    @endif
 
     <!-- Additional scripts can be stacked from views -->
     @stack('scripts')

@@ -114,30 +114,6 @@
 
 <div class="mb-3 row">
     <div class="col">
-        <label for="school_year_id">School Year</label>
-        <select name="school_year_id" class="form-select">
-            <option value="">None</option>
-            @foreach ($schoolYears->filter(function ($year) {
-        $now = now();
-        $next = now()->copy()->addYear();
-        return in_array($year->school_year, [$now->year . '-' . ($now->year + 1), $next->year . '-' . ($next->year + 1)]);
-    }) as $year)
-                <option value="{{ $year->id }}"
-                    @if (isset($announcement)) {{ old('school_year_id', $announcement->school_year_id) == $year->id ? 'selected' : '' }}
-                    @elseif (isset($defaultSchoolYear))
-                        {{ old('school_year_id', $defaultSchoolYear->id) == $year->id ? 'selected' : '' }} @endif>
-                    {{ $year->school_year }}
-                </option>
-            @endforeach
-        </select>
-        @error('school_year_id')
-            <div class="text-danger">{{ $message }}</div>
-        @enderror
-    </div>
-</div>
-
-<div class="mb-3 row">
-    <div class="col">
         <label for="effective_date">Effective From</label>
         <input type="date" name="effective_date"
             value="{{ old('effective_date', isset($announcement->effective_date) ? \Carbon\Carbon::parse($announcement->effective_date)->format('Y-m-d') : '') }}"

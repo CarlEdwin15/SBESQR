@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('school_year_id')->nullable()->constrained('school_years')->onDelete('set null');
+            // $table->foreignId('school_year_id')->nullable()->constrained('school_years')->onDelete('set null');
 
             $table->string('title');
             $table->text('body');

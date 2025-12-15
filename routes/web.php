@@ -124,6 +124,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/payment-requests/check-new', [SchoolFeeController::class, 'checkNewRequests'])
         ->name('admin.payment-requests.check-new');
 
+    // Route::post('/clear-announcement-session', [HomeController::class, 'clearAnnouncementSession'])->name('clear.announcement.session');
+
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 });

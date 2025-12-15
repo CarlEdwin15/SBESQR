@@ -80,6 +80,7 @@
                         </h6>
                     </li>
 
+                    <!-- In your navbar's notification dropdown section -->
                     @forelse($notifications as $notif)
                         <li>
                             <a class="dropdown-item d-flex align-items-start gap-2 py-3 view-announcement"
@@ -257,7 +258,7 @@
 </nav>
 <!-- / Navbar -->
 
-<!-- Announcement Modal -->
+{{-- <!-- Announcement Modal -->
 <div class="modal fade" id="announcementModal" tabindex="-1" aria-labelledby="announcementModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -297,105 +298,36 @@
         </div>
     </div>
 </div>
-<!-- /Announcement Modal -->
+<!-- /Announcement Modal --> --}}
 
 <!-- Announcement Modal Script -->
 <script>
-    // Announcement Modal Script
+    // Asset URL for announcement sticker icon
+    const announcementStickerUrl = "{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}";
+
     document.addEventListener("DOMContentLoaded", function() {
-        const modal = new bootstrap.Modal(document.getElementById('announcementModal'));
-        const content = document.getElementById('announcementContent');
-        const meta = document.getElementById('announcementMeta');
-
-        // Function to load and show announcement
-        function loadAnnouncement(id) {
-            content.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
-                <p class="text-muted">Fetching announcement details...</p>
-            </div>`;
-            meta.textContent = '';
-
-            modal.show();
-
-            fetch(`/announcements/${id}/show-ajax`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('announcementModalLabel').textContent = data.title;
-                    content.innerHTML = `<div class="announcement-body">${data.body}</div>`;
-                    meta.innerHTML = `
-                    <div class="d-flex flex-wrap align-items-center gap-2">
-                        <span><i class="bx bx-calendar me-1"></i> Published: ${data.published}</span>
-                        <span class="badge-author"><i class="bx bx-user me-1"></i> ${data.author}</span>
-                    </div>`;
-
-                    // Clear URL parameters to prevent reopening on refresh
-                    if (window.history.replaceState) {
-                        const newUrl = window.location.origin + window.location.pathname;
-                        window.history.replaceState({}, document.title, newUrl);
-                    }
-                })
-                .catch(() => {
-                    content.innerHTML =
-                        `<div class="alert alert-danger">Failed to load announcement.</div>`;
-                });
-        }
-
         // Handle manual announcement click
         document.querySelectorAll('.view-announcement').forEach(item => {
-            item.addEventListener('click', function() {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
                 const id = this.dataset.id;
-                loadAnnouncement(id);
+
+                // Use the global function from layouts/main.blade.php
+                if (typeof window.showAnnouncementModal === 'function') {
+                    window.showAnnouncementModal(id);
+                } else {
+                    // Fallback: redirect if function not available
+                    window.location.href = `/announcement/redirect/${id}`;
+                }
             });
         });
 
-        // Auto-open from notification or login redirect
-        const announcementId = @json($announcementId ?? null);
-
-        if (announcementId) {
-            // Small delay to ensure page is fully loaded
-            setTimeout(() => {
-                loadAnnouncement(announcementId);
-            }, 500);
-        }
-
-        // Detect if user just came from login/welcome page (your existing code)
-        const referrer = document.referrer;
-        const cameFromLoginOrWelcome = referrer.includes('/login') || referrer.includes('/welcome');
-
-        // Store session flag in sessionStorage instead of Laravel session (client-side)
-        if (cameFromLoginOrWelcome && !sessionStorage.getItem('announcements_shown') && !announcementId) {
-            const announcements = @json($activeAnnouncements ?? []);
-            if (announcements.length > 0) {
-                sessionStorage.setItem('announcements_shown', 'true');
-                let index = 0;
-
-                const showNextAnnouncement = () => {
-                    if (index >= announcements.length) return;
-
-                    const ann = announcements[index];
-                    modal.show();
-                    document.getElementById('announcementModalLabel').textContent = ann.title;
-                    content.innerHTML = `<div class="announcement-body">${ann.body}</div>`;
-                    meta.innerHTML = `
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span><i class="bx bx-calendar me-1"></i> Effective: ${ann.formatted_effective}</span>
-                    <span><i class="bx bx-calendar me-1"></i> Ends: ${ann.formatted_end}</span>
-                    <span class="badge-author"><i class="bx bx-user me-1"></i> ${ann.author_name ?? ''}</span>
-                </div>`;
-
-                    const modalEl = document.getElementById('announcementModal');
-                    modalEl.addEventListener('hidden.bs.modal', () => {
-                        index++;
-                        if (index < announcements.length) showNextAnnouncement();
-                    }, {
-                        once: true
-                    });
-                };
-
-                showNextAnnouncement();
-            }
-        }
+        // Clear session storage when manually viewing announcements
+        document.querySelectorAll('.view-announcement').forEach(link => {
+            link.addEventListener('click', () => {
+                sessionStorage.removeItem('announcements_shown_on_login');
+            });
+        });
     });
 </script>
 

@@ -20,13 +20,23 @@ use NotificationChannels\WebPush\PushSubscription;
 
 class AnnouncementController extends Controller
 {
-
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $schoolYearId = $request->input('school_year');
+        $month = $request->input('month');
+        $year = $request->input('year');
 
-        $query = Announcement::with('schoolYear', 'user')->orderByDesc('created_at');
+        // Default month to current month if not specified
+        if (!$month && !$request->has('month')) {
+            $month = date('m'); // Current month
+        }
+
+        // Default year to current year if not specified
+        if (!$year && !$request->has('year')) {
+            $year = date('Y'); // Current year
+        }
+
+        $query = Announcement::with(['user', 'recipients'])->orderByDesc('date_published');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -35,8 +45,14 @@ class AnnouncementController extends Controller
             });
         }
 
-        if ($schoolYearId) {
-            $query->where('school_year_id', $schoolYearId);
+        // Apply month filter
+        if ($month) {
+            $query->whereMonth('date_published', $month);
+        }
+
+        // Apply year filter
+        if ($year) {
+            $query->whereYear('date_published', $year);
         }
 
         $announcements = $query->get()->map(function ($announcement) {
@@ -70,22 +86,12 @@ class AnnouncementController extends Controller
             return $announcement;
         });
 
-        $schoolYearIdsWithAnnouncements = Announcement::select('school_year_id')
-            ->distinct()
-            ->pluck('school_year_id');
-
-        $schoolYears = SchoolYear::whereIn('id', $schoolYearIdsWithAnnouncements)
-            ->orderByDesc('school_year')
-            ->get();
-
-        $defaultYear = $this->getDefaultSchoolYear();
-        $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
+        // Get available years from 2024 and above that have announcements
+        $availableYears = $this->getAvailableYears();
 
         $user = Auth::user();
-
-        $user = Auth::user();
-        $notifications = collect(); // default empty collection
-        if ($user && $user->id) {  // Added check for $user->id to prevent null access
+        $notifications = collect();
+        if ($user && $user->id) {
             $notifications = Announcement::whereHas('recipients', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
@@ -96,12 +102,41 @@ class AnnouncementController extends Controller
 
         return view('admin.announcements.index', compact(
             'announcements',
-            'schoolYears',
-            'defaultSchoolYear',
             'search',
-            'schoolYearId',
+            'month',
+            'year',
+            'availableYears',
             'notifications'
         ));
+    }
+
+    /**
+     * Get available years from 2024 and above that have announcements
+     */
+    private function getAvailableYears()
+    {
+        // Get distinct years from announcements where year >= 2024
+        $years = Announcement::selectRaw('YEAR(date_published) as year')
+            ->whereNotNull('date_published')
+            ->whereYear('date_published', '>=', 2024)
+            ->groupBy('year')
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        // If no years found, add current year
+        if (empty($years)) {
+            $years = [date('Y')];
+        }
+
+        // Ensure current year is included
+        $currentYear = date('Y');
+        if (!in_array($currentYear, $years) && $currentYear >= 2024) {
+            $years[] = $currentYear;
+            rsort($years); // Sort descending
+        }
+
+        return $years;
     }
 
     public function store(Request $request)
@@ -111,14 +146,7 @@ class AnnouncementController extends Controller
             'body' => 'required|string',
             'effective_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:effective_date',
-            'school_year_id' => 'nullable|exists:school_years,id',
         ]);
-
-        if (empty($validated['school_year_id'])) {
-            $defaultYear = $this->getDefaultSchoolYear();
-            $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
-            $validated['school_year_id'] = $defaultSchoolYear?->id;
-        }
 
         $validated['user_id'] = Auth::id();
         $validated['date_published'] = now();
@@ -144,14 +172,6 @@ class AnnouncementController extends Controller
         if ($request->filled('recipients')) {
             $recipientIds = array_unique($request->input('recipients'));
             $announcement->recipients()->sync($recipientIds);
-
-            // Only notify selected recipients
-            $recipients = User::whereIn('id', $recipientIds)->get();
-            // Notification::send($recipients, new AnnouncementNotification($announcement));
-        } else {
-            // Optional: broadcast to all users who have push subscriptions
-            $recipients = User::whereHas('pushSubscriptions')->get();
-            // Notification::send($recipients, new AnnouncementNotification($announcement));
         }
 
         Announcement::where('status', '!=', 'archive')
@@ -166,11 +186,6 @@ class AnnouncementController extends Controller
     public function edit($id)
     {
         $announcement = Announcement::with(['recipients'])->findOrFail($id);
-        $schoolYears = SchoolYear::all();
-
-        // Get default school year for consistent form behavior
-        $defaultYear = $this->getDefaultSchoolYear();
-        $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
 
         // Build recipients data for JavaScript
         $recipientsData = $announcement->recipients->map(function ($user) {
@@ -182,8 +197,6 @@ class AnnouncementController extends Controller
 
         return view('admin.announcements.edit', [
             'announcement' => $announcement,
-            'schoolYears' => $schoolYears,
-            'defaultSchoolYear' => $defaultSchoolYear,
             'recipientsJson' => $recipientsData->toJson()
         ]);
     }
@@ -195,17 +208,9 @@ class AnnouncementController extends Controller
             'body'           => 'required|string',
             'effective_date' => 'nullable|date',
             'end_date'       => 'nullable|date|after_or_equal:effective_date',
-            'school_year_id' => 'nullable|exists:school_years,id',
         ]);
 
-        // Ensure a school year (fallback to default if missing)
-        if (empty($validated['school_year_id'])) {
-            $defaultYear = $this->getDefaultSchoolYear();
-            $defaultSchoolYear = SchoolYear::where('school_year', $defaultYear)->first();
-            $validated['school_year_id'] = $defaultSchoolYear?->id;
-        }
-
-        // Parse effective & end dates like in store()
+        // Parse effective & end dates
         $now = now();
         $effective = !empty($validated['effective_date'])
             ? Carbon::parse($validated['effective_date'])->setTimeFrom($now)
@@ -214,7 +219,7 @@ class AnnouncementController extends Controller
             ? Carbon::parse($validated['end_date'])->endOfDay()
             : null;
 
-        // Status logic consistent with store()
+        // Status logic
         if ($effective && $now->lt($effective)) {
             $validated['status'] = 'inactive';
         } elseif ($end && $now->gt($end)) {
@@ -231,26 +236,7 @@ class AnnouncementController extends Controller
         if ($request->filled('recipients')) {
             $recipientIds = array_unique($request->input('recipients'));
             $announcement->recipients()->sync($recipientIds);
-
-            // Only notify selected recipients
-            $recipients = User::whereIn('id', $recipientIds)->get();
-            // Notification::send($recipients, new AnnouncementNotification($announcement));
-        } else {
-            // Optional: broadcast to all users who have push subscriptions
-            $recipients = User::whereHas('pushSubscriptions')->get();
-            // Notification::send($recipients, new AnnouncementNotification($announcement));
         }
-
-        // Re-broadcast if the updated announcement is active
-        // if ($announcement->status === 'active') {
-        //     app(WebPushService::class)->broadcast([
-        //         'title' => '📢 Updated Announcement',
-        //         'body'  => $announcement->title,
-        //         'url'   => route('announcement.redirect', ['id' => $announcement->id]),
-        //         'tag'   => 'announcement-' . $announcement->id,
-        //         'id'    => $announcement->id,
-        //     ]);
-        // }
 
         // Cleanup expired announcements → archive
         Announcement::where('status', '!=', 'archive')
@@ -265,15 +251,6 @@ class AnnouncementController extends Controller
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
-
-        // Optionally broadcast deletion (so clients can remove it from UI)
-        // app(WebPushService::class)->broadcast([
-        //     'title' => '🗑️ Announcement Deleted',
-        //     'body'  => $announcement->title,
-        //     'url'   => route('announcements.index'),
-        //     'tag'   => 'announcement-' . $announcement->id,
-        //     'id'    => $announcement->id,
-        // ]);
 
         return redirect()->route('announcements.index')
             ->with('success', 'Announcement deleted successfully.');
@@ -317,33 +294,6 @@ class AnnouncementController extends Controller
             // Redirect to login page
             return redirect()->route('login');
         }
-    }
-
-    // public function uploadImage(Request $request)
-    // {
-    //     $request->validate([
-    //         'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-    //     ]);
-
-    //     if ($request->hasFile('image')) {
-    //         $path = $request->file('image')->store('announcements', 'public');
-    //         $url = asset('public/uploads/' . $path);
-
-    //         return response()->json(['url' => $url]);
-    //     }
-
-    //     return response()->json(['error' => 'No image uploaded'], 400);
-    // }
-
-    // Helper function to get the default school year (e.g., "2024-2025")
-    private function getDefaultSchoolYear()
-    {
-        $now = now();
-        $year = $now->year;
-        $cutoff = now()->copy()->setMonth(6)->setDay(1);
-        $start = $now->lt($cutoff) ? $year - 1 : $year;
-
-        return $start . '-' . ($start + 1);
     }
 
     public function searchUser(Request $request)

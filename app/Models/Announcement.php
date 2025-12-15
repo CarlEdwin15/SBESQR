@@ -10,7 +10,7 @@ class Announcement extends Model
     protected $fillable = [
         'title',
         'body',
-        'school_year_id',
+        // 'school_year_id',
         'user_id',
         'effective_date',
         'end_date',
@@ -29,10 +29,10 @@ class Announcement extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function schoolYear()
-    {
-        return $this->belongsTo(SchoolYear::class);
-    }
+    // public function schoolYear()
+    // {
+    //     return $this->belongsTo(SchoolYear::class);
+    // }
 
     // New method to calculate status dynamically
     public function getStatus(): string
@@ -66,11 +66,18 @@ class Announcement extends Model
             ->withTimestamps();
     }
 
-    protected $appends = ['author_name', 'formatted_effective', 'formatted_end'];
+    protected $appends = ['author_name', 'author_image', 'formatted_effective', 'formatted_end'];
 
     public function getAuthorNameAttribute()
     {
         return $this->user ? $this->user->full_name : 'System';
+    }
+
+    public function getAuthorImageAttribute()
+    {
+        return $this->user
+            ? $this->user->profile_photo_url
+            : asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg');
     }
 
     public function getFormattedEffectiveAttribute()
@@ -81,5 +88,19 @@ class Announcement extends Model
     public function getFormattedEndAttribute()
     {
         return $this->end_date ? $this->end_date->format('M d, Y') : '';
+    }
+
+    // Date range filtering
+    public function scopeDateRange($query, $startDate = null, $endDate = null)
+    {
+        if ($startDate && $endDate) {
+            return $query->whereBetween('date_published', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            return $query->where('date_published', '>=', $startDate);
+        } elseif ($endDate) {
+            return $query->where('date_published', '<=', $endDate);
+        }
+
+        return $query;
     }
 }

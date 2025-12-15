@@ -161,69 +161,130 @@
                 style="width: 40px; height: 40px;"> Announcement Management</h3>
 
 
-        {{-- Add New and Filters --}}
-        <div class="row align-items-end mb-3 gy-2">
-            {{-- Search input (full-width on mobile, left-aligned on desktop) --}}
-            <div class="col-12 col-md-4 d-flex align-items-center gap-2">
-                <input type="text" id="announcementSearch" class="form-control border-1 shadow-none"
-                    placeholder="Search title or body..." />
-            </div>
+        @if (request('search') || request('month') || request('year'))
+            <div class="alert alert-info alert-dismissible fade show" role="alert" id="filterAlert">
 
-            {{-- Add New Button (left on mobile, center on desktop) --}}
-            <div class="col-4 col-md-4">
-                <button class="btn btn-primary d-flex justify-content-center align-items-center" data-bs-toggle="modal"
-                    data-bs-target="#createAnnouncementModal">
-                    <i class='bx bx-message-alt-add me-2'></i>
-                    <span class="d-none d-sm-inline">New Announcement</span>
-                </button>
-            </div>
-
-            {{-- School Year Filter + Now Button (right on mobile, right-aligned on desktop) --}}
-            <div class="col-8 col-md-3 d-flex justify-content-between align-items-end gap-2">
-                <form method="GET" action="{{ route('announcements.index') }}"
-                    class="d-flex align-items-center gap-2 flex-grow-1">
-                    <select name="school_year" class="form-select" onchange="this.form.submit()">
-                        @foreach ($schoolYears as $year)
-                            <option value="{{ $year->id }}"
-                                {{ request('school_year') == $year->id || (!request('school_year') && $year->id == $defaultSchoolYear->id) ? 'selected' : '' }}>
-                                {{ $year->school_year }}
-                            </option>
-                        @endforeach
-                    </select>
-                </form>
-
-                <form method="GET" action="{{ route('announcements.index') }}">
-                    <input type="hidden" name="school_year" value="{{ $defaultSchoolYear->id }}">
-                    <button type="submit" class="btn btn-primary">
-                        Now
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        @if (request('search') || request('school_year'))
-            <div class="alert alert-info">
                 Showing results for:
                 @if (request('search'))
                     <strong>Search:</strong> "{{ request('search') }}"
                 @endif
-                @if (request('search') && request('school_year'))
+
+                @if (request('search') && (request('month') || request('year')))
                     |
                 @endif
-                @if (request('school_year'))
-                    <strong>School Year:</strong>
-                    {{ $schoolYears->firstWhere('id', request('school_year'))?->school_year ?? 'N/A' }}
+
+                @if (request('month'))
+                    @php
+                        $months = [
+                            '01' => 'January',
+                            '02' => 'February',
+                            '03' => 'March',
+                            '04' => 'April',
+                            '05' => 'May',
+                            '06' => 'June',
+                            '07' => 'July',
+                            '08' => 'August',
+                            '09' => 'September',
+                            '10' => 'October',
+                            '11' => 'November',
+                            '12' => 'December',
+                        ];
+                    @endphp
+                    {{ $months[request('month')] ?? request('month') }}
                 @endif
+
+                @if (request('year'))
+                    {{ request('year') }}
+                @endif
+
+                {{-- Close Button --}}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
+
+
+        {{-- Add New and Filters --}}
+        <div class="row justify-content-between align-items-end mb-3 gy-2">
+
+            {{-- Search + Add New --}}
+            <div class="col-12 col-md-6">
+                <div class="d-flex gap-2">
+                    <input type="text" id="announcementSearch" class="form-control border-1 shadow-none"
+                        placeholder="Search title or body..." />
+
+                    <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+                        data-bs-target="#createAnnouncementModal">
+                        <i class='bx bx-message-alt-add me-1'></i>
+                        <span class="d-none d-sm-inline">New</span>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Month/Year Filters --}}
+            <div class="col-12 col-md-4 ms-auto">
+                <form method="GET" action="{{ route('announcements.index') }}"
+                    class="d-flex align-items-center gap-2 w-100" id="monthYearFilterForm">
+                    <div class="input-group">
+                        {{-- Month --}}
+                        @php
+                            $currentMonth = now()->format('m');
+                        @endphp
+
+                        <select name="month" class="form-select" id="monthFilter">
+                            <option value="">All Months</option>
+
+                            <option value="01" {{ (request('month') ?? $currentMonth) == '01' ? 'selected' : '' }}>
+                                January</option>
+                            <option value="02" {{ (request('month') ?? $currentMonth) == '02' ? 'selected' : '' }}>
+                                February</option>
+                            <option value="03" {{ (request('month') ?? $currentMonth) == '03' ? 'selected' : '' }}>
+                                March</option>
+                            <option value="04" {{ (request('month') ?? $currentMonth) == '04' ? 'selected' : '' }}>
+                                April</option>
+                            <option value="05" {{ (request('month') ?? $currentMonth) == '05' ? 'selected' : '' }}>May
+                            </option>
+                            <option value="06" {{ (request('month') ?? $currentMonth) == '06' ? 'selected' : '' }}>
+                                June</option>
+                            <option value="07" {{ (request('month') ?? $currentMonth) == '07' ? 'selected' : '' }}>
+                                July</option>
+                            <option value="08" {{ (request('month') ?? $currentMonth) == '08' ? 'selected' : '' }}>
+                                August</option>
+                            <option value="09" {{ (request('month') ?? $currentMonth) == '09' ? 'selected' : '' }}>
+                                September</option>
+                            <option value="10" {{ (request('month') ?? $currentMonth) == '10' ? 'selected' : '' }}>
+                                October</option>
+                            <option value="11" {{ (request('month') ?? $currentMonth) == '11' ? 'selected' : '' }}>
+                                November</option>
+                            <option value="12" {{ (request('month') ?? $currentMonth) == '12' ? 'selected' : '' }}>
+                                December</option>
+                        </select>
+
+
+                        {{-- Year --}}
+                        <select name="year" class="form-select" id="yearFilter">
+                            @foreach ($availableYears as $year)
+                                <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>
+                                    {{ $year }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
 
         {{-- Card Content --}}
         <div class="accordion" id="announcementAccordion">
             @forelse($announcements as $announcement)
+                @php
+                    $publishDate = \Carbon\Carbon::parse($announcement->date_published);
+                @endphp
                 <div class="accordion-item mb-2 announcement-item
                                 @if ($announcement->computed_status == 'active') active-announcement @endif"
                     data-title="{{ strtolower($announcement->title) }}"
-                    data-body="{{ strtolower(strip_tags($announcement->body)) }}">
+                    data-body="{{ strtolower(strip_tags($announcement->body)) }}"
+                    data-month="{{ $publishDate->format('m') }}" data-year="{{ $publishDate->format('Y') }}">
 
                     <h2 class="accordion-header" id="heading{{ $announcement->id }}">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
@@ -284,8 +345,6 @@
                                     <div class="border rounded p-3 bg-light">
                                         <p><strong>Author:</strong> {{ $announcement->author_name }}</p>
                                         <p><strong>Published:</strong> {{ $announcement->formatted_published }}</p>
-                                        <p><strong>School Year:</strong>
-                                            {{ $announcement->schoolYear->school_year ?? 'N/A' }}</p>
                                         <p><strong>Effective Date:</strong> {{ $announcement->formatted_effective }} -
                                             {{ $announcement->formatted_end }}</p>
 
@@ -328,8 +387,6 @@
                         <div class="modal-body">
                             @include('admin.announcements._form', [
                                 'announcement' => null,
-                                'schoolYears' => $schoolYears,
-                                'defaultSchoolYear' => $defaultSchoolYear ?? null,
                             ])
                         </div>
                         <div class="modal-footer">
@@ -544,8 +601,6 @@
 
     <!-- Quill Editor Initialization for Edit Form -->
     <script>
-        // In your index.blade.php, update the initEditQuillEditor function:
-
         function initEditQuillEditor() {
             const editorContainer = document.querySelector('#edit-quill-editor');
             if (!editorContainer) return;
@@ -878,32 +933,95 @@
         }
     </script>
 
-    <!-- Search Functionality -->
+    <!-- Search and Month/Year Filter Functionality -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const searchInput = document.getElementById("announcementSearch");
+            const monthFilter = document.getElementById("monthFilter");
+            const yearFilter = document.getElementById("yearFilter");
             const announcementItems = document.querySelectorAll(".announcement-item");
-            const noResultsMessage = document.getElementById("noResultsMessage"); // Optional
+            const noResultsMessage = document.getElementById("noResultsMessage");
 
-            searchInput.addEventListener("input", function() {
-                const query = this.value.trim().toLowerCase();
+            // Auto-submit form when filters change
+            function submitForm() {
+                document.getElementById('monthYearFilterForm').submit();
+            }
+
+            // Client-side filtering for instant feedback
+            function filterAnnouncements() {
+                const searchQuery = searchInput.value.trim().toLowerCase();
+                const selectedMonth = monthFilter ? monthFilter.value : '';
+                const selectedYear = yearFilter ? yearFilter.value : '';
+
                 let matchFound = false;
 
                 announcementItems.forEach(item => {
                     const title = item.dataset.title || "";
                     const body = item.dataset.body || "";
-                    const isMatch = title.includes(query) || body.includes(query);
+                    const itemMonth = item.dataset.month || "";
+                    const itemYear = item.dataset.year || "";
+
+                    // Search match
+                    const searchMatch = !searchQuery ||
+                        title.includes(searchQuery) ||
+                        body.includes(searchQuery);
+
+                    // Month match (if month is selected)
+                    const monthMatch = !selectedMonth || itemMonth === selectedMonth;
+
+                    // Year match (if year is selected)
+                    const yearMatch = !selectedYear || itemYear === selectedYear;
+
+                    // Combined match
+                    const isMatch = searchMatch && monthMatch && yearMatch;
 
                     item.style.display = isMatch ? "block" : "none";
                     if (isMatch) matchFound = true;
                 });
 
                 if (noResultsMessage) {
-                    noResultsMessage.classList.toggle("d-none", matchFound || query === "");
+                    noResultsMessage.classList.toggle("d-none", matchFound ||
+                        (!searchQuery && !selectedMonth && !selectedYear));
                 }
-            });
+            }
+
+            // Event listeners
+            if (searchInput) {
+                searchInput.addEventListener("input", filterAnnouncements);
+            }
+
+            if (monthFilter) {
+                monthFilter.addEventListener("change", function() {
+                    filterAnnouncements();
+                    submitForm();
+                });
+            }
+
+            if (yearFilter) {
+                yearFilter.addEventListener("change", function() {
+                    filterAnnouncements();
+                    submitForm();
+                });
+            }
+
+            // Initial filter
+            filterAnnouncements();
         });
     </script>
+
+    <!-- Auto-dismiss Filter Alert after 5 seconds -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const alert = document.getElementById('filterAlert');
+            if (alert) {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000); // 5 seconds
+            }
+        });
+    </script>
+
 
     <!-- jQuery (only once) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -1014,6 +1132,33 @@
         .ts-dropdown .option.active {
             background-color: #e3f2fd;
             color: #1976d2;
+        }
+
+        /* Month badge styling */
+        .badge.bg-info {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        /* Filter styling */
+        .form-select {
+            border-color: #dee2e6;
+        }
+
+        .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Input group styling */
+        .input-group {
+            gap: 2px;
+        }
+
+        .input-group .form-select {
+            flex: 1;
         }
     </style>
 @endpush

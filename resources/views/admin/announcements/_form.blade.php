@@ -107,23 +107,6 @@
 </div>
 
 <div class="mb-3 row">
-    <div class="col">
-        <label for="school_year_id">School Year</label>
-
-        {{-- Always use the default school year provided by the controller --}}
-        <input type="text" class="form-control" value="{{ $defaultSchoolYear->school_year ?? 'N/A' }}" disabled>
-
-        <input type="hidden" name="school_year_id" value="{{ $defaultSchoolYear->id ?? '' }}">
-
-        @error('school_year_id')
-            <div class="text-danger">{{ $message }}</div>
-        @enderror
-
-        <small class="text-muted">Automatically set to current school year</small>
-    </div>
-</div>
-
-<div class="mb-3 row">
     {{-- Effective Form --}}
     <div class="col">
         <label for="effective_date">Effective From</label>

@@ -13,6 +13,7 @@ use App\Models\ClassStudent;
 
 class HomeController extends Controller
 {
+    // Update the index method to ensure proper sorting
     public function index(Request $request)
     {
         if (!Auth::check()) {
@@ -28,13 +29,13 @@ class HomeController extends Controller
         // Check for announcement ID from notification redirect
         if (session()->has('notification_announcement_id')) {
             $announcementId = session('notification_announcement_id');
-            session()->forget('notification_announcement_id'); // Clear it after use
+            // Don't clear it here - let the JavaScript handle it
         }
 
         // Also check for announcement ID from login redirect
         if (session()->has('login_redirect_announcement')) {
             $announcementId = session('login_redirect_announcement');
-            session()->forget('login_redirect_announcement'); // Clear it after use
+            session()->forget('login_redirect_announcement');
         }
 
         // Check URL parameter as fallback
@@ -48,7 +49,7 @@ class HomeController extends Controller
             session(['login_success_shown' => true]);
         }
 
-        // Get user-specific announcements
+        // Get user-specific announcements for notifications
         $notifications = Announcement::where(function ($q) use ($user, $role) {
             // Admins see all announcements
             if ($role === 'admin') {
@@ -67,12 +68,12 @@ class HomeController extends Controller
             ->take(99)
             ->get();
 
-        // Fetch active announcements based on date range
+        // Fetch active announcements based on date range - sorted by effective_date DESC (newest first)
         $activeAnnouncements = Announcement::where(function ($q) use ($user, $role) {
-            // Admins see all active announcements
-            if ($role === 'admin') {
-                return;
-            }
+            // // Admins see all active announcements
+            // if ($role === 'admin') {
+            //     return;
+            // }
 
             // Non-admins: announcements sent to them OR general (no recipients)
             $q->whereHas('recipients', function ($r) use ($user) {
@@ -83,8 +84,28 @@ class HomeController extends Controller
                 $q->whereDate('effective_date', '<=', now())
                     ->whereDate('end_date', '>=', now());
             })
-            ->orderByDesc('effective_date')
-            ->get();
+            ->orderByDesc('effective_date') // Sort by effective_date DESC (newest first)
+            ->get()
+            ->map(function ($announcement) {
+                return [
+                    'id' => $announcement->id,
+                    'title' => $announcement->title,
+                    'body' => $announcement->body,
+                    'date_published' => $announcement->date_published
+                        ? \Carbon\Carbon::parse($announcement->date_published)->format('M d, Y h:i A')
+                        : 'Draft',
+                    'author_name' => $announcement->user?->firstName ?? 'Unknown',
+                    'effective_date' => $announcement->effective_date,
+                    'end_date' => $announcement->end_date,
+                ];
+            })
+            ->toArray();
+
+        // Set flag to show announcements on login
+        $cameFromLogin = $request->session()->get('login_success_shown', false);
+        if ($cameFromLogin && count($activeAnnouncements) > 0) {
+            session(['show_announcements_on_login' => true]);
+        }
 
         // Handle different user roles
         if ($role == 'teacher') {
@@ -259,7 +280,7 @@ class HomeController extends Controller
         COUNT(DISTINCT students.id) as total,
         SUM(CASE WHEN LOWER(students.student_sex) IN ("f", "female") THEN 1 ELSE 0 END) as female_count,
         SUM(CASE WHEN LOWER(students.student_sex) IN ("m", "male") THEN 1 ELSE 0 END) as male_count
-    ')->first();
+        ')->first();
 
         $total = $genderData->total ?? 0;
         $femaleCount = $genderData->female_count ?? 0;
