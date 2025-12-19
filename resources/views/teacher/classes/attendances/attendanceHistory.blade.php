@@ -202,7 +202,7 @@
 
                         @if ($now->between($scheduleStart, $scheduleEnd))
                             <div class="d-flex align-items-center justify-content-between mb-3" style="padding: 0 20px;">
-                                <button class="btn btn-primary my-2"
+                                <button class="btn btn-warning my-2"
                                     onclick="chooseGracePeriod(
                                                     '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $targetDate, $schedule->id]) }}?mark_absent=true',
                                                     '{{ $schedule->start_time }}',
@@ -399,7 +399,8 @@
                 <div class="col-12">
                     <div class="alert alert-info text-center mb-0">
                         No schedules for this date
-                        ({{ \Carbon\Carbon::parse($targetDate)->format('l, F j, Y') }})
+                        ({{ \Carbon\Carbon::parse($targetDate)->format('l, F j, Y') }}).
+                        Please contact the Administrator for more info.
                     </div>
                 </div>
             @endforelse

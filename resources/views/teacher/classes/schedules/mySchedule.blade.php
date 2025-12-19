@@ -124,13 +124,13 @@
                 <div class="table-responsive">
                     <table class="table text-center table-bordered align-middle">
                         <thead class="table-primary">
-                            <tr>
-                                <th style="width: 8%;">Time</th>
-                                @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
-                                    <th style="width: 10%;">{{ $day }}</th>
-                                @endforeach
-                            </tr>
-                        </thead>
+    <tr>
+        <th style="width: 8%;">Time</th>
+        @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
+            <th style="width: 10%;">{{ $day }}</th>
+        @endforeach
+    </tr>
+</thead>
                         <tbody>
                             @php
                                 use Carbon\Carbon;
@@ -161,7 +161,7 @@
                                         </td>
                                     @endif
 
-                                    @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                    @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
                                         @php
                                             $key = $day . '-' . $slotStart->format('H:i');
                                             if (!empty($rendered[$key])) {

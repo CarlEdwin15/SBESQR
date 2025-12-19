@@ -216,4 +216,10 @@ class User extends Authenticatable
 
         return Storage::url($this->profile_photo);
     }
+
+    // Add to the User model after the subjects() method
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'teacher_id');
+    }
 }

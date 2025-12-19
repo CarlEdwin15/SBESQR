@@ -257,19 +257,19 @@
 
 
                                 <!-- Day Selection -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Day</label>
-                                    <div class="d-flex flex-wrap gap-3">
-                                        @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="days[]"
-                                                    value="{{ $day }}" id="day_{{ strtolower($day) }}">
-                                                <label class="form-check-label"
-                                                    for="day_{{ strtolower($day) }}">{{ $day }}</label>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
+<div class="mb-3">
+    <label class="form-label fw-semibold">Day</label>
+    <div class="d-flex flex-wrap gap-3">
+        @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="days[]"
+                    value="{{ $day }}" id="day_{{ strtolower($day) }}">
+                <label class="form-check-label"
+                    for="day_{{ strtolower($day) }}">{{ $day }}</label>
+            </div>
+        @endforeach
+    </div>
+</div>
 
                                 <!-- Start and End Time -->
                                 <div class="mb-3 row">
@@ -312,13 +312,13 @@
                 <div class="table-responsive">
                     <table class="table text-center table-bordered align-middle">
                         <thead class="table-primary">
-                            <tr>
-                                <th style="width: 8%;">Time</th>
-                                @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
-                                    <th style="width: 10%;">{{ $day }}</th>
-                                @endforeach
-                            </tr>
-                        </thead>
+    <tr>
+        <th style="width: 8%;">Time</th>
+        @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
+            <th style="width: 10%;">{{ $day }}</th>
+        @endforeach
+    </tr>
+</thead>
                         <tbody>
                             @php
                                 use Carbon\Carbon;
@@ -350,7 +350,7 @@
                                         </td>
                                     @endif
 
-                                    @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                    @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
                                         @php
                                             $key = $day . '-' . $slotStart->format('H:i');
                                             if (!empty($rendered[$key])) {
@@ -578,7 +578,7 @@
                                                 <div class="mb-3">
                                                     <label class="form-label fw-semibold">Day</label>
                                                     <div class="d-flex flex-wrap gap-3">
-                                                        @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as $day)
+                                                        @foreach (['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
                                                             <div class="form-check">
                                                                 <input class="form-check-input" type="checkbox"
                                                                     name="days[]" value="{{ $day }}"

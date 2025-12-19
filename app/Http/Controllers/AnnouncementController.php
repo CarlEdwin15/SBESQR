@@ -110,9 +110,6 @@ class AnnouncementController extends Controller
         ));
     }
 
-    /**
-     * Get available years from 2024 and above that have announcements
-     */
     private function getAvailableYears()
     {
         // Get distinct years from announcements where year >= 2024
@@ -320,5 +317,17 @@ class AnnouncementController extends Controller
             });
 
         return response()->json($users);
+    }
+
+    public function markAsRead(Announcement $announcement)
+    {
+        $user = Auth::user();
+
+        // Mark as read
+        $announcement->recipients()->updateExistingPivot($user->id, [
+            'read_at' => now()
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }

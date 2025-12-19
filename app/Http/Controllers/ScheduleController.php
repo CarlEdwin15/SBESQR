@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 
 class ScheduleController extends Controller
 {
+    // Define days array as a property for easy access
+    private $daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
     public function displaySchedule(Request $request, $grade_level, $section)
     {
         $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
@@ -22,7 +25,7 @@ class ScheduleController extends Controller
         $schedules = Schedule::where('class_id', $class->id)
             ->where('school_year_id', $schoolYear->id)
             ->with('teacher')
-            ->orderBy('day')
+            ->orderByRaw("FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')")
             ->orderBy('start_time')
             ->get();
 
@@ -55,7 +58,6 @@ class ScheduleController extends Controller
         ]);
 
         $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
-
         $schoolYear = SchoolYear::where('school_year', $selectedYear)->firstOrFail();
 
         $class = Classes::where('grade_level', $grade_level)
@@ -63,6 +65,13 @@ class ScheduleController extends Controller
             ->firstOrFail();
 
         foreach ($request->days as $day) {
+            // Validate day is in allowed list
+            if (!in_array($day, $this->daysOfWeek)) {
+                return back()->withErrors([
+                    'days' => 'Invalid day selected.'
+                ])->withInput();
+            }
+
             // 🔹 1. Check teacher conflict
             $teacherConflict = Schedule::where('teacher_id', $request->teacher_id)
                 ->where('day', $day)
@@ -159,6 +168,13 @@ class ScheduleController extends Controller
             ->firstOrFail();
 
         foreach ($request->days as $day) {
+            // Validate day is in allowed list
+            if (!in_array($day, $this->daysOfWeek)) {
+                return back()->withErrors([
+                    'days' => 'Invalid day selected.'
+                ])->withInput();
+            }
+
             // 🔹 1. Teacher conflict check
             $teacherConflict = Schedule::where('teacher_id', $request->teacher_id)
                 ->where('day', $day)
@@ -248,5 +264,11 @@ class ScheduleController extends Controller
         $start = $now->lt($cutoff) ? $year - 1 : $year;
 
         return $start . '-' . ($start + 1);
+    }
+
+    // Add this method to get days array for views
+    public function getDaysOfWeek()
+    {
+        return $this->daysOfWeek;
     }
 }

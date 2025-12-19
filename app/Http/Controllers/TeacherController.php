@@ -20,7 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf; // make sure barryvdh/laravel-dompdf is installed
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -310,7 +310,7 @@ class TeacherController extends Controller
         $schedules = Schedule::where('class_id', $class->id)
             ->where('teacher_id', $teacherId)
             ->where('school_year_id', $schoolYear->id)
-            ->orderBy('day')
+            ->orderByRaw("FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')")
             ->orderBy('start_time')
             ->get();
 
@@ -397,9 +397,7 @@ class TeacherController extends Controller
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
         for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
-            if (!in_array($date->format('D'), ['Sat', 'Sun'])) {
-                $calendarDates[] = $date->format('Y-m-d');
-            }
+            $calendarDates[] = $date->format('Y-m-d');
         }
 
         $attendanceData = [];
@@ -597,52 +595,6 @@ class TeacherController extends Controller
         ));
     }
 
-    public function submitAttendance(Request $request)
-    {
-        $date = $request->input('date', now()->toDateString());
-        $timeNow = now()->format('H:i:s');
-
-        $schedule = Schedule::findOrFail($request->schedule_id);
-        $timeOutFixed = $schedule->end_time;
-
-        // Resolve the school year object (supports both ID or string format)
-        $schoolYear = SchoolYear::where('school_year', $request->input('school_year'))
-            ->orWhere('id', $request->input('school_year'))
-            ->firstOrFail();
-
-        foreach ($request->attendance as $studentId => $data) {
-            $status = $data['status'];
-
-            // Get the existing record for the day/schedule/student
-            $attendance = Attendance::where('student_id', $studentId)
-                ->where('schedule_id', $schedule->id)
-                ->where('date', $date)
-                ->where('school_year_id', $schoolYear->id)
-                ->first();
-
-            // Determine if we should write/update the record
-            if (!$attendance || $attendance->status !== $status) {
-                Attendance::updateOrCreate(
-                    [
-                        'student_id' => $studentId,
-                        'schedule_id' => $schedule->id,
-                        'date' => $date,
-                        'school_year_id' => $schoolYear->id,
-                    ],
-                    [
-                        'teacher_id' => $request->teacher_id,
-                        'class_id' => $request->class_id,
-                        'status' => $status,
-                        'time_in' => in_array($status, ['present', 'late']) ? $timeNow : null,
-                        'time_out' => in_array($status, ['present', 'late']) ? $timeOutFixed : null,
-                    ]
-                );
-            }
-        }
-
-        return back()->with('success', 'Attendance submitted successfully!');
-    }
-
     public function showScanner(Request $request, $grade_level, $section, $date = null, $schedule_id = null)
     {
         $selectedYear = $request->input('school_year', $this->getDefaultSchoolYear());
@@ -734,6 +686,52 @@ class TeacherController extends Controller
             'schoolYear',
             'selectedYear'
         ));
+    }
+
+    public function submitAttendance(Request $request)
+    {
+        $date = $request->input('date', now()->toDateString());
+        $timeNow = now()->format('H:i:s');
+
+        $schedule = Schedule::findOrFail($request->schedule_id);
+        $timeOutFixed = $schedule->end_time;
+
+        // Resolve the school year object (supports both ID or string format)
+        $schoolYear = SchoolYear::where('school_year', $request->input('school_year'))
+            ->orWhere('id', $request->input('school_year'))
+            ->firstOrFail();
+
+        foreach ($request->attendance as $studentId => $data) {
+            $status = $data['status'];
+
+            // Get the existing record for the day/schedule/student
+            $attendance = Attendance::where('student_id', $studentId)
+                ->where('schedule_id', $schedule->id)
+                ->where('date', $date)
+                ->where('school_year_id', $schoolYear->id)
+                ->first();
+
+            // Determine if we should write/update the record
+            if (!$attendance || $attendance->status !== $status) {
+                Attendance::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'schedule_id' => $schedule->id,
+                        'date' => $date,
+                        'school_year_id' => $schoolYear->id,
+                    ],
+                    [
+                        'teacher_id' => $request->teacher_id,
+                        'class_id' => $request->class_id,
+                        'status' => $status,
+                        'time_in' => in_array($status, ['present', 'late']) ? $timeNow : null,
+                        'time_out' => in_array($status, ['present', 'late']) ? $timeOutFixed : null,
+                    ]
+                );
+            }
+        }
+
+        return back()->with('success', 'Attendance submitted successfully!');
     }
 
     public function markAttendanceFromQR(Request $request)

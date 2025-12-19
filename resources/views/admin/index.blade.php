@@ -317,7 +317,8 @@
                                     width="50" height="50">
                             </div>
                             <div class="d-flex flex-column align-items-center ms-auto">
-                                <h5 class="fw-semibold text-primary mb-2">Students</h5>
+                                <h5 class="fw-semibold text-primary mb-2 d-none d-sm-block">Students</h5>
+                                <h6 class="fw-semibold text-primary mb-2 d-sm-block d-sm-none">Students</h6>
                                 <h1 class="fw-semibold mb-0">{{ $totalStudents }}</h1>
                             </div>
                         </div>
@@ -354,7 +355,8 @@
                                     width="50" height="50">
                             </div>
                             <div class="d-flex flex-column align-items-center ms-auto">
-                                <h5 class="fw-semibold text-primary mb-2">Teachers</h5>
+                                <h5 class="fw-semibold text-primary mb-2 d-sm-block d-none">Teachers</h5>
+                                <h6 class="fw-semibold text-primary mb-2 d-sm-none d-block">Teachers</h6>
                                 <h1 class="fw-semibold mb-0">{{ $totalTeachers }}</h1>
                             </div>
                         </div>
@@ -758,7 +760,8 @@
                                     width="50" height="50">
                             </div>
                             <div class="d-flex flex-column align-items-center ms-auto">
-                                <h5 class="fw-semibold text-primary mb-2">Classes</h5>
+                                <h6 class="fw-semibold text-primary mb-2 d-sm-none d-block">Classes</h6>
+                                <h5 class="fw-semibold text-primary mb-2 d-none d-sm-block">Classes</h5>
                                 <h1 class="fw-semibold mb-0">{{ $totalClasses }}</h1>
                             </div>
                         </div>
@@ -788,7 +791,8 @@
                                     width="50" height="50">
                             </div>
                             <div class="d-flex flex-column align-items-center ms-auto">
-                                <h5 class="fw-semibold text-primary mb-2">Users</h5>
+                                <h6 class="fw-semibold text-primary mb-2 d-sm-none d-sm-block">Users</h6>
+                                <h5 class="fw-semibold text-primary mb-2 d-none d-sm-block">Users</h5>
                                 <h1 class="fw-semibold mb-0">{{ $totalUsers }}</h1>
                             </div>
                         </div>
@@ -824,9 +828,9 @@
                     <div class="card h-100">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="card-title m-0 d-sm-none d-block">Total Enrollees for School Year
+                                <h6 class="card-title m-0 d-sm-none d-block text-primary">Total Enrollees for School Year
                                     {{ $schoolYearText }}</h6>
-                                <h4 class="card-title m-0 d-sm-block d-none">Total Enrollees for School Year
+                                <h4 class="card-title m-0 d-sm-block d-none text-primary">Total Enrollees for School Year
                                     {{ $schoolYearText }}</h4>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-info text-white dropdown-toggle" type="button"
@@ -857,12 +861,12 @@
                         <div class="card-header d-flex justify-content-between align-items-center mb-0">
                             <div class="justify-content-center align-items-center card-title mb-0">
                                 <!-- Web View Title -->
-                                <h5 class="m-0 me-2 d-none d-sm-block">
+                                <h5 class="text-primary m-0 me-2 d-none d-sm-block">
                                     Student Gender Ratio for SY:
                                     <span class="school-year-display">{{ $schoolYearText }}</span>
                                 </h5>
                                 <!-- Mobile View Title -->
-                                <h6 class="m-0 me-2 d-sm-none d-block">
+                                <h6 class="text-primary m-0 me-2 d-sm-none d-block">
                                     Student Gender Ratio for SY:
                                     <span class="school-year-display">{{ $schoolYearText }}</span>
                                 </h6>
@@ -2636,21 +2640,21 @@
                                 </div>
 
                                 ${fee.pending_requests_count > 0 ? `
-                                        <span class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge pulse-badge"
-                                            style="font-size: 0.65rem; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;"
-                                            data-payment-name="${fee.payment_name}"
-                                            data-school-year="${schoolYear}">
-                                            <span class="pending-count">${fee.pending_requests_count}</span>
-                                            <span class="visually-hidden">pending payment requests</span>
-                                        </span>
-                                    ` : `
-                                        <span class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge"
-                                            style="font-size: 0.65rem; min-width: 20px; height: 20px; display: none; align-items: center; justify-content: center;"
-                                            data-payment-name="${fee.payment_name}"
-                                            data-school-year="${schoolYear}">
-                                            <span class="pending-count">0</span>
-                                        </span>
-                                    `}
+                                                    <span class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge pulse-badge"
+                                                        style="font-size: 0.65rem; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;"
+                                                        data-payment-name="${fee.payment_name}"
+                                                        data-school-year="${schoolYear}">
+                                                        <span class="pending-count">${fee.pending_requests_count}</span>
+                                                        <span class="visually-hidden">pending payment requests</span>
+                                                    </span>
+                                                ` : `
+                                                    <span class="badge rounded-pill bg-danger ms-2 school-fee-notification-badge"
+                                                        style="font-size: 0.65rem; min-width: 20px; height: 20px; display: none; align-items: center; justify-content: center;"
+                                                        data-payment-name="${fee.payment_name}"
+                                                        data-school-year="${schoolYear}">
+                                                        <span class="pending-count">0</span>
+                                                    </span>
+                                                `}
                             </div>
 
                             <div class="mt-0">

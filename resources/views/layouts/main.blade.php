@@ -396,10 +396,14 @@
                         <div class="text-start mt-0">
                             <div class="border rounded p-3 mt-3 bg-light quill-content"
                                 style="max-height: 400px; overflow-y: auto;">
+                                <p class="text-end" style="font-size: 1rem;">${announcement.date_published}</p>
                                 ${announcement.body}
                                 <p class="mt-2 text-start fw-bold" style="font-size: 1.3rem; color: 001BB7; font-family: 'Times New Roman', Times, serif;">— ${announcement.author_name}</p>
                             </div>
-                            <p class="mt-2 text-end" style="font-size: 1rem;">${announcement.date_published}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <p class="mb-0" style="font-size: 1rem;">Announcement ${currentIndex + 1} of ${totalAnnouncements}</p>
+
+                            </div>
                         </div>
                     `,
 

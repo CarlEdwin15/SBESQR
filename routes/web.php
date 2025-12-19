@@ -32,6 +32,7 @@ Route::view('/error/inactive', 'errors.423_inactive')->name('error.inactive');
 Route::view('/error/suspended', 'errors.402_suspended')->name('error.suspended');
 Route::view('/error/banned', 'errors.403_banned')->name('error.banned');
 
+
 // Clear announcement session flags
 Route::post('/clear-announcement-session', function (Request $request) {
     $type = $request->input('type', 'all');
@@ -124,10 +125,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/payment-requests/check-new', [SchoolFeeController::class, 'checkNewRequests'])
         ->name('admin.payment-requests.check-new');
 
-    // Route::post('/clear-announcement-session', [HomeController::class, 'clearAnnouncementSession'])->name('clear.announcement.session');
+    Route::post('/announcements/{id}/mark-as-read', [AnnouncementController::class, 'markAsRead'])
+        ->name('announcements.mark-as-read');
 
+    // NEW ROUTES for unread announcements
+    Route::get('/announcements/unread-count', [AnnouncementController::class, 'getUnreadCount'])
+        ->name('announcements.unread-count');
+
+    Route::get('/announcements/unread-list', [AnnouncementController::class, 'getUnreadAnnouncements'])
+        ->name('announcements.unread-list');
+
+    // Add these routes:
+    Route::get('/get-gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('home.get-gender-data-filtered');
+    Route::get('/get-student-type-data', [HomeController::class, 'getStudentTypeData'])->name('home.get-student-type-data');
+
+    // Gender data routes
+    Route::get('/get-gender-data', [HomeController::class, 'getGenderData'])->name('home.get-gender-data');
+    Route::get('/get-gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('home.get-gender-data-filtered');
+
+    // Teacher dashboard routes
+    Route::get('/teacher/dashboard/grade-sections', [HomeController::class, 'getGradeSections'])->name('teacher.dashboard.grade-sections');
+    Route::get('/teacher/dashboard/gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('teacher.dashboard.gender-data-filtered');
+    Route::post('/teacher/dashboard/gender-data-by-students', [HomeController::class, 'getGenderDataByStudents'])->name('teacher.dashboard.gender-data-by-students');
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+});
+
+// Teacher dashboard routes
+Route::middleware(['auth', 'role:teacher'])->group(function () {
+    Route::get('/teacher/dashboard/gender-data-filtered', [TeacherController::class, 'getGenderDataFiltered']);
+    Route::get('/teacher/dashboard/grade-sections', [TeacherController::class, 'getGradeSections']);
 });
 
 // Public welcome page
@@ -307,6 +334,25 @@ Route::prefix('teacher')
         Route::get('/classes/{grade_level}/{section}/payments', [SchoolFeeController::class, 'index'])->name('teacher.payments.index');
         Route::get('/classes/{grade_level}/{section}/payments/{paymentName}', [SchoolFeeController::class, 'show'])->name('teacher.payments.show');
         Route::post('/classes/{grade_level}/{section}/payments', [SchoolFeeController::class, 'create'])->name('teacher.payments.create');
+
+        Route::get('/all-schedules', [TeacherController::class, 'teacherAllSchedules'])
+            ->name('teacher.all.schedules');
+
+        // For teacher dashboard recent users
+        Route::get('/dashboard/active-users', [HomeController::class, 'getActiveUsersForTeacher'])->name('teacher.active-users');
+
+        Route::get('/user-info/{user}', [HomeController::class, 'getUserInfoForTeacher'])->name('teacher.user.info');
+
+        Route::get('/students/filter', [HomeController::class, 'getTeacherStudents'])->name('teacher.students.filter');
+
+        Route::get('/dashboard/students', [HomeController::class, 'getTeacherDashboardStudents'])
+            ->name('teacher.dashboard.students');
+
+            Route::get('/dashboard/enrollment-data', [HomeController::class, 'getEnrollmentData'])->name('teacher.dashboard.enrollment-data');
+    Route::get('/dashboard/gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('teacher.dashboard.gender-data-filtered');
+    Route::get('/dashboard/grade-sections', [HomeController::class, 'getGradeSections'])->name('teacher.dashboard.grade-sections');
+    Route::get('/dashboard/gender-data', [HomeController::class, 'getGenderData'])->name('teacher.dashboard.gender-data');
+    Route::get('/get-school-year-id', [HomeController::class, 'getSchoolYearId'])->name('teacher.get-school-year-id');
 
         // Export SF2
         Route::get('/export-attendance', function () {

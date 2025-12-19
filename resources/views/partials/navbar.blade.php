@@ -8,49 +8,52 @@
     </div>
 
     @php
+        use Illuminate\Support\Str;
+        use Carbon\Carbon;
+        use Illuminate\Support\Facades\DB;
         $now = now();
         $year = $now->year;
         $cutoff = $now->copy()->setMonth(6)->setDay(1);
         $startYear = $now->lt($cutoff) ? $year - 1 : $year;
         $schoolYear = $startYear . '-' . ($startYear + 1);
+
+        // Filter announcements to show only ACTIVE or ARCHIVE status (not inactive)
+        $oneWeekAgo = now()->subWeek();
+        $recentNotifications = $notifications->filter(function ($notification) use ($oneWeekAgo) {
+            // First, check if it's within the last week
+            $isRecent = $notification->created_at->gte($oneWeekAgo);
+
+            // Get the announcement status using the model's getStatus() method
+            $status = $notification->getStatus();
+
+            // Only show if recent AND (active or archive status)
+            return $isRecent && in_array($status, ['active', 'archive']);
+        });
+
+        // Sort by newest first
+        $recentNotifications = $recentNotifications->sortByDesc('created_at');
+
+        // Count unread announcements using direct database query
+        $unreadCount = 0;
+        $user = Auth::user();
+        if ($user) {
+            $unreadCount = DB::table('announcement_user')
+                ->join('announcements', 'announcement_user.announcement_id', '=', 'announcements.id')
+                ->where('announcement_user.user_id', $user->id)
+                ->whereNull('announcement_user.read_at')
+                ->where(function($query) {
+                    $query->where('announcements.status', 'active')
+                        ->orWhere('announcements.status', 'archive');
+                })
+                ->where('announcements.date_published', '>=', now()->subWeek())
+                ->count();
+        }
     @endphp
 
     <div class="d-flex align-items-center ms-3">
         <h6 class="mb-0 d-none d-sm-block">Current School Year: {{ $schoolYear }}</h6>
         <h6 class="mb-0 d-block d-sm-none">Current SY: {{ $schoolYear }}</h6>
     </div>
-
-
-
-    {{-- @php
-        $nowPH = now('Asia/Manila')->format('Y-m-d H:i:s');
-    @endphp
-
-    <div class="d-flex align-items-center ms-3 text-primary">
-        <h6 class="mb-0"><span id="realtime-clock">{{ $nowPH }}</span></h6>
-    </div>
-
-    <script>
-        let currentTime = new Date("{{ $nowPH }} GMT+0800");
-
-        function updateClock() {
-            currentTime.setSeconds(currentTime.getSeconds() + 1);
-            const formatted = currentTime.toLocaleString('en-PH', {
-                weekday: 'long', // Include day name
-                year: 'numeric',
-                month: 'long',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true,
-                timeZone: 'Asia/Manila'
-            }).replace(' at ', ' '); // Remove the word "at"
-            document.getElementById('realtime-clock').textContent = formatted;
-        }
-
-        setInterval(updateClock, 1000);
-    </script> --}}
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <ul class="navbar-nav flex-row align-items-center ms-auto">
@@ -59,51 +62,93 @@
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow" href="#" id="notificationDropdown" role="button"
                     data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class='bx bxs-megaphone fs-4 text-primary'
-                        style="border-radius: 15%; border: 2px solid #0d6efd; padding: 7px;"></i>
-                    @if ($notifications->count())
-                        <span class="badge bg-danger rounded-pill badge-notifications">
-                            {{ $notifications->count() }}
-                        </span>
-                    @endif
+                    <div class="position-relative" style="width: 40px; height: 40px;">
+                        <img src="{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}"
+                            alt="Announcements" class="img-fluid"
+                            style="width: 100%; height: 100%; object-fit: contain; border-radius: 15%; padding: 5px;">
+                        <!-- REMOVED: Red notification count badge -->
+                    </div>
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="notificationDropdown"
-                    style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+                    style="min-width: 320px; max-width: 320px; max-height: 400px; overflow-y: auto;"
+                    id="announcement-dropdown">
 
                     <li class="px-3 pt-2">
                         <h6 class="mb-1 d-flex justify-content-between">
-                            Notifications
-                            <span class="badge bg-light-primary text-primary fw-bold">
-                                {{ $notifications->count() }} New
-                            </span>
+                            Recent Announcements
+                            <!-- REMOVED: Unread total badge -->
                         </h6>
                     </li>
 
-                    <!-- In your navbar's notification dropdown section -->
-                    @forelse($notifications as $notif)
+                    @forelse($recentNotifications as $notif)
+                        @php
+                            // Check if announcement is unread for current user
+                            $isUnread = false;
+                            if ($user && $notif->recipients) {
+                                $recipient = $notif->recipients->find($user->id);
+                                $isUnread = $recipient ? is_null($recipient->pivot->read_at) : false;
+                            }
+
+                            // Determine circle color based on announcement age
+                            $createdAt = $notif->created_at;
+                            $now = now();
+                            $hoursDiff = $createdAt->diffInHours($now);
+
+                            // Get announcement status
+                            $status = $notif->getStatus();
+
+                            // Determine circle color and title based on status and age
+                            if ($status === 'active') {
+                                if ($hoursDiff <= 24) {
+                                    $circleColor = 'text-danger'; // Red for active & less than 24 hours
+                                    $title = 'Active - New (Less than 24 hours)';
+                                } elseif ($hoursDiff <= 72) {
+                                    $circleColor = 'text-success'; // Green for active & 1-3 days
+                                    $title = 'Active - Recent (1-3 days)';
+                                } else {
+                                    $circleColor = 'text-primary'; // Blue for active & 3-7 days
+                                    $title = 'Active - Older (3-7 days)';
+                                }
+                            } else {
+                                // archive status
+                                $circleColor = 'text-warning'; // Gray for archived
+                                $title = 'Archived';
+                            }
+                        @endphp
                         <li>
-                            <a class="dropdown-item d-flex align-items-start gap-2 py-3 view-announcement"
-                                href="javascript:void(0);" data-id="{{ $notif->id }}">
+                            <a class="dropdown-item d-flex align-items-start gap-2 py-3 view-announcement announcement-item"
+                                href="javascript:void(0);" data-id="{{ $notif->id }}"
+                                data-unread="{{ $isUnread ? 'true' : 'false' }}">
                                 <div class="rounded-circle d-flex justify-content-center align-items-center overflow-hidden"
-                                    style="width:36px; height:36px; background-color:#f8f9fa;">
-                                    <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="img-fluid"
+                                    style="width:45px; height:45px;">
+                                    <img src="{{ asset('assetsDashboard/img/icons/dashIcon/announcement.png') }}"
+                                        alt="Logo" class="img-fluid"
                                         style="width:100%; height:100%; object-fit:contain;">
                                 </div>
-                                <div>
-                                    <strong>{{ $notif->title }}</strong>
-                                    <div class="text-muted small">{!! Str::limit(strip_tags($notif->body), 40) !!}</div>
-                                    <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+                                <div style="flex: 1; min-width: 0;">
+                                    <strong class="d-block text-truncate"
+                                        style="max-width: 180px;">{{ $notif->title }}</strong>
+                                    <div class="text-muted small text-truncate" style="max-width: 180px;">
+                                        {!! Str::limit(strip_tags($notif->body), 40) !!}</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+                                        @if ($status === 'active')
+                                            <span class="badge bg-success rounded-pill"
+                                                style="font-size: 0.65rem;">Active</span>
+                                        @elseif($status === 'archive')
+                                            <span class="badge bg-warning rounded-pill"
+                                                style="font-size: 0.65rem;">Archived</span>
+                                        @endif
+                                    </div>
                                 </div>
-                                <span class="ms-auto text-primary mt-1">
-                                    <i class="bx bxs-circle"></i>
-                                </span>
+                                <!-- REMOVED: Circle icon for unread announcements -->
                             </a>
                         </li>
                     @empty
                         <li>
                             <div class="dropdown-item text-center text-muted py-3">
-                                No notifications
+                                No recent active announcements
                             </div>
                         </li>
                     @endforelse
@@ -112,7 +157,7 @@
                         <hr class="dropdown-divider my-0">
                     </li>
                     <li>
-                        <a href="" class="dropdown-item text-center text-primary fw-semibold py-2">
+                        <a href="{{ route('announcements.index') }}" class="dropdown-item text-center text-primary fw-semibold py-2">
                             View all announcements
                         </a>
                     </li>
@@ -125,22 +170,17 @@
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="d-flex align-items-center">
                         <div class="avatar">
-                            @php use Illuminate\Support\Str; @endphp
-
                             @auth
                                 @php
                                     $profilePhoto = Auth::user()->profile_photo;
 
                                     if ($profilePhoto) {
                                         if (Str::startsWith($profilePhoto, ['http://', 'https://'])) {
-                                            // External photo (Google login, etc.)
                                             $profilePhoto = $profilePhoto;
                                         } else {
-                                            // Stored locally
                                             $profilePhoto = asset('public/uploads/' . $profilePhoto);
                                         }
                                     } else {
-                                        // No profile photo, fallback by role
                                         switch (Auth::user()->role) {
                                             case 'admin':
                                                 $profilePhoto = asset(
@@ -158,7 +198,6 @@
                                                 );
                                                 break;
                                             default:
-                                                // generic fallback (teacher style)
                                                 $profilePhoto = asset(
                                                     'assetsDashboard/img/profile_pictures/teacher_default_profile.jpg',
                                                 );
@@ -169,7 +208,6 @@
 
                                 <img src="{{ $profilePhoto }}" alt="Profile Photo" class="w-px-40 h-auto rounded-circle" />
                             @else
-                                {{-- Guest fallback --}}
                                 <img src="{{ asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg') }}"
                                     alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
                             @endauth
@@ -182,35 +220,6 @@
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" href="#">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar">
-                                    @auth
-                                        <img src="{{ $profilePhoto }}" alt="Profile Photo"
-                                            class="w-px-40 h-auto rounded-circle" />
-                                    @else
-                                        <img src="{{ asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg') }}"
-                                            alt="Default Profile Photo" class="w-px-40 h-auto rounded-circle" />
-                                    @endauth
-                                </div>
-                                @auth
-                                    <span class="fw-semibold ms-2">{{ Auth::user()->firstName }}</span>
-                                @endauth
-                            </div>
-                        </a>
-                    </li>
-
-                    <li>
-                        <div class="dropdown-divider"></div>
-                    </li>
-
-                    <li>
-                        <a class="dropdown-item" href="#">
-                            <i class="bx bx-user me-2"></i>
-                            <span class="align-middle">My Profile</span>
-                        </a>
-                    </li>
 
                     <li>
                         @php
@@ -227,14 +236,14 @@
                                     $settingsRoute = route('parent.account.settings');
                                     break;
                                 default:
-                                    $settingsRoute = '#'; // fallback
+                                    $settingsRoute = '#';
                                     break;
                             }
                         @endphp
 
                         <a class="dropdown-item" href="{{ $settingsRoute }}">
                             <i class="bx bx-cog me-2"></i>
-                            <span class="align-middle">Settings</span>
+                            <span class="align-middle">Account Settings</span>
                         </a>
                     </li>
                     <li>
@@ -258,48 +267,6 @@
 </nav>
 <!-- / Navbar -->
 
-{{-- <!-- Announcement Modal -->
-<div class="modal fade" id="announcementModal" tabindex="-1" aria-labelledby="announcementModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
-
-            <!-- Header -->
-            <div class="modal-header bg-gradient-primary text-white py-3 px-4 border-0">
-                <div>
-                    <h4 class="modal-title fw-bold mb-0 text-white" id="announcementModalLabel">
-                        Announcement
-                    </h4>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
-            </div>
-
-            <!-- Body -->
-            <div class="modal-body bg-light p-4" id="announcementBody">
-                <div id="announcementContent" class="announcement-body">
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary mb-3" role="status"></div>
-                        <p class="text-muted">Fetching announcement details...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div
-                class="modal-footer bg-white px-4 py-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
-                <div id="announcementMeta" class="text-muted small"></div>
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 mt-3 mt-sm-0"
-                    data-bs-dismiss="modal">
-                    <i class="bx bx-x me-1"></i> Close
-                </button>
-            </div>
-
-        </div>
-    </div>
-</div>
-<!-- /Announcement Modal --> --}}
-
 <!-- Announcement Modal Script -->
 <script>
     // Asset URL for announcement sticker icon
@@ -308,30 +275,138 @@
     document.addEventListener("DOMContentLoaded", function() {
         // Handle manual announcement click
         document.querySelectorAll('.view-announcement').forEach(item => {
-            item.addEventListener('click', function(e) {
+            item.addEventListener('click', async function(e) {
                 e.preventDefault();
                 const id = this.dataset.id;
+                const isUnread = this.getAttribute('data-unread') === 'true';
 
-                // Use the global function from layouts/main.blade.php
-                if (typeof window.showAnnouncementModal === 'function') {
-                    window.showAnnouncementModal(id);
-                } else {
-                    // Fallback: redirect if function not available
+                try {
+                    // Fetch announcement details
+                    const response = await fetch(`/announcements/${id}/show-ajax`);
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch announcement details');
+                    }
+
+                    const data = await response.json();
+
+                    // Show SweetAlert2 modal with layout/main styling
+                    Swal.fire({
+                        title: data.title,
+                        html: `
+                            <img
+                                src="${announcementStickerUrl}"
+                                class="swal-announcement-sticker"
+                                alt="Announcement Sticker"
+                            />
+
+                            <div class="text-start mt-0">
+                                <div class="border rounded p-3 mt-3 bg-light quill-content"
+                                    style="max-height: 400px; overflow-y: auto;">
+                                    <p class="text-end" style="font-size: 1rem;">${data.published}</p>
+                                    ${data.body}
+                                    <p class="mt-2 text-start fw-bold" style="font-size: 1.3rem; color: #001BB7; font-family: 'Times New Roman', Times, serif;">— ${data.author}</p>
+                                </div>
+                            </div>
+                        `,
+                        showCloseButton: true,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Close',
+                        width: '800px',
+                        customClass: {
+                            container: 'my-swal-container',
+                            actions: 'swal2-actions-centered'
+                        },
+                        didOpen: () => {
+                            // Ensure sticker positioning
+                            const sticker = document.querySelector(
+                                '.swal-announcement-sticker');
+                            if (sticker) {
+                                sticker.style.position = 'absolute';
+                                sticker.style.top = '-15px';
+                                sticker.style.left = '-25px';
+                                sticker.style.width = '100px';
+                                sticker.style.height = 'auto';
+                                sticker.style.zIndex = '9999';
+                                sticker.style.pointerEvents = 'none';
+                                sticker.style.filter =
+                                    'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25))';
+                            }
+                        }
+                    }).then((result) => {
+                        // After modal is closed, mark as read if it was unread
+                        if (isUnread) {
+                            markAnnouncementAsRead(id);
+                        }
+                    });
+
+                    // Clear session storage when manually viewing announcements
+                    sessionStorage.removeItem('announcements_shown_on_login');
+
+                } catch (error) {
+                    console.error('Error fetching announcement details:', error);
+                    // Fallback: redirect if fetch fails
                     window.location.href = `/announcement/redirect/${id}`;
                 }
             });
         });
 
-        // Clear session storage when manually viewing announcements
-        document.querySelectorAll('.view-announcement').forEach(link => {
-            link.addEventListener('click', () => {
-                sessionStorage.removeItem('announcements_shown_on_login');
-            });
-        });
+        // Function to mark announcement as read
+        async function markAnnouncementAsRead(announcementId) {
+            try {
+                const response = await fetch(`/announcements/${announcementId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    // Remove circle icon for this announcement
+                    const circleIcon = document.querySelector(
+                        `.announcement-circle[data-id="${announcementId}"]`);
+                    if (circleIcon) {
+                        circleIcon.remove();
+                    }
+
+                    // Remove data-unread attribute from the announcement item
+                    const announcementItem = document.querySelector(
+                        `.announcement-item[data-id="${announcementId}"]`);
+                    if (announcementItem) {
+                        announcementItem.setAttribute('data-unread', 'false');
+                    }
+
+                    // Update the unread count
+                    updateUnreadCount();
+                }
+            } catch (error) {
+                console.error('Error marking announcement as read:', error);
+            }
+        }
+
+        // Function to update unread count - MODIFIED to not update UI since we removed badges
+        async function updateUnreadCount() {
+            try {
+                const response = await fetch('/announcements/unread-count');
+                if (response.ok) {
+                    const data = await response.json();
+                    // We're still fetching the count but not updating any UI elements
+                    const unreadCount = data.count || 0;
+                    // No UI updates since badges are removed
+                }
+            } catch (error) {
+                console.error('Error fetching unread count:', error);
+            }
+        }
+
+        // Periodically update unread count (every 30 seconds) - Still runs but doesn't update UI
+        setInterval(updateUnreadCount, 30000);
     });
 </script>
 
-<!-- Custom Styles -->
+<!-- Custom Styles for Navbar Announcements -->
 <style>
     .bg-gradient-primary {
         background: linear-gradient(135deg, #0066cc, #0099ff);
@@ -353,37 +428,93 @@
         }
     }
 
-    #announcementContent h1,
-    #announcementContent h2,
-    #announcementContent h3 {
-        color: #0d6efd;
+    /* Ensure SweetAlert2 modal has proper z-index */
+    .swal2-container {
+        z-index: 999999 !important;
     }
 
-    #announcementContent p {
-        line-height: 1.7;
-        font-size: 1rem;
-        color: #333;
+    .my-swal-container {
+        z-index: 10000;
     }
 
-    #announcementContent img {
+    /* Quill content styling */
+    .quill-content {
+        font-family: sans-serif;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .quill-content .ql-align-center {
+        text-align: center;
+    }
+
+    .quill-content .ql-align-right {
+        text-align: right;
+    }
+
+    .quill-content .ql-align-justify {
+        text-align: justify;
+    }
+
+    .quill-content img {
         max-width: 100%;
-        border-radius: 0.5rem;
-        margin: 15px 0;
+        height: auto;
+        display: block;
+        margin: 10px auto;
     }
 
-    #announcementMeta {
-        color: #6c757d;
-        font-size: 0.875rem;
+    /* Quill font sizes */
+    .ql-size-small {
+        font-size: 0.75em;
     }
 
-    .badge-author {
-        background: #e9f2ff;
-        color: #0056b3;
-        border-radius: 50px;
-        padding: 0.25rem 0.75rem;
+    .ql-size-large {
+        font-size: 1.5em;
     }
 
-    .modal-footer {
-        border-top: 1px solid #dee2e6;
+    .ql-size-huge {
+        font-size: 2.5em;
     }
+
+    /* Quill font families */
+    .ql-font-sans-serif {
+        font-family: sans-serif;
+    }
+
+    .ql-font-serif {
+        font-family: serif;
+    }
+
+    .ql-font-monospace {
+        font-family: monospace;
+    }
+
+    /* Announcement sticker image positioning */
+    .swal2-popup {
+        position: relative !important;
+    }
+
+    .swal-announcement-sticker {
+        position: absolute;
+        top: -15px;
+        left: -25px;
+        width: 100px;
+        height: auto;
+        z-index: 9999;
+        pointer-events: none;
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+    }
+
+    /* Improved dropdown styling */
+    .dropdown-menu[aria-labelledby="notificationDropdown"] {
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .dropdown-menu[aria-labelledby="notificationDropdown"] .dropdown-item:hover {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    /* REMOVED: Circle icon animation for unread announcements */
 </style>
