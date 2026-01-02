@@ -21,9 +21,9 @@
         $oneWeekAgo = now()->subWeek();
         $recentNotifications = $notifications->filter(function ($notification) use ($oneWeekAgo) {
             // First, check if it's within the last week
-            $isRecent = $notification->created_at->gte($oneWeekAgo);
+    $isRecent = $notification->created_at->gte($oneWeekAgo);
 
-            // Get the announcement status using the model's getStatus() method
+    // Get the announcement status using the model's getStatus() method
             $status = $notification->getStatus();
 
             // Only show if recent AND (active or archive status)
@@ -41,9 +41,8 @@
                 ->join('announcements', 'announcement_user.announcement_id', '=', 'announcements.id')
                 ->where('announcement_user.user_id', $user->id)
                 ->whereNull('announcement_user.read_at')
-                ->where(function($query) {
-                    $query->where('announcements.status', 'active')
-                        ->orWhere('announcements.status', 'archive');
+                ->where(function ($query) {
+                    $query->where('announcements.status', 'active')->orWhere('announcements.status', 'archive');
                 })
                 ->where('announcements.date_published', '>=', now()->subWeek())
                 ->count();
@@ -152,15 +151,6 @@
                             </div>
                         </li>
                     @endforelse
-
-                    <li>
-                        <hr class="dropdown-divider my-0">
-                    </li>
-                    <li>
-                        <a href="{{ route('announcements.index') }}" class="dropdown-item text-center text-primary fw-semibold py-2">
-                            View all announcements
-                        </a>
-                    </li>
                 </ul>
             </li>
             <!-- /Notification Dropdown -->

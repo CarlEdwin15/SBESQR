@@ -79,8 +79,7 @@
         <!-- Breadcrumb -->
         <h4 class="fw-bold py-3 mb-4 text-warning">
             <span class="text-muted fw-light">
-                <a class="text-muted fw-light" href="{{ route('home') }}">Dashboard / </a>
-                <a class="text-muted fw-light" href="{{ route('parent.children.index') }}">My Children / </a>
+                <a class="text-muted fw-light" href="{{ route('home') }}">My Children / </a>
             </span> My Child Information
         </h4>
 
@@ -133,7 +132,7 @@
                     </div>
 
                     <div class="d-flex justify-content-center mt-3">
-                        <a href="{{ route('parent.children.index') }}"
+                        <a href="{{ route('home') }}"
                             class="btn btn-danger me-2 d-flex align-items-center">
                             <i class='bx bx-chevrons-left'></i>
                             <span class="d-none d-sm-block">Back</span>

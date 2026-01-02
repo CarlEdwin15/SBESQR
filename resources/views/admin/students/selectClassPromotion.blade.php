@@ -159,19 +159,10 @@
 
         {{-- Combined Filters and Search Card --}}
         <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bx bx-filter-alt me-2"></i>
-                    Filter & Search Classes
-                </h5>
-            </div>
             <div class="card-body">
                 <div class="row g-3">
                     {{-- Search Function --}}
-                    <div class="col-md-4">
-                        <label for="studentSearch" class="form-label fw-semibold">
-                            <i class="bx bx-search me-1"></i>Search Students
-                        </label>
+                    <div class="col-md-7">
                         <div class="input-group">
                             <input type="text" id="studentSearch" class="form-control"
                                 placeholder="Search by name or LRN..." aria-label="Search students">
@@ -180,14 +171,10 @@
                                 <i class="bx bx-x"></i>
                             </button>
                         </div>
-                        <small class="text-muted">Type to filter classes by student name or LRN</small>
                     </div>
 
                     {{-- Section Selection --}}
-                    <div class="col-md-4">
-                        <label for="section" class="form-label fw-semibold">
-                            <i class="bx bx-group me-1"></i>Section
-                        </label>
+                    <div class="col-md-2">
                         <form method="GET" action="{{ route('students.promote.view') }}" id="sectionForm"
                             class="mb-0">
                             <input type="hidden" name="school_year" value="{{ $selectedSchoolYear }}">
@@ -199,14 +186,10 @@
                                 @endforeach
                             </select>
                         </form>
-                        <small class="text-muted">Choose class section to view</small>
                     </div>
 
                     {{-- School Year Selection --}}
-                    <div class="col-md-4">
-                        <label for="school_year" class="form-label fw-semibold">
-                            <i class="bx bx-calendar me-1"></i>School Year
-                        </label>
+                    <div class="col-md-3">
                         <form method="GET" action="{{ route('students.promote.view') }}" id="schoolYearForm"
                             class="mb-0">
                             <select name="school_year" id="school_year" class="form-select"
@@ -222,7 +205,6 @@
                                 @endforeach
                             </select>
                         </form>
-                        <small class="text-muted">Select previous school year for promotion tracking</small>
                     </div>
                 </div>
 

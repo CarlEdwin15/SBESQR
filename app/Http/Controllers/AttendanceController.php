@@ -84,8 +84,10 @@ class AttendanceController extends Controller
         $attendanceData = [];
         foreach ($students as $student) {
             $attendanceData[$student->id] = [
-                'present' => 0,
-                'absent' => 0,
+                'present' => 0,      // present count
+                'absent' => 0,       // absent count
+                'late' => 0,         // late count
+                'excused' => 0,      // excused count
                 'by_date' => [],
             ];
         }
@@ -99,7 +101,8 @@ class AttendanceController extends Controller
 
         foreach ($attendances as $attendance) {
             $date = $attendance->date;
-            $symbol = match ($attendance->status) {
+            $status = $attendance->status;
+            $symbol = match ($status) {
                 'present' => '✓',
                 'absent' => 'X',
                 'late' => 'L',
@@ -115,30 +118,45 @@ class AttendanceController extends Controller
                 $attendanceData[$attendance->student_id] = [
                     'present' => 0,
                     'absent' => 0,
+                    'late' => 0,
+                    'excused' => 0,
                     'by_date' => [],
                 ];
             }
 
             $attendanceData[$attendance->student_id]['by_date'][$date][] = [
                 'status' => $symbol,
+                'original_status' => $status,
                 'start_time' => $schedule->start_time,
                 'end_time' => $schedule->end_time,
                 'subject_name' => $schedule->subject_name ?? 'N/A',
                 'schedule_order' => $schedule->start_time,
             ];
 
-            if (in_array($attendance->status, ['present', 'late'])) {
-                $attendanceData[$attendance->student_id]['present']++;
-            } else {
-                $attendanceData[$attendance->student_id]['absent']++;
+            // Count individual statuses
+            switch ($status) {
+                case 'present':
+                    $attendanceData[$attendance->student_id]['present']++;
+                    break;
+                case 'absent':
+                    $attendanceData[$attendance->student_id]['absent']++;
+                    break;
+                case 'late':
+                    $attendanceData[$attendance->student_id]['late']++;
+                    break;
+                case 'excused':
+                    $attendanceData[$attendance->student_id]['excused']++;
+                    break;
             }
 
+            // Count for daily totals (only present and late count as present)
             $student = $students->firstWhere('id', $attendance->student_id);
-            if ($student && in_array($symbol, ['✓', 'L'])) {
+            if ($student && in_array($status, ['present', 'late'])) {
                 $combinedTotals[$date]++;
-                if ($student->gender === 'Male') {
+                $gender = strtolower(trim($student->student_sex));
+                if ($gender === 'male') {
                     $maleTotals[$date]++;
-                } else {
+                } elseif ($gender === 'female') {
                     $femaleTotals[$date]++;
                 }
             }
@@ -151,23 +169,47 @@ class AttendanceController extends Controller
         }
         unset($studentAttendance);
 
-        $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
+        // Calculate monthly totals with new logic
+        $maleTotalPresent = $femaleTotalPresent = 0;
+        $maleTotalAbsent = $femaleTotalAbsent = 0;
+        $maleTotalLate = $femaleTotalLate = 0;
+        $maleTotalExcused = $femaleTotalExcused = 0;
+
         foreach ($students as $student) {
             if (!isset($attendanceData[$student->id])) {
                 continue;
             }
 
-            if ($student->gender === 'Male') {
-                $maleTotalPresent += $attendanceData[$student->id]['present'];
-                $maleTotalAbsent += $attendanceData[$student->id]['absent'];
-            } else {
-                $femaleTotalPresent += $attendanceData[$student->id]['present'];
-                $femaleTotalAbsent += $attendanceData[$student->id]['absent'];
+            $gender = strtolower(trim($student->student_sex));
+            $studentData = $attendanceData[$student->id];
+
+            if ($gender === 'male') {
+                $maleTotalPresent += $studentData['present'];
+                $maleTotalAbsent += $studentData['absent'];
+                $maleTotalLate += $studentData['late'];
+                $maleTotalExcused += $studentData['excused'];
+            } elseif ($gender === 'female') {
+                $femaleTotalPresent += $studentData['present'];
+                $femaleTotalAbsent += $studentData['absent'];
+                $femaleTotalLate += $studentData['late'];
+                $femaleTotalExcused += $studentData['excused'];
             }
         }
 
-        $totalPresent = $maleTotalPresent + $femaleTotalPresent;
-        $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
+        // For display: Monthly PRESENT = present + late, Monthly ABSENT = absent + excused
+        $maleMonthlyPresent = $maleTotalPresent + $maleTotalLate;
+        $femaleMonthlyPresent = $femaleTotalPresent + $femaleTotalLate;
+        $maleMonthlyAbsent = $maleTotalAbsent + $maleTotalExcused;
+        $femaleMonthlyAbsent = $femaleTotalAbsent + $femaleTotalExcused;
+
+        $totalPresent = $maleMonthlyPresent + $femaleMonthlyPresent;
+        $totalAbsent = $maleMonthlyAbsent + $femaleMonthlyAbsent;
+
+        // For blade view display (the variables that will be used in the table)
+        $maleTotalPresentForDisplay = $maleMonthlyPresent;
+        $femaleTotalPresentForDisplay = $femaleMonthlyPresent;
+        $maleTotalAbsentForDisplay = $maleMonthlyAbsent;
+        $femaleTotalAbsentForDisplay = $femaleMonthlyAbsent;
 
         // <-- NEW: support returning array (used by SF2Export) just like teacher method
         if ($request->has('__return_array__')) {
@@ -180,10 +222,18 @@ class AttendanceController extends Controller
                 'maleTotals',
                 'femaleTotals',
                 'monthParam',
-                'maleTotalPresent',
-                'femaleTotalPresent',
-                'maleTotalAbsent',
-                'femaleTotalAbsent',
+                'maleTotalPresent',    // Raw present count
+                'femaleTotalPresent',  // Raw present count
+                'maleTotalLate',       // Raw late count
+                'femaleTotalLate',     // Raw late count
+                'maleTotalAbsent',     // Raw absent count
+                'femaleTotalAbsent',   // Raw absent count
+                'maleTotalExcused',    // Raw excused count
+                'femaleTotalExcused',  // Raw excused count
+                'maleTotalPresentForDisplay',    // present + late
+                'femaleTotalPresentForDisplay',  // present + late
+                'maleTotalAbsentForDisplay',     // absent + excused
+                'femaleTotalAbsentForDisplay',   // absent + excused
                 'totalAbsent',
                 'totalPresent',
                 'scheduleDays',
@@ -202,10 +252,10 @@ class AttendanceController extends Controller
             'maleTotals',
             'femaleTotals',
             'monthParam',
-            'maleTotalPresent',
-            'femaleTotalPresent',
-            'maleTotalAbsent',
-            'femaleTotalAbsent',
+            'maleTotalPresentForDisplay',    // Use the computed values for display
+            'femaleTotalPresentForDisplay',  // Use the computed values for display
+            'maleTotalAbsentForDisplay',     // Use the computed values for display
+            'femaleTotalAbsentForDisplay',   // Use the computed values for display
             'totalAbsent',
             'totalPresent',
             'scheduleDays',

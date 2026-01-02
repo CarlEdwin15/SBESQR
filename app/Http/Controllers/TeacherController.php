@@ -13,8 +13,6 @@ use App\Models\Schedule;
 use App\Models\SchoolYear;
 use App\Models\QuarterlyGrade;
 use App\Models\Subject;
-use App\Services\TwilioService;
-use App\Services\ItexmoService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -405,10 +403,13 @@ class TeacherController extends Controller
             $attendanceData[$student->id] = [
                 'present' => 0,
                 'absent' => 0,
+                'late' => 0,
+                'excused' => 0,
                 'by_date' => [],
             ];
         }
 
+        // Initialize totals arrays for daily counts
         $combinedTotals = $maleTotals = $femaleTotals = [];
         foreach ($calendarDates as $date) {
             $combinedTotals[$date] = 0;
@@ -418,7 +419,8 @@ class TeacherController extends Controller
 
         foreach ($attendances as $attendance) {
             $date = $attendance->date;
-            $symbol = match ($attendance->status) {
+            $status = $attendance->status;
+            $symbol = match ($status) {
                 'present' => '✓',
                 'absent' => 'X',
                 'late' => 'L',
@@ -435,35 +437,39 @@ class TeacherController extends Controller
                 $attendanceData[$attendance->student_id] = [
                     'present' => 0,
                     'absent' => 0,
+                    'late' => 0,
+                    'excused' => 0,
                     'by_date' => [],
                 ];
             }
 
             $attendanceData[$attendance->student_id]['by_date'][$date][] = [
                 'status' => $symbol,
+                'original_status' => $status,
                 'start_time' => $schedule->start_time,
                 'end_time' => $schedule->end_time,
                 'subject_name' => $schedule->subject_name ?? 'N/A',
                 'schedule_order' => $schedule->start_time,
             ];
 
-            if (in_array($attendance->status, ['present', 'late'])) {
-                $attendanceData[$attendance->student_id]['present']++;
-            } else {
-                $attendanceData[$attendance->student_id]['absent']++;
-            }
-
-            $student = $students->firstWhere('id', $attendance->student_id);
-            if ($student && in_array($symbol, ['✓', 'L'])) {
-                $combinedTotals[$date]++;
-                if ($student->gender === 'Male') {
-                    $maleTotals[$date]++;
-                } else {
-                    $femaleTotals[$date]++;
-                }
+            // Count for individual student totals
+            switch ($status) {
+                case 'present':
+                    $attendanceData[$attendance->student_id]['present']++;
+                    break;
+                case 'absent':
+                    $attendanceData[$attendance->student_id]['absent']++;
+                    break;
+                case 'late':
+                    $attendanceData[$attendance->student_id]['late']++;
+                    break;
+                case 'excused':
+                    $attendanceData[$attendance->student_id]['excused']++;
+                    break;
             }
         }
 
+        // Sort entries by schedule order
         foreach ($attendanceData as &$studentAttendance) {
             foreach ($studentAttendance['by_date'] as &$entries) {
                 usort($entries, fn($a, $b) => strcmp($a['schedule_order'], $b['schedule_order']));
@@ -471,23 +477,58 @@ class TeacherController extends Controller
         }
         unset($studentAttendance);
 
+        // Calculate totals per day for Male, Female, and Combined
+        // Count each attendance record that is Present (✓) or Late (L)
+        foreach ($attendances as $attendance) {
+            $date = $attendance->date;
+            $status = $attendance->status;
+
+            // Only count Present and Late for "Total Per Day"
+            if (in_array($status, ['present', 'late'])) {
+                $student = $students->firstWhere('id', $attendance->student_id);
+                if ($student) {
+                    $gender = strtolower(trim($student->student_sex));
+                    $combinedTotals[$date]++;
+
+                    if ($gender === 'male') {
+                        $maleTotals[$date]++;
+                    } elseif ($gender === 'female') {
+                        $femaleTotals[$date]++;
+                    }
+                }
+            }
+        }
+
+        // Calculate monthly totals for Male, Female, and Combined
         $maleTotalPresent = $femaleTotalPresent = $maleTotalAbsent = $femaleTotalAbsent = 0;
+        $maleTotalLate = $femaleTotalLate = $maleTotalExcused = $femaleTotalExcused = 0;
+
         foreach ($students as $student) {
             if (!isset($attendanceData[$student->id])) {
                 continue;
             }
 
-            if ($student->gender === 'Male') {
+            $gender = strtolower(trim($student->student_sex));
+
+            if ($gender === 'male') {
                 $maleTotalPresent += $attendanceData[$student->id]['present'];
                 $maleTotalAbsent += $attendanceData[$student->id]['absent'];
-            } else {
+                $maleTotalLate += $attendanceData[$student->id]['late'];
+                $maleTotalExcused += $attendanceData[$student->id]['excused'];
+            } elseif ($gender === 'female') {
                 $femaleTotalPresent += $attendanceData[$student->id]['present'];
                 $femaleTotalAbsent += $attendanceData[$student->id]['absent'];
+                $femaleTotalLate += $attendanceData[$student->id]['late'];
+                $femaleTotalExcused += $attendanceData[$student->id]['excused'];
             }
         }
 
-        $totalPresent = $maleTotalPresent + $femaleTotalPresent;
-        $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
+        // For Monthly Total Present: Include both Present and Late
+        $maleTotalPresentForDisplay = $maleTotalPresent + $maleTotalLate;
+        $femaleTotalPresentForDisplay = $femaleTotalPresent + $femaleTotalLate;
+
+        $totalPresent = $maleTotalPresentForDisplay + $femaleTotalPresentForDisplay;
+        $totalAbsent = $maleTotalAbsent + $femaleTotalAbsent + $maleTotalExcused + $femaleTotalExcused;
 
         if ($request->has('__return_array__')) {
             return compact(
@@ -501,8 +542,14 @@ class TeacherController extends Controller
                 'monthParam',
                 'maleTotalPresent',
                 'femaleTotalPresent',
+                'maleTotalLate',
+                'femaleTotalLate',
                 'maleTotalAbsent',
                 'femaleTotalAbsent',
+                'maleTotalExcused',
+                'femaleTotalExcused',
+                'maleTotalPresentForDisplay',
+                'femaleTotalPresentForDisplay',
                 'totalAbsent',
                 'totalPresent',
                 'scheduleDays',
@@ -523,8 +570,14 @@ class TeacherController extends Controller
             'monthParam',
             'maleTotalPresent',
             'femaleTotalPresent',
+            'maleTotalLate',
+            'femaleTotalLate',
             'maleTotalAbsent',
             'femaleTotalAbsent',
+            'maleTotalExcused',
+            'femaleTotalExcused',
+            'maleTotalPresentForDisplay',
+            'femaleTotalPresentForDisplay',
             'totalAbsent',
             'totalPresent',
             'scheduleDays',
@@ -861,85 +914,85 @@ class TeacherController extends Controller
             'time_out' => $customTimeout ?? $schedule->end_time,
         ]);
 
-        // $parents = $student->parents()->whereNotNull('phone')->get();
-        // $timeIn = Carbon::parse($attendance->time_in)->format('h:i A');
-        // $timeOut = Carbon::parse($attendance->time_out)->format('h:i A');
-        // $formattedDate = Carbon::parse($attendance->date)->format('M d, Y');
-        // $currentClass = "{$class->grade_level} - {$class->section}";
+        $parents = $student->parents()->whereNotNull('phone')->get();
+        $timeIn = Carbon::parse($attendance->time_in)->format('h:i A');
+        $timeOut = Carbon::parse($attendance->time_out)->format('h:i A');
+        $formattedDate = Carbon::parse($attendance->date)->format('M d, Y');
+        $currentClass = "{$class->grade_level} - {$class->section}";
 
-        // if ($parents->count() > 0) {
-        //     $semaphore = new \App\Services\SemaphoreService();
+        if ($parents->count() > 0) {
+            $semaphore = new \App\Services\SemaphoreService();
 
-        //     // Collect all parent numbers
-        //     $numbers = [];
-        //     foreach ($parents as $parent) {
-        //         $phone = $parent->phone;
+            // Collect all parent numbers
+            $numbers = [];
+            foreach ($parents as $parent) {
+                $phone = $parent->phone;
 
-        //         $phone = preg_replace('/[^0-9]/', '', $phone); // Remove non-numeric
-        //         if (str_starts_with($phone, '0')) {
-        //             $phone = '+63' . substr($phone, 1);
-        //         } elseif (str_starts_with($phone, '63')) {
-        //             $phone = '+' . $phone;
-        //         } elseif (!str_starts_with($phone, '+63')) {
-        //             $phone = '+63' . $phone; // fallback
-        //         }
+                $phone = preg_replace('/[^0-9]/', '', $phone); // Remove non-numeric
+                if (str_starts_with($phone, '0')) {
+                    $phone = '+63' . substr($phone, 1);
+                } elseif (str_starts_with($phone, '63')) {
+                    $phone = '+' . $phone;
+                } elseif (!str_starts_with($phone, '+63')) {
+                    $phone = '+63' . $phone; // fallback
+                }
 
-        //         $numbers[] = $phone;
-        //     }
+                $numbers[] = $phone;
+            }
 
-        //     // Build and send message depending on status
-        //     foreach ($parents as $parent) {
-        //         $studentFullName = "{$student->student_fName} {$student->student_lName}";
+            // Build and send message depending on status
+            foreach ($parents as $parent) {
+                $studentFullName = "{$student->student_fName} {$student->student_lName}";
 
-        //         switch ($status) {
-        //             case 'present':
-        //                 $message = "Dear {$parent->firstName}, "
-        //                     . "We are pleased to inform you that your child, {$studentFullName}, "
-        //                     . "enrolled in {$currentClass}, has attended the ({$formattedDate}) {$schedule->subject_name} class. "
-        //                     . "The recorded Time In is {$timeIn}, and the scheduled Time Out is {$timeOut}. "
-        //                     . "Thank you for your continued support.";
-        //                 break;
+                switch ($status) {
+                    case 'present':
+                        $message = "Dear {$parent->firstName}, "
+                            . "We are pleased to inform you that your child, {$studentFullName}, "
+                            . "enrolled in {$currentClass}, has attended the ({$formattedDate}) {$schedule->subject_name} class. "
+                            . "The recorded Time In is {$timeIn}, and the scheduled Time Out is {$timeOut}. "
+                            . "Thank you for your continued support.";
+                        break;
 
-        //             case 'late':
-        //                 $message = "Dear {$parent->firstName}, "
-        //                     . "Please be informed that your child, {$studentFullName}, "
-        //                     . "enrolled in {$currentClass}, arrived late for today's ({$formattedDate}) {$schedule->subject_name} class. "
-        //                     . "The recorded Time In is {$timeIn}, and the scheduled Time Out is {$timeOut}. "
-        //                     . "Kindly remind your child of the importance of punctuality. Thank you.";
-        //                 break;
+                    case 'late':
+                        $message = "Dear {$parent->firstName}, "
+                            . "Please be informed that your child, {$studentFullName}, "
+                            . "enrolled in {$currentClass}, arrived late for today's ({$formattedDate}) {$schedule->subject_name} class. "
+                            . "The recorded Time In is {$timeIn}, and the scheduled Time Out is {$timeOut}. "
+                            . "Kindly remind your child of the importance of punctuality. Thank you.";
+                        break;
 
-        //             case 'absent':
-        //                 $message = "Dear {$parent->firstName}, "
-        //                     . "This is to inform you that your child, {$studentFullName}, "
-        //                     . "enrolled in {$currentClass}, was marked as ABSENT for today's ({$formattedDate}) {$schedule->subject_name} class. "
-        //                     . "If your child was unable to attend due to a valid reason, please notify the school adviser. Thank you.";
-        //                 break;
+                    case 'absent':
+                        $message = "Dear {$parent->firstName}, "
+                            . "This is to inform you that your child, {$studentFullName}, "
+                            . "enrolled in {$currentClass}, was marked as ABSENT for today's ({$formattedDate}) {$schedule->subject_name} class. "
+                            . "If your child was unable to attend due to a valid reason, please notify the school adviser. Thank you.";
+                        break;
 
-        //             case 'excused':
-        //                 $message = "Dear {$parent->firstName}, "
-        //                     . "Please be advised that your child, {$studentFullName}, "
-        //                     . "enrolled in {$currentClass}, has been marked as EXCUSED for today's ({$formattedDate}) {$schedule->subject_name} class. "
-        //                     . "The school acknowledges the reason provided for the absence. Thank you for keeping us informed.";
-        //                 break;
+                    case 'excused':
+                        $message = "Dear {$parent->firstName}, "
+                            . "Please be advised that your child, {$studentFullName}, "
+                            . "enrolled in {$currentClass}, has been marked as EXCUSED for today's ({$formattedDate}) {$schedule->subject_name} class. "
+                            . "The school acknowledges the reason provided for the absence. Thank you for keeping us informed.";
+                        break;
 
-        //             default:
-        //                 $message = "Dear {$parent->firstName}, "
-        //                     . "This is to inform you that your child, {$studentFullName}, "
-        //                     . "enrolled in {$currentClass}, has been marked as '{$status}' for today's ({$formattedDate}) {$schedule->subject_name} class.";
-        //                 break;
-        //         }
+                    default:
+                        $message = "Dear {$parent->firstName}, "
+                            . "This is to inform you that your child, {$studentFullName}, "
+                            . "enrolled in {$currentClass}, has been marked as '{$status}' for today's ({$formattedDate}) {$schedule->subject_name} class.";
+                        break;
+                }
 
-        //         // Send via queued SMS job
-        //         \App\Jobs\SendAttendanceSMS::dispatchAfterResponse($student, $status, $schedule, $attendance);
-        //         $sent = true;
+                // Send via queued SMS job
+                \App\Jobs\SendAttendanceSMS::dispatchAfterResponse($student, $status, $schedule, $attendance);
+                $sent = true;
 
-        //         if (!$sent) {
-        //             Log::warning("Failed to send SMS to parent {$parent->id} ({$parent->phone})");
-        //         }
-        //     }
-        // } else {
-        //     Log::warning("No parent phone number found for student ID {$student->id}");
-        // }
+                if (!$sent) {
+                    Log::warning("Failed to send SMS to parent {$parent->id} ({$parent->phone})");
+                }
+            }
+        } else {
+            Log::warning("No parent phone number found for student ID {$student->id}");
+        }
 
         return response()->json([
             'success' => true,
@@ -1037,7 +1090,7 @@ class TeacherController extends Controller
         ]);
 
         // Dispatch the same SMS job as the QR scanner does
-        // \App\Jobs\SendAttendanceSMS::dispatchAfterResponse($student, $status, $schedule, $attendance);
+        \App\Jobs\SendAttendanceSMS::dispatchAfterResponse($student, $status, $schedule, $attendance);
 
         return response()->json([
             'success' => true,
@@ -1921,113 +1974,113 @@ class TeacherController extends Controller
 
 
 
-    public function studentForm10($student_id, $format = 'pdf')
-    {
-        // Load student with necessary relationships
-        $student = Student::with(['address', 'parents'])->findOrFail($student_id);
+    // public function studentForm10($student_id, $format = 'pdf')
+    // {
+    //     // Load student with necessary relationships
+    //     $student = Student::with(['address', 'parents'])->findOrFail($student_id);
 
-        // Fetch class history (all enrolled classes, sorted by school year descending)
-        $classHistory = $student->class()
-            ->with([
-                'advisers' => function ($q) {
-                    $q->wherePivot('role', 'adviser');
-                }
-            ])
-            ->get()
-            ->sortByDesc(function ($classItem) {
-                return $classItem->pivot->school_year_id;
-            })
-            ->values();
+    //     // Fetch class history (all enrolled classes, sorted by school year descending)
+    //     $classHistory = $student->class()
+    //         ->with([
+    //             'advisers' => function ($q) {
+    //                 $q->wherePivot('role', 'adviser');
+    //             }
+    //         ])
+    //         ->get()
+    //         ->sortByDesc(function ($classItem) {
+    //             return $classItem->pivot->school_year_id;
+    //         })
+    //         ->values();
 
-        // Preload school years for efficiency
-        $schoolYears = SchoolYear::whereIn('id', $classHistory->pluck('pivot.school_year_id'))->pluck('school_year', 'id');
+    //     // Preload school years for efficiency
+    //     $schoolYears = SchoolYear::whereIn('id', $classHistory->pluck('pivot.school_year_id'))->pluck('school_year', 'id');
 
-        // Prepare grades data
-        $gradesByClass = [];
-        $generalAverages = [];
+    //     // Prepare grades data
+    //     $gradesByClass = [];
+    //     $generalAverages = [];
 
-        foreach ($classHistory as $classItem) {
-            $classSubjects = $classItem->classSubjects()
-                ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
-                    $q->where('student_id', $student->id);
-                }])
-                ->where('school_year_id', $classItem->pivot->school_year_id)
-                ->get();
+    //     foreach ($classHistory as $classItem) {
+    //         $classSubjects = $classItem->classSubjects()
+    //             ->with(['subject', 'quarters.quarterlyGrades' => function ($q) use ($student) {
+    //                 $q->where('student_id', $student->id);
+    //             }])
+    //             ->where('school_year_id', $classItem->pivot->school_year_id)
+    //             ->get();
 
-            $subjectsWithGrades = [];
-            $finalGrades = [];
+    //         $subjectsWithGrades = [];
+    //         $finalGrades = [];
 
-            foreach ($classSubjects as $classSubject) {
-                $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
-                    return [
-                        'quarter' => $quarter->quarter,
-                        'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
-                    ];
-                });
+    //         foreach ($classSubjects as $classSubject) {
+    //             $quarters = $classSubject->quarters->map(function ($quarter) use ($student) {
+    //                 return [
+    //                     'quarter' => $quarter->quarter,
+    //                     'grade' => optional($quarter->quarterlyGrades->first())->final_grade,
+    //                 ];
+    //             });
 
-                $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
-                $finalAverage = null;
-                $remarks = null;
+    //             $allQuartersHaveGrades = $quarters->every(fn($q) => $q['grade'] !== null);
+    //             $finalAverage = null;
+    //             $remarks = null;
 
-                if ($allQuartersHaveGrades) {
-                    $grades = $quarters->pluck('grade')->all();
-                    $finalAverage = round(array_sum($grades) / 4, 2);
-                    $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
-                    $finalGrades[] = $finalAverage;
-                }
+    //             if ($allQuartersHaveGrades) {
+    //                 $grades = $quarters->pluck('grade')->all();
+    //                 $finalAverage = round(array_sum($grades) / 4, 2);
+    //                 $remarks = $finalAverage >= 75 ? 'passed' : 'failed';
+    //                 $finalGrades[] = $finalAverage;
+    //             }
 
-                $subjectsWithGrades[] = [
-                    'subject' => $classSubject->subject->name,
-                    'quarters' => $quarters,
-                    'final_average' => $finalAverage,
-                    'remarks' => $remarks,
-                ];
-            }
+    //             $subjectsWithGrades[] = [
+    //                 'subject' => $classSubject->subject->name,
+    //                 'quarters' => $quarters,
+    //                 'final_average' => $finalAverage,
+    //                 'remarks' => $remarks,
+    //             ];
+    //         }
 
-            $gradesByClass[$classItem->id] = $subjectsWithGrades;
+    //         $gradesByClass[$classItem->id] = $subjectsWithGrades;
 
-            // General Average
-            $totalSubjects = count($classSubjects);
-            $completedSubjects = count($finalGrades);
-            if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
-                $generalAverage = round(array_sum($finalGrades) / $completedSubjects);
-                $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
-                $generalAverages[$classItem->id] = [
-                    'general_average' => $generalAverage,
-                    'remarks' => $remarks,
-                ];
-            } else {
-                $generalAverages[$classItem->id] = null;
-            }
-        }
+    //         // General Average
+    //         $totalSubjects = count($classSubjects);
+    //         $completedSubjects = count($finalGrades);
+    //         if ($totalSubjects > 0 && $completedSubjects === $totalSubjects) {
+    //             $generalAverage = round(array_sum($finalGrades) / $completedSubjects);
+    //             $remarks = $generalAverage >= 75 ? 'passed' : 'failed';
+    //             $generalAverages[$classItem->id] = [
+    //                 'general_average' => $generalAverage,
+    //                 'remarks' => $remarks,
+    //             ];
+    //         } else {
+    //             $generalAverages[$classItem->id] = null;
+    //         }
+    //     }
 
-        // Return based on requested format
-        if ($format === 'excel') {
-            $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.xlsx';
-            return Excel::download(new Form10Export($student, $classHistory, $gradesByClass, $generalAverages, $schoolYears), $filename);
-        }
+    //     // Return based on requested format
+    //     if ($format === 'excel') {
+    //         $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.xlsx';
+    //         return Excel::download(new Form10Export($student, $classHistory, $gradesByClass, $generalAverages, $schoolYears), $filename);
+    //     }
 
-        // Default: PDF export
-        $data = [
-            'student' => $student,
-            'classHistory' => $classHistory,
-            'gradesByClass' => $gradesByClass,
-            'generalAverages' => $generalAverages,
-            'schoolYears' => $schoolYears,
-            'school' => [
-                'name' => 'STA. BARBARA ELEMENTARY SCHOOL',
-                'division' => 'Schools Division Office of Camarines Sur',
-                'region' => 'Region V',
-                'department' => 'Republic of the Philippines, Department of Education',
-            ],
-        ];
+    //     // Default: PDF export
+    //     $data = [
+    //         'student' => $student,
+    //         'classHistory' => $classHistory,
+    //         'gradesByClass' => $gradesByClass,
+    //         'generalAverages' => $generalAverages,
+    //         'schoolYears' => $schoolYears,
+    //         'school' => [
+    //             'name' => 'STA. BARBARA ELEMENTARY SCHOOL',
+    //             'division' => 'Schools Division Office of Camarines Sur',
+    //             'region' => 'Region V',
+    //             'department' => 'Republic of the Philippines, Department of Education',
+    //         ],
+    //     ];
 
-        $pdf = Pdf::loadView('pdf.student_form10', $data)
-            ->setPaper([0, 0, 612, 936], 'portrait');
+    //     $pdf = Pdf::loadView('pdf.student_form10', $data)
+    //         ->setPaper([0, 0, 612, 936], 'portrait');
 
-        $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.pdf';
-        return $pdf->stream($filename);
-    }
+    //     $filename = 'Form10_' . str_replace(' ', '_', $student->full_name) . '.pdf';
+    //     return $pdf->stream($filename);
+    // }
 
     public function studentGradeSlip(Request $request)
     {

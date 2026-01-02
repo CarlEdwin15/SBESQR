@@ -25,19 +25,6 @@ class ParentController extends Controller
         return view('parent.index');
     }
 
-    public function children()
-    {
-        $user = Auth::user();
-
-        if ($user->role !== 'parent') {
-            abort(403, 'Unauthorized');
-        }
-
-        $children = $user->children()->with(['classStudents.class', 'schoolYears'])->get();
-
-        return view('parent.children.index', compact('children'));
-    }
-
     public function showChild($id, Request $request)
     {
         $user = Auth::user();
@@ -493,46 +480,45 @@ class ParentController extends Controller
     }
 
     public function deletePaymentRequest($id)
-{
-    $parent = Auth::user();
+    {
+        $parent = Auth::user();
 
-    if ($parent->role !== 'parent') {
-        return response()->json(['error' => 'Unauthorized'], 403);
-    }
-
-    try {
-        $paymentRequest = PaymentRequest::findOrFail($id);
-
-        // Ensure parent can only delete their own pending requests
-        if ($paymentRequest->parent_id !== $parent->id || $paymentRequest->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'error' => 'Unauthorized or cannot delete this request'
-            ], 403);
+        if ($parent->role !== 'parent') {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Get attempt number before deleting
-        $attemptNumber = $paymentRequest->attempt_number;
+        try {
+            $paymentRequest = PaymentRequest::findOrFail($id);
 
-        // Delete the payment request
-        $paymentRequest->delete();
+            // Ensure parent can only delete their own pending requests
+            if ($paymentRequest->parent_id !== $parent->id || $paymentRequest->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Unauthorized or cannot delete this request'
+                ], 403);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment request deleted successfully.',
-            'attempt_number' => $attemptNumber
-        ]);
+            // Get attempt number before deleting
+            $attemptNumber = $paymentRequest->attempt_number;
 
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'error' => 'Payment request not found'
-        ], 404);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => 'Failed to delete request: ' . $e->getMessage()
-        ], 500);
+            // Delete the payment request
+            $paymentRequest->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request deleted successfully.',
+                'attempt_number' => $attemptNumber
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Payment request not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to delete request: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 }

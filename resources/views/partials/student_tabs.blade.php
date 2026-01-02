@@ -90,7 +90,7 @@
                 @php
                     $user = auth()->user();
                 @endphp
-                @if ($user && $user->role === 'admin')
+                {{-- @if ($user && $user->role === 'admin')
                     <div class="d-flex justify-content-between mb-3">
                         <h5 class="fw-bold text-primary mb-3">Classes and Grades</h5>
                         <a href="{{ route('admin.student.form10', ['student_id' => $student->id]) }}" target="_blank"
@@ -98,7 +98,7 @@
                             <i class="bx bx-printer me-1"></i> Export Form 10
                         </a>
                     </div>
-                @endif
+                @endif --}}
 
                 @if ($classHistory->isEmpty())
                     <p class="text-muted">No classes found for this student.</p>

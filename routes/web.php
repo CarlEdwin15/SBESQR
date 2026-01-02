@@ -348,11 +348,14 @@ Route::prefix('teacher')
         Route::get('/dashboard/students', [HomeController::class, 'getTeacherDashboardStudents'])
             ->name('teacher.dashboard.students');
 
-            Route::get('/dashboard/enrollment-data', [HomeController::class, 'getEnrollmentData'])->name('teacher.dashboard.enrollment-data');
-    Route::get('/dashboard/gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('teacher.dashboard.gender-data-filtered');
-    Route::get('/dashboard/grade-sections', [HomeController::class, 'getGradeSections'])->name('teacher.dashboard.grade-sections');
-    Route::get('/dashboard/gender-data', [HomeController::class, 'getGenderData'])->name('teacher.dashboard.gender-data');
-    Route::get('/get-school-year-id', [HomeController::class, 'getSchoolYearId'])->name('teacher.get-school-year-id');
+        Route::get('/dashboard/enrollment-data', [HomeController::class, 'getEnrollmentData'])->name('teacher.dashboard.enrollment-data');
+        Route::get('/dashboard/gender-data-filtered', [HomeController::class, 'getGenderDataFiltered'])->name('teacher.dashboard.gender-data-filtered');
+        Route::get('/dashboard/grade-sections', [HomeController::class, 'getGradeSections'])->name('teacher.dashboard.grade-sections');
+        Route::get('/dashboard/gender-data', [HomeController::class, 'getGenderData'])->name('teacher.dashboard.gender-data');
+        Route::get('/get-school-year-id', [HomeController::class, 'getSchoolYearId'])->name('teacher.get-school-year-id');
+
+        // Attendance overview route
+Route::post('/teacher/attendance/overview', [HomeController::class, 'getAttendanceOverview'])->name('teacher.attendance.overview');
 
         // Export SF2
         Route::get('/export-attendance', function () {

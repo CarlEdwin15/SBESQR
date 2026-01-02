@@ -100,21 +100,41 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
                 // Count only if date is in selected month
                 if ($inMonth) {
                     $isMale = strtolower($student->student_sex) === 'male';
-                    if (str_contains($symbolStr, '✓')) {
-                        if ($isMale) $malePresentTotals[$i]++;
-                        else $femalePresentTotals[$i]++;
-                        $combinedPresentTotals[$i]++;
-                    } elseif (str_contains(strtolower($symbolStr), 'a')) {
-                        if ($isMale) $maleAbsentTotals[$i]++;
-                        else $femaleAbsentTotals[$i]++;
-                        $combinedAbsentTotals[$i]++;
+                    $symbols = $this->attendanceData[$student->id]['by_date'][$dateKey] ?? [];
+
+                    // Check each symbol for this date
+                    foreach ($symbols as $symbolEntry) {
+                        $status = $symbolEntry['original_status'] ?? '';
+
+                        // PRESENT: count both 'present' and 'late' as 1
+                        if ($status === 'present' || $status === 'late') {
+                            if ($isMale) $malePresentTotals[$i]++;
+                            else $femalePresentTotals[$i]++;
+                            $combinedPresentTotals[$i]++;
+                        }
+                        // ABSENT: count both 'absent' and 'excused' as 0 (but count for totals)
+                        elseif ($status === 'absent' || $status === 'excused') {
+                            if ($isMale) $maleAbsentTotals[$i]++;
+                            else $femaleAbsentTotals[$i]++;
+                            $combinedAbsentTotals[$i]++;
+                        }
                     }
                 }
             }
 
             $row = array_merge($row, $dailySymbols);
-            $row[] = $this->attendanceData[$student->id]['absent'] ?? 0;
-            $row[] = $this->attendanceData[$student->id]['present'] ?? 0;
+
+            // UPDATED: Calculate monthly totals same as blade view
+            // Monthly ABSENT = absent + excused
+            $monthlyAbsent = ($this->attendanceData[$student->id]['absent'] ?? 0) +
+                ($this->attendanceData[$student->id]['excused'] ?? 0);
+
+            // Monthly PRESENT = present + late
+            $monthlyPresent = ($this->attendanceData[$student->id]['present'] ?? 0) +
+                ($this->attendanceData[$student->id]['late'] ?? 0);
+
+            $row[] = $monthlyAbsent;
+            $row[] = $monthlyPresent;
             $row[] = ''; // Remarks
 
             if (strtolower($student->student_sex) === 'male') {
@@ -128,17 +148,33 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
         $absentIndex = 2 + $dateCount;
         $presentIndex = $absentIndex + 1;
 
+        // Calculate totals for MALE
+        $maleTotalAbsent = 0;
+        $maleTotalPresent = 0;
+        foreach ($maleRows as $row) {
+            $maleTotalAbsent += $row[$absentIndex];
+            $maleTotalPresent += $row[$presentIndex];
+        }
+
         // Merge male rows + male total
         $rows = array_merge($rows, $maleRows);
         $rows[] = array_merge(
             [count($maleRows), 'MALE | TOTAL PER DAY'],
             $malePresentTotals, // Only showing PRESENT per day
             [
-                array_sum(array_column($maleRows, $absentIndex)),
-                array_sum(array_column($maleRows, $presentIndex)),
+                $maleTotalAbsent,
+                $maleTotalPresent,
                 ''
             ]
         );
+
+        // Calculate totals for FEMALE
+        $femaleTotalAbsent = 0;
+        $femaleTotalPresent = 0;
+        foreach ($femaleRows as $row) {
+            $femaleTotalAbsent += $row[$absentIndex];
+            $femaleTotalPresent += $row[$presentIndex];
+        }
 
         // Merge female rows + female total
         $rows = array_merge($rows, $femaleRows);
@@ -146,20 +182,21 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
             [count($femaleRows), 'FEMALE | TOTAL PER DAY'],
             $femalePresentTotals, // Only showing PRESENT per day
             [
-                array_sum(array_column($femaleRows, $absentIndex)),
-                array_sum(array_column($femaleRows, $presentIndex)),
+                $femaleTotalAbsent,
+                $femaleTotalPresent,
                 ''
             ]
         );
 
         // Combined total (sum only from student rows)
-        $combinedRows = array_merge($maleRows, $femaleRows);
+        $combinedTotalAbsent = $maleTotalAbsent + $femaleTotalAbsent;
+        $combinedTotalPresent = $maleTotalPresent + $femaleTotalPresent;
         $rows[] = array_merge(
-            [count($combinedRows), 'COMBINED | TOTAL PER DAY'],
+            [count($maleRows) + count($femaleRows), 'COMBINED | TOTAL PER DAY'],
             $combinedPresentTotals, // Only showing PRESENT per day
             [
-                array_sum(array_column($combinedRows, $absentIndex)),
-                array_sum(array_column($combinedRows, $presentIndex)),
+                $combinedTotalAbsent,
+                $combinedTotalPresent,
                 ''
             ]
         );
@@ -537,8 +574,8 @@ class SF2Export implements FromArray, WithHeadings, WithStyles, WithTitle, WithC
 
         // 1–3 guidelines
         $cell1Text =
-            "1. The attendance shall be accomplished daily. Refer to the codes for checking learners’ attendance.\n" .
-            "2. Dates shall be written in the columns after Learner’s Name.\n" .
+            "1. The attendance shall be accomplished daily. Refer to the codes for checking learners' attendance.\n" .
+            "2. Dates shall be written in the columns after Learner's Name.\n" .
             "3. Compute the following:";
         $sheet->mergeCells("A" . ($guidelinesRow + 1) . ":Q" . ($guidelinesRow + 3));
         $sheet->setCellValue("A" . ($guidelinesRow + 1), $cell1Text);

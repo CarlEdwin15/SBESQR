@@ -230,8 +230,8 @@
 
                                         $photoPath =
                                             $student->student_photo &&
-                                            file_exists(public_path('uploads/' . $student->student_photo))
-                                                ? public_path('uploads/' . $student->student_photo)
+                                            file_exists(public_path('public/uploads/' . $student->student_photo))
+                                                ? public_path('public/uploads/' . $student->student_photo)
                                                 : public_path(
                                                     'assetsDashboard/img/student_profile_pictures/student_default_profile.jpg',
                                                 );

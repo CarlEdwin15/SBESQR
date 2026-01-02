@@ -103,72 +103,113 @@
             // Get current school year
             $currentSchoolYear = SchoolYear::where('start_date', '<=', now())->where('end_date', '>=', now())->first();
 
-            $studentCount = 0;
-            $regularCount = 0;
-            $transfereeCount = 0;
-            $returneeCount = 0;
-            $newlyEnrolledStudents = 0;
-            $attendanceToday = 0;
-            $schedule = null;
-
-            // Advisory and subject class counts
-            $advisoryClassCount = 0;
-            $subjectClassCount = 0;
-
+            // Get both advisory and subject classes for the teacher
             $advisoryClass = $teacher
                 ->advisoryClasses()
                 ->wherePivot('school_year_id', $currentSchoolYear?->id)
                 ->first();
 
-            $subjectClass = $teacher->subjectClasses()->wherePivot('school_year_id', $currentSchoolYear?->id)->first();
+            $subjectClasses = $teacher->subjectClasses()->wherePivot('school_year_id', $currentSchoolYear?->id)->get();
 
-            $class = $advisoryClass ?? $subjectClass;
+            // Collect all classes the teacher teaches
+            $allTeacherClasses = collect();
 
-            if ($class && $currentSchoolYear) {
-                $studentsQuery = $class->students()->wherePivot('school_year_id', $currentSchoolYear->id);
+            if ($advisoryClass) {
+                $allTeacherClasses->push($advisoryClass);
+            }
 
-                $studentCount = $studentsQuery->count();
+            if ($subjectClasses->isNotEmpty()) {
+                $allTeacherClasses = $allTeacherClasses->merge($subjectClasses);
+            }
 
-                // Get counts by enrollment type
-                $enrollmentTypeCounts = $studentsQuery
-                    ->selectRaw('enrollment_type, COUNT(*) as count')
-                    ->groupBy('enrollment_type')
-                    ->pluck('count', 'enrollment_type')
-                    ->toArray();
+            $allTeacherClasses = $allTeacherClasses->unique('id');
 
-                $regularCount = $enrollmentTypeCounts['regular'] ?? 0;
-                $transfereeCount = $enrollmentTypeCounts['transferee'] ?? 0;
-                $returneeCount = $enrollmentTypeCounts['returnee'] ?? 0;
+            $studentCount = 0;
+            $regularCount = 0;
+            $transfereeCount = 0;
+            $returneeCount = 0;
+            $newlyEnrolledStudents = 0;
 
-                $newlyEnrolledStudents = $studentsQuery->where('students.created_at', '>=', now()->subWeek())->count();
+            // Store schedules for all classes
+            $allTodaySchedules = collect();
 
-                $today = Carbon::now()->format('Y-m-d');
-                $now = Carbon::now();
-                $todayDayName = $now->format('l');
+            // Process each class
+            foreach ($allTeacherClasses as $classItem) {
+                if ($currentSchoolYear) {
+                    $studentsQuery = $classItem->students()->wherePivot('school_year_id', $currentSchoolYear->id);
 
-                $schedule = $class
-                    ->schedules()
-                    ->where('day', $todayDayName)
-                    ->where('school_year_id', $currentSchoolYear->id)
-                    ->orderBy('start_time')
-                    ->get()
-                    ->filter(function ($sched) use ($now) {
-                        return Carbon::parse($sched->end_time)->gt($now);
-                    })
-                    ->first();
+                    // Add to student count (ensure we don't double-count the same student in multiple classes)
+        $classStudentCount = $studentsQuery->count();
+        $studentCount += $classStudentCount;
 
-                if ($schedule) {
-                    $presentCount = $schedule
-                        ->attendances()
-                        ->whereDate('date', $today)
-                        ->whereIn('status', ['present', 'late'])
-                        ->count();
+        // Get enrollment type counts for this class
+        $enrollmentTypeCounts = $studentsQuery
+            ->selectRaw('enrollment_type, COUNT(*) as count')
+            ->groupBy('enrollment_type')
+            ->pluck('count', 'enrollment_type')
+            ->toArray();
 
-                    $attendanceToday = $studentCount > 0 ? min(100, round(($presentCount / $studentCount) * 100)) : 0;
+        $regularCount += $enrollmentTypeCounts['regular'] ?? 0;
+        $transfereeCount += $enrollmentTypeCounts['transferee'] ?? 0;
+        $returneeCount += $enrollmentTypeCounts['returnee'] ?? 0;
+
+        $newlyEnrolledStudents += $studentsQuery
+            ->where('students.created_at', '>=', now()->subWeek())
+            ->count();
+
+        // Get today's schedules for this class
+                    $today = Carbon::now()->format('Y-m-d');
+                    $now = Carbon::now();
+                    $todayDayName = $now->format('l');
+
+                    $todaySchedules = $classItem
+                        ->schedules()
+                        ->where('day', $todayDayName)
+                        ->where('school_year_id', $currentSchoolYear->id)
+                        ->orderBy('start_time')
+                        ->get();
+
+                    // Add class info and teacher name to each schedule for display
+                    foreach ($todaySchedules as $schedule) {
+                        $schedule->teacher_name = $teacher->full_name;
+                        $schedule->class_grade_level =
+                            $classItem->formatted_grade_level ?? ucfirst($classItem->grade_level);
+                        $schedule->class_section = $classItem->section;
+                        $schedule->class_id = $classItem->id;
+                        $schedule->class_obj = $classItem; // Store the class object
+                        $allTodaySchedules->push($schedule);
+                    }
+                }
+            }
+
+            // Sort all schedules by start time
+            $allTodaySchedules = $allTodaySchedules->sortBy('start_time')->values();
+
+            // Find the nearest/current schedule
+            $nearestIndex = null;
+            $minDiff = null;
+            $now = \Carbon\Carbon::now();
+
+            foreach ($allTodaySchedules as $idx => $schedule) {
+                $start = \Carbon\Carbon::parse($schedule->start_time)->setDateFrom(now());
+                $end = \Carbon\Carbon::parse($schedule->end_time)->setDateFrom(now());
+
+                if ($now->between($start, $end)) {
+                    $nearestIndex = $idx;
+                    break;
+                }
+
+                $diff = min(abs($now->diffInSeconds($start, false)), abs($now->diffInSeconds($end, false)));
+
+                if (is_null($minDiff) || $diff < $minDiff) {
+                    $minDiff = $diff;
+                    $nearestIndex = $idx;
                 }
             }
 
             // Get advisory and subject class counts
+            $advisoryClassCount = 0;
+            $subjectClassCount = 0;
             if ($currentSchoolYear) {
                 $advisoryClassCount = $teacher
                     ->advisoryClasses()
@@ -210,9 +251,9 @@
             $schoolYearText = $currentSchoolYear ? $currentSchoolYear->school_year : 'N/A';
 
             // Gender Statistics for Current School Year (Teacher's classes only)
-            $genderStats = [];
-            if ($schoolYearId) {
-                    // Get teacher's class IDs
+$genderStats = [];
+if ($schoolYearId) {
+    // Get teacher's class IDs
                 $teacherClassIds = $teacher
                     ->classes()
                     ->wherePivot('school_year_id', $schoolYearId)
@@ -246,9 +287,9 @@
             }
 
             // Enrollment by Grade Level for Current School Year (Teacher's classes only)
-                $enrollmentByGrade = [];
-                if ($schoolYearId) {
-                    // Get teacher's class IDs
+$enrollmentByGrade = [];
+if ($schoolYearId) {
+    // Get teacher's class IDs
                 $teacherClassIds = $teacher
                     ->classes()
                     ->wherePivot('school_year_id', $schoolYearId)
@@ -276,7 +317,7 @@
             }
 
             // Total enrollees for teacher's classes
-                    $totalEnrollees = $genderStats['total'] ?? 0;
+$totalEnrollees = $genderStats['total'] ?? 0;
         @endphp
 
         <div class="container-xxl container-p-y">
@@ -293,8 +334,8 @@
                                         width="50" height="50">
                                 </div>
                                 <div class="d-flex flex-column align-items-center ms-auto">
-                                    <h5 class="fw-semibold text-primary mb-2 d-none d-sm-block">Students</h5>
-                                    <h6 class="fw-semibold text-primary mb-2 d-sm-block d-sm-none">Students</h6>
+                                    <h5 class="fw-semibold text-primary mb-2 d-none d-sm-block">My Students</h5>
+                                    <h6 class="fw-semibold text-primary mb-2 d-sm-block d-sm-none">My Students</h6>
                                     <h1 class="fw-semibold mb-0">{{ $studentCount }}</h1>
                                 </div>
                             </div>
@@ -354,268 +395,477 @@
                     </div>
                 </div>
 
-                <!-- Replace the entire attendance card section (around line 270-400) with this: -->
-
-                @if ($class)
+                <!-- Today's Schedules and Attendance Overview Card -->
+                @if ($allTodaySchedules->count() > 0 || $teacherClassesCount > 0)
                     <div class="col-12 col-xxl-6 mb-6">
                         <div class="card h-100">
                             <div class="row row-bordered g-0 h-100">
 
                                 <!-- LEFT SIDE : TODAY'S SCHEDULES -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 d-flex flex-column">
                                     <div class="card-header d-flex align-items-center justify-content-between">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="avatar flex-shrink-0">
+                                        <div class="d-flex align-items-center gap-2 mb-0">
+                                            <div class="avatar flex-shrink-0 me-2">
                                                 <img src="{{ asset('assetsDashboard/img/icons/dashIcon/attendanceIcon.png') }}"
                                                     alt="Attendance" class="rounded" />
                                             </div>
                                             <div>
                                                 <h5 class="card-title mb-0 text-primary">Today's Schedules</h5>
-                                                <small class="text-muted">{{ now()->format('F j, Y') }}</small>
+                                                <small class="text-muted">{{ now()->format('D, M j, Y') }}</small>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="card-body">
-                                        @php
-                                            $today = now()->format('Y-m-d');
-                                            $todayDayName = now()->format('l');
+                                    <div class="card-body flex-grow-1 p-0">
+                                        <!-- Scrollable container for schedules -->
+                                        <div class="schedule-list-container" style="height: 100%; overflow-y: auto;">
+                                            <div class="accordion p-3" id="todaySchedulesAccordion">
+                                                @if ($allTodaySchedules->count() > 0)
+                                                    @foreach ($allTodaySchedules as $index => $schedule)
+                                                        @php
+                                                            $collapseId = 'todayScheduleCollapse' . $schedule->id;
+                                                            $headingId = 'todayHeading' . $schedule->id;
+                                                            $isOpen = $index === $nearestIndex;
 
-                                            $todaySchedules = $class
-                                                ->schedules()
-                                                ->where('day', ucfirst($todayDayName))
-                                                ->where('school_year_id', $currentSchoolYear?->id)
-                                                ->orderBy('start_time')
-                                                ->get();
+                                                            // Get student count for this specific class
+                                                            $classForSchedule = $allTeacherClasses->firstWhere(
+                                                                'id',
+                                                                $schedule->class_id,
+                                                            );
+                                                            $scheduleStudentCount = $classForSchedule
+                                                                ? $classForSchedule
+                                                                    ->students()
+                                                                    ->wherePivot(
+                                                                        'school_year_id',
+                                                                        $currentSchoolYear?->id,
+                                                                    )
+                                                                    ->count()
+                                                                : 0;
 
-                                            $now = \Carbon\Carbon::now();
-                                            $nearestIndex = null;
-                                            $minDiff = null;
+                                                            $presentCount = $schedule
+                                                                ->attendances()
+                                                                ->whereDate('date', $today)
+                                                                ->whereIn('status', ['present', 'late'])
+                                                                ->count();
 
-                                            foreach ($todaySchedules as $idx => $schedule) {
-                                                $start = \Carbon\Carbon::parse($schedule->start_time)->setDateFrom(
-                                                    now(),
-                                                );
-                                                $end = \Carbon\Carbon::parse($schedule->end_time)->setDateFrom(now());
+                                                            $attendancePercentage =
+                                                                $scheduleStudentCount > 0
+                                                                    ? round(
+                                                                        ($presentCount / $scheduleStudentCount) * 100,
+                                                                    )
+                                                                    : 0;
 
-                                                if ($now->between($start, $end)) {
-                                                    $nearestIndex = $idx;
-                                                    break;
-                                                }
+                                                            // Check if current time is within the schedule
+                                                            $scheduleStart = \Carbon\Carbon::parse(
+                                                                $schedule->start_time,
+                                                            )->setDateFrom(now());
+                                                            $scheduleEnd = \Carbon\Carbon::parse(
+                                                                $schedule->end_time,
+                                                            )->setDateFrom(now());
+                                                            $isWithinScheduleTime = $now->between(
+                                                                $scheduleStart,
+                                                                $scheduleEnd,
+                                                            );
+                                                        @endphp
 
-                                                $diff = min(
-                                                    abs($now->diffInSeconds($start, false)),
-                                                    abs($now->diffInSeconds($end, false)),
-                                                );
+                                                        <div class="accordion-item border mb-2">
+                                                            <h2 class="accordion-header" id="{{ $headingId }}">
+                                                                <button
+                                                                    class="accordion-button {{ $isOpen ? '' : 'collapsed' }} py-2"
+                                                                    type="button" data-bs-toggle="collapse"
+                                                                    data-bs-target="#{{ $collapseId }}"
+                                                                    aria-expanded="{{ $isOpen ? 'true' : 'false' }}">
+                                                                    <div class="d-flex justify-content-between w-100">
+                                                                        <div>
+                                                                            <small class="text-muted d-block">
+                                                                                {{ $schedule->subject_name }}
+                                                                                ({{ $schedule->class_grade_level }} -
+                                                                                {{ $schedule->class_section }})
+                                                                            </small>
+                                                                            <small
+                                                                                class="{{ $isWithinScheduleTime ? 'text-danger fw-bold' : 'text-primary' }}">
+                                                                                {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }}
+                                                                                -
+                                                                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            </h2>
 
-                                                if (is_null($minDiff) || $diff < $minDiff) {
-                                                    $minDiff = $diff;
-                                                    $nearestIndex = $idx;
-                                                }
-                                            }
-                                        @endphp
-
-                                        <div class="accordion" id="todaySchedulesAccordion">
-
-                                            @forelse ($todaySchedules as $index => $schedule)
-                                                @php
-                                                    $collapseId = 'todayScheduleCollapse' . $schedule->id;
-                                                    $headingId = 'todayHeading' . $schedule->id;
-                                                    $isOpen = $index === $nearestIndex;
-
-                                                    $presentCount = $schedule
-                                                        ->attendances()
-                                                        ->whereDate('date', $today)
-                                                        ->whereIn('status', ['present', 'late'])
-                                                        ->count();
-
-                                                    $totalStudents = $studentCount;
-                                                    $attendancePercentage =
-                                                        $totalStudents > 0
-                                                            ? round(($presentCount / $totalStudents) * 100)
-                                                            : 0;
-
-                                                    // Check if current time is within the schedule
-                                                    $scheduleStart = \Carbon\Carbon::parse(
-                                                        $schedule->start_time,
-                                                    )->setDateFrom(now());
-                                                    $scheduleEnd = \Carbon\Carbon::parse(
-                                                        $schedule->end_time,
-                                                    )->setDateFrom(now());
-                                                    $now = \Carbon\Carbon::now();
-                                                    $isWithinScheduleTime = $now->between($scheduleStart, $scheduleEnd);
-                                                @endphp
-
-                                                <div class="accordion-item border mb-2">
-                                                    <h2 class="accordion-header" id="{{ $headingId }}">
-                                                        <button
-                                                            class="accordion-button {{ $isOpen ? '' : 'collapsed' }} py-2"
-                                                            type="button" data-bs-toggle="collapse"
-                                                            data-bs-target="#{{ $collapseId }}"
-                                                            aria-expanded="{{ $isOpen ? 'true' : 'false' }}">
-
-                                                            <div class="d-flex justify-content-between w-100">
-                                                                <div>
-                                                                    <small
-                                                                        class="text-muted d-block">{{ $schedule->subject_name }}</small>
-                                                                    <!-- Change text color based on schedule time -->
-                                                                    <small
-                                                                        class="{{ $isWithinScheduleTime ? 'text-danger fw-bold' : 'text-primary' }}">
-                                                                        {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }}
-                                                                        -
-                                                                        {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}
-                                                                    </small>
+                                                            <div id="{{ $collapseId }}"
+                                                                class="accordion-collapse collapse {{ $isOpen ? 'show' : '' }}">
+                                                                <div class="accordion-body p-2">
+                                                                    <div class="d-flex flex-column gap-2">
+                                                                        <!-- QR Scanner Button (only show if within schedule time) -->
+                                                                        @if ($isWithinScheduleTime && $classForSchedule)
+                                                                            <button
+                                                                                class="btn btn-warning btn-sm d-flex align-items-center justify-content-center gap-2"
+                                                                                onclick="chooseGracePeriod(
+                                                    '{{ route('teacher.scanAttendance', [$classForSchedule->grade_level, $classForSchedule->section, $today, $schedule->id]) }}?mark_absent=true',
+                                                    '{{ $schedule->start_time }}',
+                                                    '{{ $schedule->end_time }}'
+                                                )">
+                                                                                <i class='bx bx-scan'></i> Start QR
+                                                                                Attendance
+                                                                            </button>
+                                                                        @endif
+                                                                    </div>
                                                                 </div>
-                                                                <div class="text-end">
-                                                                    <span
-                                                                        class="badge bg-label-success">{{ $presentCount }}
-                                                                        Present</span>
-                                                                    <!-- Remove the attendance percentage line -->
-                                                                    <!-- <small class="d-block text-muted">{{ $attendancePercentage }}%</small> -->
-                                                                </div>
-                                                            </div>
-                                                        </button>
-                                                    </h2>
-
-                                                    <div id="{{ $collapseId }}"
-                                                        class="accordion-collapse collapse {{ $isOpen ? 'show' : '' }}">
-                                                        <div class="accordion-body p-2">
-                                                            <div class="d-flex flex-column gap-2">
-                                                                <!-- QR Scanner Button (only show if within schedule time) -->
-                                                                @if ($isWithinScheduleTime)
-                                                                    <button
-                                                                        class="btn btn-warning btn-sm d-flex align-items-center justify-content-center gap-2"
-                                                                        onclick="chooseGracePeriod(
-                                    '{{ route('teacher.scanAttendance', [$class->grade_level, $class->section, $today, $schedule->id]) }}?mark_absent=true',
-                                    '{{ $schedule->start_time }}',
-                                    '{{ $schedule->end_time }}'
-                                )">
-                                                                        <i class='bx bx-scan'></i> Start QR Attendance
-                                                                    </button>
-                                                                @endif
                                                             </div>
                                                         </div>
+                                                    @endforeach
+                                                @else
+                                                    <div class="text-center py-4">
+                                                        <i class="bx bx-calendar-x text-muted fs-4"></i>
+                                                        <p class="text-muted mb-0 mt-2">No schedules for today</p>
+                                                        @if ($teacherClassesCount > 0)
+                                                            <small class="text-muted">
+                                                                You have {{ $teacherClassesCount }} class(es) but no
+                                                                schedules
+                                                                are set for today.
+                                                            </small>
+                                                        @endif
                                                     </div>
-                                                </div>
-                                            @empty
-                                                <div class="text-center py-4">
-                                                    <i class="bx bx-calendar-x text-muted fs-4"></i>
-                                                    <p class="text-muted mb-0 mt-2">No schedules for today</p>
-                                                </div>
-                                            @endforelse
+                                                @endif
+                                            </div>
                                         </div>
+                                    </div>
 
-                                        <!-- ADDED: Attendance Details Button at bottom of card -->
-                                        @if ($todaySchedules->count() > 0)
-                                            <div class="mt-3 pt-3 border-top">
-                                                <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $class->grade_level, 'section' => $class->section]) }}?school_year={{ $selectedYear ?? ($currentSchoolYear->school_year ?? '') }}"
+                                    <!-- CARD FOOTER with Advisory Class Attendance Button -->
+                                    @if ($allTeacherClasses->count() > 0 && $advisoryClass)
+                                        <div class="card-footer mt-auto py-3 border-top">
+                                            <div class="d-flex">
+                                                <a href="{{ route('teacher.myAttendanceRecord', ['grade_level' => $advisoryClass->grade_level, 'section' => $advisoryClass->section]) }}?school_year={{ $selectedYear ?? ($currentSchoolYear->school_year ?? '') }}"
                                                     class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-2 w-100">
-                                                    <i class='bx bx-history'></i> View Attendance History
+                                                    <i class='bx bx-history'></i> Advisory Class Attendance
                                                 </a>
                                             </div>
-                                        @endif
-                                    </div>
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <!-- RIGHT SIDE : TODAY'S OVERVIEW -->
                                 <div class="col-md-6">
-                                    <!-- Attendance Card -->
-                                    <div class="card-header d-flex justify-content-between align-items-center mb-0">
-                                        <div class="justify-content-center align-items-center card-title mb-0">
-                                            <h5 class="text-primary m-0 me-2">
-                                                Attendance Overview for Today
-                                            </h5>
+                                    <!-- Attendance Card Header -->
+                                    <div class="card-header mb-0 py-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar flex-shrink-0 me-2">
+                                                <img src="{{ asset('assetsDashboard/img/icons/dashIcon/graph.png') }}"
+                                                    alt="Attendance" class="rounded" />
+                                            </div>
+                                            <div>
+                                                <h5 class="card-title mb-0 text-primary">Attendance Overview</h5>
+                                                <h5 class="card-title mb-0 text-primary">for Advisory Class</h5>
+                                                <small class="text-muted">{{ now()->format('D, M j, Y') }}</small>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="card-body">
-                                        <div class="d-flex justify-content-center align-items-center">
-                                            <div id="studentTypeChart"></div>
+                                        <!-- Attendance Content -->
+                                        <div id="attendanceContent">
+
+
+                                            @php
+                                                // Calculate attendance statistics for advisory class only with proper schedule-based computation
+                                                $today = Carbon::now()->format('Y-m-d');
+
+                                                // Initialize stats with schedule multiplier
+                                                $attendanceStats = [
+                                                    'present' => 0,
+                                                    'late' => 0,
+                                                    'absent' => 0,
+                                                    'excused' => 0,
+                                                    'total' => 0,
+                                                    'total_possible' => 0, // Total possible attendance slots (students * schedules)
+                                                ];
+
+                                                // Process only advisory class
+                                                if ($advisoryClass && $currentSchoolYear) {
+                                                    // Get student count for advisory class
+                                                    $advisoryStudentCount = $advisoryClass
+                                                        ->students()
+                                                        ->wherePivot('school_year_id', $currentSchoolYear->id)
+                                                        ->count();
+
+                                                    $attendanceStats['total'] = $advisoryStudentCount;
+
+                                                    // Get today's schedules for advisory class
+    $todayDayName = Carbon::now()->format('l');
+    $todaySchedules = $advisoryClass
+        ->schedules()
+        ->where('day', $todayDayName)
+        ->where('school_year_id', $currentSchoolYear->id)
+        ->get();
+
+    $scheduleCount = $todaySchedules->count();
+
+    // Calculate total possible attendance slots
+    $attendanceStats['total_possible'] =
+        $advisoryStudentCount * $scheduleCount;
+
+    if ($scheduleCount === 0) {
+        // No schedules today
+        $attendanceStats['present'] = 0;
+        $attendanceStats['late'] = 0;
+        $attendanceStats['absent'] = 0;
+        $attendanceStats['excused'] = 0;
+
+        $presentPercentage = 0;
+        $latePercentage = 0;
+        $absentPercentage = 0;
+        $excusedPercentage = 0;
+
+        // Format counts for display
+        $presentCountDisplay = 0;
+        $lateCountDisplay = 0;
+        $absentCountDisplay = 0;
+        $excusedCountDisplay = 0;
+    } else {
+        // Get all students in the advisory class
+        $advisoryStudents = $advisoryClass
+            ->students()
+            ->wherePivot('school_year_id', $currentSchoolYear->id)
+            ->get();
+
+        // Reset attendance stats since we're counting per schedule
+                                                        $attendanceStats['present'] = 0;
+                                                        $attendanceStats['late'] = 0;
+                                                        $attendanceStats['absent'] = 0;
+                                                        $attendanceStats['excused'] = 0;
+
+                                                        // Track attendance per schedule
+                                                        foreach ($todaySchedules as $schedule) {
+                                                            // Get attendances for this specific schedule
+                                                            $attendances = $schedule
+                                                                ->attendances()
+                                                                ->whereDate('date', $today)
+                                                                ->get();
+
+                                                            // Count attendance statuses for this schedule
+                                                            foreach ($attendances as $attendance) {
+                                                                switch ($attendance->status) {
+                                                                    case 'present':
+                                                                        $attendanceStats['present']++;
+                                                                        break;
+                                                                    case 'late':
+                                                                        $attendanceStats['late']++;
+                                                                        break;
+                                                                    case 'absent':
+                                                                        $attendanceStats['absent']++;
+                                                                        break;
+                                                                    case 'excused':
+                                                                        $attendanceStats['excused']++;
+                                                                        break;
+                                                                }
+                                                            }
+
+                                                            // Count students without attendance as absent for this schedule
+                                                            $studentsWithAttendance = $attendances
+                                                                ->pluck('student_id')
+                                                                ->toArray();
+                                                            $studentsWithoutAttendance =
+                                                                $advisoryStudentCount - count($studentsWithAttendance);
+
+                                                            // Check if any students without attendance are excused
+                                                            if ($studentsWithoutAttendance > 0) {
+                                                                foreach ($advisoryStudents as $student) {
+                                                                    if (
+                                                                        !in_array($student->id, $studentsWithAttendance)
+                                                                    ) {
+                                                                        // Check if student is excused for this specific schedule
+                                                                        $isExcused = Attendance::where(
+                                                                            'student_id',
+                                                                            $student->id,
+                                                                        )
+                                                                            ->whereDate('date', $today)
+                                                                            ->where('status', 'excused')
+                                                                            ->where('schedule_id', $schedule->id)
+                                                                            ->exists();
+
+                                                                        if ($isExcused) {
+                                                                            $attendanceStats['excused']++;
+                                                                        } else {
+                                                                            $attendanceStats['absent']++;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Calculate percentages based on total possible attendance slots
+                                                        $totalPossible = $attendanceStats['total_possible'];
+
+                                                        $presentPercentage =
+                                                            $totalPossible > 0
+                                                                ? round(
+                                                                    ($attendanceStats['present'] / $totalPossible) *
+                                                                        100,
+                                                                )
+                                                                : 0;
+                                                        $latePercentage =
+                                                            $totalPossible > 0
+                                                                ? round(
+                                                                    ($attendanceStats['late'] / $totalPossible) * 100,
+                                                                )
+                                                                : 0;
+                                                        $absentPercentage =
+                                                            $totalPossible > 0
+                                                                ? round(
+                                                                    ($attendanceStats['absent'] / $totalPossible) * 100,
+                                                                )
+                                                                : 0;
+                                                        $excusedPercentage =
+                                                            $totalPossible > 0
+                                                                ? round(
+                                                                    ($attendanceStats['excused'] / $totalPossible) *
+                                                                        100,
+                                                                )
+                                                                : 0;
+
+                                                        // Format counts for display
+                                                        $presentCountDisplay = $attendanceStats['present'];
+                                                        $lateCountDisplay = $attendanceStats['late'];
+                                                        $absentCountDisplay = $attendanceStats['absent'];
+                                                        $excusedCountDisplay = $attendanceStats['excused'];
+                                                    }
+                                                } else {
+                                                    // No advisory class or no current school year
+                                                    $presentPercentage = 0;
+                                                    $latePercentage = 0;
+                                                    $absentPercentage = 0;
+                                                    $excusedPercentage = 0;
+
+                                                    // Format counts for display
+                                                    $presentCountDisplay = 0;
+                                                    $lateCountDisplay = 0;
+                                                    $absentCountDisplay = 0;
+                                                    $excusedCountDisplay = 0;
+                                                    $attendanceStats['total_possible'] = 0;
+                                                }
+                                            @endphp
+
+                                            <!-- Chart Container -->
+                                            <div class="d-flex justify-content-center align-items-center">
+                                                @if ($scheduleCount > 1)
+                                                    <small
+                                                        class="text-info text-center">{{ $advisoryClass->formatted_grade_level ?? ucfirst($advisoryClass->grade_level) }}
+                                                        - {{ $advisoryClass->section }}
+                                                        <br><strong>Total Students:
+                                                            {{ $advisoryStudentCount ?? 0 }}</strong>
+                                                        <br>({{ $scheduleCount }}
+                                                        schedules today)</small>
+                                                @endif
+                                                <div id="attendanceOverviewChart"></div>
+                                            </div>
+
+                                            <!-- Statistics List -->
+                                            <ul class="p-0 m-0" id="attendanceStatsList">
+                                                <li class="d-flex mb-3">
+                                                    <div class="avatar flex-shrink-0 me-3">
+                                                        <span class="avatar-initial rounded bg-label-success">
+                                                            <i class="bx bx-check"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <div>
+                                                            <h6 class="mb-0">Present</h6>
+                                                            <small class="text-muted">
+                                                                <span id="presentCount">{{ $presentCountDisplay }}</span>
+                                                                / {{ $attendanceStats['total_possible'] }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="user-progress">
+                                                            <h6 class="fw-semibold" id="presentPercentage">
+                                                                {{ $presentPercentage }}%
+                                                            </h6>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="d-flex mb-3">
+                                                    <div class="avatar flex-shrink-0 me-3">
+                                                        <span class="avatar-initial rounded bg-label-warning">
+                                                            <i class="bx bx-time"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <div>
+                                                            <h6 class="mb-0">Late</h6>
+                                                            <small class="text-muted">
+                                                                <span id="lateCount">{{ $lateCountDisplay }}</span> /
+                                                                {{ $attendanceStats['total_possible'] }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="user-progress">
+                                                            <h6 class="fw-semibold" id="latePercentage">
+                                                                {{ $latePercentage }}%
+                                                            </h6>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="d-flex mb-3">
+                                                    <div class="avatar flex-shrink-0 me-3">
+                                                        <span class="avatar-initial rounded bg-label-danger">
+                                                            <i class="bx bx-x"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <div>
+                                                            <h6 class="mb-0">Absent</h6>
+                                                            <small class="text-muted">
+                                                                <span id="absentCount">{{ $absentCountDisplay }}</span> /
+                                                                {{ $attendanceStats['total_possible'] }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="user-progress">
+                                                            <h6 class="fw-semibold" id="absentPercentage">
+                                                                {{ $absentPercentage }}%
+                                                            </h6>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="d-flex">
+                                                    <div class="avatar flex-shrink-0 me-3">
+                                                        <span class="avatar-initial rounded bg-label-secondary">
+                                                            <i class="bx bx-calendar-exclamation"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <div>
+                                                            <h6 class="mb-0">Excused</h6>
+                                                            <small class="text-muted">
+                                                                <span id="excusedCount">{{ $excusedCountDisplay }}</span>
+                                                                / {{ $attendanceStats['total_possible'] }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="user-progress">
+                                                            <h6 class="fw-semibold" id="excusedPercentage">
+                                                                {{ $excusedPercentage }}%
+                                                            </h6>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </ul>
                                         </div>
-                                        <ul class="p-0 m-0">
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-success">
-                                                        <i class="bx bx-user"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Present</h6>
-                                                        <small class="text-muted" id="regularCountText">
-                                                            {{ $studentTypeStats['regular_count'] ?? 0 }} Students
-                                                        </small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <h6 class="fw-semibold" id="regularPercentageText">
-                                                            {{ $studentTypeStats['regular_percentage'] ?? 0 }}%
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-warning">
-                                                        <i class="bx bx-undo"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Late</h6>
-                                                        <small class="text-muted" id="returneeCountText">
-                                                            {{ $studentTypeStats['returnee_count'] ?? 0 }} Students
-                                                        </small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <h6 class="fw-semibold" id="returneePercentageText">
-                                                            {{ $studentTypeStats['returnee_percentage'] ?? 0 }}%
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex mb-3">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-danger">
-                                                        <i class="bx bx-transfer"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Absent</h6>
-                                                        <small class="text-muted" id="absentCountText">
-                                                            {{ $studentTypeStats['absent_count'] ?? 0 }} Students
-                                                        </small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <h6 class="fw-semibold" id="transfereePercentageText">
-                                                            {{ $studentTypeStats['transferee_percentage'] ?? 0 }}%
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="d-flex">
-                                                <div class="avatar flex-shrink-0 me-3">
-                                                    <span class="avatar-initial rounded bg-label-secondary">
-                                                        <i class="bx bx-transfer"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <div>
-                                                        <h6 class="mb-0">Excused</h6>
-                                                        <small class="text-muted" id="transfereeCountText">
-                                                            {{ $studentTypeStats['transferee_count'] ?? 0 }} Students
-                                                        </small>
-                                                    </div>
-                                                    <div class="user-progress">
-                                                        <h6 class="fw-semibold" id="transfereePercentageText">
-                                                            {{ $studentTypeStats['transferee_percentage'] ?? 0 }}%
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <!-- Show empty state if no classes assigned -->
+                    <div class="col-12 col-xxl-6 mb-6">
+                        <div class="card h-100">
+                            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                <i class="bx bx-calendar-x text-muted fs-1 mb-3"></i>
+                                <h5 class="text-muted">No classes assigned</h5>
+                                <p class="text-muted text-center mb-0">
+                                    You don't have any classes assigned for the current school year.
+                                </p>
+                                <a href="{{ route('teacher.myClasses') }}" class="btn btn-primary mt-3">
+                                    <i class="bx bx-notepad me-1"></i> View All Classes
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -1139,6 +1389,348 @@
                 }
             });
         }
+    </script>
+
+    <!-- Fixed Attendance Chart Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize ApexCharts attendance chart
+            let attendanceChart = null;
+            const today = "{{ Carbon::now()->format('Y-m-d') }}";
+            const advisoryClassId = "{{ $advisoryClass ? $advisoryClass->id : null }}";
+            const scheduleCount = {{ $scheduleCount ?? 0 }};
+
+            // Initialize the chart with default data
+            setTimeout(() => {
+                if (document.getElementById('attendanceOverviewChart')) {
+                    // Get attendance stats from PHP or use defaults
+                    @php
+                        $attendanceStatsData = isset($attendanceStats)
+                            ? $attendanceStats
+                            : [
+                                'present' => 0,
+                                'late' => 0,
+                                'absent' => 0,
+                                'excused' => 0,
+                                'total' => 0,
+                                'total_possible' => 0,
+                            ];
+                    @endphp
+                    const attendanceStats = @json($attendanceStatsData);
+                    initializeAttendanceChart(attendanceStats);
+                }
+            }, 100);
+
+            // Function to load attendance data (only for advisory class)
+            function loadAttendanceData() {
+                if (!advisoryClassId) return;
+
+                // Show loading state
+                const loadingElement = document.getElementById('attendanceLoading');
+                const contentElement = document.getElementById('attendanceContent');
+
+                if (loadingElement) loadingElement.classList.remove('d-none');
+                if (contentElement) contentElement.style.opacity = '0.5';
+
+                // Prepare request data
+                const data = {
+                    class_id: advisoryClassId,
+                    date: today,
+                    weighted: true, // Add flag for weighted calculation
+                    _token: "{{ csrf_token() }}"
+                };
+
+                // Fetch attendance data
+                fetch("{{ route('teacher.attendance.overview') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Hide loading state
+                        if (loadingElement) loadingElement.classList.add('d-none');
+                        if (contentElement) contentElement.style.opacity = '1';
+
+                        if (data.success) {
+                            // Update chart
+                            updateAttendanceChart(data.attendance);
+
+                            // Update statistics list
+                            updateAttendanceStats(data.attendance);
+                        } else {
+                            console.error('Error loading attendance data:', data.message);
+                            showError('Failed to load attendance data.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        if (loadingElement) loadingElement.classList.add('d-none');
+                        if (contentElement) contentElement.style.opacity = '1';
+                        showError('An error occurred while loading attendance data.');
+                    });
+            }
+
+            // Function to show error
+            function showError(message) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: message,
+                    customClass: {
+                        container: 'my-swal-container'
+                    }
+                });
+            }
+
+            // Function to initialize the attendance chart
+            function initializeAttendanceChart(attendanceData) {
+                const attendanceChartElement = document.getElementById('attendanceOverviewChart');
+                if (!attendanceChartElement) {
+                    console.error('Chart element not found');
+                    return;
+                }
+
+                // Clear existing content
+                attendanceChartElement.innerHTML = '';
+
+                // Calculate percentages based on total possible slots
+                const totalPossible = attendanceData.total_possible || 0;
+                const presentPercentage = totalPossible > 0 ? Math.round((attendanceData.present / totalPossible) *
+                    100) : 0;
+                const latePercentage = totalPossible > 0 ? Math.round((attendanceData.late / totalPossible) * 100) :
+                    0;
+                const absentPercentage = totalPossible > 0 ? Math.round((attendanceData.absent / totalPossible) *
+                    100) : 0;
+                const excusedPercentage = totalPossible > 0 ? Math.round((attendanceData.excused / totalPossible) *
+                    100) : 0;
+
+                // Format counts for display
+                const presentCountDisplay = attendanceData.present || 0;
+                const lateCountDisplay = attendanceData.late || 0;
+                const absentCountDisplay = attendanceData.absent || 0;
+                const excusedCountDisplay = attendanceData.excused || 0;
+
+                // Create chart options
+                const options = {
+                    chart: {
+                        type: 'donut',
+                        height: 165,
+                        width: 130
+                    },
+                    series: [
+                        presentPercentage,
+                        latePercentage,
+                        absentPercentage,
+                        excusedPercentage
+                    ],
+                    labels: ['Present', 'Late', 'Absent', 'Excused'],
+                    colors: ['#28a745', '#ffc107', '#dc3545', '#6c757d'],
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: '75%',
+                                labels: {
+                                    show: true,
+                                    name: {
+                                        show: true,
+                                        fontSize: '13px',
+                                        fontFamily: 'Helvetica, Arial, sans-serif',
+                                        color: undefined,
+                                        offsetY: -10
+                                    },
+                                    value: {
+                                        show: true,
+                                        fontSize: '26px',
+                                        fontFamily: 'Helvetica, Arial, sans-serif',
+                                        fontWeight: 'bold',
+                                        color: '#373d3f',
+                                        offsetY: 16,
+                                        formatter: function(val) {
+                                            return totalPossible;
+                                        }
+                                    },
+                                    total: {
+                                        show: true,
+                                        showAlways: true,
+                                        fontSize: '12px',
+                                        fontWeight: 'normal',
+                                        fontFamily: 'Helvetica, Arial, sans-serif',
+                                        color: '#6c757d',
+                                        formatter: function(w) {
+                                            return totalPossible;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function(value, {
+                                seriesIndex
+                            }) {
+                                const counts = [
+                                    presentCountDisplay,
+                                    lateCountDisplay,
+                                    absentCountDisplay,
+                                    excusedCountDisplay
+                                ];
+                                const percentages = [
+                                    presentPercentage,
+                                    latePercentage,
+                                    absentPercentage,
+                                    excusedPercentage
+                                ];
+                                return counts[seriesIndex] + '(' + percentages[seriesIndex] + '%)';
+                            }
+                        }
+                    },
+                    legend: {
+                        show: false
+                    },
+                    dataLabels: {
+                        enabled: false
+                    },
+                    responsive: [{
+                        breakpoint: 480,
+                        options: {
+                            chart: {
+                                width: 120,
+                                height: 150
+                            }
+                        }
+                    }]
+                };
+
+                // Create and render chart
+                attendanceChart = new ApexCharts(attendanceChartElement, options);
+                attendanceChart.render();
+            }
+            // Function to update the chart with new data
+            function updateAttendanceChart(attendanceData) {
+                if (!attendanceChart) {
+                    // Re-initialize chart if it doesn't exist
+                    initializeAttendanceChart(attendanceData);
+                    return;
+                }
+
+                const total = attendanceData.total || 0;
+                const presentPercentage = total > 0 ? Math.round((attendanceData.present / total) * 100) : 0;
+                const latePercentage = total > 0 ? Math.round((attendanceData.late / total) * 100) : 0;
+                const absentPercentage = total > 0 ? Math.round((attendanceData.absent / total) * 100) : 0;
+                const excusedPercentage = total > 0 ? Math.round((attendanceData.excused / total) * 100) : 0;
+
+                // Update chart series
+                attendanceChart.updateSeries([
+                    presentPercentage,
+                    latePercentage,
+                    absentPercentage,
+                    excusedPercentage
+                ]);
+
+                // Format counts for display (use integers)
+                const presentCountDisplay = attendanceData.present || 0;
+                const lateCountDisplay = attendanceData.late || 0;
+                const absentCountDisplay = attendanceData.absent || 0;
+                const excusedCountDisplay = attendanceData.excused || 0;
+
+                // Update tooltip formatter
+                const newConfig = {
+                    tooltip: {
+                        y: {
+                            formatter: function(value, {
+                                seriesIndex
+                            }) {
+                                const counts = [
+                                    presentCountDisplay,
+                                    lateCountDisplay,
+                                    absentCountDisplay,
+                                    excusedCountDisplay
+                                ];
+                                const percentages = [
+                                    presentPercentage,
+                                    latePercentage,
+                                    absentPercentage,
+                                    excusedPercentage
+                                ];
+                                return counts[seriesIndex] + ' students (' + percentages[seriesIndex] +
+                                    '%)';
+                            }
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                labels: {
+                                    total: {
+                                        formatter: function(w) {
+                                            return total;
+                                        }
+                                    },
+                                    value: {
+                                        formatter: function(val) {
+                                            return total;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                attendanceChart.updateOptions(newConfig);
+            }
+
+            // Function to update statistics list
+            function updateAttendanceStats(attendanceData) {
+                const total = attendanceData.total || 0;
+                const presentPercentage = total > 0 ? Math.round((attendanceData.present / total) * 100) : 0;
+                const latePercentage = total > 0 ? Math.round((attendanceData.late / total) * 100) : 0;
+                const absentPercentage = total > 0 ? Math.round((attendanceData.absent / total) * 100) : 0;
+                const excusedPercentage = total > 0 ? Math.round((attendanceData.excused / total) * 100) : 0;
+
+                // Format counts for display (use integers)
+                const presentCountDisplay = attendanceData.present || 0;
+                const lateCountDisplay = attendanceData.late || 0;
+                const absentCountDisplay = attendanceData.absent || 0;
+                const excusedCountDisplay = attendanceData.excused || 0;
+
+                // Update counts
+                const presentCountElement = document.getElementById('presentCount');
+                const lateCountElement = document.getElementById('lateCount');
+                const absentCountElement = document.getElementById('absentCount');
+                const excusedCountElement = document.getElementById('excusedCount');
+                const totalStudentsCountElement = document.getElementById('totalStudentsCount');
+
+                if (presentCountElement) presentCountElement.textContent = presentCountDisplay;
+                if (lateCountElement) lateCountElement.textContent = lateCountDisplay;
+                if (absentCountElement) absentCountElement.textContent = absentCountDisplay;
+                if (excusedCountElement) excusedCountElement.textContent = excusedCountDisplay;
+                if (totalStudentsCountElement) totalStudentsCountElement.textContent = total;
+
+                // Update percentages
+                const presentPercentageElement = document.getElementById('presentPercentage');
+                const latePercentageElement = document.getElementById('latePercentage');
+                const absentPercentageElement = document.getElementById('absentPercentage');
+                const excusedPercentageElement = document.getElementById('excusedPercentage');
+
+                if (presentPercentageElement) presentPercentageElement.textContent = presentPercentage + '%';
+                if (latePercentageElement) latePercentageElement.textContent = latePercentage + '%';
+                if (absentPercentageElement) absentPercentageElement.textContent = absentPercentage + '%';
+                if (excusedPercentageElement) excusedPercentageElement.textContent = excusedPercentage + '%';
+            }
+
+        });
     </script>
 
     <!-- Active Users Management for Teacher Dashboard -->
@@ -1718,15 +2310,15 @@
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
                         ${classes.map(cls => `
-                                                                                                                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                                                                                                                            <div>
-                                                                                                                                                                <span class="fw-bold">${cls.grade_level.toUpperCase()} - ${cls.section}</span>
-                                                                                                                                                            </div>
-                                                                                                                                                            <span class="badge ${cls.role === 'adviser' ? 'bg-success' : 'bg-info'}">
-                                                                                                                                                                ${cls.role.charAt(0).toUpperCase() + cls.role.slice(1)}
-                                                                                                                                                            </span>
-                                                                                                                                                        </li>
-                                                                                                                                                    `).join('')}
+                                                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                                            <div>
+                                                                                                <span class="fw-bold">${cls.grade_level.toUpperCase()} - ${cls.section}</span>
+                                                                                            </div>
+                                                                                            <span class="badge ${cls.role === 'adviser' ? 'bg-success' : 'bg-info'}">
+                                                                                                ${cls.role.charAt(0).toUpperCase() + cls.role.slice(1)}
+                                                                                            </span>
+                                                                                        </li>
+                                                                                    `).join('')}
                     </ul>
                 </div>
             </div>
@@ -1736,7 +2328,6 @@
             classesContent.innerHTML = html;
         }
 
-        // Function to update children tab
         function updateChildrenTab(childrenData) {
             const childrenContent = document.getElementById('childrenContent');
 
@@ -1756,7 +2347,7 @@
             <div class="col-md-6">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body text-center p-3">
-                        <img src="${child.profile_photo}"
+                        <img src="${child.profile_photo || '/assetsDashboard/img/student_profile_pictures/student_default_profile.jpg'}"
                              alt="${child.name}"
                              class="rounded-circle mb-3 shadow-sm"
                              style="object-fit: cover; width: 80px; height: 80px;">
@@ -2582,73 +3173,73 @@
             }
 
             // Initialize Student Type Chart
-            const studentTypeChartElement = document.getElementById('studentTypeChart');
-            if (studentTypeChartElement) {
-                // Store initial data for tooltip formatting
-                window.studentTypeChartData = {
-                    regularCount: {{ $studentTypeStats['regular_count'] ?? 0 }},
-                    returneeCount: {{ $studentTypeStats['returnee_count'] ?? 0 }},
-                    transfereeCount: {{ $studentTypeStats['transferee_count'] ?? 0 }},
-                    regularPercentage: {{ $studentTypeStats['regular_percentage'] ?? 0 }},
-                    returneePercentage: {{ $studentTypeStats['returnee_percentage'] ?? 0 }},
-                    transfereePercentage: {{ $studentTypeStats['transferee_percentage'] ?? 0 }}
-                };
+            // const studentTypeChartElement = document.getElementById('studentTypeChart');
+            // if (studentTypeChartElement) {
+            //     // Store initial data for tooltip formatting
+            //     window.studentTypeChartData = {
+            //         regularCount: {{ $studentTypeStats['regular_count'] ?? 0 }},
+            //         returneeCount: {{ $studentTypeStats['returnee_count'] ?? 0 }},
+            //         transfereeCount: {{ $studentTypeStats['transferee_count'] ?? 0 }},
+            //         regularPercentage: {{ $studentTypeStats['regular_percentage'] ?? 0 }},
+            //         returneePercentage: {{ $studentTypeStats['returnee_percentage'] ?? 0 }},
+            //         transfereePercentage: {{ $studentTypeStats['transferee_percentage'] ?? 0 }}
+            //     };
 
-                window.studentTypeChart = new ApexCharts(studentTypeChartElement, {
-                    chart: {
-                        type: 'donut',
-                        height: 165,
-                        width: 130
-                    },
-                    series: [{{ $studentTypeStats['regular_percentage'] ?? 0 }},
-                        {{ $studentTypeStats['returnee_percentage'] ?? 0 }},
-                        {{ $studentTypeStats['transferee_percentage'] ?? 0 }}
-                    ],
-                    labels: ['Regular', 'Returnee', 'Transferee'],
-                    colors: ['#696CFF', '#FFAB00', '#03C3EC'],
-                    plotOptions: {
-                        pie: {
-                            donut: {
-                                size: '75%',
-                                labels: {
-                                    show: true,
-                                    total: {
-                                        show: true,
-                                        label: 'Student Type',
-                                        fontSize: '0.8125rem',
-                                        color: '#aaa',
-                                        formatter: function(w) {
-                                            return '0%'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    tooltip: {
-                        y: {
-                            formatter: function(value, {
-                                seriesIndex
-                            }) {
-                                if (seriesIndex === 0) {
-                                    return window.studentTypeChartData.regularCount + ' students';
-                                } else if (seriesIndex === 1) {
-                                    return window.studentTypeChartData.returneeCount + ' students';
-                                } else {
-                                    return window.studentTypeChartData.transfereeCount + ' students';
-                                }
-                            }
-                        }
-                    },
-                    legend: {
-                        show: false
-                    },
-                    dataLabels: {
-                        enabled: false
-                    }
-                });
-                window.studentTypeChart.render();
-            }
+            //     window.studentTypeChart = new ApexCharts(studentTypeChartElement, {
+            //         chart: {
+            //             type: 'donut',
+            //             height: 165,
+            //             width: 130
+            //         },
+            //         series: [{{ $studentTypeStats['regular_percentage'] ?? 0 }},
+            //             {{ $studentTypeStats['returnee_percentage'] ?? 0 }},
+            //             {{ $studentTypeStats['transferee_percentage'] ?? 0 }}
+            //         ],
+            //         labels: ['Regular', 'Returnee', 'Transferee'],
+            //         colors: ['#696CFF', '#FFAB00', '#03C3EC'],
+            //         plotOptions: {
+            //             pie: {
+            //                 donut: {
+            //                     size: '75%',
+            //                     labels: {
+            //                         show: true,
+            //                         total: {
+            //                             show: true,
+            //                             label: 'Student Type',
+            //                             fontSize: '0.8125rem',
+            //                             color: '#aaa',
+            //                             formatter: function(w) {
+            //                                 return '0%'
+            //                             }
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         tooltip: {
+            //             y: {
+            //                 formatter: function(value, {
+            //                     seriesIndex
+            //                 }) {
+            //                     if (seriesIndex === 0) {
+            //                         return window.studentTypeChartData.regularCount + ' students';
+            //                     } else if (seriesIndex === 1) {
+            //                         return window.studentTypeChartData.returneeCount + ' students';
+            //                     } else {
+            //                         return window.studentTypeChartData.transfereeCount + ' students';
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         legend: {
+            //             show: false
+            //         },
+            //         dataLabels: {
+            //             enabled: false
+            //         }
+            //     });
+            //     window.studentTypeChart.render();
+            // }
         });
     </script>
 
@@ -3424,6 +4015,22 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        /* Class filter dropdown active item */
+        .class-filter-item.active {
+            background-color: #f0f8ff;
+            color: #0066cc;
+            font-weight: 500;
+        }
+
+        .class-filter-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Attendance content fade animation */
+        #attendanceContent {
+            transition: opacity 0.3s ease;
         }
     </style>
 @endpush

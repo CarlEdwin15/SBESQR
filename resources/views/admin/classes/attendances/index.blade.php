@@ -298,7 +298,6 @@
                                 ABSENT</th>
                             <th class="bg-success text-white no-hover-bg" rowspan="2" style="min-width: 100px;">
                                 Monthly PRESENT</th>
-                            <th rowspan="2" style="min-width: 140px;">REMARKS</th>
                         </tr>
                     </thead>
 
@@ -422,10 +421,11 @@
                                     @endforeach
 
                                     <td class="bg-danger text-white no-hover-bg">
-                                        {{ $attendanceData[$student->id]['absent'] }}</td>
+                                        {{ $attendanceData[$student->id]['absent'] + $attendanceData[$student->id]['excused'] }}
+                                    </td>
                                     <td class="bg-success text-white no-hover-bg">
-                                        {{ $attendanceData[$student->id]['present'] }}</td>
-                                    <td></td>
+                                        {{ $attendanceData[$student->id]['present'] + $attendanceData[$student->id]['late'] }}
+                                    </td>
                                 </tr>
                             @endforeach
 
@@ -447,11 +447,12 @@
                                 @endforeach
                                 <td class="bg-danger text-white fs-5 no-hover-bg">
                                     {{-- This aligns with Monthly ABSENT --}}
-                                    {{ $gender === 'Male' ? $maleTotalAbsent : $femaleTotalAbsent }}</td>
+                                    {{ $gender === 'Male' ? $maleTotalAbsentForDisplay : $femaleTotalAbsentForDisplay }}
+                                </td>
                                 <td class="bg-success text-white fs-5 no-hover-bg">
                                     {{-- This aligns with Monthly PRESENT --}}
-                                    {{ $gender === 'Male' ? $maleTotalPresent : $femaleTotalPresent }}</td>
-                                <td></td>
+                                    {{ $gender === 'Male' ? $maleTotalPresentForDisplay : $femaleTotalPresentForDisplay }}
+                                </td>
                             </tr>
                         @endforeach
 
@@ -473,7 +474,6 @@
                             @endforeach
                             <td class="bg-danger text-white fs-5 no-hover-bg">{{ $totalAbsent }}</td>
                             <td class="bg-success text-white fs-5 no-hover-bg">{{ $totalPresent }}</td>
-                            <td></td>
                         </tr>
                     </tbody>
 

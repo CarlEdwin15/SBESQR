@@ -13,6 +13,8 @@ use App\Models\ClassStudent;
 use App\Models\Schedule;
 use App\Models\Student;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
@@ -607,7 +609,8 @@ class HomeController extends Controller
             'gender' => $user->gender,
             'dob' => $user->dob ? Carbon::parse($user->dob)->format('F j, Y') : null,
             'age' => $user->dob ? Carbon::parse($user->dob)->age : null,
-            'profile_photo' => $user->profile_photo_url,
+            // FIXED: Properly get the profile photo URL
+            'profile_photo' => $this->getProfilePhotoUrl($user),
             'status' => $user->status,
             'created_at' => $user->created_at->format('F j, Y'),
             'last_seen' => $user->last_seen,
@@ -654,15 +657,46 @@ class HomeController extends Controller
                     'id' => $child->id,
                     'name' => $child->student_fName . ' ' . $child->student_lName,
                     'lrn' => $child->student_lrn,
-                    'profile_photo' => $child->student_profile
-                        ? asset('public/uploads/' . $child->student_profile)
-                        : asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg'),
+                    'profile_photo' => $this->getStudentProfilePhotoUrl($child),
                 ];
             });
             $userData['children'] = $children;
         }
 
         return response()->json($userData);
+    }
+
+    // Add this helper method to the HomeController class
+    private function getProfilePhotoUrl($user)
+    {
+        if (!$user->profile_photo) {
+            return match ($user->role) {
+                'admin' => asset('assetsDashboard/img/profile_pictures/admin_default_profile.jpg'),
+                'teacher' => asset('assetsDashboard/img/profile_pictures/teacher_default_profile.jpg'),
+                'parent' => asset('assetsDashboard/img/profile_pictures/parent_default_profile.jpg'),
+                default => 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name),
+            };
+        }
+
+        if (Str::startsWith($user->profile_photo, ['http://', 'https://'])) {
+            return $user->profile_photo;
+        }
+
+        return Storage::url($user->profile_photo);
+    }
+
+    // Add this method for student profile photos
+    private function getStudentProfilePhotoUrl($student)
+    {
+        if (!$student->student_photo) {
+            return asset('assetsDashboard/img/student_profile_pictures/student_default_profile.jpg');
+        }
+
+        if (Str::startsWith($student->student_photo, ['http://', 'https://'])) {
+            return $student->student_photo;
+        }
+
+        return asset('public/uploads/' . $student->student_photo);
     }
 
     // Add this method to HomeController.php
@@ -1195,6 +1229,112 @@ class HomeController extends Controller
             'male_count' => $maleCount,
             'female_percentage' => $total > 0 ? round(($femaleCount / $total) * 100, 1) : 0,
             'male_percentage' => $total > 0 ? round(($maleCount / $total) * 100, 1) : 0,
+        ]);
+    }
+
+    /**
+     * Get attendance overview for specific class
+     */
+    public function getAttendanceOverview(Request $request)
+    {
+        $teacher = Auth::user();
+
+        if ($teacher->role !== 'teacher') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $classId = $request->input('class_id');
+        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
+        $currentSchoolYear = SchoolYear::where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+
+        // Initialize attendance stats
+        $attendanceStats = [
+            'present' => 0,
+            'late' => 0,
+            'absent' => 0,
+            'excused' => 0,
+            'total' => 0
+        ];
+
+        if ($currentSchoolYear) {
+            // Get teacher's classes
+            $advisoryClass = $teacher
+                ->advisoryClasses()
+                ->wherePivot('school_year_id', $currentSchoolYear->id)
+                ->first();
+
+            $subjectClasses = $teacher->subjectClasses()->wherePivot('school_year_id', $currentSchoolYear->id)->get();
+
+            $allTeacherClasses = collect();
+
+            if ($advisoryClass) {
+                $allTeacherClasses->push($advisoryClass);
+            }
+
+            if ($subjectClasses->isNotEmpty()) {
+                $allTeacherClasses = $allTeacherClasses->merge($subjectClasses);
+            }
+
+            $allTeacherClasses = $allTeacherClasses->unique('id');
+
+            // Filter classes if specific class is selected
+            if ($classId && $classId !== 'all') {
+                $allTeacherClasses = $allTeacherClasses->where('id', $classId);
+            }
+
+            // Get today's schedules
+            $todayDayName = Carbon::now()->format('l');
+
+            foreach ($allTeacherClasses as $classItem) {
+                // Get student count for this class
+                $studentCount = $classItem
+                    ->students()
+                    ->wherePivot('school_year_id', $currentSchoolYear->id)
+                    ->count();
+
+                $attendanceStats['total'] += $studentCount;
+
+                // Get today's schedules for this class
+                $todaySchedules = $classItem
+                    ->schedules()
+                    ->where('day', $todayDayName)
+                    ->where('school_year_id', $currentSchoolYear->id)
+                    ->get();
+
+                // Get attendance for each schedule
+                foreach ($todaySchedules as $schedule) {
+                    $attendances = $schedule
+                        ->attendances()
+                        ->whereDate('date', $date)
+                        ->get();
+
+                    foreach ($attendances as $attendance) {
+                        switch ($attendance->status) {
+                            case 'present':
+                                $attendanceStats['present']++;
+                                break;
+                            case 'late':
+                                $attendanceStats['late']++;
+                                break;
+                            case 'absent':
+                                $attendanceStats['absent']++;
+                                break;
+                            case 'excused':
+                                $attendanceStats['excused']++;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'attendance' => $attendanceStats,
+            'date' => $date,
+            'class_id' => $classId
         ]);
     }
 }
